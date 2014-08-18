@@ -90,9 +90,6 @@ class CsharpCompleter( Completer ):
     self._max_diagnostics_to_display = user_options[
       'max_diagnostics_to_display' ]
 
-    if not os.path.isfile( PATH_TO_OMNISHARP_BINARY ):
-      raise RuntimeError(
-           SERVER_NOT_FOUND_MSG.format( PATH_TO_OMNISHARP_BINARY ) )
 
 
   def Shutdown( self ):
@@ -215,6 +212,7 @@ class CsharpCompleter( Completer ):
       raise ValueError( self.UserCommandsHelpMessage() )
 
     command = arguments[ 0 ]
+    del arguments[ 0 ]
     if command in CsharpSolutionCompleter.subcommands:
       solutioncompleter = self._GetSolutionCompleter( request_data )
       return solutioncompleter.Subcommand( command, arguments, request_data )
@@ -276,29 +274,31 @@ class CsharpCompleter( Completer ):
 
 class CsharpSolutionCompleter:
   subcommands = {
-    'StartServer': ( lambda self, request_data: self._StartServer() ),
-    'StopServer': ( lambda self, request_data: self._StopServer() ),
-    'RestartServer': ( lambda self, request_data: self._RestartServer() ),
-    'ReloadSolution': ( lambda self, request_data: self._ReloadSolution() ),
-    'SolutionFile': ( lambda self, request_data: self._SolutionFile() ),
-    'GoToDefinition': ( lambda self, request_data: self._GoToDefinition(
+    'StartServer': ( lambda self, request_data, arguments: self._StartServer() ),
+    'StopServer': ( lambda self, request_data, arguments: self._StopServer() ),
+    'RestartServer': ( lambda self, request_data, arguments: self._RestartServer() ),
+    'ReloadSolution': ( lambda self, request_data, arguments: self._ReloadSolution() ),
+    'SolutionFile': ( lambda self, request_data, arguments: self._SolutionFile() ),
+    'GoToDefinition': ( lambda self, request_data, arguments: self._GoToDefinition(
         request_data ) ),
-    'GoToDeclaration': ( lambda self, request_data: self._GoToDefinition(
+    'GoToDeclaration': ( lambda self, request_data, arguments: self._GoToDefinition(
         request_data ) ),
-    'GoTo': ( lambda self, request_data: self._GoToImplementation(
+    'GoTo': ( lambda self, request_data, arguments: self._GoToImplementation(
         request_data, True ) ),
-    'GoToDefinitionElseDeclaration': ( lambda self, request_data:
+    'GoToDefinitionElseDeclaration': ( lambda self, request_data, arguments:
         self._GoToDefinition( request_data ) ),
-    'GoToImplementation': ( lambda self, request_data:
+    'GoToImplementation': ( lambda self, request_data, arguments:
         self._GoToImplementation( request_data, False ) ),
-    'GoToImplementationElseDeclaration': ( lambda self, request_data:
+    'GoToImplementationElseDeclaration': ( lambda self, request_data, arguments:
         self._GoToImplementation( request_data, True ) ),
-    'GetType': ( lambda self, request_data: self._GetType(
+    'GetType': ( lambda self, request_data, arguments: self._GetType(
         request_data ) ),
-    'FixIt': ( lambda self, request_data: self._FixIt( request_data ) ),
-    'ServerRunning': ( lambda self, request_data: self.ServerIsRunning() ),
-    'ServerReady': ( lambda self, request_data: self.ServerIsReady() ),
-    'ServerTerminated': ( lambda self, request_data: self.ServerTerminated() ),
+    'FixIt': ( lambda self, request_data, arguments: self._FixIt( request_data ) ),
+    'ServerRunning': ( lambda self, request_data, arguments: self.ServerIsRunning() ),
+    'ServerReady': ( lambda self, request_data, arguments: self.ServerIsReady() ),
+    'ServerTerminated': ( lambda self, request_data, arguments: self.ServerTerminated() ),
+    'SetOmnisharpPath': ( lambda self, request_data, arguments:
+        self._SetOmnisharpPath( request_data, arguments ) ),
   }
 
 
@@ -306,16 +306,21 @@ class CsharpSolutionCompleter:
     self._logger = logging.getLogger( __name__ )
     self._solution_path = solution_path
     self._keep_logfiles = keep_logfiles
+    self._omnisharp_path = PATH_TO_OMNISHARP_BINARY
     self._filename_stderr = None
     self._filename_stdout = None
     self._omnisharp_port = None
     self._omnisharp_phandle = None
     self._desired_omnisharp_port = desired_omnisharp_port;
 
+    if not os.path.isfile( self._omnisharp_path ):
+      raise RuntimeError(
+           SERVER_NOT_FOUND_MSG.format( self._omnisharp_path ) )
+
 
   def Subcommand( self, command, arguments, request_data ):
     command_lamba = CsharpSolutionCompleter.subcommands[ command ]
-    return command_lamba( self, request_data )
+    return command_lamba( self, request_data, arguments )
 
 
   def DefinedSubcommands( self ):
@@ -341,7 +346,7 @@ class CsharpSolutionCompleter:
 
     self._ChooseOmnisharpPort()
 
-    command = [ PATH_TO_OMNISHARP_BINARY,
+    command = [ self._omnisharp_path,
                 '-p',
                 str( self._omnisharp_port ),
                 '-s',
@@ -569,6 +574,14 @@ class CsharpSolutionCompleter:
             self._omnisharp_port = utils.GetUnusedLocalhostPort()
     self._logger.info( u'using port {0}'.format( self._omnisharp_port ) )
 
+
+
+  def _SetOmnisharpPath( self, request_data, arguments ):
+    self._omnisharp_path = arguments[0]
+
+    if not os.path.isfile( self._omnisharp_path ):
+      raise RuntimeError(
+           SERVER_NOT_FOUND_MSG.format( self._omnisharp_path ) )
 
 
 def _CompleteSorterByImport( a, b ):
