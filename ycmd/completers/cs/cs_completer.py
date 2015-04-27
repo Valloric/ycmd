@@ -35,10 +35,14 @@ SERVER_NOT_FOUND_MSG = ( 'OmniSharp server binary not found at {0}. ' +
                          '"./install.py --omnisharp-completer".' )
 INVALID_FILE_MESSAGE = 'File is invalid.'
 NO_DIAGNOSTIC_MESSAGE = 'No diagnostic for current line!'
-PATH_TO_OMNISHARP_BINARY = os.path.join(
+PATH_TO_LEGACY_OMNISHARP_BINARY = os.path.join(
   os.path.abspath( os.path.dirname( __file__ ) ),
   '..', '..', '..', 'third_party', 'OmniSharpServer',
   'OmniSharp', 'bin', 'Release', 'OmniSharp.exe' )
+PATH_TO_ROSLYN_OMNISHARP_BINARY = os.path.join(
+  os.path.abspath( os.path.dirname( __file__ ) ),
+  '..', '..', '..', 'third_party', 'omnisharp-roslyn', 'scripts',
+  (  'Omnisharp.cmd' if utils.OnWindows() or utils.OnCygwin() else 'Omnisharp.sh' ) )
 
 
 # TODO: Handle this better than dummy classes
@@ -299,6 +303,10 @@ class CsharpSolutionCompleter:
     'ServerTerminated': ( lambda self, request_data, arguments: self.ServerTerminated() ),
     'SetOmnisharpPath': ( lambda self, request_data, arguments:
         self._SetOmnisharpPath( request_data, arguments ) ),
+    'UseLegacyOmnisharp': ( lambda self, request_data, arguments:
+        self._SetOmnisharpPath( request_data, [ PATH_TO_LEGACY_OMNISHARP_BINARY ] ) ),
+    'UseRoslynOmnisharp': ( lambda self, request_data, arguments:
+        self._SetOmnisharpPath( request_data, [ PATH_TO_ROSLYN_OMNISHARP_BINARY ] ) ),
   }
 
 
@@ -306,7 +314,7 @@ class CsharpSolutionCompleter:
     self._logger = logging.getLogger( __name__ )
     self._solution_path = solution_path
     self._keep_logfiles = keep_logfiles
-    self._omnisharp_path = PATH_TO_OMNISHARP_BINARY
+    self._omnisharp_path = PATH_TO_LEGACY_OMNISHARP_BINARY
     self._filename_stderr = None
     self._filename_stdout = None
     self._omnisharp_port = None
@@ -562,7 +570,7 @@ class CsharpSolutionCompleter:
   def _GetResponse( self, handler, parameters = {}, timeout = None ):
     """ Handle communication with server """
     target = urlparse.urljoin( self._ServerLocation(), handler )
-    response = requests.post( target, data = parameters, timeout = timeout )
+    response = requests.post( target, json = parameters, timeout = timeout )
     return response.json()
 
 

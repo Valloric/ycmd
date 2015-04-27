@@ -22,3 +22,6 @@
 [submodule "third_party/gocode"]
 	path = third_party/gocode
 	url = https://github.com/nsf/gocode.git
+[submodule "third_party/omnisharp-roslyn"]
+	path = third_party/omnisharp-roslyn
+	url = https://github.com/OmniSharp/omnisharp-roslyn.git
