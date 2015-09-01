@@ -538,7 +538,7 @@ class CsharpSolutionCompleter:
     """ Check if our OmniSharp server is running (up and serving)."""
     try:
       return bool( self._omnisharp_port and
-                   self._GetResponse( '/checkalivestatus', timeout = .2 ) )
+                   self._GetResponse( '/checkalivestatus', timeout = 3 ) )
     except:
       return False
 
