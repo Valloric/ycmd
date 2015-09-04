@@ -53,6 +53,8 @@ PATH_TO_ROSLYN_OMNISHARP_BINARY = os.path.join(
   '..', '..', '..', 'third_party', 'omnisharp-roslyn', 'scripts',
   (  'Omnisharp.cmd' if utils.OnWindows() or utils.OnCygwin() else 'Omnisharp.sh' ) )
 
+BENCHMARKING = False
+
 
 # TODO: Handle this better than dummy classes
 class CsharpDiagnostic:
@@ -102,6 +104,7 @@ class CsharpCompleter( Completer ):
         self._SetOmnisharpPath( request_data, [ PATH_TO_ROSLYN_OMNISHARP_BINARY, True ] ) ),
   }
 
+
   def __init__( self, user_options ):
     super( CsharpCompleter, self ).__init__( user_options )
     self._logger = logging.getLogger( __name__ )
@@ -112,7 +115,6 @@ class CsharpCompleter( Completer ):
       'max_diagnostics_to_display' ]
     self._omnisharp_path = PATH_TO_ROSLYN_OMNISHARP_BINARY
     self._use_stdio = True
-
 
 
   def Shutdown( self ):
@@ -625,6 +627,7 @@ class HttpCsharpSolutionCompleter( CsharpSolutionCompleter ):
         self._pending_request - 1 if self._pending_request > 0
         else 0 )
 
+
   def _CleanupAfterServerStop( self ):
     self._omnisharp_port = None
     super( HttpCsharpSolutionCompleter, self )._CleanupAfterServerStop()
@@ -684,7 +687,8 @@ class StdioCsharpSolutionCompleter( CsharpSolutionCompleter ):
     self._stdio_lock = None
     self._stdio_responses = {}
     self._stdio_aborted_seq = []
-    self._stdio_last_write = 0
+    if BENCHMARKING:
+      self._stdio_last_write = 0
 
 
   def _StartServer( self ):
@@ -719,7 +723,8 @@ class StdioCsharpSolutionCompleter( CsharpSolutionCompleter ):
     self._stdio_out_queue = Queue()
     self._stdio_seq = 0
     self._stdio_lock = RLock()
-    self._stdio_last_write = time.time()
+    if BENCHMARKING:
+      self._stdio_last_write = time.time()
     self._omnisharp_phandle = PtyProcessUnicode.spawn( command, echo = False )
 
     Thread( target = self._GenerateInLoop() ).start()
@@ -756,21 +761,20 @@ class StdioCsharpSolutionCompleter( CsharpSolutionCompleter ):
       try:
         data = ""
         while self._omnisharp_phandle is not None:
-          last = time.time()
+          if BENCHMARKING:
+            last = time.time()
           data += self._omnisharp_phandle.read( 1024 * 1024 * 10 )
+          if BENCHMARKING:
+            self._logger.info( "Time Elapsed: {0} - {1} - {2}".format( time.time() - self._stdio_last_write, time.time() - last, len( data ) ))
           while "\n" in data:
             (line, data) = data.split("\n", 1)
-            self._logger.info( "Time Elapsed: {0} - {1} - {2}".format( time.time() - self._stdio_last_write, time.time() - last, len( line ) ))
-            if len( line ) == 0:
-              time.sleep( .001 )
-            else:
-              try:
-                packet = json.loads( line )
-              except ValueError:
-                self._logger.error( "Omnisharp: " + line.rstrip() )
-                continue
+            try:
+              packet = json.loads( line )
+            except ValueError:
+              self._logger.error( "Omnisharp: " + line.rstrip() )
+              continue
 
-              self._ProcessPacket( packet )
+            self._ProcessPacket( packet )
       except Exception:
         self._logger.error( "Read error: " + traceback.format_exc() )
       finally:
@@ -810,12 +814,10 @@ class StdioCsharpSolutionCompleter( CsharpSolutionCompleter ):
 
   def _GetResponse( self, handler, parameters = {}, timeout = 10 ):
     """ Handle communication with server """
-    start = time.time()
+    if BENCHMARKING:
+      start = time.time()
 
-    self._logger.error( "Waiting for stdio lock" )
-    if not self._stdio_lock.acquire( False ):
-      self._stdio_lock.acquire( True )
-    self._logger.error( "Got stdio lock" )
+    self._stdio_lock.acquire( True )
 
     seq = self._stdio_seq + 1
     self._stdio_seq = seq
@@ -827,7 +829,7 @@ class StdioCsharpSolutionCompleter( CsharpSolutionCompleter ):
 
       self._stdio_in_queue.put( request_json )
 
-      self._logger.error( "Wrote for " + str( seq ) )
+      #self._logger.error( "Wrote for " + str( seq ) )
 
       self._ReadAllLines( seq, True, timeout )
             
@@ -840,7 +842,8 @@ class StdioCsharpSolutionCompleter( CsharpSolutionCompleter ):
     except Exception:
       self._logger.error( "_GetResponse Error: " + traceback.format_exc() )
     finally:
-      self._logger.info( "Elapsed time for {2} {0}: {1}".format( handler, time.time() - start, seq) )
+      if BENCHMARKING:
+        self._logger.info( "Elapsed time for {2} {0}: {1}".format( handler, time.time() - start, seq) )
       self._stdio_lock.release()
 
 
@@ -854,6 +857,7 @@ class StdioCsharpSolutionCompleter( CsharpSolutionCompleter ):
         except Empty:
           response = None
         if response is None:
+          self._stdio_aborted_seq.append( seq )
           return
         try:
           if 'Type' in response and response[ 'Type' ] == 'response':
@@ -861,10 +865,13 @@ class StdioCsharpSolutionCompleter( CsharpSolutionCompleter ):
             body =  response[ 'Body' ] if 'Body' in response else None
             self._stdio_responses[ request_seq ] = body
 
-            self._logger.error( "Read for " + str( request_seq ) )
+            #self._logger.error( "Read for " + str( request_seq ) )
               
             if seq is not None and request_seq == seq:
               return
+            elif request_seq in self._stdio_aborted_seq:
+              del self._stdio_responses[ request_seq ]
+              self._stdio_aborted_seq.remove( request_seq )
         except Exception:
           self._logger.error( "_ReadAllLines Error: " + traceback.format_exc() )
     finally:
