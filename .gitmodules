@@ -25,9 +25,6 @@
 [submodule "third_party/omnisharp-roslyn"]
 	path = third_party/omnisharp-roslyn
 	url = https://github.com/OmniSharp/omnisharp-roslyn.git
-[submodule "third_party/pexpect"]
-	path = third_party/pexpect
-	url = https://github.com/pexpect/pexpect.git
 [submodule "third_party/ptyprocess"]
 	path = third_party/ptyprocess
 	url = https://github.com/pexpect/ptyprocess

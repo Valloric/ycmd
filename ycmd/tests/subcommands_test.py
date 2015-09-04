@@ -24,7 +24,8 @@ from .test_utils import ( Setup,
                           PathToTestFile,
                           StopOmniSharpServer,
                           WaitUntilOmniSharpServerReady,
-                          ChangeSpecificOptions )
+                          ChangeSpecificOptions,
+                          UseRoslynOmnisharp )
 from webtest import TestApp, AppError
 from nose.tools import eq_, with_setup
 from .. import handlers
@@ -32,6 +33,7 @@ import bottle
 import re
 import os.path
 from pprint import pprint
+from nose import SkipTest
 
 from hamcrest import ( assert_that, contains, has_entries, equal_to, raises, calling )
 
@@ -645,13 +647,20 @@ def RunCompleterCommand_FixIt_all_Clang_test():
   for test in tests:
     yield _RunFixItTest_Clang, test[0], test[1], test[2], test[3], test[4]
 
+
 @with_setup( Setup )
 def RunCompleterCommand_GoTo_CsCompleter_Works_test():
+  yield _RunCompleterCommand_GoTo_CsCompleter_Works_test, True
+  yield _RunCompleterCommand_GoTo_CsCompleter_Works_test, False
+
+
+def _RunCompleterCommand_GoTo_CsCompleter_Works_test( use_roslyn ):
   app = TestApp( handlers.app )
   app.post_json( '/ignore_extra_conf_file',
                  { 'filepath': PathToTestFile( '.ycm_extra_conf.py' ) } )
   filepath = PathToTestFile( 'testy', 'GotoTestCase.cs' )
   contents = open( filepath ).read()
+  UseRoslynOmnisharp( app, filepath, use_roslyn )
   event_data = BuildRequest( filepath = filepath,
                              filetype = 'cs',
                              contents = contents,
@@ -668,23 +677,30 @@ def RunCompleterCommand_GoTo_CsCompleter_Works_test():
                             filetype = 'cs',
                             filepath = filepath )
 
-  eq_( {
-        'filepath': PathToTestFile( 'testy', 'Program.cs' ),
-        'line_num': 7,
-        'column_num': 3
-      },
-      app.post_json( '/run_completer_command', goto_data ).json )
-
-  StopOmniSharpServer( app, filepath )
+  try:
+    eq_( {
+          'filepath': PathToTestFile( 'testy', 'Program.cs' ),
+          'line_num': 7,
+          'column_num': 22 if use_roslyn else 3
+        },
+        app.post_json( '/run_completer_command', goto_data ).json )
+  finally:
+    StopOmniSharpServer( app, filepath )
 
 
 @with_setup( Setup )
 def RunCompleterCommand_GoToImplementation_CsCompleter_Works_test():
+  yield _RunCompleterCommand_GoToImplementation_CsCompleter_Works_test, True
+  yield _RunCompleterCommand_GoToImplementation_CsCompleter_Works_test, False
+
+
+def _RunCompleterCommand_GoToImplementation_CsCompleter_Works_test( use_roslyn ):
   app = TestApp( handlers.app )
   app.post_json( '/ignore_extra_conf_file',
                  { 'filepath': PathToTestFile( '.ycm_extra_conf.py' ) } )
   filepath = PathToTestFile( 'testy', 'GotoTestCase.cs' )
   contents = open( filepath ).read()
+  UseRoslynOmnisharp( app, filepath, use_roslyn )
   event_data = BuildRequest( filepath = filepath,
                              filetype = 'cs',
                              contents = contents,
@@ -701,23 +717,31 @@ def RunCompleterCommand_GoToImplementation_CsCompleter_Works_test():
                             filetype = 'cs',
                             filepath = filepath )
 
-  eq_( {
-        'filepath': PathToTestFile( 'testy', 'GotoTestCase.cs' ),
-        'line_num': 30,
-        'column_num': 3
-      },
-      app.post_json( '/run_completer_command', goto_data ).json )
+  try:
+    eq_( {
+          'filepath': PathToTestFile( 'testy', 'GotoTestCase.cs' ),
+          'line_num': 30,
+          'column_num': 15 if use_roslyn else 3
+        },
+        app.post_json( '/run_completer_command', goto_data ).json )
 
-  StopOmniSharpServer( app, filepath )
+  finally:
+    StopOmniSharpServer( app, filepath )
 
 
 @with_setup( Setup )
 def RunCompleterCommand_GoToImplementation_CsCompleter_NoImplementation_test():
+  yield _RunCompleterCommand_GoToImplementation_CsCompleter_NoImplementation_test, True
+  yield _RunCompleterCommand_GoToImplementation_CsCompleter_NoImplementation_test, False
+
+
+def _RunCompleterCommand_GoToImplementation_CsCompleter_NoImplementation_test( use_roslyn ):
   app = TestApp( handlers.app )
   app.post_json( '/ignore_extra_conf_file',
                  { 'filepath': PathToTestFile( '.ycm_extra_conf.py' ) } )
   filepath = PathToTestFile( 'testy', 'GotoTestCase.cs' )
   contents = open( filepath ).read()
+  UseRoslynOmnisharp( app, filepath, use_roslyn )
   event_data = BuildRequest( filepath = filepath,
                              filetype = 'cs',
                              contents = contents,
@@ -748,11 +772,17 @@ def RunCompleterCommand_GoToImplementation_CsCompleter_NoImplementation_test():
 
 @with_setup( Setup )
 def RunCompleterCommand_GoToImplementation_CsCompleter_InvalidLocation_test():
+  yield _RunCompleterCommand_GoToImplementation_CsCompleter_InvalidLocation_test, True
+  yield _RunCompleterCommand_GoToImplementation_CsCompleter_InvalidLocation_test, False
+
+
+def _RunCompleterCommand_GoToImplementation_CsCompleter_InvalidLocation_test( use_roslyn ):
   app = TestApp( handlers.app )
   app.post_json( '/ignore_extra_conf_file',
                  { 'filepath': PathToTestFile( '.ycm_extra_conf.py' ) } )
   filepath = PathToTestFile( 'testy', 'GotoTestCase.cs' )
   contents = open( filepath ).read()
+  UseRoslynOmnisharp( app, filepath, use_roslyn )
   event_data = BuildRequest( filepath = filepath,
                              filetype = 'cs',
                              contents = contents,
@@ -773,7 +803,9 @@ def RunCompleterCommand_GoToImplementation_CsCompleter_InvalidLocation_test():
     app.post_json( '/run_completer_command', goto_data ).json
     raise Exception('Expected a "Can\\\'t jump to implementation" error')
   except AppError as e:
-    if 'Can\\\'t jump to implementation' in str(e):
+    if not use_roslyn and 'Can\\\'t jump to implementation' in str(e):
+      pass
+    elif use_roslyn and 'No implementations found' in str(e):
       pass
     else:
       raise
@@ -783,11 +815,17 @@ def RunCompleterCommand_GoToImplementation_CsCompleter_InvalidLocation_test():
 
 @with_setup( Setup )
 def RunCompleterCommand_GoToImplementationElseDeclaration_CsCompleter_NoImplementation_test():
+  yield _RunCompleterCommand_GoToImplementationElseDeclaration_CsCompleter_MultipleImplementations_test, True
+  yield _RunCompleterCommand_GoToImplementationElseDeclaration_CsCompleter_MultipleImplementations_test, False
+
+
+def _RunCompleterCommand_GoToImplementationElseDeclaration_CsCompleter_NoImplementation_test( use_roslyn ):
   app = TestApp( handlers.app )
   app.post_json( '/ignore_extra_conf_file',
                  { 'filepath': PathToTestFile( '.ycm_extra_conf.py' ) } )
   filepath = PathToTestFile( 'testy', 'GotoTestCase.cs' )
   contents = open( filepath ).read()
+  UseRoslynOmnisharp( app, filepath, use_roslyn )
   event_data = BuildRequest( filepath = filepath,
                              filetype = 'cs',
                              contents = contents,
@@ -803,24 +841,30 @@ def RunCompleterCommand_GoToImplementationElseDeclaration_CsCompleter_NoImplemen
                             contents = contents,
                             filetype = 'cs',
                             filepath = filepath )
-
-  eq_( {
-        'filepath': PathToTestFile( 'testy', 'GotoTestCase.cs' ),
-        'line_num': 35,
-        'column_num': 3
-      },
-      app.post_json( '/run_completer_command', goto_data ).json )
-
-  StopOmniSharpServer( app, filepath )
+  try:
+    eq_( {
+          'filepath': PathToTestFile( 'testy', 'GotoTestCase.cs' ),
+          'line_num': 35,
+          'column_num': 15 if use_roslyn else 3
+        },
+        app.post_json( '/run_completer_command', goto_data ).json )
+  finally:
+    StopOmniSharpServer( app, filepath )
 
 
 @with_setup( Setup )
 def RunCompleterCommand_GoToImplementationElseDeclaration_CsCompleter_SingleImplementation_test():
+  yield _RunCompleterCommand_GoToImplementationElseDeclaration_CsCompleter_MultipleImplementations_test, True
+  yield _RunCompleterCommand_GoToImplementationElseDeclaration_CsCompleter_MultipleImplementations_test, False
+
+
+def _RunCompleterCommand_GoToImplementationElseDeclaration_CsCompleter_SingleImplementation_test( use_roslyn ):
   app = TestApp( handlers.app )
   app.post_json( '/ignore_extra_conf_file',
                  { 'filepath': PathToTestFile( '.ycm_extra_conf.py' ) } )
   filepath = PathToTestFile( 'testy', 'GotoTestCase.cs' )
   contents = open( filepath ).read()
+  UseRoslynOmnisharp( app, filepath, use_roslyn )
   event_data = BuildRequest( filepath = filepath,
                              filetype = 'cs',
                              contents = contents,
@@ -836,24 +880,30 @@ def RunCompleterCommand_GoToImplementationElseDeclaration_CsCompleter_SingleImpl
                             contents = contents,
                             filetype = 'cs',
                             filepath = filepath )
-
-  eq_( {
-        'filepath': PathToTestFile( 'testy', 'GotoTestCase.cs' ),
-        'line_num': 30,
-        'column_num': 3
-      },
-      app.post_json( '/run_completer_command', goto_data ).json )
-
-  StopOmniSharpServer( app, filepath )
+  try:
+    eq_( {
+          'filepath': PathToTestFile( 'testy', 'GotoTestCase.cs' ),
+          'line_num': 30,
+          'column_num': 15 if use_roslyn else 3
+        },
+        app.post_json( '/run_completer_command', goto_data ).json )
+  finally:
+    StopOmniSharpServer( app, filepath )
 
 
 @with_setup( Setup )
 def RunCompleterCommand_GoToImplementationElseDeclaration_CsCompleter_MultipleImplementations_test():
+  yield _RunCompleterCommand_GoToImplementationElseDeclaration_CsCompleter_MultipleImplementations_test, True
+  yield _RunCompleterCommand_GoToImplementationElseDeclaration_CsCompleter_MultipleImplementations_test, False
+
+
+def _RunCompleterCommand_GoToImplementationElseDeclaration_CsCompleter_MultipleImplementations_test( use_roslyn ):
   app = TestApp( handlers.app )
   app.post_json( '/ignore_extra_conf_file',
                  { 'filepath': PathToTestFile( '.ycm_extra_conf.py' ) } )
   filepath = PathToTestFile( 'testy', 'GotoTestCase.cs' )
   contents = open( filepath ).read()
+  UseRoslynOmnisharp( app, filepath, use_roslyn )
   event_data = BuildRequest( filepath = filepath,
                              filetype = 'cs',
                              contents = contents,
@@ -870,27 +920,34 @@ def RunCompleterCommand_GoToImplementationElseDeclaration_CsCompleter_MultipleIm
                             filetype = 'cs',
                             filepath = filepath )
 
-  eq_( [{
-        'filepath': PathToTestFile( 'testy', 'GotoTestCase.cs' ),
-        'line_num': 43,
-        'column_num': 3
-      }, {
-        'filepath': PathToTestFile( 'testy', 'GotoTestCase.cs' ),
-        'line_num': 48,
-        'column_num': 3
-      }],
-      app.post_json( '/run_completer_command', goto_data ).json )
-
-  StopOmniSharpServer( app, filepath )
+  try:
+    eq_( [{
+          'filepath': PathToTestFile( 'testy', 'GotoTestCase.cs' ),
+          'line_num': 43,
+          'column_num': 15 if use_roslyn else 3
+        }, {
+          'filepath': PathToTestFile( 'testy', 'GotoTestCase.cs' ),
+          'line_num': 48,
+          'column_num': 15 if use_roslyn else 3
+        }],
+        app.post_json( '/run_completer_command', goto_data ).json )
+  finally:
+    StopOmniSharpServer( app, filepath )
 
 
 @with_setup( Setup )
 def RunCompleterCommand_GetType_CsCompleter_EmptyMessage_test():
+  yield _RunCompleterCommand_GetType_CsCompleter_EmptyMessage_test, True
+  yield _RunCompleterCommand_GetType_CsCompleter_EmptyMessage_test, False
+
+
+def _RunCompleterCommand_GetType_CsCompleter_EmptyMessage_test( use_roslyn ):
   app = TestApp( handlers.app )
   app.post_json( '/ignore_extra_conf_file',
                  { 'filepath': PathToTestFile( '.ycm_extra_conf.py' ) } )
   filepath = PathToTestFile( 'testy', 'GetTypeTestCase.cs' )
   contents = open( filepath ).read()
+  UseRoslynOmnisharp( app, filepath, use_roslyn )
   event_data = BuildRequest( filepath = filepath,
                              filetype = 'cs',
                              contents = contents,
@@ -907,21 +964,29 @@ def RunCompleterCommand_GetType_CsCompleter_EmptyMessage_test():
                             filetype = 'cs',
                             filepath = filepath )
 
-  eq_( {
-        u'message': u""
-      },
-      app.post_json( '/run_completer_command', gettype_data ).json )
-
-  StopOmniSharpServer( app, filepath )
+  expected = ( None if use_roslyn else u"" )
+  try:
+    eq_( {
+          u'message': expected
+        },
+        app.post_json( '/run_completer_command', gettype_data ).json )
+  finally:
+    StopOmniSharpServer( app, filepath )
 
 
 @with_setup( Setup )
 def RunCompleterCommand_GetType_CsCompleter_VariableDeclaration_test():
+  yield _RunCompleterCommand_GetType_CsCompleter_VariableDeclaration_test, True
+  yield _RunCompleterCommand_GetType_CsCompleter_VariableDeclaration_test, False
+
+
+def _RunCompleterCommand_GetType_CsCompleter_VariableDeclaration_test( use_roslyn ):
   app = TestApp( handlers.app )
   app.post_json( '/ignore_extra_conf_file',
                  { 'filepath': PathToTestFile( '.ycm_extra_conf.py' ) } )
   filepath = PathToTestFile( 'testy', 'GetTypeTestCase.cs' )
   contents = open( filepath ).read()
+  UseRoslynOmnisharp( app, filepath, use_roslyn )
   event_data = BuildRequest( filepath = filepath,
                              filetype = 'cs',
                              contents = contents,
@@ -938,21 +1003,29 @@ def RunCompleterCommand_GetType_CsCompleter_VariableDeclaration_test():
                             filetype = 'cs',
                             filepath = filepath )
 
-  eq_( {
-        u'message': u"string"
-      },
-      app.post_json( '/run_completer_command', gettype_data ).json )
-
-  StopOmniSharpServer( app, filepath )
+  expected = ( u'System.string\nRepresents text as a series of Unicode characters.' if use_roslyn else u"string" )
+  try:
+    eq_( {
+          u'message': expected
+        },
+        app.post_json( '/run_completer_command', gettype_data ).json )
+  finally:
+    StopOmniSharpServer( app, filepath )
 
 
 @with_setup( Setup )
 def RunCompleterCommand_GetType_CsCompleter_VariableUsage_test():
+  yield _RunCompleterCommand_GetType_CsCompleter_VariableUsage_test, True
+  yield _RunCompleterCommand_GetType_CsCompleter_VariableUsage_test, False
+
+
+def _RunCompleterCommand_GetType_CsCompleter_VariableUsage_test( use_roslyn ):
   app = TestApp( handlers.app )
   app.post_json( '/ignore_extra_conf_file',
                  { 'filepath': PathToTestFile( '.ycm_extra_conf.py' ) } )
   filepath = PathToTestFile( 'testy/GetTypeTestCase.cs' )
   contents = open( filepath ).read()
+  UseRoslynOmnisharp( app, filepath, use_roslyn )
   event_data = BuildRequest( filepath = filepath,
                              filetype = 'cs',
                              contents = contents,
@@ -968,22 +1041,30 @@ def RunCompleterCommand_GetType_CsCompleter_VariableUsage_test():
                             contents = contents,
                             filetype = 'cs',
                             filepath = filepath )
-
-  eq_( {
-        u'message': u"string str"
-      },
-      app.post_json( '/run_completer_command', gettype_data ).json )
-
-  StopOmniSharpServer( app, filepath )
+  try:
+    eq_( {
+          u'message': u"string str"
+        },
+        app.post_json( '/run_completer_command', gettype_data ).json )
+  finally:
+    StopOmniSharpServer( app, filepath )
 
 
 @with_setup( Setup )
 def RunCompleterCommand_GetType_CsCompleter_Constant_test():
+  yield _RunCompleterCommand_GetType_CsCompleter_Constant_test, True
+  yield _RunCompleterCommand_GetType_CsCompleter_Constant_test, False
+
+
+def _RunCompleterCommand_GetType_CsCompleter_Constant_test( use_roslyn ):
+  if use_roslyn:
+    raise SkipTest( "Rosyln doesn't seem to support this yet" )
   app = TestApp( handlers.app )
   app.post_json( '/ignore_extra_conf_file',
                  { 'filepath': PathToTestFile( '.ycm_extra_conf.py' ) } )
   filepath = PathToTestFile( 'testy/GetTypeTestCase.cs' )
   contents = open( filepath ).read()
+  UseRoslynOmnisharp( app, filepath, use_roslyn )
   event_data = BuildRequest( filepath = filepath,
                              filetype = 'cs',
                              contents = contents,
@@ -999,21 +1080,24 @@ def RunCompleterCommand_GetType_CsCompleter_Constant_test():
                             contents = contents,
                             filetype = 'cs',
                             filepath = filepath )
+  try:
+    eq_( {
+          u'message': u"System.String"
+        },
+        app.post_json( '/run_completer_command', gettype_data ).json )
+  finally:
+    StopOmniSharpServer( app, filepath )
 
-  eq_( {
-        u'message': u"System.String"
-      },
-      app.post_json( '/run_completer_command', gettype_data ).json )
 
-  StopOmniSharpServer( app, filepath )
-
-
-def _RunFixItTest_CsCompleter( line, column, expected_result ):
+def _RunFixItTest_CsCompleter(  line, column, expected_result, use_roslyn ):
+  if use_roslyn:
+    raise SkipTest( "Rosyln doesn't seem to support this yet" )
   app = TestApp( handlers.app )
   app.post_json( '/ignore_extra_conf_file',
                  { 'filepath': PathToTestFile( '.ycm_extra_conf.py' ) } )
   filepath = PathToTestFile( 'testy/FixItTestCase.cs' )
   contents = open( filepath ).read()
+  UseRoslynOmnisharp( app, filepath, use_roslyn )
   event_data = BuildRequest( filepath = filepath,
                              filetype = 'cs',
                              contents = contents,
@@ -1030,14 +1114,20 @@ def _RunFixItTest_CsCompleter( line, column, expected_result ):
                              filetype = 'cs',
                              filepath = filepath )
 
-  eq_( expected_result,
-       app.post_json( '/run_completer_command', fixit_data ).json )
-
-  StopOmniSharpServer( app, filepath )
+  try:
+    eq_( expected_result,
+        app.post_json( '/run_completer_command', fixit_data ).json )
+  finally:
+    StopOmniSharpServer( app, filepath )
 
 
 @with_setup( Setup )
 def RunCompleterCommand_FixIt_CsCompleter_RemoveSingleLine_test():
+  yield _RunCompleterCommand_FixIt_CsCompleter_RemoveSingleLine_test, True
+  yield _RunCompleterCommand_FixIt_CsCompleter_RemoveSingleLine_test, False
+
+
+def _RunCompleterCommand_FixIt_CsCompleter_RemoveSingleLine_test( use_roslyn ):
   filepath = PathToTestFile( 'testy/FixItTestCase.cs' )
   _RunFixItTest_CsCompleter( 11, 1, {
     u'fixits': [
@@ -1066,11 +1156,17 @@ def RunCompleterCommand_FixIt_CsCompleter_RemoveSingleLine_test():
         ]
       }
     ]
-  })
+  }, use_roslyn
+  )
 
 
 @with_setup( Setup )
 def RunCompleterCommand_FixIt_CsCompleter_MultipleLines_test():
+  yield _RunCompleterCommand_FixIt_CsCompleter_MultipleLines_test, True
+  yield _RunCompleterCommand_FixIt_CsCompleter_MultipleLines_test, False
+
+
+def _RunCompleterCommand_FixIt_CsCompleter_MultipleLines_test( use_roslyn ):
   filepath = PathToTestFile( 'testy/FixItTestCase.cs' )
   _RunFixItTest_CsCompleter( 19, 1, {
     u'fixits': [
@@ -1099,11 +1195,17 @@ def RunCompleterCommand_FixIt_CsCompleter_MultipleLines_test():
         ]
       }
     ]
-  })
+  }, use_roslyn
+  )
 
 
 @with_setup( Setup )
 def RunCompleterCommand_FixIt_CsCompleter_SpanFileEdge_test():
+  yield _RunCompleterCommand_FixIt_CsCompleter_SpanFileEdge_test, True
+  yield _RunCompleterCommand_FixIt_CsCompleter_SpanFileEdge_test, False
+
+
+def _RunCompleterCommand_FixIt_CsCompleter_SpanFileEdge_test( use_roslyn ):
   filepath = PathToTestFile( 'testy/FixItTestCase.cs' )
   _RunFixItTest_CsCompleter( 1, 1, {
     u'fixits': [
@@ -1132,11 +1234,17 @@ def RunCompleterCommand_FixIt_CsCompleter_SpanFileEdge_test():
         ]
       }
     ]
-  })
+  }, use_roslyn
+  )
 
 
 @with_setup( Setup )
 def RunCompleterCommand_FixIt_CsCompleter_AddTextInLine_test():
+  yield _RunCompleterCommand_FixIt_CsCompleter_AddTextInLine_test, True
+  yield _RunCompleterCommand_FixIt_CsCompleter_AddTextInLine_test, False
+
+
+def _RunCompleterCommand_FixIt_CsCompleter_AddTextInLine_test( use_roslyn ):
   filepath = PathToTestFile( 'testy/FixItTestCase.cs' )
   _RunFixItTest_CsCompleter( 9, 1, {
     u'fixits': [
@@ -1165,11 +1273,17 @@ def RunCompleterCommand_FixIt_CsCompleter_AddTextInLine_test():
         ]
       }
     ]
-  } )
+  }, use_roslyn
+  )
 
 
 @with_setup( Setup )
 def RunCompleterCommand_FixIt_CsCompleter_ReplaceTextInLine_test():
+  yield _RunCompleterCommand_FixIt_CsCompleter_ReplaceTextInLine_test, True
+  yield _RunCompleterCommand_FixIt_CsCompleter_ReplaceTextInLine_test, False
+
+
+def _RunCompleterCommand_FixIt_CsCompleter_ReplaceTextInLine_test( use_roslyn ):
   filepath = PathToTestFile( 'testy/FixItTestCase.cs' )
   _RunFixItTest_CsCompleter( 10, 1, {
     u'fixits': [
@@ -1198,32 +1312,44 @@ def RunCompleterCommand_FixIt_CsCompleter_ReplaceTextInLine_test():
         ]
       }
     ]
-  } )
+  }, use_roslyn
+  )
 
 
 @with_setup( Setup )
 def RunCompleterCommand_StopServer_CsCompleter_NoErrorIfNotStarted_test():
+  yield _RunCompleterCommand_GoToImplementationElseDeclaration_CsCompleter_MultipleImplementations_test, True
+  yield _RunCompleterCommand_GoToImplementationElseDeclaration_CsCompleter_MultipleImplementations_test, False
+
+
+def _RunCompleterCommand_StopServer_CsCompleter_NoErrorIfNotStarted_test( use_roslyn ):
   app = TestApp( handlers.app )
   app.post_json( '/ignore_extra_conf_file',
                  { 'filepath': PathToTestFile( '.ycm_extra_conf.py' ) } )
   filepath = PathToTestFile( 'testy', 'GotoTestCase.cs' )
+  UseRoslynOmnisharp( app, filepath, use_roslyn )
   StopOmniSharpServer( app, filepath )
   # Success = no raise
 
 
 @with_setup( Setup )
 def RunCompleterCommand_StopServer_CsCompleter_KeepLogFiles_test():
-  yield  _RunCompleterCommand_StopServer_CsCompleter_KeepLogFiles, True
-  yield  _RunCompleterCommand_StopServer_CsCompleter_KeepLogFiles, False
+  yield  _RunCompleterCommand_StopServer_CsCompleter_KeepLogFiles, True, True
+  yield  _RunCompleterCommand_StopServer_CsCompleter_KeepLogFiles, True, False
+  yield  _RunCompleterCommand_StopServer_CsCompleter_KeepLogFiles, False, True
+  yield  _RunCompleterCommand_StopServer_CsCompleter_KeepLogFiles, False, False
 
 
-def _RunCompleterCommand_StopServer_CsCompleter_KeepLogFiles( keeping_log_files ):
+def _RunCompleterCommand_StopServer_CsCompleter_KeepLogFiles( keeping_log_files, use_roslyn ):
+  if use_roslyn:
+    raise SkipTest("Stdio implementation doesn't write log files")
   ChangeSpecificOptions( { 'server_keep_logfiles': keeping_log_files } )
   app = TestApp( handlers.app )
   app.post_json( '/ignore_extra_conf_file',
                  { 'filepath': PathToTestFile( '.ycm_extra_conf.py' ) } )
   filepath = PathToTestFile( 'testy', 'GotoTestCase.cs' )
   contents = open( filepath ).read()
+  UseRoslynOmnisharp( app, filepath, use_roslyn )
   event_data = BuildRequest( filepath = filepath,
                              filetype = 'cs',
                              contents = contents,

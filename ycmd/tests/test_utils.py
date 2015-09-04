@@ -68,6 +68,15 @@ def PathToTestFile( *args ):
   return os.path.join( PathToTestDataDir(), *args )
 
 
+def UseRoslynOmnisharp( app, filename, should_use_roslyn ):
+  command = 'UseRoslynOmnisharp' if should_use_roslyn else 'UseLegacyOmnisharp'
+  app.post_json( '/run_completer_command',
+                 BuildRequest( completer_target = 'filetype_default',
+                               command_arguments = [ command ],
+                               filepath = filename,
+                               filetype = 'cs' ) )
+  
+
 def StopOmniSharpServer( app, filename ):
   app.post_json( '/run_completer_command',
                  BuildRequest( completer_target = 'filetype_default',
@@ -77,7 +86,7 @@ def StopOmniSharpServer( app, filename ):
 
 
 def WaitUntilOmniSharpServerReady( app, filename ):
-  retries = 100;
+  retries = 200;
   success = False;
 
   # If running on Travis CI, keep trying forever. Travis will kill the worker

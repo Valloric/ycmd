@@ -31,13 +31,13 @@ import urlparse
 import logging
 import solutiondetection
 from threading import (Thread, RLock)
-import subprocess
 from random import randrange
 try:
     from Queue import Queue, Empty
 except ImportError:
     from queue import Queue, Empty  # python 3.x
-import pexpect
+from ptyprocess import PtyProcessUnicode
+import traceback
 
 SERVER_NOT_FOUND_MSG = ( 'OmniSharp server binary not found at {0}. ' +
                          'Did you compile it? You can do so by running ' +
@@ -118,8 +118,7 @@ class CsharpCompleter( Completer ):
   def Shutdown( self ):
     if ( self.user_options[ 'auto_stop_csharp_server' ] ):
       for solutioncompleter in self._completer_per_solution.values():
-        if solutioncompleter.ServerIsRunning():
-          solutioncompleter._StopServer()
+        solutioncompleter._StopServer()
 
 
   def SupportedFiletypes( self ):
@@ -180,7 +179,7 @@ class CsharpCompleter( Completer ):
   def OnFileReadyToParse( self, request_data ):
     solutioncompleter = self._GetSolutionCompleter( request_data )
 
-    if ( not solutioncompleter.ServerIsRunning() and
+    if ( not solutioncompleter.ServerIsActive() and
          self.user_options[ 'auto_start_csharp_server' ] ):
       solutioncompleter._StartServer()
       return
@@ -351,7 +350,7 @@ class CsharpSolutionCompleter( object ):
     self._filename_stderr = None
     self._filename_stdout = None
     self._omnisharp_phandle = None
-    self._pending_request = False;
+    self._pending_request = 0;
 
     if not os.path.isfile( self._omnisharp_path ):
       raise RuntimeError(
@@ -359,7 +358,7 @@ class CsharpSolutionCompleter( object ):
 
 
   def ShouldUseNowInner( self, request_data ):
-    return self._pending_request <= 0
+    return True
 
 
   def Subcommand( self, command, arguments, request_data ):
@@ -391,11 +390,6 @@ class CsharpSolutionCompleter( object ):
 
     self._TryToStopServer()
 
-    # Kill it if it's still up
-    if not self.ServerTerminated() and self._omnisharp_phandle is not None:
-      self._logger.info( 'Killing OmniSharp server' )
-      self._omnisharp_phandle.kill()
-
     self._CleanupAfterServerStop()
 
     self._logger.info( 'Stopped OmniSharp server' )
@@ -411,6 +405,13 @@ class CsharpSolutionCompleter( object ):
         if self.ServerTerminated():
           return
         time.sleep( .1 )
+
+
+  def _ForceStopServer( self ):
+    # Kill it if it's still up
+    if not self.ServerTerminated() and self._omnisharp_phandle is not None:
+      self._logger.info( 'Killing OmniSharp server' )
+      self._omnisharp_phandle.kill()
 
 
   def _CleanupAfterServerStop( self ):
@@ -683,6 +684,7 @@ class StdioCsharpSolutionCompleter( CsharpSolutionCompleter ):
     self._stdio_lock = None
     self._stdio_responses = {}
     self._stdio_aborted_seq = []
+    self._stdio_last_write = 0
 
 
   def _StartServer( self ):
@@ -713,82 +715,84 @@ class StdioCsharpSolutionCompleter( CsharpSolutionCompleter ):
     self._filename_stderr = filename_format.format(
         rand = rand, sln = solutionfile, std = 'stderr' )
 
-    with open( self._filename_stderr, 'w' ) as fstderr:
-      self._stdio_in_queue = Queue()
-      self._stdio_out_queue = Queue()
-      self._stdio_seq = 0
-      self._stdio_lock = RLock()
-      self._omnisharp_phandle = pexpect.spawn( command[ 0 ], command[ 1 : ] )
-      self._omnisharp_phandle.setecho( False )
+    self._stdio_in_queue = Queue()
+    self._stdio_out_queue = Queue()
+    self._stdio_seq = 0
+    self._stdio_lock = RLock()
+    self._stdio_last_write = time.time()
+    self._omnisharp_phandle = PtyProcessUnicode.spawn( command, echo = False )
 
-      Thread( target = self.GenerateOutLoop() ).start()
-      Thread( target = self.GenerateInLoop() ).start()
+    Thread( target = self._GenerateInLoop() ).start()
+    Thread( target = self._GenerateOutLoop() ).start()
 
     self._logger.info( 'Starting OmniSharp server' )
 
 
-  def GenerateOutLoop( self ):
-    def process_packet( packet ):
-      if 'Type' not in packet:
-        self._logger.info( "Invalid packet: No Type\n" + str( packet ) )
-      elif packet[ 'Type' ] == 'response':
-        self._stdio_out_queue.put( packet );
-      elif packet[ 'Type' ] == 'event': 
-        if 'Event' not in packet:
-          self._logger.info( "Invalid packet: No Event\n" + str( packet ) )
-        elif packet[ 'Event' ] == 'log':
-          try:
-            log_message = packet[ "Body" ][ "Message" ]
-          except (TypeError, KeyError) as e:
-            self._logger.info( "Invalid log packet\n "+ str ( e ) + "\n\n" + str( packet ) )
-          else:
-            self._logger.info( "Omnisharp: " + log_message )
-        elif packet[ 'Event' ] in [ 'MsBuildProjectDiagnostics', 'ProjectAdded', 'ProjectChanged', 'started' ]:
-          pass
+  def _ProcessPacket( self, packet ):
+    if 'Type' not in packet:
+      self._logger.info( "Invalid packet: No Type\n" + str( packet ) )
+    elif packet[ 'Type' ] == 'response':
+      self._stdio_out_queue.put( packet );
+    elif packet[ 'Type' ] == 'event': 
+      if 'Event' not in packet:
+        self._logger.info( "Invalid packet: No Event\n" + str( packet ) )
+      elif packet[ 'Event' ] == 'log':
+        try:
+          log_message = packet[ "Body" ][ "Message" ]
+        except (TypeError, KeyError) as e:
+          self._logger.info( "Invalid log packet\n "+ str ( e ) + "\n\n" + str( packet ) )
         else:
-            self._logger.info( "Unknown event type: " + packet[ 'Event' ] + "\n\n" + str( packet ) )
+          self._logger.info( "Omnisharp: " + log_message )
+      elif packet[ 'Event' ] in [ 'MsBuildProjectDiagnostics', 'ProjectAdded', 'ProjectChanged', 'started' ]:
+        pass
       else:
-          self._logger.info( "Unknown type: " + packet[ 'Type' ] + "\n\n" + str( packet ) )
+          self._logger.info( "Unknown event type: " + packet[ 'Event' ] + "\n\n" + str( packet ) )
+    else:
+        self._logger.info( "Unknown type: " + packet[ 'Type' ] + "\n\n" + str( packet ) )
 
+
+  def _GenerateOutLoop( self ):
     def out_loop():
       try:
+        data = ""
         while self._omnisharp_phandle is not None:
-          try:
-            line = self._omnisharp_phandle.readline()
+          last = time.time()
+          data += self._omnisharp_phandle.read( 1024 * 1024 * 10 )
+          while "\n" in data:
+            (line, data) = data.split("\n", 1)
+            self._logger.info( "Time Elapsed: {0} - {1} - {2}".format( time.time() - self._stdio_last_write, time.time() - last, len( line ) ))
             if len( line ) == 0:
               time.sleep( .001 )
             else:
               try:
                 packet = json.loads( line )
               except ValueError:
+                self._logger.error( "Omnisharp: " + line.rstrip() )
                 continue
 
-              process_packet( packet )
-          except pexpect.TIMEOUT:
-            pass
-      except Exception as e:
-        self._logger.error( "Read error: " + str( e ) )
+              self._ProcessPacket( packet )
+      except Exception:
+        self._logger.error( "Read error: " + traceback.format_exc() )
       finally:
         self._logger.error( 'Read abort!!!!!!!!!!!!!!!!!!!!!!!!!' )
 
     return out_loop
 
 
-  def GenerateInLoop( self ):
+  def _GenerateInLoop( self ):
     def in_loop():
       try:
         while self._omnisharp_phandle is not None:
-          try:
-            data = self._stdio_in_queue.get()
-            self._omnisharp_phandle.sendline(data)
-          except pexpect.TIMEOUT:
-            pass
-      except Exception as e:
-        self._logger.error( "Write error: " + str( e ) )
+          data = self._stdio_in_queue.get()
+          self._omnisharp_phandle.write(data + "\n")
+          self._stdio_last_write = time.time()
+      except Exception:
+        self._logger.error( "Write error: " + traceback.format_exc() )
       finally:
         self._logger.error( 'Write aborted!!!!!!!!!!!!!!!!!!!!!!!!!' )
 
     return in_loop
+
 
   def _CleanupAfterServerStop( self ):
     self._stdio_in_queue = None
@@ -804,32 +808,43 @@ class StdioCsharpSolutionCompleter( CsharpSolutionCompleter ):
     return "STDIO"
 
 
-  def _GetResponse( self, handler, parameters = {}, timeout = None ):
+  def _GetResponse( self, handler, parameters = {}, timeout = 10 ):
     """ Handle communication with server """
-    self._stdio_lock.acquire( True )
+    start = time.time()
+
+    self._logger.error( "Waiting for stdio lock" )
+    if not self._stdio_lock.acquire( False ):
+      self._stdio_lock.acquire( True )
+    self._logger.error( "Got stdio lock" )
+
+    seq = self._stdio_seq + 1
+    self._stdio_seq = seq
 
     try:
-      seq = self._stdio_seq + 1
-      self._stdio_seq = seq
       parameters_json = json.dumps( parameters )
       request = { 'command': handler, 'seq': seq, 'arguments': parameters_json }
       request_json = json.dumps( request )
 
       self._stdio_in_queue.put( request_json )
 
+      self._logger.error( "Wrote for " + str( seq ) )
+
       self._ReadAllLines( seq, True, timeout )
             
-      result = self._stdio_responses[ seq ]
-      del self._stdio_responses[ seq ]
-      return result
-    except Exception as e:
-      self._logger.error( e )
+      try:
+        result = self._stdio_responses[ seq ]
+        del self._stdio_responses[ seq ]
+        return result
+      except KeyError:
+        return None
+    except Exception:
+      self._logger.error( "_GetResponse Error: " + traceback.format_exc() )
     finally:
+      self._logger.info( "Elapsed time for {2} {0}: {1}".format( handler, time.time() - start, seq) )
       self._stdio_lock.release()
 
 
   def _ReadAllLines( self, seq = None, wait = False, timeout = None ):
-
     try:
       self._stdio_lock.acquire( True )
       self._pending_request = self._pending_request + 1
@@ -845,11 +860,13 @@ class StdioCsharpSolutionCompleter( CsharpSolutionCompleter ):
             request_seq = response[ 'Request_seq' ]
             body =  response[ 'Body' ] if 'Body' in response else None
             self._stdio_responses[ request_seq ] = body
+
+            self._logger.error( "Read for " + str( request_seq ) )
               
-            if seq is not None and int( request_seq ) == seq:
+            if seq is not None and request_seq == seq:
               return
-        except Exception as e:
-          self._logger.error( e )
+        except Exception:
+          self._logger.error( "_ReadAllLines Error: " + traceback.format_exc() )
     finally:
       self._pending_request = (
         self._pending_request - 1 if self._pending_request > 0
@@ -861,8 +878,8 @@ class StdioCsharpSolutionCompleter( CsharpSolutionCompleter ):
     """ Check if our OmniSharp server is active (started, not yet stopped)."""
     try:
       return bool( self._stdio_lock )
-    except Exception as e:
-      self._logger.info( "Active Error: " + str( e ) )
+    except Exception:
+      self._logger.info( "Active Error: " + traceback.format_exc() )
       return False
 
 
@@ -871,8 +888,8 @@ class StdioCsharpSolutionCompleter( CsharpSolutionCompleter ):
     try:
       return bool( self._stdio_lock and
                    self._GetResponse( '/checkalivestatus', timeout = 3 ) )
-    except Exception as e:
-      self._logger.info( "Running Error:" + str( e ) )
+    except Exception:
+      self._logger.info( "Running Error:" + traceback.format_exc() )
       return False
 
 
@@ -881,15 +898,23 @@ class StdioCsharpSolutionCompleter( CsharpSolutionCompleter ):
     try:
       return bool( self._stdio_lock and
                    self._GetResponse( '/checkreadystatus', timeout = .2 ) )
-    except Exception as e:
-      self._logger.info( "Ready error: " + str( e ) )
+    except Exception:
+      self._logger.info( "Ready error: " + traceback.format_exc() )
       return False
 
 
   def ServerTerminated( self ):
     """ Check if the server process has already terminated. """
     return ( self._omnisharp_phandle is not None and
-             self._omnisharp_phandle.isalive() is not None )
+             not self._omnisharp_phandle.isalive() )
+
+
+  def _ForceStopServer( self ):
+    # Kill it if it's still up
+    if not self.ServerTerminated() and self._omnisharp_phandle is not None:
+      self._logger.info( 'Killing OmniSharp server' )
+      self._omnisharp_phandle.terminate()
+
 
 def _CompleteSorterByImport( a, b ):
   return cmp( _CompleteIsFromImport( a ), _CompleteIsFromImport( b ) )
