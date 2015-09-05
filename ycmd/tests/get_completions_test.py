@@ -23,7 +23,8 @@ SetUpPythonPath()
 import httplib
 from .test_utils import ( Setup, BuildRequest, PathToTestFile,
                           ChangeSpecificOptions, StopOmniSharpServer,
-                          WaitUntilOmniSharpServerReady, StopGoCodeServer )
+                          WaitUntilOmniSharpServerReady, StopGoCodeServer,
+                          UseRoslynOmnisharp )
 from webtest import TestApp, AppError
 from nose.tools import eq_, with_setup
 from hamcrest import ( assert_that, has_item, has_items, has_entry, has_entries,
@@ -34,6 +35,7 @@ from .. import handlers
 from ..completers.cpp.clang_completer import NO_COMPLETIONS_MESSAGE
 import bottle
 import pprint
+from nose import SkipTest
 
 bottle.debug( True )
 
@@ -383,11 +385,17 @@ def GetCompletions_ClangCompleter_Filtered_No_Results_Fallback_test():
 
 @with_setup( Setup )
 def GetCompletions_CsCompleter_Works_test():
+  yield _GetCompletions_CsCompleter_Works_test, True
+  yield _GetCompletions_CsCompleter_Works_test, False
+
+
+def _GetCompletions_CsCompleter_Works_test( use_roslyn ):
   app = TestApp( handlers.app )
   app.post_json( '/ignore_extra_conf_file',
                  { 'filepath': PathToTestFile( '.ycm_extra_conf.py' ) } )
   filepath = PathToTestFile( 'testy', 'Program.cs' )
   contents = open( filepath ).read()
+  UseRoslynOmnisharp( app, filepath, use_roslyn )
   event_data = BuildRequest( filepath = filepath,
                              filetype = 'cs',
                              contents = contents,
@@ -405,13 +413,19 @@ def GetCompletions_CsCompleter_Works_test():
   assert_that( response_data[ 'completions' ],
                has_items( CompletionEntryMatcher( 'CursorLeft' ),
                           CompletionEntryMatcher( 'CursorSize' ) ) )
-  eq_( 12, response_data[ 'completion_start_column' ] )
-
-  StopOmniSharpServer( app, filepath )
+  try:
+    eq_( 12, response_data[ 'completion_start_column' ] )
+  finally:
+    StopOmniSharpServer( app, filepath )
 
 
 @with_setup( Setup )
 def GetCompletions_CsCompleter_MultipleSolution_Works_test():
+  yield _GetCompletions_CsCompleter_MultipleSolution_Works_test, True
+  yield _GetCompletions_CsCompleter_MultipleSolution_Works_test, False
+
+
+def _GetCompletions_CsCompleter_MultipleSolution_Works_test( use_roslyn ):
   app = TestApp( handlers.app )
   app.post_json( '/ignore_extra_conf_file',
                  { 'filepath': PathToTestFile( '.ycm_extra_conf.py' ) } )
@@ -420,9 +434,9 @@ def GetCompletions_CsCompleter_MultipleSolution_Works_test():
                                 'solution-named-like-folder',
                                 'testy',
                                 'Program.cs' ) ]
-  lines = [ 10, 9 ]
-  for filepath, line in zip( filepaths, lines ):
+  for filepath in filepaths:
     contents = open( filepath ).read()
+    UseRoslynOmnisharp( app, filepath, use_roslyn )
     event_data = BuildRequest( filepath = filepath,
                                filetype = 'cs',
                                contents = contents,
@@ -434,24 +448,32 @@ def GetCompletions_CsCompleter_MultipleSolution_Works_test():
     completion_data = BuildRequest( filepath = filepath,
                                     filetype = 'cs',
                                     contents = contents,
-                                    line_num = line,
+                                    line_num = 10,
                                     column_num = 12 )
-    response_data = app.post_json( '/completions', completion_data ).json
-    assert_that( response_data[ 'completions' ],
-                  has_items( CompletionEntryMatcher( 'CursorLeft' ),
-                             CompletionEntryMatcher( 'CursorSize' ) ) )
-    eq_( 12, response_data[ 'completion_start_column' ] )
+    try:
+      response_data = app.post_json( '/completions', completion_data ).json
+      assert_that( response_data[ 'completions' ],
+                    has_items( CompletionEntryMatcher( 'CursorLeft' ),
+                              CompletionEntryMatcher( 'CursorSize' ) ) )
+      eq_( 12, response_data[ 'completion_start_column' ] )
 
-    StopOmniSharpServer( app, filepath )
+    finally:
+      StopOmniSharpServer( app, filepath )
 
 
 @with_setup( Setup )
 def GetCompletions_CsCompleter_PathWithSpace_test():
+  yield _GetCompletions_CsCompleter_PathWithSpace_test, True
+  yield _GetCompletions_CsCompleter_PathWithSpace_test, False
+
+
+def _GetCompletions_CsCompleter_PathWithSpace_test( use_roslyn ):
   app = TestApp( handlers.app )
   app.post_json( '/ignore_extra_conf_file',
                  { 'filepath': PathToTestFile( '.ycm_extra_conf.py' ) } )
   filepath = PathToTestFile( u'неприличное слово', 'Program.cs' )
   contents = open( filepath ).read()
+  UseRoslynOmnisharp( app, filepath, use_roslyn )
   event_data = BuildRequest( filepath = filepath,
                              filetype = 'cs',
                              contents = contents,
@@ -466,21 +488,31 @@ def GetCompletions_CsCompleter_PathWithSpace_test():
                                   line_num = 9,
                                   column_num = 12 )
   response_data = app.post_json( '/completions', completion_data ).json
-  assert_that( response_data[ 'completions' ],
-               has_items( CompletionEntryMatcher( 'CursorLeft' ),
-                          CompletionEntryMatcher( 'CursorSize' ) ) )
-  eq_( 12, response_data[ 'completion_start_column' ] )
+  try:
+    assert_that( response_data[ 'completions' ],
+                has_items( CompletionEntryMatcher( 'CursorLeft' ),
+                            CompletionEntryMatcher( 'CursorSize' ) ) )
+    eq_( 12, response_data[ 'completion_start_column' ] )
 
-  StopOmniSharpServer( app, filepath )
+  finally:
+    StopOmniSharpServer( app, filepath )
 
 
 @with_setup( Setup )
 def GetCompletions_CsCompleter_HasBothImportsAndNonImport_test():
+  yield _GetCompletions_CsCompleter_HasBothImportsAndNonImport_test, True
+  yield _GetCompletions_CsCompleter_HasBothImportsAndNonImport_test, False
+
+
+def _GetCompletions_CsCompleter_HasBothImportsAndNonImport_test( use_roslyn ):
+  if use_roslyn:
+    raise SkipTest( "rosyln doesn't seem to support want importable type yet" )
   app = TestApp( handlers.app )
   app.post_json( '/ignore_extra_conf_file',
                  { 'filepath': PathToTestFile( '.ycm_extra_conf.py' ) } )
   filepath = PathToTestFile( 'testy', 'ImportTest.cs' )
   contents = open( filepath ).read()
+  UseRoslynOmnisharp( app, filepath, use_roslyn )
   event_data = BuildRequest( filepath = filepath,
                              filetype = 'cs',
                              contents = contents,
@@ -498,20 +530,30 @@ def GetCompletions_CsCompleter_HasBothImportsAndNonImport_test():
                                   query = 'Date' )
   response_data = app.post_json( '/completions', completion_data ).json
 
-  assert_that( response_data[ 'completions' ],
-               has_items( CompletionEntryMatcher( 'DateTime' ),
-                          CompletionEntryMatcher( 'DateTimeStyles' ) ) )
+  try:
+    assert_that( response_data[ 'completions' ],
+                has_items( CompletionEntryMatcher( 'DateTime' ),
+                            CompletionEntryMatcher( 'DateTimeStyles' ) ) )
 
-  StopOmniSharpServer( app, filepath )
+  finally:
+    StopOmniSharpServer( app, filepath )
 
 
 @with_setup( Setup )
 def GetCompletions_CsCompleter_ImportsOrderedAfter_test():
+  yield _GetCompletions_CsCompleter_ImportsOrderedAfter_test, True
+  yield _GetCompletions_CsCompleter_ImportsOrderedAfter_test, False
+
+
+def _GetCompletions_CsCompleter_ImportsOrderedAfter_test( use_roslyn ):
+  if use_roslyn:
+    raise SkipTest( "Rosyln doesn't seem to support want importable type yet" )
   app = TestApp( handlers.app )
   app.post_json( '/ignore_extra_conf_file',
                  { 'filepath': PathToTestFile( '.ycm_extra_conf.py' ) } )
   filepath = PathToTestFile( 'testy', 'ImportTest.cs' )
   contents = open( filepath ).read()
+  UseRoslynOmnisharp( app, filepath, use_roslyn )
   event_data = BuildRequest( filepath = filepath,
                              filetype = 'cs',
                              contents = contents,
@@ -536,17 +578,27 @@ def GetCompletions_CsCompleter_ImportsOrderedAfter_test():
                             in enumerate( response_data[ 'completions' ] )
                             if not val[ 'extra_data' ][ 'required_namespace_import' ] )
 
-  assert_that( min_import_index, greater_than( max_nonimport_index ) ),
-  StopOmniSharpServer( app, filepath )
+  try:
+    assert_that( min_import_index, greater_than( max_nonimport_index ) ),
+  finally:
+    StopOmniSharpServer( app, filepath )
 
 
 @with_setup( Setup )
 def GetCompletions_CsCompleter_ForcedReturnsResults_test():
+  yield _GetCompletions_CsCompleter_ForcedReturnsResults_test, True
+  yield _GetCompletions_CsCompleter_ForcedReturnsResults_test, False
+
+
+def _GetCompletions_CsCompleter_ForcedReturnsResults_test( use_roslyn ):
+  if use_roslyn:
+    raise SkipTest( "Rosyln doesn't seem to support forced option yet" )
   app = TestApp( handlers.app )
   app.post_json( '/ignore_extra_conf_file',
                  { 'filepath': PathToTestFile( '.ycm_extra_conf.py' ) } )
   filepath = PathToTestFile( 'testy', 'ContinuousTest.cs' )
   contents = open( filepath ).read()
+  UseRoslynOmnisharp( app, filepath, use_roslyn )
   event_data = BuildRequest( filepath = filepath,
                              filetype = 'cs',
                              contents = contents,
@@ -564,19 +616,29 @@ def GetCompletions_CsCompleter_ForcedReturnsResults_test():
                                   query = 'Date' )
   response_data = app.post_json( '/completions', completion_data ).json
 
-  assert_that( response_data[ 'completions' ],
-               has_items( CompletionEntryMatcher( 'String' ),
-                          CompletionEntryMatcher( 'StringBuilder' ) ) )
-  StopOmniSharpServer( app, filepath )
+  try:
+    assert_that( response_data[ 'completions' ],
+                has_items( CompletionEntryMatcher( 'String' ),
+                            CompletionEntryMatcher( 'StringBuilder' ) ) )
+  finally:
+    StopOmniSharpServer( app, filepath )
 
 
 @with_setup( Setup )
 def GetCompletions_CsCompleter_NonForcedReturnsNoResults_test():
+  yield _GetCompletions_CsCompleter_NonForcedReturnsNoResults_test, True
+  yield _GetCompletions_CsCompleter_NonForcedReturnsNoResults_test, False
+
+
+def _GetCompletions_CsCompleter_NonForcedReturnsNoResults_test( use_roslyn ):
+  if use_roslyn:
+    raise SkipTest( "Rosyln doesn't seem to support forced option yet" )
   app = TestApp( handlers.app )
   app.post_json( '/ignore_extra_conf_file',
                  { 'filepath': PathToTestFile( '.ycm_extra_conf.py' ) } )
   filepath = PathToTestFile( 'testy', 'ContinuousTest.cs' )
   contents = open( filepath ).read()
+  UseRoslynOmnisharp( app, filepath, use_roslyn )
   event_data = BuildRequest( filepath = filepath,
                              filetype = 'cs',
                              contents = contents,
@@ -596,23 +658,33 @@ def GetCompletions_CsCompleter_NonForcedReturnsNoResults_test():
 
   # there are no semantic completions. However, we fall back to identifier
   # completer in this case.
-  assert_that( results, has_entries( {
-    'completions' : has_item( has_entries( {
-      'insertion_text' : 'String',
-      'extra_menu_info': '[ID]',
-    } ) ),
-    'errors' : empty(),
-  } ) )
-  StopOmniSharpServer( app, filepath )
+  try:
+    assert_that( results, has_entries( {
+      'completions' : has_item( has_entries( {
+        'insertion_text' : 'String',
+        'extra_menu_info': '[ID]',
+      } ) ),
+      'errors' : empty(),
+    } ) )
+  finally:
+    StopOmniSharpServer( app, filepath )
 
 
 @with_setup( Setup )
 def GetCompletions_CsCompleter_ForcedDividesCache_test():
+  yield _GetCompletions_CsCompleter_ForcedDividesCache_test, True
+  yield _GetCompletions_CsCompleter_ForcedDividesCache_test, False
+
+
+def _GetCompletions_CsCompleter_ForcedDividesCache_test( use_roslyn ):
+  if use_roslyn:
+    raise SkipTest( "Rosyln doesn't seem to support forced option yet" )
   app = TestApp( handlers.app )
   app.post_json( '/ignore_extra_conf_file',
                  { 'filepath': PathToTestFile( '.ycm_extra_conf.py' ) } )
   filepath = PathToTestFile( 'testy', 'ContinuousTest.cs' )
   contents = open( filepath ).read()
+  UseRoslynOmnisharp( app, filepath, use_roslyn )
   event_data = BuildRequest( filepath = filepath,
                              filetype = 'cs',
                              contents = contents,
@@ -644,23 +716,33 @@ def GetCompletions_CsCompleter_ForcedDividesCache_test():
 
   # there are no semantic completions. However, we fall back to identifier
   # completer in this case.
-  assert_that( results, has_entries( {
-    'completions' : has_item( has_entries( {
-      'insertion_text' : 'String',
-      'extra_menu_info': '[ID]',
-    } ) ),
-    'errors' : empty(),
-  } ) )
-  StopOmniSharpServer( app, filepath )
+  try:
+    assert_that( results, has_entries( {
+      'completions' : has_item( has_entries( {
+        'insertion_text' : 'String',
+        'extra_menu_info': '[ID]',
+      } ) ),
+      'errors' : empty(),
+    } ) )
+  finally:
+    StopOmniSharpServer( app, filepath )
 
 
 @with_setup( Setup )
 def GetCompletions_CsCompleter_ReloadSolutionWorks_test():
+  yield _GetCompletions_CsCompleter_ReloadSolutionWorks_test, True
+  yield _GetCompletions_CsCompleter_ReloadSolutionWorks_test, False
+
+
+def _GetCompletions_CsCompleter_ReloadSolutionWorks_test( use_roslyn ):
+  if use_roslyn:
+    raise SkipTest( "Rosyln doesn't seem to support /reloadsolution yet" )
   app = TestApp( handlers.app )
   app.post_json( '/ignore_extra_conf_file',
                  { 'filepath': PathToTestFile( '.ycm_extra_conf.py' ) } )
   filepath = PathToTestFile( 'testy', 'Program.cs' )
   contents = open( filepath ).read()
+  UseRoslynOmnisharp( app, filepath, use_roslyn )
   event_data = BuildRequest( filepath = filepath,
                              filetype = 'cs',
                              contents = contents,
@@ -680,6 +762,13 @@ def GetCompletions_CsCompleter_ReloadSolutionWorks_test():
 
 @with_setup( Setup )
 def GetCompletions_CsCompleter_ReloadSolution_MultipleSolution_Works_test():
+  yield _GetCompletions_CsCompleter_ReloadSolution_MultipleSolution_Works_test, True
+  yield _GetCompletions_CsCompleter_ReloadSolution_MultipleSolution_Works_test, False
+
+
+def _GetCompletions_CsCompleter_ReloadSolution_MultipleSolution_Works_test( use_roslyn ):
+  if use_roslyn:
+    raise SkipTest( "Rosyln doesn't seem to support /reloadsolution yet" )
   app = TestApp( handlers.app )
   app.post_json( '/ignore_extra_conf_file',
                  { 'filepath': PathToTestFile( '.ycm_extra_conf.py' ) } )
@@ -690,6 +779,7 @@ def GetCompletions_CsCompleter_ReloadSolution_MultipleSolution_Works_test():
                                 'Program.cs' ) ]
   for filepath in filepaths:
     contents = open( filepath ).read()
+    UseRoslynOmnisharp( app, filepath, use_roslyn )
     event_data = BuildRequest( filepath = filepath,
                                filetype = 'cs',
                                contents = contents,
@@ -707,8 +797,7 @@ def GetCompletions_CsCompleter_ReloadSolution_MultipleSolution_Works_test():
     eq_( result, True )
 
 
-def _CsCompleter_SolutionSelectCheck( app, sourcefile, reference_solution,
-                                      extra_conf_store = None ):
+def _CsCompleter_SolutionSelectCheck( use_roslyn, app, sourcefile, reference_solution, extra_conf_store = None ):
   # reusable test: verify that the correct solution (reference_solution) is
   #   detected for a given source file (and optionally a given extra_conf)
   app.post_json( '/ignore_extra_conf_file',
@@ -726,8 +815,14 @@ def _CsCompleter_SolutionSelectCheck( app, sourcefile, reference_solution,
 
 @with_setup( Setup )
 def GetCompletions_CsCompleter_UsesSubfolderHint_test():
+  yield _GetCompletions_CsCompleter_UsesSubfolderHint_test, True
+  yield _GetCompletions_CsCompleter_UsesSubfolderHint_test, False
+
+
+def _GetCompletions_CsCompleter_UsesSubfolderHint_test( use_roslyn ):
   app = TestApp( handlers.app )
-  _CsCompleter_SolutionSelectCheck( app,
+  _CsCompleter_SolutionSelectCheck( use_roslyn,
+                                    app,
                                     PathToTestFile(
                                       'testy-multiple-solutions',
                                       'solution-named-like-folder',
@@ -738,10 +833,17 @@ def GetCompletions_CsCompleter_UsesSubfolderHint_test():
                                       'solution-named-like-folder',
                                       'testy.sln' ) )
 
+
 @with_setup( Setup )
 def GetCompletions_CsCompleter_UsesSuperfolderHint_test():
+  yield _GetCompletions_CsCompleter_UsesSuperfolderHint_test, True
+  yield _GetCompletions_CsCompleter_UsesSuperfolderHint_test, False
+
+
+def _GetCompletions_CsCompleter_UsesSuperfolderHint_test( use_roslyn ):
   app = TestApp( handlers.app )
-  _CsCompleter_SolutionSelectCheck( app,
+  _CsCompleter_SolutionSelectCheck( use_roslyn,
+                                    app,
                                     PathToTestFile(
                                       'testy-multiple-solutions',
                                       'solution-named-like-folder',
@@ -752,10 +854,17 @@ def GetCompletions_CsCompleter_UsesSuperfolderHint_test():
                                       'solution-named-like-folder',
                                       'solution-named-like-folder.sln' ) )
 
+
 @with_setup( Setup )
 def GetCompletions_CsCompleter_ExtraConfStoreAbsolute_test():
+  yield _GetCompletions_CsCompleter_ExtraConfStoreAbsolute_test, True
+  yield _GetCompletions_CsCompleter_ExtraConfStoreAbsolute_test, False
+
+
+def _GetCompletions_CsCompleter_ExtraConfStoreAbsolute_test( use_roslyn ):
   app = TestApp( handlers.app )
-  _CsCompleter_SolutionSelectCheck( app,
+  _CsCompleter_SolutionSelectCheck( use_roslyn,
+                                    app,
                                     PathToTestFile(
                                       'testy-multiple-solutions',
                                       'solution-not-named-like-folder',
@@ -771,11 +880,18 @@ def GetCompletions_CsCompleter_ExtraConfStoreAbsolute_test():
                                       'solution-not-named-like-folder',
                                       'extra-conf-abs',
                                       '.ycm_extra_conf.py' ) )
+
 
 @with_setup( Setup )
 def GetCompletions_CsCompleter_ExtraConfStoreRelative_test():
+  yield _GetCompletions_CsCompleter_ExtraConfStoreRelative_test, True
+  yield _GetCompletions_CsCompleter_ExtraConfStoreRelative_test, False
+
+
+def _GetCompletions_CsCompleter_ExtraConfStoreRelative_test( use_roslyn ):
   app = TestApp( handlers.app )
-  _CsCompleter_SolutionSelectCheck( app,
+  _CsCompleter_SolutionSelectCheck( use_roslyn,
+                                    app,
                                     PathToTestFile(
                                       'testy-multiple-solutions',
                                       'solution-not-named-like-folder',
@@ -792,11 +908,18 @@ def GetCompletions_CsCompleter_ExtraConfStoreRelative_test():
                                       'solution-not-named-like-folder',
                                       'extra-conf-rel',
                                       '.ycm_extra_conf.py' ) )
+
 
 @with_setup( Setup )
 def GetCompletions_CsCompleter_ExtraConfStoreNonexisting_test():
+  yield _GetCompletions_CsCompleter_ExtraConfStoreNonexisting_test, True
+  yield _GetCompletions_CsCompleter_ExtraConfStoreNonexisting_test, False
+
+
+def _GetCompletions_CsCompleter_ExtraConfStoreNonexisting_test( use_roslyn ):
   app = TestApp( handlers.app )
-  _CsCompleter_SolutionSelectCheck( app,
+  _CsCompleter_SolutionSelectCheck( use_roslyn,
+                                    app,
                                     PathToTestFile(
                                       'testy-multiple-solutions',
                                       'solution-not-named-like-folder',
@@ -815,37 +938,27 @@ def GetCompletions_CsCompleter_ExtraConfStoreNonexisting_test():
                                       'testy',
                                       '.ycm_extra_conf.py' ) )
 
+
 @with_setup( Setup )
 def GetCompletions_CsCompleter_DoesntStartWithAmbiguousMultipleSolutions_test():
+  yield _GetCompletions_CsCompleter_DoesntStartWithAmbiguousMultipleSolutions_test, True
+  yield _GetCompletions_CsCompleter_DoesntStartWithAmbiguousMultipleSolutions_test, False
+
+
+def _GetCompletions_CsCompleter_DoesntStartWithAmbiguousMultipleSolutions_test( use_roslyn ):
   app = TestApp( handlers.app )
   app.post_json( '/ignore_extra_conf_file',
                  { 'filepath': PathToTestFile( '.ycm_extra_conf.py' ) } )
   filepath = PathToTestFile( 'testy-multiple-solutions',
                              'solution-not-named-like-folder',
                              'testy', 'Program.cs' )
-  contents = open( filepath ).read()
-  event_data = BuildRequest( filepath = filepath,
-                             filetype = 'cs',
-                             contents = contents,
-                             event_name = 'FileReadyToParse' )
-
-  exception_caught = False
   try:
-    app.post_json( '/event_notification', event_data )
+    UseRoslynOmnisharp( app, filepath, use_roslyn )
   except AppError as e:
     if 'Autodetection of solution file failed' in str( e ):
-      exception_caught = True
-
-  # the test passes if we caught an exception when trying to start it,
-  # so raise one if it managed to start
-  if not exception_caught:
-    WaitUntilOmniSharpServerReady( app, filepath )
-    StopOmniSharpServer( app, filepath )
-    raise Exception( ( 'The Omnisharp server started, despite us not being able '
-                      'to find a suitable solution file to feed it. Did you '
-                      'fiddle with the solution finding code in '
-                      'cs_completer.py? Hopefully you\'ve enhanced it: you need'
-                      'to update this test then :)' ) )
+      pass
+    else:
+      raise
 
 @with_setup( Setup )
 def GetCompletions_ClangCompleter_WorksWithExplicitFlags_test():

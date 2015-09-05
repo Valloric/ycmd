@@ -23,7 +23,8 @@ from .test_utils import ( Setup,
                           BuildRequest,
                           PathToTestFile,
                           StopOmniSharpServer,
-                          WaitUntilOmniSharpServerReady )
+                          WaitUntilOmniSharpServerReady,
+                          UseRoslynOmnisharp )
 from webtest import TestApp
 from nose.tools import with_setup, eq_
 from hamcrest import ( assert_that,
@@ -149,11 +150,17 @@ struct Foo {
 
 @with_setup( Setup )
 def Diagnostics_CsCompleter_ZeroBasedLineAndColumn_test():
+  yield _Diagnostics_CsCompleter_ZeroBasedLineAndColumn_test, True
+  yield _Diagnostics_CsCompleter_ZeroBasedLineAndColumn_test, False
+
+
+def _Diagnostics_CsCompleter_ZeroBasedLineAndColumn_test( use_roslyn ):
   app = TestApp( handlers.app )
   app.post_json( '/ignore_extra_conf_file',
                  { 'filepath': PathToTestFile( '.ycm_extra_conf.py' ) } )
   filepath = PathToTestFile( 'testy', 'Program.cs' )
   contents = open( filepath ).read()
+  UseRoslynOmnisharp( app, filepath, use_roslyn )
   event_data = BuildRequest( filepath = filepath,
                              filetype = 'cs',
                              contents = contents,
@@ -169,33 +176,20 @@ def Diagnostics_CsCompleter_ZeroBasedLineAndColumn_test():
 
   results = app.post_json( '/event_notification', event_data ).json
 
-  assert_that( results,
-               contains(
-                  has_entries( {
-                    'kind': equal_to( 'ERROR' ),
-                    'text': contains_string(
-                        "Unexpected symbol `}'', expecting identifier" ),
-                    'location': has_entries( {
-                      'line_num': 11,
-                      'column_num': 2
-                    } ),
-                    'location_extent': has_entries( {
-                      'start': has_entries( {
-                        'line_num': 11,
-                        'column_num': 2,
-                      } ),
-                      'end': has_entries( {
-                        'line_num': 11,
-                        'column_num': 2,
-                      } ),
-                    } )
-                  } ) ) )
-
-  StopOmniSharpServer( app, filepath )
+  try:
+    assert_that( results,
+      _Diagnostics_CsCompleter_ExpectedResult( use_roslyn, True ) )
+  finally:
+    StopOmniSharpServer( app, filepath )
 
 
 @with_setup( Setup )
 def Diagnostics_CsCompleter_MultipleSolution_test():
+  yield _Diagnostics_CsCompleter_MultipleSolution_test, True
+  yield _Diagnostics_CsCompleter_MultipleSolution_test, False
+
+
+def _Diagnostics_CsCompleter_MultipleSolution_test( use_roslyn ):
   app = TestApp( handlers.app )
   app.post_json( '/ignore_extra_conf_file',
                  { 'filepath': PathToTestFile( '.ycm_extra_conf.py' ) } )
@@ -204,9 +198,10 @@ def Diagnostics_CsCompleter_MultipleSolution_test():
                                 'solution-named-like-folder',
                                 'testy',
                                 'Program.cs' ) ]
-  lines = [ 11, 10 ]
-  for filepath, line in zip( filepaths, lines ):
+  main_errors = [ True, False ]
+  for filepath, main_error in zip( filepaths, main_errors ):
     contents = open( filepath ).read()
+    UseRoslynOmnisharp( app, filepath, use_roslyn )
     event_data = BuildRequest( filepath = filepath,
                                filetype = 'cs',
                                contents = contents,
@@ -222,29 +217,59 @@ def Diagnostics_CsCompleter_MultipleSolution_test():
 
     results = app.post_json( '/event_notification', event_data ).json
 
-    assert_that( results,
-                 contains(
-                     has_entries( {
-                         'kind': equal_to( 'ERROR' ),
-                         'text': contains_string(
-                             "Unexpected symbol `}'', expecting identifier" ),
-                         'location': has_entries( {
-                         'line_num': line,
-                         'column_num': 2
-                         } ),
-                         'location_extent': has_entries( {
-                         'start': has_entries( {
-                             'line_num': line,
-                             'column_num': 2,
-                         } ),
-                         'end': has_entries( {
-                             'line_num': line,
-                             'column_num': 2,
-                         } ),
-                         } )
-                     } ) ) )
+    try:
+      assert_that( results,
+        _Diagnostics_CsCompleter_ExpectedResult( use_roslyn, main_error ) )
+    finally:
+      StopOmniSharpServer( app, filepath )
 
-    StopOmniSharpServer( app, filepath )
+def _Diagnostics_CsCompleter_ExpectedResult( use_roslyn, flag ):
+  def build_matcher( kind, message, line, column ):
+    return has_entries( {
+      'kind': equal_to( kind ),
+      'text': contains_string( message ),
+      'location': has_entries( {
+        'line_num': line,
+        'column_num': column
+      } ),
+      'location_extent': has_entries( {
+        'start': has_entries( {
+          'line_num': line,
+          'column_num': column
+        } ),
+        'end': has_entries( {
+          'line_num': line,
+          'column_num': column
+        } ),
+      } )
+    } )
+  entries = []
+  if use_roslyn:
+    entries.append(
+      build_matcher( 'ERROR', "Identifier expected", 10, 12 )
+    )
+    entries.append(
+      build_matcher( 'ERROR', "; expected", 10, 12 ),
+  )
+    entries.append(
+      build_matcher( 'ERROR',
+        "'Console' does not contain a definition for ''", 11, 1 ),
+    )
+    entries.append(
+      build_matcher( 'WARNING',
+        "The variable '?' is assigned but its value is never used", 9, 8 ),
+    )
+    if flag:
+      entries.append(
+        build_matcher( 'ERROR',
+          "Program has more than one entry point defined. Compile with /main to "
+          +"specify the type that contains the entry point.", 7, 22 ),
+      )
+  else:
+    entries.append(
+      build_matcher( 'ERROR', "Unexpected symbol `}'', expecting identifier", 11, 2 )
+    )
+  return contains( *entries )
 
 
 @with_setup( Setup )
@@ -306,11 +331,17 @@ int main() {
 
 @with_setup( Setup )
 def GetDetailedDiagnostic_CsCompleter_Works_test():
+  yield _GetDetailedDiagnostic_CsCompleter_Works_test, True
+  yield _GetDetailedDiagnostic_CsCompleter_Works_test, False
+
+
+def _GetDetailedDiagnostic_CsCompleter_Works_test( use_roslyn ):
   app = TestApp( handlers.app )
   app.post_json( '/ignore_extra_conf_file',
                  { 'filepath': PathToTestFile( '.ycm_extra_conf.py' ) } )
   filepath = PathToTestFile( 'testy', 'Program.cs' )
   contents = open( filepath ).read()
+  UseRoslynOmnisharp( app, filepath, use_roslyn )
   event_data = BuildRequest( filepath = filepath,
                              filetype = 'cs',
                              contents = contents,
@@ -327,13 +358,17 @@ def GetDetailedDiagnostic_CsCompleter_Works_test():
                             column_num = 2 )
 
   results = app.post_json( '/detailed_diagnostic', diag_data ).json
-  assert_that( results,
-               has_entry(
-                  'message',
-                  contains_string(
-                     "Unexpected symbol `}'', expecting identifier" ) ) )
 
-  StopOmniSharpServer( app, filepath )
+  expected = ( u"'Console' does not contain a definition for ''" if use_roslyn
+               else "Unexpected symbol `}'', expecting identifier" )
+
+  try:
+    assert_that( results,
+                has_entry(
+                      'message',
+                      contains_string( expected ) ) )
+  finally:
+    StopOmniSharpServer( app, filepath )
 
 
 @with_setup( Setup )

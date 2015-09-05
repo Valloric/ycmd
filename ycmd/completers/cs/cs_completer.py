@@ -787,9 +787,13 @@ class StdioCsharpSolutionCompleter( CsharpSolutionCompleter ):
     def in_loop():
       try:
         while self._omnisharp_phandle is not None:
-          data = self._stdio_in_queue.get()
+          try:
+            data = self._stdio_in_queue.get( True, 1 )
+          except Empty:
+            continue
           self._omnisharp_phandle.write(data + "\n")
-          self._stdio_last_write = time.time()
+          if BENCHMARKING:
+            self._stdio_last_write = time.time()
       except Exception:
         self._logger.error( "Write error: " + traceback.format_exc() )
       finally:
@@ -799,13 +803,13 @@ class StdioCsharpSolutionCompleter( CsharpSolutionCompleter ):
 
 
   def _CleanupAfterServerStop( self ):
-    self._stdio_in_queue = None
+    super( StdioCsharpSolutionCompleter, self )._CleanupAfterServerStop()
     self._stdio_out_queue = None
+    self._stdio_in_queue = None
     self._stdio_seq = 0
     self._stdio_lock = None
     self._stdio_responses = {}
     self._stdio_aborted_seq = []
-    super( StdioCsharpSolutionCompleter, self )._CleanupAfterServerStop()
 
 
   def _ServerLocation( self ):

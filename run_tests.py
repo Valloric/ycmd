@@ -59,6 +59,7 @@ def BuildYcmdLibs( args ):
       sys.executable,
       p.join( DIR_OF_THIS_SCRIPT, 'build.py' ),
       '--omnisharp-completer',
+      '--roslyn-omnisharp-completer',
       '--gocode-completer'
     ]
 
