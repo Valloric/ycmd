@@ -32,11 +32,7 @@ import urlparse
 import logging
 import solutiondetection
 from threading import (Thread, RLock)
-from random import randrange
-try:
-    from Queue import Queue, Empty
-except ImportError:
-    from queue import Queue, Empty  # python 3.x
+from Queue import Queue, Empty
 from ptyprocess import PtyProcessUnicode
 import traceback
 from subprocess import PIPE
@@ -709,10 +705,6 @@ class StdioCsharpSolutionCompleter( CsharpSolutionCompleter ):
 
     if utils.OnCygwin():
       command.extend( [ '--client-path-mode', 'Cygwin' ] )
-
-    filename_format = os.path.join( utils.PathToTempDir(),
-                                    u'omnisharp_{rand}_{sln}_{std}.log' )
-    rand = randrange( 1000000 )
 
     solutionfile = os.path.basename( self._solution_path )
 
