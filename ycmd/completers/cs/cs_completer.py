@@ -20,6 +20,7 @@
 
 from collections import defaultdict
 import os
+import fcntl
 import time
 from ycmd.completers.completer import Completer
 from ycmd.utils import ForceSemanticCompletion
@@ -38,6 +39,8 @@ except ImportError:
     from queue import Queue, Empty  # python 3.x
 from ptyprocess import PtyProcessUnicode
 import traceback
+from subprocess import PIPE
+import types
 
 SERVER_NOT_FOUND_MSG = ( 'OmniSharp server binary not found at {0}. ' +
                          'Did you compile it? You can do so by running ' +
@@ -51,7 +54,7 @@ PATH_TO_LEGACY_OMNISHARP_BINARY = os.path.join(
 PATH_TO_ROSLYN_OMNISHARP_BINARY = os.path.join(
   os.path.abspath( os.path.dirname( __file__ ) ),
   '..', '..', '..', 'third_party', 'omnisharp-roslyn', 'scripts',
-  (  'Omnisharp.cmd' if utils.OnWindows() or utils.OnCygwin() else 'Omnisharp.sh' ) )
+  (  'Omnisharp.cmd' if utils.OnWindows() or utils.OnCygwin() else 'Omnisharp' ) )
 
 BENCHMARKING = False
 
@@ -704,9 +707,6 @@ class StdioCsharpSolutionCompleter( CsharpSolutionCompleter ):
                 '-s',
                 u'{0}'.format( self._solution_path ) ]
 
-    if not utils.OnWindows() and not utils.OnCygwin():
-      command.insert( 0, 'mono' )
-
     if utils.OnCygwin():
       command.extend( [ '--client-path-mode', 'Cygwin' ] )
 
@@ -716,16 +716,31 @@ class StdioCsharpSolutionCompleter( CsharpSolutionCompleter ):
 
     solutionfile = os.path.basename( self._solution_path )
 
-    self._filename_stderr = filename_format.format(
-        rand = rand, sln = solutionfile, std = 'stderr' )
-
     self._stdio_in_queue = Queue()
     self._stdio_out_queue = Queue()
     self._stdio_seq = 0
     self._stdio_lock = RLock()
     if BENCHMARKING:
       self._stdio_last_write = time.time()
-    self._omnisharp_phandle = PtyProcessUnicode.spawn( command, echo = False )
+    if not utils.OnWindows() and not utils.OnCygwin():
+        phandle = utils.SafePopen( command, stdout = PIPE, stdin = PIPE )
+        fd = phandle.stdin.fileno()
+        fl = fcntl.fcntl(fd, fcntl.F_GETFL)
+        fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
+        def read( self, count ):
+            return os.read( self.stdout.fileno(), count )
+        def write( self, data ):
+            return self.stdin.write( data )
+        def terminate( self ):
+            self.kill()
+        def isalive( self ):
+            return self.poll()
+        for method in [ read, write, terminate, isalive ]:
+            phandle.__dict__[ method.__name__ ] = types.MethodType( method, phandle )
+        self._omnisharp_phandle = phandle
+    else:
+        phandle = PtyProcessUnicode.spawn( command, echo = False )
+        self._omnisharp_phandle = phandle
 
     Thread( target = self._GenerateInLoop() ).start()
     Thread( target = self._GenerateOutLoop() ).start()

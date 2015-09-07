@@ -184,8 +184,13 @@ def BuildLegacyOmniSharp():
 
 def BuildRoslynOmniSharp():
   build_exe = "build.cmd" if OnWindows() else "build.sh"
-  build_command = p.join( DIR_OF_THIRD_PARTY, "omnisharp-roslyn", build_exe )
-  subprocess.check_call( [ build_command ] )
+  build_dir = p.join( DIR_OF_THIRD_PARTY, "omnisharp-roslyn" )
+  try:
+    os.chdir( build_dir )
+    build_command = p.join( ".", build_exe )
+    subprocess.check_call( [ build_command ] )
+  finally:
+    os.chdir( DIR_OF_THIS_SCRIPT )
 
 
 def BuildGoCode():
