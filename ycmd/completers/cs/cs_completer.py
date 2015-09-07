@@ -706,8 +706,6 @@ class StdioCsharpSolutionCompleter( CsharpSolutionCompleter ):
     if utils.OnCygwin():
       command.extend( [ '--client-path-mode', 'Cygwin' ] )
 
-    solutionfile = os.path.basename( self._solution_path )
-
     self._stdio_in_queue = Queue()
     self._stdio_out_queue = Queue()
     self._stdio_seq = 0
