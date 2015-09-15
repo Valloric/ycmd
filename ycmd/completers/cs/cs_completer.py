@@ -289,6 +289,7 @@ class CsharpCompleter( Completer ):
 
     solution = self._GetSolutionFile( request_data[ "filepath" ] )
     if solution in self._completer_per_solution: 
+      self._completer_per_solution[ solution ]._StopServer()
       del self._completer_per_solution[ solution ]
 
 
