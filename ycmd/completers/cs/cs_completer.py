@@ -31,7 +31,7 @@ import requests
 import urlparse
 import logging
 import solutiondetection
-from threading import (Thread, RLock)
+from threading import ( Thread, RLock )
 from Queue import Queue, Empty
 from ptyprocess import PtyProcessUnicode
 import traceback
