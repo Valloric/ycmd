@@ -1343,6 +1343,8 @@ def RunCompleterCommand_StopServer_CsCompleter_KeepLogFiles_test():
 def _RunCompleterCommand_StopServer_CsCompleter_KeepLogFiles( keeping_log_files, use_roslyn ):
   if use_roslyn:
     raise SkipTest("Stdio implementation doesn't write log files")
+  else:
+    raise SkipTest("Log files are disabled")
   ChangeSpecificOptions( { 'server_keep_logfiles': keeping_log_files } )
   app = TestApp( handlers.app )
   app.post_json( '/ignore_extra_conf_file',

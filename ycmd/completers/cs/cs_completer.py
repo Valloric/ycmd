@@ -567,6 +567,7 @@ class HttpCsharpSolutionCompleter( CsharpSolutionCompleter ):
     self._omnisharp_port = None
     self._omnisharp_phandle = None
     self._keep_logfiles = keep_logfiles
+    self._separate_log_files = False
     self._desired_omnisharp_port = desired_omnisharp_port;
 
 
@@ -599,12 +600,34 @@ class HttpCsharpSolutionCompleter( CsharpSolutionCompleter ):
     self._filename_stderr = filename_format.format(
         port = self._omnisharp_port, sln = solutionfile, std = 'stderr' )
 
-    with open( self._filename_stderr, 'w' ) as fstderr:
-      with open( self._filename_stdout, 'w' ) as fstdout:
-        self._omnisharp_phandle = utils.SafePopen(
-            command, stdout = fstdout, stderr = fstderr )
+    if self._separate_log_files:
+      with open( self._filename_stderr, 'w' ) as fstderr:
+        with open( self._filename_stdout, 'w' ) as fstdout:
+          self._omnisharp_phandle = utils.SafePopen(
+              command, stdout = fstdout, stderr = fstderr )
+    else:
+      self._omnisharp_phandle = utils.SafePopen(
+          command, stdout = PIPE, stderr = PIPE )
+      Thread( target = self._GenerateOutLoop( self._omnisharp_phandle.stdout, "O" ) ).start()
+      Thread( target = self._GenerateOutLoop( self._omnisharp_phandle.stderr, "E" ) ).start()
 
     self._logger.info( 'Starting OmniSharp server' )
+
+
+  def _GenerateOutLoop( self, stream, type ):
+    def out_loop():
+      try:
+        data = ""
+        while not stream.closed and self._omnisharp_phandle is not None:
+          data += os.read( stream.fileno(), 1024 * 1024 * 10 )
+          while "\n" in data:
+            (line, data) = data.split("\n", 1)
+            self._logger.info( "Omnisharp "+type+": " + line.rstrip() )
+      except Exception:
+        self._logger.error( "Read error: " + traceback.format_exc() )
+      #self._logger.info( "Log " + type + " Out done" )
+
+    return out_loop
 
 
   def _GetResponse( self, handler, parameters = {}, timeout = None ):
@@ -622,7 +645,7 @@ class HttpCsharpSolutionCompleter( CsharpSolutionCompleter ):
 
   def _CleanupAfterServerStop( self ):
     self._omnisharp_port = None
-    if not self._keep_logfiles:
+    if ( not self._keep_logfiles and not self._separate_log_files ):
       if self._filename_stdout:
         try:
           os.unlink( self._filename_stdout );
@@ -683,9 +706,12 @@ class HttpCsharpSolutionCompleter( CsharpSolutionCompleter ):
 
   def DebugInfo( self, request_data ):
     """ Get debug info."""
-    return 'OmniSharp logfiles:\n{0}\n{1}'.format(
-                  self._filename_stdout,
-                  self._filename_stderr )
+    if self._separate_log_file:
+      return 'OmniSharp logfiles:\n{0}\n{1}'.format(
+                    self._filename_stdout,
+                    self._filename_stderr )
+    else:
+      return "Omnisharp logs: included in ycmd logs"
 
 
 class StdioCsharpSolutionCompleter( CsharpSolutionCompleter ):
