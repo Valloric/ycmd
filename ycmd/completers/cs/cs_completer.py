@@ -20,7 +20,6 @@
 
 from collections import defaultdict
 import os
-import fcntl
 import time
 from ycmd.completers.completer import Completer
 from ycmd.utils import ForceSemanticCompletion
@@ -384,31 +383,22 @@ class CsharpSolutionCompleter( object ):
   def _StopServer( self ):
     """ Stop the OmniSharp server """
     self._logger.info( 'Stopping OmniSharp server' )
-
     self._TryToStopServer()
-
+    self._ForceStopServer();
     self._CleanupAfterServerStop()
-
     self._logger.info( 'Stopped OmniSharp server' )
 
 
   def _TryToStopServer( self ):
     for _ in range( 5 ):
       try:
-        self._GetResponse( '/stopserver', timeout = .1 )
+        self._GetResponse( '/stopserver', timeout = .5 )
       except:
         pass
       for _ in range( 10 ):
         if self.ServerTerminated():
           return
         time.sleep( .1 )
-
-
-  def _ForceStopServer( self ):
-    # Kill it if it's still up
-    if not self.ServerTerminated() and self._omnisharp_phandle is not None:
-      self._logger.info( 'Killing OmniSharp server' )
-      self._omnisharp_phandle.kill()
 
 
   def _CleanupAfterServerStop( self ):
@@ -559,6 +549,10 @@ class CsharpSolutionCompleter( object ):
     raise RuntimeError("Abstract")
 
 
+  def _ForceStopServer( self ):
+    raise RuntimeError("Abstract")
+
+
 class HttpCsharpSolutionCompleter( CsharpSolutionCompleter ):
   def __init__( self, omnisharp_path, solution_path, keep_logfiles, desired_omnisharp_port ):
     super( HttpCsharpSolutionCompleter, self ).__init__( omnisharp_path, solution_path )
@@ -693,7 +687,7 @@ class HttpCsharpSolutionCompleter( CsharpSolutionCompleter ):
     """ Check if our OmniSharp server is ready (loaded solution file)."""
     try:
       return bool( self._omnisharp_port and
-                   self._GetResponse( '/checkreadystatus', timeout = .2 ) )
+                   self._GetResponse( '/checkreadystatus', timeout = 2 ) )
     except:
       self._logger.info( "Ready error: " + traceback.format_exc() )
       return False
@@ -713,6 +707,23 @@ class HttpCsharpSolutionCompleter( CsharpSolutionCompleter ):
                     self._filename_stderr )
     else:
       return "Omnisharp logs: included in ycmd logs"
+
+
+  def _ForceStopServer( self ):
+    # Kill it if it's still up
+    phandle = self._omnisharp_phandle
+    if phandle is not None:
+      self._logger.info( 'Killing OmniSharp server' )
+      for stream in [ phandle.stderr, phandle.stdout ]:
+        if stream is not None:
+          stream.close()
+      try:
+        phandle.kill()
+      except OSError as e:
+        if e.errno == 3:
+          pass
+        else:
+          raise
 
 
 class StdioCsharpSolutionCompleter( CsharpSolutionCompleter ):
@@ -748,18 +759,17 @@ class StdioCsharpSolutionCompleter( CsharpSolutionCompleter ):
     self._stdio_lock = RLock()
     if not utils.OnWindows() and not utils.OnCygwin():
         phandle = utils.SafePopen( command, stdout = PIPE, stdin = PIPE )
-        fd = phandle.stdin.fileno()
-        fl = fcntl.fcntl(fd, fcntl.F_GETFL)
-        fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
         def read( self, count ):
             return os.read( self.stdout.fileno(), count )
         def write( self, data ):
             return self.stdin.write( data )
-        def terminate( self ):
-            self.kill()
         def isalive( self ):
-            return self.poll()
-        for method in [ read, write, terminate, isalive ]:
+            return not self.stdout.closed or not self.stdin.closed
+        def close( self ):
+          self.stdout.close()
+          self.stdin.close()
+          self.kill()
+        for method in [ read, write, isalive, close ]:
             phandle.__dict__[ method.__name__ ] = types.MethodType( method, phandle )
         self._omnisharp_phandle = phandle
     else:
@@ -810,10 +820,11 @@ class StdioCsharpSolutionCompleter( CsharpSolutionCompleter ):
               continue
 
             self._ProcessPacket( packet )
+      except EOFError:
+        pass
       except Exception:
         self._logger.error( "Read error: " + traceback.format_exc() )
-      finally:
-        self._logger.error( 'Read abort!!!!!!!!!!!!!!!!!!!!!!!!!' )
+      #self._logger.info( "Out done" )
 
     return out_loop
 
@@ -826,11 +837,12 @@ class StdioCsharpSolutionCompleter( CsharpSolutionCompleter ):
             data = self._stdio_in_queue.get( True, 1 )
           except Empty:
             continue
+          if self._omnisharp_phandle is None:
+            continue
           self._omnisharp_phandle.write(data + "\n")
       except Exception:
         self._logger.error( "Write error: " + traceback.format_exc() )
-      finally:
-        self._logger.error( 'Write aborted!!!!!!!!!!!!!!!!!!!!!!!!!' )
+      #self._logger.info( "In done" )
 
     return in_loop
 
@@ -838,6 +850,8 @@ class StdioCsharpSolutionCompleter( CsharpSolutionCompleter ):
   def _CleanupAfterServerStop( self ):
     super( StdioCsharpSolutionCompleter, self )._CleanupAfterServerStop()
     self._stdio_out_queue = None
+    if self._stdio_in_queue is not None:
+      self._stdio_in_queue.put( "" )
     self._stdio_in_queue = None
     self._stdio_seq = 0
     self._stdio_lock = None
@@ -955,9 +969,9 @@ class StdioCsharpSolutionCompleter( CsharpSolutionCompleter ):
 
   def _ForceStopServer( self ):
     # Kill it if it's still up
-    if not self.ServerTerminated() and self._omnisharp_phandle is not None:
+    if self._omnisharp_phandle is not None:
       self._logger.info( 'Killing OmniSharp server' )
-      self._omnisharp_phandle.terminate()
+      self._omnisharp_phandle.close()
 
 
 def _CompleteSorterByImport( a, b ):
