@@ -52,8 +52,6 @@ PATH_TO_ROSLYN_OMNISHARP_BINARY = os.path.join(
   '..', '..', '..', 'third_party', 'omnisharp-roslyn', 'scripts',
   (  'Omnisharp.cmd' if utils.OnWindows() or utils.OnCygwin() else 'Omnisharp' ) )
 
-BENCHMARKING = False
-
 
 # TODO: Handle this better than dummy classes
 class CsharpDiagnostic:
@@ -677,6 +675,7 @@ class HttpCsharpSolutionCompleter( CsharpSolutionCompleter ):
     try:
       return bool( self._omnisharp_port )
     except:
+      self._logger.info( "Active error: " + traceback.format_exc() )
       return False
 
 
@@ -686,6 +685,7 @@ class HttpCsharpSolutionCompleter( CsharpSolutionCompleter ):
       return bool( self._omnisharp_port and
                    self._GetResponse( '/checkalivestatus', timeout = 3 ) )
     except:
+      self._logger.info( "Running error: " + traceback.format_exc() )
       return False
 
 
@@ -695,6 +695,7 @@ class HttpCsharpSolutionCompleter( CsharpSolutionCompleter ):
       return bool( self._omnisharp_port and
                    self._GetResponse( '/checkreadystatus', timeout = .2 ) )
     except:
+      self._logger.info( "Ready error: " + traceback.format_exc() )
       return False
 
 
@@ -723,8 +724,6 @@ class StdioCsharpSolutionCompleter( CsharpSolutionCompleter ):
     self._stdio_lock = None
     self._stdio_responses = {}
     self._stdio_aborted_seq = []
-    if BENCHMARKING:
-      self._stdio_last_write = 0
 
 
   def _StartServer( self ):
@@ -747,8 +746,6 @@ class StdioCsharpSolutionCompleter( CsharpSolutionCompleter ):
     self._stdio_out_queue = Queue()
     self._stdio_seq = 0
     self._stdio_lock = RLock()
-    if BENCHMARKING:
-      self._stdio_last_write = time.time()
     if not utils.OnWindows() and not utils.OnCygwin():
         phandle = utils.SafePopen( command, stdout = PIPE, stdin = PIPE )
         fd = phandle.stdin.fileno()
@@ -803,11 +800,7 @@ class StdioCsharpSolutionCompleter( CsharpSolutionCompleter ):
       try:
         data = ""
         while self._omnisharp_phandle is not None:
-          if BENCHMARKING:
-            last = time.time()
           data += self._omnisharp_phandle.read( 1024 * 1024 * 10 )
-          if BENCHMARKING:
-            self._logger.info( "Time Elapsed: {0} - {1} - {2}".format( time.time() - self._stdio_last_write, time.time() - last, len( data ) ))
           while "\n" in data:
             (line, data) = data.split("\n", 1)
             try:
@@ -834,8 +827,6 @@ class StdioCsharpSolutionCompleter( CsharpSolutionCompleter ):
           except Empty:
             continue
           self._omnisharp_phandle.write(data + "\n")
-          if BENCHMARKING:
-            self._stdio_last_write = time.time()
       except Exception:
         self._logger.error( "Write error: " + traceback.format_exc() )
       finally:
@@ -860,9 +851,6 @@ class StdioCsharpSolutionCompleter( CsharpSolutionCompleter ):
 
   def _GetResponse( self, handler, parameters = {}, timeout = 10 ):
     """ Handle communication with server """
-    if BENCHMARKING:
-      start = time.time()
-
     self._stdio_lock.acquire( True )
 
     seq = self._stdio_seq + 1
@@ -888,8 +876,6 @@ class StdioCsharpSolutionCompleter( CsharpSolutionCompleter ):
     except Exception:
       self._logger.error( "_GetResponse Error: " + traceback.format_exc() )
     finally:
-      if BENCHMARKING:
-        self._logger.info( "Elapsed time for {2} {0}: {1}".format( handler, time.time() - start, seq) )
       self._stdio_lock.release()
 
 
