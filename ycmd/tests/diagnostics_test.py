@@ -257,7 +257,7 @@ def _Diagnostics_CsCompleter_ExpectedResult( use_roslyn, flag ):
     )
     entries.append(
       build_matcher( 'WARNING',
-        "The variable '?' is assigned but its value is never used", 9, 8 ),
+        "is assigned but its value is never used", 9, 8 ),
     )
     if flag:
       entries.append(

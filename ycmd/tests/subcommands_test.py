@@ -35,7 +35,8 @@ import os.path
 from pprint import pprint
 from nose import SkipTest
 
-from hamcrest import ( assert_that, contains, has_entries, equal_to, raises, calling )
+from hamcrest import ( assert_that, contains, has_entries, equal_to, raises,
+                       calling, contains_string )
 
 
 bottle.debug( True )
@@ -1003,12 +1004,11 @@ def _RunCompleterCommand_GetType_CsCompleter_VariableDeclaration_test( use_rosly
                             filetype = 'cs',
                             filepath = filepath )
 
-  expected = ( u'System.string\nRepresents text as a series of Unicode characters.' if use_roslyn else u"string" )
+  expected =  contains_string( u'System.string' if use_roslyn else u"string" )
   try:
-    eq_( {
-          u'message': expected
-        },
-        app.post_json( '/run_completer_command', gettype_data ).json )
+    assert_that(
+        app.post_json( '/run_completer_command', gettype_data ).json,
+        { 'message': expected } )
   finally:
     StopOmniSharpServer( app, filepath )
 
