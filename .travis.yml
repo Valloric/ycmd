@@ -9,6 +9,11 @@ before_install:
   - git submodule update --init --recursive
 install:
   - export YCMD_VENV_DIR=${HOME}/venvs/ycmd_test
+  - mkdir ${HOME}/bin
+  - export PATH=${HOME}/bin:$PATH
+  - ln -s /usr/bin/g++-4.8 ${HOME}/bin/g++
+  - ln -s /usr/bin/gcc-4.8 ${HOME}/bin/gcc
+  - ln -s ${HOME}/bin/g++ ${HOME}/bin/c++
   - virtualenv -p python${PYTHON_VERSION} $YCMD_VENV_DIR
   - cp /usr/bin/python${PYTHON_VERSION}-config ${YCMD_VENV_DIR}/bin/python-config
   - source ${YCMD_VENV_DIR}/bin/activate
@@ -16,7 +21,7 @@ install:
   - pip install -r test_requirements.txt
   - npm install -g typescript
   # Travis can run out of RAM when compiling if don't prevent parallelization.
-  #- export YCM_CORES=1
+  - export YCM_CORES=1
 compiler:
   - gcc
   - clang
