@@ -24,7 +24,7 @@ import httplib
 from .test_utils import ( Setup, BuildRequest, PathToTestFile,
                           ChangeSpecificOptions, StopOmniSharpServer,
                           WaitUntilOmniSharpServerReady, StopGoCodeServer,
-                          UseRoslynOmnisharp )
+                          UseRoslynOmnisharp, ErrorMatcher )
 from webtest import TestApp, AppError
 from nose.tools import eq_, with_setup
 from hamcrest import ( assert_that, has_item, has_items, has_entry, has_entries,
@@ -51,14 +51,8 @@ def CompletionLocationMatcher( location_type, value ):
                     has_entry( 'location',
                                has_entry( location_type, value ) ) )
 
-
-def ErrorMatcher( cls, msg ):
-  return has_entries( {
-    'exception' : has_entry( 'TYPE', cls.__name__ ),
-    'message': msg,
-  } )
-
 NO_COMPLETIONS_ERROR = ErrorMatcher( RuntimeError, NO_COMPLETIONS_MESSAGE )
+
 
 @with_setup( Setup )
 def GetCompletions_RunTest( test ):
