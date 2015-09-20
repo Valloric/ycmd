@@ -39,7 +39,7 @@ def OnWindows():
 
 
 def OnCygwin():
-  return platform.system().startswith("CYGWIN") )
+  return platform.system().startswith("CYGWIN")
 
 
 def PathToFirstExistingExecutable( executable_name_list ):
