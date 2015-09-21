@@ -62,22 +62,21 @@ def CheckDeps():
 
 
 def _CheckOutput( *popenargs, **kwargs ):
-  r"""Run command with arguments and return its output as a byte string.
-  Backported from Python 2.7 as it's implemented as pure python on stdlib.
-  Shamelessly stolen from https://gist.github.com/edufelipe/1027906
-  >>> check_output(['/usr/bin/python', '--version'])
-  Python 2.6.2
-  """
+  """Run command with arguments and return its output as a byte string.
+  Backported from Python 2.7."""
+
+  # Shamelessly stolen from https://gist.github.com/edufelipe/1027906
+
   process = subprocess.Popen(stdout=subprocess.PIPE, *popenargs, **kwargs)
   output, unused_err = process.communicate()
   retcode = process.poll()
   if retcode:
-      cmd = kwargs.get("args")
-      if cmd is None:
-          cmd = popenargs[0]
-      error = subprocess.CalledProcessError(retcode, cmd)
-      error.output = output
-      raise error
+    cmd = kwargs.get("args")
+    if cmd is None:
+      cmd = popenargs[0]
+    error = subprocess.CalledProcessError(retcode, cmd)
+    error.output = output
+    raise error
   return output
 
 
@@ -85,7 +84,7 @@ def CustomPythonCmakeArgs():
   # The CMake 'FindPythonLibs' Module does not work properly.
   # So we are forced to do its job for it.
 
-  print "Searching for python..."
+  print "Searching for python libraries..."
 
   python_prefix = _CheckOutput( [
       'python-config',
@@ -115,7 +114,7 @@ def CustomPythonCmakeArgs():
     elif p.isfile( '{0}.dylib'.format( lib_python ) ):
       python_library = '{0}.dylib'.format( lib_python )
     elif p.isfile( '/usr/lib/lib{0}.dylib'.format( which_python ) ):
-      # for no good reason, python2.6 only exists in /usr/lib on OS X and
+      # For no clear reason, python2.6 only exists in /usr/lib on OS X and
       # not in the python prefix location
       python_library = '/usr/lib/lib{0}.dylib'.format( which_python )
     else:
