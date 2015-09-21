@@ -61,13 +61,33 @@ def CheckDeps():
     sys.exit( 'Please install CMake and retry.')
 
 
+def _CheckOutput( *popenargs, **kwargs ):
+  r"""Run command with arguments and return its output as a byte string.
+  Backported from Python 2.7 as it's implemented as pure python on stdlib.
+  Shamelessly stolen from https://gist.github.com/edufelipe/1027906
+  >>> check_output(['/usr/bin/python', '--version'])
+  Python 2.6.2
+  """
+  process = subprocess.Popen(stdout=subprocess.PIPE, *popenargs, **kwargs)
+  output, unused_err = process.communicate()
+  retcode = process.poll()
+  if retcode:
+      cmd = kwargs.get("args")
+      if cmd is None:
+          cmd = popenargs[0]
+      error = subprocess.CalledProcessError(retcode, cmd)
+      error.output = output
+      raise error
+  return output
+
+
 def CustomPythonCmakeArgs():
   # The CMake 'FindPythonLibs' Module does not work properly.
   # So we are forced to do its job for it.
 
   print "Searching for python..."
 
-  python_prefix = subprocess.check_output( [
+  python_prefix = _CheckOutput( [
       'python-config',
       '--prefix'
   ] ).strip()
@@ -77,7 +97,7 @@ def CustomPythonCmakeArgs():
     python_include = p.join( python_prefix, '/Headers' )
     print "Using OSX-style libs from {0}".format( python_prefix )
   else:
-    which_python = subprocess.check_output( [
+    which_python = _CheckOutput( [
       'python',
       '-c',
       'import sys;i=sys.version_info;print "python%d.%d" % (i[0], i[1])'
