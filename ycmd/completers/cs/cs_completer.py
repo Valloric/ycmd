@@ -552,22 +552,8 @@ class CsharpSolutionCompleter:
 
   def ServerTerminated( self ):
     """ Check if the server process has already terminated. """
-    terminated = ( self._omnisharp_phandle is not None and
-                   self._omnisharp_phandle.poll() is not None )
-
-    # on Travis CI, we sometimes see flakiness where the server fails after
-    # startup. In that environment we add some debugging to help track down the
-    # cause.
-    if ( utils.OnTravis() and terminated and
-         self._filename_stdout and self._filename_stderr ):
-      self._logger.debug( 'Omnisharp server terminated. Log files: \n'
-                          + 'Out: '
-                          + open( self._filename_stdout ).read()
-                          + '\n'
-                          + 'Err: '
-                          + open( self._filename_stderr ).read() )
-
-    return terminated
+    return ( self._omnisharp_phandle is not None and
+             self._omnisharp_phandle.poll() is not None )
 
 
   def _SolutionFile( self ):

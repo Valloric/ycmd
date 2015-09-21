@@ -4,38 +4,40 @@ set -ev
 
 YCMD_VENV_DIR=${HOME}/venvs/ycmd_test
 
-# default, may be changed by os-specific
-easy_install="easy_install"
-
 echo "Checking for supported OS (travis_install.${TRAVIS_OS_NAME}.sh..."
 test -f travis_install.${TRAVIS_OS_NAME}.sh
 
+# Requirements of OS-specific install:
+#  - install any software which is not installed by Travis configuration
+#  - create (but don't activate) a virtualenv for the python version
+#    ${YCMD_PYTHON_VERSION} in the directory ${YCMD_VENV_DIR}, e.g.
+#    virtualenv -p python${YCMD_PYTHON_VERSION} ${YCMD_VENV_DIR}
 source travis_install.${TRAVIS_OS_NAME}.sh
 
-# set up a virtualenv for the correct python
-sudo $easy_install --upgrade setuptools
-sudo $easy_install virtualenv
-virtualenv -p python${YCMD_PYTHON_VERSION} ${YCMD_VENV_DIR}
-# copy the python-config for the right version into the virtualenv (as ycmd's
-# build system requires it, but virtualenv doesn't seem to copy it)
+# virtualenv doesn't copy python-config https://github.com/pypa/virtualenv/issues/169
+# but our build system uses it
 cp /usr/bin/python${YCMD_PYTHON_VERSION}-config ${YCMD_VENV_DIR}/bin/python-config
 
-# this must be done *after* the above copy (for as yet unknown reasons)
+# virtualenv script is noisy, so don't print every command
 set +v
-echo "Activate virtualenv..."
 source ${YCMD_VENV_DIR}/bin/activate
-echo "Done."
 set -v
 
+# It is quite easy to get the above serious of steps wrong. Verify that the
+# version of python actually in the path and used is the version that was
+# requested, and fail the build if we broke the travis setup
 python_version=$(python -c 'import sys; print "{0}.{1}".format( sys.version_info[0], sys.version_info[1] )')
 echo "Checking python version (actual $python_version vs expected $YCMD_PYTHON_VERSION)"
 test $python_version == $YCMD_PYTHON_VERSION
 
-# install test requirements
+pip install -U pip wheel setuptools
 pip install -r test_requirements.txt
-
-# typescript required via node.js
 npm install -g typescript
 
-# Travis can run out of RAM when compiling if don't prevent parallelization.
+# Travis can run out of RAM when compiling if we don't prevent parallelization.
 export YCM_CORES=1
+
+# The build infrastructure prints a lot of spam after this script runs, so make
+# sure to disable printing, and failing on non-zero exit code after this script
+# finishes
+set +ev

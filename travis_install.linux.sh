@@ -1,18 +1,14 @@
 # Linux-specific installation
-sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
-sudo add-apt-repository -y ppa:ermshiperete/monodevelop
-sudo add-apt-repository -y ppa:fkrull/deadsnakes
 
-sudo apt-get -qq update
-sudo apt-get -qq install python${YCMD_PYTHON_VERSION} python${YCMD_PYTHON_VERSION}-dev
-sudo apt-get -qq install python-setuptools
+# We can't use sudo, so we have to approximate the behaviour of the following:
+# $ sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 90
 
-sudo apt-get -qq install monodevelop-current
-sudo apt-get -qq install g++-4.8
-sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 90
-MONO_PREFIX=/opt/monodevelop
-export DYLD_LIBRARY_FALLBACK_PATH=$MONO_PREFIX/lib:$DYLD_LIBRARY_FALLBACK_PATH
-export LD_LIBRARY_PATH=$MONO_PREFIX/lib:$LD_LIBRARY_PATH
-export C_INCLUDE_PATH=$MONO_PREFIX/include:$C_INCLUDE_PATH
-export PKG_CONFIG_PATH=$MONO_PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH
-export PATH=$MONO_PREFIX/bin:$PATH
+mkdir ${HOME}/bin
+
+ln -s /usr/bin/g++-4.8 ${HOME}/bin/g++
+ln -s /usr/bin/gcc-4.8 ${HOME}/bin/gcc
+ln -s ${HOME}/bin/g++ ${HOME}/bin/c++
+
+export PATH=${HOME}/bin:${PATH}
+
+virtualenv -p python${YCMD_PYTHON_VERSION} ${YCMD_VENV_DIR}
