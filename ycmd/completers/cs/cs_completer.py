@@ -20,6 +20,7 @@
 
 from collections import defaultdict
 import os
+import errno
 import time
 from ycmd.completers.completer import Completer
 from ycmd.utils import ForceSemanticCompletion
@@ -235,8 +236,7 @@ class CsharpCompleter( Completer ):
     if not arguments:
       raise ValueError( self.UserCommandsHelpMessage() )
 
-    command = arguments[ 0 ]
-    del arguments[ 0 ]
+    command = arguments.pop( 0 )
     if command in CsharpCompleter.subcommands:
       return CsharpCompleter.subcommands[ command ]( self, request_data, arguments )
     elif command in CsharpSolutionCompleter.subcommands:
@@ -617,7 +617,6 @@ class HttpCsharpSolutionCompleter( CsharpSolutionCompleter ):
             self._logger.info( "Omnisharp "+type+": " + line.rstrip() )
       except Exception:
         self._logger.error( "Read error: " + traceback.format_exc() )
-      #self._logger.info( "Log " + type + " Out done" )
 
     return out_loop
 
@@ -720,7 +719,7 @@ class HttpCsharpSolutionCompleter( CsharpSolutionCompleter ):
       try:
         phandle.kill()
       except OSError as e:
-        if e.errno == 3:
+        if e.errno == errno.ESRCH: # No such process
           pass
         else:
           raise
@@ -824,7 +823,6 @@ class StdioCsharpSolutionCompleter( CsharpSolutionCompleter ):
         pass
       except Exception:
         self._logger.error( "Read error: " + traceback.format_exc() )
-      #self._logger.info( "Out done" )
 
     return out_loop
 
@@ -842,7 +840,6 @@ class StdioCsharpSolutionCompleter( CsharpSolutionCompleter ):
           self._omnisharp_phandle.write(data + "\n")
       except Exception:
         self._logger.error( "Write error: " + traceback.format_exc() )
-      #self._logger.info( "In done" )
 
     return in_loop
 
