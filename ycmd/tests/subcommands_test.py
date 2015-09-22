@@ -90,6 +90,7 @@ def RunCompleterCommand_GoTo_Clang_ZeroBasedLineAndColumn_test():
       },
       app.post_json( '/run_completer_command', goto_data ).json )
 
+
 def _RunCompleterCommand_GoTo_all_Clang(filename, command, test):
   contents = open( PathToTestFile( filename ) ).read()
   app = TestApp( handlers.app )
@@ -122,6 +123,7 @@ def _RunCompleterCommand_GoTo_all_Clang(filename, command, test):
 
   eq_( response,
        app.post_json( '/run_completer_command', goto_data ).json )
+
 
 @with_setup( Setup )
 def RunCompleterCommand_GoTo_all_Clang_test():
@@ -224,6 +226,7 @@ def RunCompleterCommand_GoTo_all_Clang_test():
           'GoTo_all_Clang_test.cc',            \
           ['GoToImprecise'],                   \
           test
+
 
 def _RunCompleterCommand_Message_Clang(filename, test, command):
   contents = open( PathToTestFile( filename ) ).read()
@@ -337,6 +340,7 @@ def RunCompleterCommand_GetType_Clang_test():
           test,                               \
           ['GetType']
 
+
 @with_setup( Setup )
 def RunCompleterCommand_GetParent_Clang_test():
   tests = [
@@ -418,6 +422,7 @@ def _RunFixItTest_Clang( line, column, lang, file_name, check ):
   pprint( results )
   check( results )
 
+
 def _FixIt_Check_cpp11_Ins( results ):
   # First fixit
   #   switch(A()) { // expected-error{{explicit conversion to}}
@@ -442,6 +447,7 @@ def _FixIt_Check_cpp11_Ins( results ):
       'location' : has_entries( { 'line_num': 16, 'column_num': 3 } )
     } ) )
   } ) )
+
 
 def _FixIt_Check_cpp11_InsMultiLine( results ):
   # Similar to _FixIt_Check_cpp11_1 but inserts split across lines
@@ -468,6 +474,7 @@ def _FixIt_Check_cpp11_InsMultiLine( results ):
     } ) )
   } ) )
 
+
 def _FixIt_Check_cpp11_Del( results ):
   # Removal of ::
   assert_that( results, has_entries( {
@@ -485,6 +492,7 @@ def _FixIt_Check_cpp11_Del( results ):
     } ) )
   } ) )
 
+
 def _FixIt_Check_cpp11_Repl( results ):
   assert_that( results, has_entries( {
     'fixits': contains( has_entries ( {
@@ -500,6 +508,7 @@ def _FixIt_Check_cpp11_Repl( results ):
       'location' : has_entries( { 'line_num': 40, 'column_num': 6 } )
     } ) )
   } ) )
+
 
 def _FixIt_Check_cpp11_DelAdd( results ):
   assert_that( results, has_entries( {
@@ -524,6 +533,7 @@ def _FixIt_Check_cpp11_DelAdd( results ):
     } ) )
   } ) )
 
+
 def _FixIt_Check_objc( results ):
   assert_that( results, has_entries( {
     'fixits': contains( has_entries ( {
@@ -540,9 +550,11 @@ def _FixIt_Check_objc( results ):
     } ) )
   } ) )
 
+
 def _FixIt_Check_objc_NoFixIt( results ):
   # and finally, a warning with no fixits
   assert_that( results, equal_to( { 'fixits' : [] } ) )
+
 
 def _FixIt_Check_cpp11_MultiFirst( results ):
   assert_that( results, has_entries( {
@@ -583,6 +595,7 @@ def _FixIt_Check_cpp11_MultiFirst( results ):
     )
   } ) )
 
+
 def _FixIt_Check_cpp11_MultiSecond( results ):
   assert_that( results, has_entries( {
     'fixits': contains(
@@ -621,6 +634,7 @@ def _FixIt_Check_cpp11_MultiSecond( results ):
       } )
     )
   } ) )
+
 
 @with_setup( Setup )
 def RunCompleterCommand_FixIt_all_Clang_test():
@@ -679,7 +693,7 @@ def _RunCompleterCommand_GoTo_CsCompleter_Works_test( use_roslyn ):
   WaitUntilOmniSharpServerReady( app, filepath )
 
   goto_data = BuildRequest( completer_target = 'filetype_default',
-                            command_arguments = ['GoTo'],
+                            command_arguments = [ 'GoTo' ],
                             line_num = 9,
                             column_num = 15,
                             contents = contents,
@@ -719,7 +733,7 @@ def _RunCompleterCommand_GoToImplementation_CsCompleter_Works_test( use_roslyn )
   WaitUntilOmniSharpServerReady( app, filepath )
 
   goto_data = BuildRequest( completer_target = 'filetype_default',
-                            command_arguments = ['GoToImplementation'],
+                            command_arguments = [ 'GoToImplementation' ],
                             line_num = 13,
                             column_num = 13,
                             contents = contents,
@@ -760,7 +774,7 @@ def _RunCompleterCommand_GoToImplementation_CsCompleter_NoImplementation_test( u
   WaitUntilOmniSharpServerReady( app, filepath )
 
   goto_data = BuildRequest( completer_target = 'filetype_default',
-                            command_arguments = ['GoToImplementation'],
+                            command_arguments = [ 'GoToImplementation' ],
                             line_num = 17,
                             column_num = 13,
                             contents = contents,
@@ -801,7 +815,7 @@ def _RunCompleterCommand_GoToImplementation_CsCompleter_InvalidLocation_test( us
   WaitUntilOmniSharpServerReady( app, filepath )
 
   goto_data = BuildRequest( completer_target = 'filetype_default',
-                            command_arguments = ['GoToImplementation'],
+                            command_arguments = [ 'GoToImplementation' ],
                             line_num = 2,
                             column_num = 1,
                             contents = contents,
@@ -844,7 +858,7 @@ def _RunCompleterCommand_GoToImplementationElseDeclaration_CsCompleter_NoImpleme
   WaitUntilOmniSharpServerReady( app, filepath )
 
   goto_data = BuildRequest( completer_target = 'filetype_default',
-                            command_arguments = ['GoToImplementationElseDeclaration'],
+                            command_arguments = [ 'GoToImplementationElseDeclaration' ],
                             line_num = 17,
                             column_num = 13,
                             contents = contents,
@@ -883,7 +897,7 @@ def _RunCompleterCommand_GoToImplementationElseDeclaration_CsCompleter_SingleImp
   WaitUntilOmniSharpServerReady( app, filepath )
 
   goto_data = BuildRequest( completer_target = 'filetype_default',
-                            command_arguments = ['GoToImplementationElseDeclaration'],
+                            command_arguments = [ 'GoToImplementationElseDeclaration' ],
                             line_num = 13,
                             column_num = 13,
                             contents = contents,
@@ -922,7 +936,7 @@ def _RunCompleterCommand_GoToImplementationElseDeclaration_CsCompleter_MultipleI
   WaitUntilOmniSharpServerReady( app, filepath )
 
   goto_data = BuildRequest( completer_target = 'filetype_default',
-                            command_arguments = ['GoToImplementationElseDeclaration'],
+                            command_arguments = [ 'GoToImplementationElseDeclaration' ],
                             line_num = 21,
                             column_num = 13,
                             contents = contents,
@@ -966,12 +980,12 @@ def _RunCompleterCommand_GetType_CsCompleter_EmptyMessage_test( use_roslyn ):
   WaitUntilOmniSharpServerReady( app, filepath )
 
   gettype_data = BuildRequest( completer_target = 'filetype_default',
-                            command_arguments = ['GetType'],
-                            line_num = 1,
-                            column_num = 1,
-                            contents = contents,
-                            filetype = 'cs',
-                            filepath = filepath )
+                               command_arguments = [ 'GetType' ],
+                               line_num = 1,
+                               column_num = 1,
+                               contents = contents,
+                               filetype = 'cs',
+                               filepath = filepath )
 
   expected = ( None if use_roslyn else u"" )
   try:
@@ -1005,12 +1019,12 @@ def _RunCompleterCommand_GetType_CsCompleter_VariableDeclaration_test( use_rosly
   WaitUntilOmniSharpServerReady( app, filepath )
 
   gettype_data = BuildRequest( completer_target = 'filetype_default',
-                            command_arguments = ['GetType'],
-                            line_num = 4,
-                            column_num = 5,
-                            contents = contents,
-                            filetype = 'cs',
-                            filepath = filepath )
+                               command_arguments = [ 'GetType' ],
+                               line_num = 4,
+                               column_num = 5,
+                               contents = contents,
+                               filetype = 'cs',
+                               filepath = filepath )
 
   expected =  contains_string( u'System.string' if use_roslyn else u"string" )
   try:
@@ -1043,12 +1057,12 @@ def _RunCompleterCommand_GetType_CsCompleter_VariableUsage_test( use_roslyn ):
   WaitUntilOmniSharpServerReady( app, filepath )
 
   gettype_data = BuildRequest( completer_target = 'filetype_default',
-                            command_arguments = ['GetType'],
-                            line_num = 5,
-                            column_num = 5,
-                            contents = contents,
-                            filetype = 'cs',
-                            filepath = filepath )
+                              command_arguments = [ 'GetType' ],
+                              line_num = 5,
+                              column_num = 5,
+                              contents = contents,
+                              filetype = 'cs',
+                              filepath = filepath )
   try:
     eq_( {
           u'message': u"string str"
@@ -1082,12 +1096,12 @@ def _RunCompleterCommand_GetType_CsCompleter_Constant_test( use_roslyn ):
   WaitUntilOmniSharpServerReady( app, filepath )
 
   gettype_data = BuildRequest( completer_target = 'filetype_default',
-                            command_arguments = ['GetType'],
-                            line_num = 4,
-                            column_num = 14,
-                            contents = contents,
-                            filetype = 'cs',
-                            filepath = filepath )
+                               command_arguments = ['GetType'],
+                               line_num = 4,
+                               column_num = 14,
+                               contents = contents,
+                               filetype = 'cs',
+                               filepath = filepath )
   try:
     eq_( {
           u'message': u"System.String"
@@ -1097,13 +1111,142 @@ def _RunCompleterCommand_GetType_CsCompleter_Constant_test( use_roslyn ):
     StopOmniSharpServer( app, filepath )
 
 
-def _RunFixItTest_CsCompleter(  line, column, expected_result, use_roslyn ):
+@with_setup( Setup )
+def RunCompleterCommand_GetType_CsCompleter_DocsIgnored_test():
+  yield _RunCompleterCommand_GetType_CsCompleter_DocsIgnored_test, True
+  yield _RunCompleterCommand_GetType_CsCompleter_DocsIgnored_test, False
+
+
+def _RunCompleterCommand_GetType_CsCompleter_DocsIgnored_test( use_roslyn ):
+  app = TestApp( handlers.app )
+  app.post_json( '/ignore_extra_conf_file',
+                 { 'filepath': PathToTestFile( '.ycm_extra_conf.py' ) } )
+  filepath = PathToTestFile( 'testy', 'GetTypeTestCase.cs' )
+  contents = open( filepath ).read()
+  UseRoslynOmnisharp( app, filepath, use_roslyn )
+  event_data = BuildRequest( filepath = filepath,
+                             filetype = 'cs',
+                             contents = contents,
+                             event_name = 'FileReadyToParse' )
+
+  app.post_json( '/event_notification', event_data )
+  WaitUntilOmniSharpServerReady( app, filepath )
+
+  gettype_data = BuildRequest( completer_target = 'filetype_default',
+                               command_arguments = [ 'GetType' ],
+                               line_num = 9,
+                               column_num = 34,
+                               contents = contents,
+                               filetype = 'cs',
+                               filepath = filepath )
+
+  first_line_end = "" if use_roslyn else ";"
+  try:
+    eq_( {
+          u'message': u"int GetTypeTestCase.an_int_with_docs" + first_line_end,
+        },
+        app.post_json( '/run_completer_command', gettype_data ).json )
+  finally:
+    StopOmniSharpServer( app, filepath )
+
+
+@with_setup( Setup )
+def RunCompleterCommand_GetDoc_CsCompleter_Works_Var_test():
+  yield _RunCompleterCommand_GetDoc_CsCompleter_Works_Var_test, True
+  yield _RunCompleterCommand_GetDoc_CsCompleter_Works_Var_test, False
+
+
+def _RunCompleterCommand_GetDoc_CsCompleter_Works_Var_test( use_roslyn ):
+  app = TestApp( handlers.app )
+  app.post_json( '/ignore_extra_conf_file',
+                 { 'filepath': PathToTestFile( '.ycm_extra_conf.py' ) } )
+  filepath = PathToTestFile( 'testy', 'GetDocTestCase.cs' )
+  contents = open( filepath ).read()
+  UseRoslynOmnisharp( app, filepath, use_roslyn )
+  event_data = BuildRequest( filepath = filepath,
+                             filetype = 'cs',
+                             contents = contents,
+                             event_name = 'FileReadyToParse' )
+
+  app.post_json( '/event_notification', event_data )
+  WaitUntilOmniSharpServerReady( app, filepath )
+
+  getdoc_data = BuildRequest( completer_target = 'filetype_default',
+                              command_arguments = [ 'GetDoc' ],
+                              line_num = 13,
+                              column_num = 28,
+                              contents = contents,
+                              filetype = 'cs',
+                              filepath = filepath )
+
+  first_line_end = "" if use_roslyn else ";"
+  try:
+    eq_( {
+          'detailed_info': 'int GetDocTestCase.an_int'+first_line_end+'\n'
+                           'an integer, or something',
+        },
+        app.post_json( '/run_completer_command', getdoc_data ).json )
+  finally:
+    StopOmniSharpServer( app, filepath )
+
+
+@with_setup( Setup )
+def RunCompleterCommand_GetDoc_CsCompleter_Works_Func_test():
+  yield _RunCompleterCommand_GetDoc_CsCompleter_Works_Func_test, True
+  yield _RunCompleterCommand_GetDoc_CsCompleter_Works_Func_test, False
+
+
+def _RunCompleterCommand_GetDoc_CsCompleter_Works_Func_test( use_roslyn ):
+  app = TestApp( handlers.app )
+  app.post_json( '/ignore_extra_conf_file',
+                 { 'filepath': PathToTestFile( '.ycm_extra_conf.py' ) } )
+  filepath = PathToTestFile( 'testy', 'GetDocTestCase.cs' )
+  contents = open( filepath ).read()
+  UseRoslynOmnisharp( app, filepath, use_roslyn )
+  event_data = BuildRequest( filepath = filepath,
+                             filetype = 'cs',
+                             contents = contents,
+                             event_name = 'FileReadyToParse' )
+
+  app.post_json( '/event_notification', event_data )
+  WaitUntilOmniSharpServerReady( app, filepath )
+
+  getdoc_data = BuildRequest( completer_target = 'filetype_default',
+                              command_arguments = [ 'GetDoc' ],
+                              line_num = 33,
+                              column_num = 27,
+                              contents = contents,
+                              filetype = 'cs',
+                              filepath = filepath )
+
+  if use_roslyn:
+    expected = ( 'int GetDocTestCase.DoATest()\n'+
+                 'Very important method.\n\n' +
+                 'With multiple lines of commentary\n' + 
+                 'And Format-\n' +
+                 '-ting' )
+  else:
+    # It seems that Omnisharp server eats newlines
+    expected = ( 'int GetDocTestCase.DoATest();\n' +
+                 ' Very important method. With multiple lines of ' +
+                 'commentary And Format- -ting' )
+
+  try:
+    eq_( {
+          'detailed_info': expected,
+        },
+        app.post_json( '/run_completer_command', getdoc_data ).json )
+  finally:
+    StopOmniSharpServer( app, filepath )
+
+
+def _RunFixItTest_CsCompleter( line, column, expected_result, use_roslyn ):
   if use_roslyn:
     raise SkipTest( "Rosyln doesn't seem to support this yet" )
   app = TestApp( handlers.app )
   app.post_json( '/ignore_extra_conf_file',
                  { 'filepath': PathToTestFile( '.ycm_extra_conf.py' ) } )
-  filepath = PathToTestFile( 'testy/FixItTestCase.cs' )
+  filepath = PathToTestFile( 'testy', 'FixItTestCase.cs' )
   contents = open( filepath ).read()
   UseRoslynOmnisharp( app, filepath, use_roslyn )
   event_data = BuildRequest( filepath = filepath,
@@ -1115,7 +1258,7 @@ def _RunFixItTest_CsCompleter(  line, column, expected_result, use_roslyn ):
   WaitUntilOmniSharpServerReady( app, filepath )
 
   fixit_data = BuildRequest( completer_target = 'filetype_default',
-                             command_arguments = ['FixIt'],
+                             command_arguments = [ 'FixIt' ],
                              line_num = line,
                              column_num = column,
                              contents = contents,
@@ -1136,7 +1279,7 @@ def RunCompleterCommand_FixIt_CsCompleter_RemoveSingleLine_test():
 
 
 def _RunCompleterCommand_FixIt_CsCompleter_RemoveSingleLine_test( use_roslyn ):
-  filepath = PathToTestFile( 'testy/FixItTestCase.cs' )
+  filepath = PathToTestFile( 'testy', 'FixItTestCase.cs' )
   _RunFixItTest_CsCompleter( 11, 1, {
     u'fixits': [
       {
@@ -1175,7 +1318,7 @@ def RunCompleterCommand_FixIt_CsCompleter_MultipleLines_test():
 
 
 def _RunCompleterCommand_FixIt_CsCompleter_MultipleLines_test( use_roslyn ):
-  filepath = PathToTestFile( 'testy/FixItTestCase.cs' )
+  filepath = PathToTestFile( 'testy', 'FixItTestCase.cs' )
   _RunFixItTest_CsCompleter( 19, 1, {
     u'fixits': [
       {
@@ -1214,7 +1357,7 @@ def RunCompleterCommand_FixIt_CsCompleter_SpanFileEdge_test():
 
 
 def _RunCompleterCommand_FixIt_CsCompleter_SpanFileEdge_test( use_roslyn ):
-  filepath = PathToTestFile( 'testy/FixItTestCase.cs' )
+  filepath = PathToTestFile( 'testy', 'FixItTestCase.cs' )
   _RunFixItTest_CsCompleter( 1, 1, {
     u'fixits': [
       {
@@ -1253,7 +1396,7 @@ def RunCompleterCommand_FixIt_CsCompleter_AddTextInLine_test():
 
 
 def _RunCompleterCommand_FixIt_CsCompleter_AddTextInLine_test( use_roslyn ):
-  filepath = PathToTestFile( 'testy/FixItTestCase.cs' )
+  filepath = PathToTestFile( 'testy', 'FixItTestCase.cs' )
   _RunFixItTest_CsCompleter( 9, 1, {
     u'fixits': [
       {
@@ -1292,7 +1435,7 @@ def RunCompleterCommand_FixIt_CsCompleter_ReplaceTextInLine_test():
 
 
 def _RunCompleterCommand_FixIt_CsCompleter_ReplaceTextInLine_test( use_roslyn ):
-  filepath = PathToTestFile( 'testy/FixItTestCase.cs' )
+  filepath = PathToTestFile( 'testy', 'FixItTestCase.cs' )
   _RunFixItTest_CsCompleter( 10, 1, {
     u'fixits': [
       {
@@ -1397,7 +1540,8 @@ def DefinedSubcommands_Works_test():
 
   eq_( [ 'GoToDefinition',
          'GoToDeclaration',
-         'GoTo' ],
+         'GoTo',
+         'GetDoc' ],
        app.post_json( '/defined_subcommands', subcommands_data ).json )
 
 
@@ -1408,7 +1552,8 @@ def DefinedSubcommands_WorksWhenNoExplicitCompleterTargetSpecified_test():
 
   eq_( [ 'GoToDefinition',
          'GoToDeclaration',
-         'GoTo' ],
+         'GoTo',
+         'GetDoc' ],
        app.post_json( '/defined_subcommands', subcommands_data ).json )
 
 
@@ -1427,7 +1572,7 @@ def RunCompleterCommand_GetType_TypescriptCompleter_test():
   app.post_json( '/event_notification', event_data )
 
   gettype_data = BuildRequest( completer_target = 'filetype_default',
-                               command_arguments = ['GetType'],
+                               command_arguments = [ 'GetType' ],
                                line_num = 12,
                                column_num = 1,
                                contents = contents,
@@ -1454,7 +1599,7 @@ def RunCompleterCommand_GetType_HasNoType_TypescriptCompleter_test():
   app.post_json( '/event_notification', event_data )
 
   gettype_data = BuildRequest( completer_target = 'filetype_default',
-                               command_arguments = ['GetType'],
+                               command_arguments = [ 'GetType' ],
                                line_num = 2,
                                column_num = 1,
                                contents = contents,
@@ -1463,6 +1608,65 @@ def RunCompleterCommand_GetType_HasNoType_TypescriptCompleter_test():
 
   assert_that( calling( app.post_json ).with_args( '/run_completer_command', gettype_data ),
                raises( AppError, 'RuntimeError.*No content available' ) )
+
+
+@with_setup( Setup )
+def RunCompleterCommand_GetDoc_TypescriptCompleter_Works_Method_test():
+  app = TestApp( handlers.app )
+
+  filepath = PathToTestFile( 'test.ts' )
+  contents = open( filepath ).read()
+
+  event_data = BuildRequest( filepath = filepath,
+                             filetype = 'typescript',
+                             contents = contents,
+                             event_name = 'BufferVisit' )
+
+  app.post_json( '/event_notification', event_data )
+
+  gettype_data = BuildRequest( completer_target = 'filetype_default',
+                               command_arguments = [ 'GetDoc' ],
+                               line_num = 29,
+                               column_num = 9,
+                               contents = contents,
+                               filetype = 'typescript',
+                               filepath = filepath )
+
+  eq_( {
+         'detailed_info': '(method) Bar.testMethod(): void\n\n'
+                          'Method documentation',
+       },
+       app.post_json( '/run_completer_command', gettype_data ).json )
+
+
+@with_setup( Setup )
+def RunCompleterCommand_GetDoc_TypescriptCompleter_Works_Class_test():
+  app = TestApp( handlers.app )
+
+  filepath = PathToTestFile( 'test.ts' )
+  contents = open( filepath ).read()
+
+  event_data = BuildRequest( filepath = filepath,
+                             filetype = 'typescript',
+                             contents = contents,
+                             event_name = 'BufferVisit' )
+
+  app.post_json( '/event_notification', event_data )
+
+  gettype_data = BuildRequest( completer_target = 'filetype_default',
+                               command_arguments = [ 'GetDoc' ],
+                               line_num = 31,
+                               column_num = 2,
+                               contents = contents,
+                               filetype = 'typescript',
+                               filepath = filepath )
+
+  eq_( {
+         'detailed_info': 'class Bar\n\n'
+                          'Class documentation\n\n'
+                          'Multi-line',
+       },
+       app.post_json( '/run_completer_command', gettype_data ).json )
 
 
 @with_setup( Setup )
@@ -1486,7 +1690,7 @@ def RunCompleterCommand_GetDoc_ClangCompleter_Variable_test():
   pprint( response )
 
   eq_( response, {
-        'detailed_info': """\
+    'detailed_info': """\
 char a_global_variable
 This really is a global variable.
 Type: char
@@ -1518,7 +1722,7 @@ def RunCompleterCommand_GetDoc_ClangCompleter_Method_test():
   pprint( response )
 
   eq_( response, {
-      'detailed_info': """\
+    'detailed_info': """\
 char with_brief()
 brevity is for suckers
 Type: char ()
@@ -1554,7 +1758,7 @@ def RunCompleterCommand_GetDoc_ClangCompleter_Namespace_test():
   pprint( response )
 
   eq_( response, {
-      'detailed_info': """\
+    'detailed_info': """\
 namespace Test {}
 This is a test namespace
 Type: 
@@ -1644,7 +1848,7 @@ def RunCompleterCommand_GetDocQuick_ClangCompleter_Variable_test():
   pprint( response )
 
   eq_( response, {
-        'detailed_info': """\
+    'detailed_info': """\
 char a_global_variable
 This really is a global variable.
 Type: char
@@ -1683,7 +1887,7 @@ def RunCompleterCommand_GetDocQuick_ClangCompleter_Method_test():
   pprint( response )
 
   eq_( response, {
-      'detailed_info': """\
+    'detailed_info': """\
 char with_brief()
 brevity is for suckers
 Type: char ()
@@ -1726,7 +1930,7 @@ def RunCompleterCommand_GetDocQuick_ClangCompleter_Namespace_test():
   pprint( response )
 
   eq_( response, {
-      'detailed_info': """\
+    'detailed_info': """\
 namespace Test {}
 This is a test namespace
 Type: 
@@ -1820,7 +2024,7 @@ def RunCompleterCommand_GetDocQuick_ClangCompleter_NoReadyToParse_test():
   response = app.post_json( '/run_completer_command', event_data ).json
 
   eq_( response, {
-      'detailed_info': """\
+    'detailed_info': """\
 int get_a_global_variable(bool test)
 This is a method which is only pretend global
 Type: int (bool)
@@ -1828,3 +2032,52 @@ Name: get_a_global_variable
 ---
 This is a method which is only pretend global
 @param test Set this to true. Do it.""" } )
+
+
+@with_setup( Setup )
+def RunCompleterCommand_GetDoc_Jedi_Works_Method_test():
+  # Testcase1
+  app = TestApp( handlers.app )
+
+  filepath = PathToTestFile( 'GetDoc_Jedi.py' )
+  contents = open( filepath ).read()
+
+  event_data = BuildRequest( filepath = filepath,
+                             filetype = 'python',
+                             line_num = 17,
+                             column_num = 9,
+                             contents = contents,
+                             command_arguments = [ 'GetDoc' ],
+                             completer_target = 'filetype_default' )
+
+  response = app.post_json( '/run_completer_command', event_data ).json
+
+  eq_( response, {
+       'detailed_info': '_ModuleMethod()\n\n'
+                        'Module method docs\n'
+                        'Are dedented, like you might expect',
+  } )
+
+
+@with_setup( Setup )
+def RunCompleterCommand_GetDoc_Jedi_Works_Class_test():
+  # Testcase1
+  app = TestApp( handlers.app )
+
+  filepath = PathToTestFile( 'GetDoc_Jedi.py' )
+  contents = open( filepath ).read()
+
+  event_data = BuildRequest( filepath = filepath,
+                             filetype = 'python',
+                             line_num = 19,
+                             column_num = 2,
+                             contents = contents,
+                             command_arguments = [ 'GetDoc' ],
+                             completer_target = 'filetype_default' )
+
+  response = app.post_json( '/run_completer_command', event_data ).json
+
+  eq_( response, {
+       'detailed_info': 'Class Documentation',
+  } )
+

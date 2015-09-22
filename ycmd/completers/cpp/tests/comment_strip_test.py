@@ -22,7 +22,6 @@ method/variable,etc. headers in order to remove non-data-ink from the raw
 comment"""
 
 from nose.tools import eq_
-import os
 from .. import clang_completer
 
 
@@ -31,17 +30,12 @@ def _Check_FormatRawComment( comment, expected ):
     result = clang_completer._FormatRawComment( comment )
     eq_( result, expected )
   except:
-    print ( "Failed while parsing:"
-            + os.linesep
-            + "'" + comment + "'"
-            + os.linesep
-            + "Expecting:"
-            + os.linesep
-            + "'" + expected + "'"
-            + os.linesep
-            + "But found: "
-            + os.linesep
-            + "'" + result + "'" )
+    print( "Failed while parsing:\n"
+           "'" + comment + "'\n"
+           "Expecting:\n"
+           "'" + expected + "'\n"
+           "But found:\n"
+           "'" + result + "'" )
     raise
 
 
@@ -109,7 +103,7 @@ def ClangCompleter_FormatRawComment_MultiOneLine_JavaDoc_test():
 def ClangCompleter_FormatRawComment_MultiLine_Doxygen_Inbalance_test():
   # The dedenting only applies to consistent indent
   # Note trailing whitespace is intentional
-  _Check_FormatRawComment( 
+  _Check_FormatRawComment(
   """
       /// This is
       ///    a
@@ -135,7 +129,7 @@ def ClangCompleter_FormatRawComment_MultiLine_JavaDoc_Inconsistent_test():
   # The dedenting only applies to consistent indent, and leaves any subsequent
   # indent intact
   # Note trailing whitespace is intentional
-  _Check_FormatRawComment( 
+  _Check_FormatRawComment(
   """
       /**  All of the 
     *  Lines in this	
@@ -156,7 +150,7 @@ def ClangCompleter_FormatRawComment_ZeroLine_test():
 
 def ClangCompleter_FormatRawComment_MultiLine_empty_test():
   # Note trailing whitespace is intentional
-  _Check_FormatRawComment( 
+  _Check_FormatRawComment(
   """
 	
 
