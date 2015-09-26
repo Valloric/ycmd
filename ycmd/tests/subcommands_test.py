@@ -1416,7 +1416,8 @@ def DefinedSubcommands_Works_test():
   eq_( [ 'GoToDefinition',
          'GoToDeclaration',
          'GoTo',
-         'GetDoc' ],
+         'GetDoc',
+         'RestartServer' ],
        app.post_json( '/defined_subcommands', subcommands_data ).json )
 
 
@@ -1428,7 +1429,8 @@ def DefinedSubcommands_WorksWhenNoExplicitCompleterTargetSpecified_test():
   eq_( [ 'GoToDefinition',
          'GoToDeclaration',
          'GoTo',
-         'GetDoc' ],
+         'GetDoc',
+         'RestartServer' ],
        app.post_json( '/defined_subcommands', subcommands_data ).json )
 
 
