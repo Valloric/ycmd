@@ -25,6 +25,7 @@ from .test_utils import ( Setup,
                           StopOmniSharpServer,
                           WaitUntilOmniSharpServerReady,
                           ActivateJediHTTPServer,
+                          StopJediHTTPServer,
                           WaitUntilJediHTTPServerReady,
                           ChangeSpecificOptions,
                           ErrorMatcher )
@@ -70,10 +71,7 @@ foo()
        },
        app.post_json( '/run_completer_command', goto_data ).json )
 
-  app.post_json( '/run_completer_command',
-                  BuildRequest( completer_target = 'filetype_default',
-                                command_arguments = [ 'StopServer' ],
-                                filetype = 'python' ) )
+  StopJediHTTPServer( app )
 
 
 @with_setup( Setup )
