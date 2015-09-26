@@ -25,7 +25,7 @@ from .test_utils import ( Setup, BuildRequest, PathToTestFile,
                           ChangeSpecificOptions, StopOmniSharpServer,
                           WaitUntilOmniSharpServerReady,
                           ActivateJediHTTPServer, WaitUntilJediHTTPServerReady,
-                          StopGoCodeServer, ErrorMatcher )
+                          StopJediHTTPServer, StopGoCodeServer, ErrorMatcher )
 from webtest import TestApp, AppError
 from nose.tools import eq_, with_setup
 from hamcrest import ( assert_that, has_item, has_items, has_entry, has_entries,
@@ -1032,10 +1032,7 @@ def GetCompletions_ForceSemantic_Works_test():
                                    CompletionEntryMatcher( 'open' ),
                                    CompletionEntryMatcher( 'bool' ) ) )
 
-  app.post_json( '/run_completer_command',
-                  BuildRequest( completer_target = 'filetype_default',
-                                command_arguments = [ 'StopServer' ],
-                                filetype = 'python' ) )
+  StopJediHTTPServer( app )
 
 
 @with_setup( Setup )
@@ -1172,11 +1169,7 @@ def GetCompletions_JediCompleter_Basic_test():
                  CompletionLocationMatcher( 'column_num', 10 ),
                  CompletionLocationMatcher( 'filepath', filepath ) ) )
 
-  app.post_json( '/run_completer_command',
-                  BuildRequest( completer_target = 'filetype_default',
-                                command_arguments = [ 'StopServer' ],
-                                filetype = 'python' ) )
-
+  StopJediHTTPServer( app )
 
 
 @with_setup( Setup )
@@ -1200,10 +1193,7 @@ def GetCompletions_JediCompleter_UnicodeDescription_test():
                           has_entry( 'detailed_info',
                             contains_string( u'aafäö' ) ) ) )
 
-  app.post_json( '/run_completer_command',
-                  BuildRequest( completer_target = 'filetype_default',
-                                command_arguments = [ 'StopServer' ],
-                                filetype = 'python' ) )
+  StopJediHTTPServer( app )
 
 
 @with_setup( Setup )

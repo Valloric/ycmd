@@ -129,6 +129,13 @@ def ActivateJediHTTPServer( app ):
                                event_name = 'FileReadyToParse' ) )
 
 
+def StopJediHTTPServer( app ):
+  app.post_json( '/run_completer_command',
+                  BuildRequest( completer_target = 'filetype_default',
+                                command_arguments = [ 'StopServer' ],
+                                filetype = 'python' ) )
+
+
 def ErrorMatcher( cls, msg ):
   """ Returns a hamcrest matcher for a server exception response """
   return has_entries( {
