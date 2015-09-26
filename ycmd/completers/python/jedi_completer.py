@@ -224,7 +224,11 @@ class JediCompleter( Completer ):
 
 
   def _GoToDeclaration( self, request_data ):
-    pass
+    try:
+      response = self._GetResponse( '/gotoassignment', request_data )
+      return self._BuildGoToResponse( response[ 'definitions' ] )
+    except:
+      raise RuntimeError( 'Cannot follow nothing. Put your cursor on a valid name.' )
 
 
   def _GoTo( self, request_data ):
