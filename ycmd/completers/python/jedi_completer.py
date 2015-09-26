@@ -217,18 +217,16 @@ class JediCompleter( Completer ):
 
   def _GoToDefinition( self, request_data ):
     try:
-      response = self._GetResponse( '/gotodefinition', request_data )
-      return self._BuildGoToResponse( response[ 'definitions' ] )
+      return self._GetDefinitionsList( '/gotodefinition', request_data )
     except:
-      raise RuntimeError( 'Cannot follow nothing. Put your cursor on a valid name.' )
+      raise RuntimeError( 'Can\'t jump do definition.' )
 
 
   def _GoToDeclaration( self, request_data ):
     try:
-      response = self._GetResponse( '/gotoassignment', request_data )
-      return self._BuildGoToResponse( response[ 'definitions' ] )
+      return self._GetDefinitionsList( '/gotoassignment', request_data )
     except:
-      raise RuntimeError( 'Cannot follow nothing. Put your cursor on a valid name.' )
+      raise RuntimeError( 'Can\'t jump do declaration.' )
 
 
   def _GoTo( self, request_data ):
@@ -239,8 +237,12 @@ class JediCompleter( Completer ):
     pass
 
 
-  def _GetDefinitionsList( self, request_data, declaration = False ):
-    pass
+  def _GetDefinitionsList( self, handle, request_data ):
+    try:
+      response = self._GetResponse( handle, request_data )
+      return self._BuildGoToResponse( response[ 'definitions' ] )
+    except:
+      raise RuntimeError( 'Cannot follow nothing. Put your cursor on a valid name.' )
 
 
   def _BuildGoToResponse( self, definition_list ):
