@@ -47,11 +47,16 @@ bottle.debug( True )
 @with_setup( Setup )
 def RunCompleterCommand_GoTo_Jedi_ZeroBasedLineAndColumn_test():
   app = TestApp( handlers.app )
-  contents = """
-def foo():
-  pass
+  # Example taken directly from jedi docs
+  # http://jedi.jedidjah.ch/en/latest/docs/plugin-api.html#examples
+  contents = """def my_func():
+  print 'called'
 
-foo()
+alias = my_func
+my_list = [1, None, alias]
+inception = my_list[2]
+
+inception()
 """
 
   ActivateJediHTTPServer( app )
@@ -59,14 +64,14 @@ foo()
 
   goto_data = BuildRequest( completer_target = 'filetype_default',
                             command_arguments = ['GoToDefinition'],
-                            line_num = 5,
+                            line_num = 8,
                             contents = contents,
                             filetype = 'python',
                             filepath = '/foo.py' )
 
   eq_( {
          'filepath': os.path.abspath( '/foo.py' ),
-         'line_num': 2,
+         'line_num': 1,
          'column_num': 5
        },
        app.post_json( '/run_completer_command', goto_data ).json )
