@@ -62,19 +62,40 @@ inception()
   ActivateJediHTTPServer( app )
   WaitUntilJediHTTPServerReady( app )
 
-  goto_data = BuildRequest( completer_target = 'filetype_default',
-                            command_arguments = ['GoToDefinition'],
-                            line_num = 8,
-                            contents = contents,
-                            filetype = 'python',
-                            filepath = '/foo.py' )
+  common_goto_data = {
+      'completer_target': 'filetype_default',
+      'line_num': 8,
+      'contents': contents,
+      'filetype': 'python',
+      'filepath': '/foo.py'
+  }
+
+  gotodefinition_data = common_goto_data
+  gotodefinition_data.update( {
+    'command_arguments': [ 'GoToDefinition' ]
+  } )
 
   eq_( {
          'filepath': os.path.abspath( '/foo.py' ),
          'line_num': 1,
          'column_num': 5
        },
-       app.post_json( '/run_completer_command', goto_data ).json )
+       app.post_json( '/run_completer_command',
+                      BuildRequest( **gotodefinition_data ) ).json )
+
+
+  gotodeclaration_data = common_goto_data
+  gotodeclaration_data.update( {
+    'command_arguments': [ 'GoToDeclaration' ]
+  } )
+
+  eq_( {
+         'filepath': os.path.abspath( '/foo.py' ),
+         'line_num': 6,
+         'column_num': 1
+       },
+       app.post_json( '/run_completer_command',
+                      BuildRequest( **gotodeclaration_data ) ).json )
 
   StopJediHTTPServer( app )
 
