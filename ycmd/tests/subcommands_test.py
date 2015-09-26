@@ -34,6 +34,7 @@ import re
 import os.path
 import httplib
 from pprint import pprint
+import time
 
 from hamcrest import ( assert_that, contains, has_entries, equal_to, raises, calling )
 
@@ -50,6 +51,13 @@ def foo():
 
 foo()
 """
+  event_data = BuildRequest( filetype = 'python',
+                             event_name = 'FileReadyToParse' )
+
+  app.post_json( '/event_notification', event_data )
+
+  # WaitUntilJediHTTPServerReady
+  time.sleep( 2 )
 
   goto_data = BuildRequest( completer_target = 'filetype_default',
                             command_arguments = ['GoToDefinition'],
@@ -64,6 +72,11 @@ foo()
          'column_num': 5
        },
        app.post_json( '/run_completer_command', goto_data ).json )
+
+  app.post_json( '/run_completer_command',
+                  BuildRequest( completer_target = 'filetype_default',
+                                command_arguments = [ 'StopServer' ],
+                                filetype = 'python' ) )
 
 
 @with_setup( Setup )
