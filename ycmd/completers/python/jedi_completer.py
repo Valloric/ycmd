@@ -62,8 +62,8 @@ class JediCompleter( Completer ):
     return [ 'python' ]
 
 
-  def Shutdown( self ):
-    if ( self.ServerIsRunning() ):
+  def _Shutdown( self ):
+    if self.ServerIsRunning():
       self._StopServer()
 
 
@@ -83,12 +83,17 @@ class JediCompleter( Completer ):
       return False
 
 
+  def RestartServer( self, request_data ):
+    """ Restart the JediHTTP Server. """
+    self._Shutdown()
+    self._StartServer( request_data )
+
   def _StopServer( self ):
     self._jedihttp_phandle.kill()
     self._jedihttp_phandle = None
     self._jedihttp_port = None
 
-    if ( not self._keep_logfiles ):
+    if not self._keep_logfiles:
       os.unlink( self._logfile_stdout )
       os.unlink( self._logfile_stderr )
 
@@ -209,7 +214,9 @@ class JediCompleter( Completer ):
       'GetDoc'         : ( lambda self, request_data:
                            self._GetDoc( request_data ) ),
       'StopServer'     : ( lambda self, request_data:
-                           self._StopServer() )
+                           self._StopServer() ),
+      'RestartServer'  : ( lambda self, request_data:
+                           self._RestartServer( request_data ) )
     }
 
 
