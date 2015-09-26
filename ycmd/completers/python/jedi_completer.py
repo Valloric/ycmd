@@ -255,6 +255,20 @@ class JediCompleter( Completer ):
         return responses.BuildGoToResponse( definition[ 'module_path' ],
                                             definition[ 'line' ],
                                             definition[ 'column' ] + 1 )
+   else:
+     # multiple definitions
+     defs = []
+     for definition in definition_list:
+       if definition[ 'in_builtin_module' ]:
+         defs.append( responses.BuildDescriptionOnlyGoToResponse(
+                      'Builtin ' + definition[ 'description' ] ) )
+       else:
+         defs.append(
+           responses.BuildGoToResponse( definition[ 'module_path' ],
+                                        definition[ 'line' ],
+                                        definition[ 'column' ] + 1,
+                                        definition[ 'description' ] ) )
+     return defs
 
 
   def _BuildDetailedInfoResponse( self, definition_list ):
