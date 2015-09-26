@@ -24,6 +24,7 @@ from .test_utils import ( Setup,
                           PathToTestFile,
                           StopOmniSharpServer,
                           WaitUntilOmniSharpServerReady,
+                          WaitUntilJediHTTPServerReady,
                           ChangeSpecificOptions,
                           ErrorMatcher )
 from webtest import TestApp, AppError
@@ -34,7 +35,6 @@ import re
 import os.path
 import httplib
 from pprint import pprint
-import time
 
 from hamcrest import ( assert_that, contains, has_entries, equal_to, raises, calling )
 
@@ -56,8 +56,7 @@ foo()
 
   app.post_json( '/event_notification', event_data )
 
-  # WaitUntilJediHTTPServerReady
-  time.sleep( 2 )
+  WaitUntilJediHTTPServerReady( app )
 
   goto_data = BuildRequest( completer_target = 'filetype_default',
                             command_arguments = ['GoToDefinition'],

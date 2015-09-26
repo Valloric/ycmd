@@ -109,6 +109,20 @@ def StopGoCodeServer( app ):
                                filetype = 'go' ) )
 
 
+def WaitUntilJediHTTPServerReady( app ):
+  retries = 10;
+
+  while retries > 0:
+    result = app.get( '/ready', { 'subserver': 'python' } ).json
+    if result:
+      return
+
+    time.sleep( 0.2 )
+    retries = retries - 1
+
+  raise RuntimeError( "Timeout waiting for JediHTTP" )
+
+
 def ErrorMatcher( cls, msg ):
   """ Returns a hamcrest matcher for a server exception response """
   return has_entries( {
