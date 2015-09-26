@@ -223,6 +223,14 @@ def ErrorHandler( httperror ):
   return body
 
 
+@app.error( httplib.UNAUTHORIZED )
+def UnauthorizedHandler( httperror ):
+  result = {
+    'error': httperror.body
+  }
+  return _JsonResponse( result )
+
+
 def _JsonResponse( data ):
   response.set_header( 'Content-Type', 'application/json' )
   return json.dumps( data, default = _UniversalSerialize )
