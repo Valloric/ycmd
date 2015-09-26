@@ -123,6 +123,12 @@ def WaitUntilJediHTTPServerReady( app ):
   raise RuntimeError( "Timeout waiting for JediHTTP" )
 
 
+def ActivateJediHTTPServer( app ):
+  app.post_json( '/event_notification',
+                 BuildRequest( filetype = 'python',
+                               event_name = 'FileReadyToParse' ) )
+
+
 def ErrorMatcher( cls, msg ):
   """ Returns a hamcrest matcher for a server exception response """
   return has_entries( {
