@@ -24,6 +24,7 @@ from .test_utils import ( Setup,
                           PathToTestFile,
                           StopOmniSharpServer,
                           WaitUntilOmniSharpServerReady,
+                          ActivateJediHTTPServer,
                           WaitUntilJediHTTPServerReady,
                           ChangeSpecificOptions,
                           ErrorMatcher )
@@ -51,11 +52,8 @@ def foo():
 
 foo()
 """
-  event_data = BuildRequest( filetype = 'python',
-                             event_name = 'FileReadyToParse' )
 
-  app.post_json( '/event_notification', event_data )
-
+  ActivateJediHTTPServer( app )
   WaitUntilJediHTTPServerReady( app )
 
   goto_data = BuildRequest( completer_target = 'filetype_default',
