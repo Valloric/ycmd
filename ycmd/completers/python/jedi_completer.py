@@ -114,13 +114,32 @@ class JediCompleter( Completer ):
     self._logger.info( u'using port {0}'.format( self._jedihttp_port ) )
 
 
-  def _GetResponse( self, handler, parameters = {} ):
+  def _GetResponse( self, handler, request_data = {} ):
     """ Handle comunication with server """
     target = urlparse.urljoin( self._ServerLocation(), handler )
+    parameters = self._TranslateRequestForJediHTTP( request_data )
     response = requests.post( target, json = parameters )
     if response.status_code != requests.codes.ok:
       raise RuntimeError( response[ 'message' ] )
     return response.json()
+
+
+  def _TranslateRequestForJediHTTP( self, request_data ):
+    if not request_data:
+      return {}
+
+    path = request_data[ 'filepath' ]
+    source = request_data[ 'file_data' ][ path ][ 'contents' ]
+    line = request_data[ 'line_num' ]
+    # JediHTTP as Jedi itself expects columns to start at 0, not 1
+    col = request_data[ 'column_num' ] - 1
+
+    return {
+        'source': source,
+        'line': line,
+        'col': col,
+        'path': path
+    }
 
 
   def _ServerLocation( self ):
@@ -154,20 +173,7 @@ class JediCompleter( Completer ):
 
 
   def _JediCompletions( self, request_data ):
-    path = request_data[ 'filepath' ]
-    source = request_data[ 'file_data' ][ path ][ 'contents' ]
-    line = request_data[ 'line_num' ]
-    # JediHTTP as Jedi itself expects columns to start at 0, not 1
-    col = request_data[ 'column_num' ] - 1
-
-    request = {
-        'source': source,
-        'line': line,
-        'col': col,
-        'path': path
-    }
-
-    resp = self._GetResponse( '/completions', request )[ 'completions' ]
+    resp = self._GetResponse( '/completions', request_data )[ 'completions' ]
     return resp
 
 
@@ -202,7 +208,11 @@ class JediCompleter( Completer ):
 
 
   def _GoToDefinition( self, request_data ):
-    pass
+    try:
+      response = self._GetResponse( '/gotodefinition', request_data )
+      return self._BuildGoToResponse( response[ 'definitions' ] )
+    except:
+      raise RuntimeError( 'Cannot follow nothing. Put your cursor on a valid name.' )
 
 
   def _GoToDeclaration( self, request_data ):
@@ -222,7 +232,18 @@ class JediCompleter( Completer ):
 
 
   def _BuildGoToResponse( self, definition_list ):
-    pass
+   if len( definition_list ) == 1:
+      definition = definition_list[ 0 ]
+      if definition[ 'in_builtin_module' ]:
+        if definition[ 'is_keyword' ]:
+          raise RuntimeError( 'Cannot get the definition of Python keywords.' )
+        else:
+          raise RuntimeError( 'Builtin modules cannot be displayed.' )
+      else:
+        return responses.BuildGoToResponse( definition[ 'module_path' ],
+                                            definition[ 'line' ],
+                                            definition[ 'column' ] + 1 )
+
 
   def _BuildDetailedInfoResponse( self, definition_list ):
     pass
