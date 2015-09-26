@@ -22,7 +22,7 @@ SetUpPythonPath()
 from webtest import TestApp
 from .. import handlers
 from nose.tools import ok_, with_setup
-from .test_utils import Setup, BuildRequest
+from .test_utils import Setup, BuildRequest, PathToTestFile
 import bottle
 
 bottle.debug( True )
@@ -43,3 +43,18 @@ def EventNotification_AlwaysJsonResponse_test():
                              event_name = 'FileReadyToParse' )
 
   app.post_json( '/event_notification', event_data ).json
+
+
+@with_setup( Setup )
+def LoadExtraConfFile_AlwaysJsonResponse_test():
+  app = TestApp( handlers.app )
+
+  data = { 'filepath': PathToTestFile( '.ycm_extra_conf.py' ) }
+  app.post_json( '/load_extra_conf_file', data ).json
+
+
+@with_setup( Setup )
+def IgnoreExtraConfFile_AlwaysJsonResponse_test():
+  app = TestApp( handlers.app )
+  data = { 'filepath': PathToTestFile( '.ycm_extra_conf.py' ) }
+  app.post_json( '/ignore_extra_conf_file', data ).json
