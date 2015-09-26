@@ -35,6 +35,7 @@ from .. import handlers
 from ..completers.cpp.clang_completer import NO_COMPLETIONS_MESSAGE
 import bottle
 import pprint
+import time
 
 bottle.debug( True )
 
@@ -1018,6 +1019,13 @@ int main()
 @with_setup( Setup )
 def GetCompletions_ForceSemantic_Works_test():
   app = TestApp( handlers.app )
+  event_data = BuildRequest( filetype = 'python',
+                             event_name = 'FileReadyToParse' )
+
+  app.post_json( '/event_notification', event_data )
+
+  # WaitUntilJediHTTPServerReady
+  time.sleep( 2 )
 
   completion_data = BuildRequest( filetype = 'python',
                                   force_semantic = True )
@@ -1027,6 +1035,11 @@ def GetCompletions_ForceSemantic_Works_test():
   assert_that( results, has_items( CompletionEntryMatcher( 'abs' ),
                                    CompletionEntryMatcher( 'open' ),
                                    CompletionEntryMatcher( 'bool' ) ) )
+
+  app.post_json( '/run_completer_command',
+                  BuildRequest( completer_target = 'filetype_default',
+                                command_arguments = [ 'StopServer' ],
+                                filetype = 'python' ) )
 
 
 @with_setup( Setup )
@@ -1140,12 +1153,20 @@ def GetCompletions_UltiSnipsCompleter_UnusedWhenOffWithOption_test():
 @with_setup( Setup )
 def GetCompletions_JediCompleter_Basic_test():
   app = TestApp( handlers.app )
+  event_data = BuildRequest( filetype = 'python',
+                             event_name = 'FileReadyToParse' )
+
+  app.post_json( '/event_notification', event_data )
+
+  # WaitUntilJediHTTPServerReady
+  time.sleep( 2 )
+
   filepath = PathToTestFile( 'basic.py' )
   completion_data = BuildRequest( filepath = filepath,
                                   filetype = 'python',
                                   contents = open( filepath ).read(),
                                   line_num = 7,
-                                  column_num = 3)
+                                  column_num = 3 )
 
   results = app.post_json( '/completions',
                            completion_data ).json[ 'completions' ]
@@ -1159,10 +1180,24 @@ def GetCompletions_JediCompleter_Basic_test():
                  CompletionLocationMatcher( 'column_num', 10 ),
                  CompletionLocationMatcher( 'filepath', filepath ) ) )
 
+  app.post_json( '/run_completer_command',
+                  BuildRequest( completer_target = 'filetype_default',
+                                command_arguments = [ 'StopServer' ],
+                                filetype = 'python' ) )
+
+
 
 @with_setup( Setup )
 def GetCompletions_JediCompleter_UnicodeDescription_test():
   app = TestApp( handlers.app )
+  event_data = BuildRequest( filetype = 'python',
+                             event_name = 'FileReadyToParse' )
+
+  app.post_json( '/event_notification', event_data )
+
+  # WaitUntilJediHTTPServerReady
+  time.sleep( 2 )
+
   filepath = PathToTestFile( 'unicode.py' )
   completion_data = BuildRequest( filepath = filepath,
                                   filetype = 'python',
@@ -1176,6 +1211,11 @@ def GetCompletions_JediCompleter_UnicodeDescription_test():
   assert_that( results, has_item(
                           has_entry( 'detailed_info',
                             contains_string( u'aafäö' ) ) ) )
+
+  app.post_json( '/run_completer_command',
+                  BuildRequest( completer_target = 'filetype_default',
+                                command_arguments = [ 'StopServer' ],
+                                filetype = 'python' ) )
 
 
 @with_setup( Setup )
