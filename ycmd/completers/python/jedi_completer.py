@@ -67,6 +67,14 @@ class JediCompleter( Completer ):
       self._StopServer()
 
 
+  def ServerIsReady( self ):
+    """ Check if JediHTTP server is ready. """
+    try:
+      return bool( self._GetResponse( '/ready' ) )
+    except:
+      return False
+
+
   def ServerIsRunning( self ):
     """ Check if JediHTTP server is running (up and serving). """
     try:

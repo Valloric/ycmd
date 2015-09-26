@@ -23,7 +23,8 @@ SetUpPythonPath()
 import httplib
 from .test_utils import ( Setup, BuildRequest, PathToTestFile,
                           ChangeSpecificOptions, StopOmniSharpServer,
-                          WaitUntilOmniSharpServerReady, StopGoCodeServer,
+                          WaitUntilOmniSharpServerReady,
+                          WaitUntilJediHTTPServerReady, StopGoCodeServer,
                           ErrorMatcher )
 from webtest import TestApp, AppError
 from nose.tools import eq_, with_setup
@@ -35,7 +36,6 @@ from .. import handlers
 from ..completers.cpp.clang_completer import NO_COMPLETIONS_MESSAGE
 import bottle
 import pprint
-import time
 
 bottle.debug( True )
 
@@ -1024,8 +1024,7 @@ def GetCompletions_ForceSemantic_Works_test():
 
   app.post_json( '/event_notification', event_data )
 
-  # WaitUntilJediHTTPServerReady
-  time.sleep( 2 )
+  WaitUntilJediHTTPServerReady( app )
 
   completion_data = BuildRequest( filetype = 'python',
                                   force_semantic = True )
@@ -1158,8 +1157,7 @@ def GetCompletions_JediCompleter_Basic_test():
 
   app.post_json( '/event_notification', event_data )
 
-  # WaitUntilJediHTTPServerReady
-  time.sleep( 2 )
+  WaitUntilJediHTTPServerReady( app )
 
   filepath = PathToTestFile( 'basic.py' )
   completion_data = BuildRequest( filepath = filepath,
@@ -1195,8 +1193,7 @@ def GetCompletions_JediCompleter_UnicodeDescription_test():
 
   app.post_json( '/event_notification', event_data )
 
-  # WaitUntilJediHTTPServerReady
-  time.sleep( 2 )
+  WaitUntilJediHTTPServerReady( app )
 
   filepath = PathToTestFile( 'unicode.py' )
   completion_data = BuildRequest( filepath = filepath,
