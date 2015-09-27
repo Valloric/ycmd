@@ -228,14 +228,16 @@ class JediCompleter( Completer ):
 
   def _GoToDefinition( self, request_data ):
     try:
-      return self._GetDefinitionsList( '/gotodefinition', request_data )
+      definitions = self._GetDefinitionsList( '/gotodefinition', request_data )
+      return self._BuildGoToResponse( definitions )
     except:
       raise RuntimeError( 'Can\'t jump do definition.' )
 
 
   def _GoToDeclaration( self, request_data ):
     try:
-      return self._GetDefinitionsList( '/gotoassignment', request_data )
+      definitions = self._GetDefinitionsList( '/gotoassignment', request_data )
+      return self._BuildGoToResponse( definitions )
     except:
       raise RuntimeError( 'Can\'t jump do declaration.' )
 
@@ -251,13 +253,17 @@ class JediCompleter( Completer ):
 
 
   def _GetDoc( self, request_data ):
-    pass
+    try:
+      definitions = self._GetDefinitionsList( '/gotodefinition', request_data )
+      return self._BuildDetailedInfoResponse( definitions )
+    except:
+      raise RuntimeError( 'Can\'t find a definition.' )
 
 
   def _GetDefinitionsList( self, handle, request_data ):
     try:
       response = self._GetResponse( handle, request_data )
-      return self._BuildGoToResponse( response[ 'definitions' ] )
+      return response[ 'definitions' ]
     except:
       raise RuntimeError( 'Cannot follow nothing. Put your cursor on a valid name.' )
 
@@ -291,5 +297,6 @@ class JediCompleter( Completer ):
 
 
   def _BuildDetailedInfoResponse( self, definition_list ):
-    pass
+    docs = [ definition[ 'docstring' ] for definition in definition_list ]
+    return responses.BuildDetailedInfoResponse( '\n---\n'.join( docs ) )
 

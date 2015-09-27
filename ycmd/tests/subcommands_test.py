@@ -1951,6 +1951,9 @@ def RunCompleterCommand_GetDoc_Jedi_Works_Method_test():
   # Testcase1
   app = TestApp( handlers.app )
 
+  ActivateJediHTTPServer( app )
+  WaitUntilJediHTTPServerReady( app )
+
   filepath = PathToTestFile( 'GetDoc_Jedi.py' )
   contents = open( filepath ).read()
 
@@ -1970,11 +1973,16 @@ def RunCompleterCommand_GetDoc_Jedi_Works_Method_test():
                         'Are dedented, like you might expect',
   } )
 
+  StopJediHTTPServer( app )
+
 
 @with_setup( Setup )
 def RunCompleterCommand_GetDoc_Jedi_Works_Class_test():
   # Testcase1
   app = TestApp( handlers.app )
+
+  ActivateJediHTTPServer( app )
+  WaitUntilJediHTTPServerReady( app )
 
   filepath = PathToTestFile( 'GetDoc_Jedi.py' )
   contents = open( filepath ).read()
@@ -1992,4 +2000,6 @@ def RunCompleterCommand_GetDoc_Jedi_Works_Class_test():
   eq_( response, {
        'detailed_info': 'Class Documentation',
   } )
+
+  StopJediHTTPServer( app )
 
