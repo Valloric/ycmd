@@ -89,13 +89,13 @@ class JediCompleter( Completer ):
     self._StartServer( request_data )
 
   def _StopServer( self ):
-    self._jedihttp_phandle.kill()
+    utils.TerminateProcess( self._jedihttp_phandle.pid )
     self._jedihttp_phandle = None
     self._jedihttp_port = None
 
     if not self._keep_logfiles:
-      os.unlink( self._logfile_stdout )
-      os.unlink( self._logfile_stderr )
+      utils.RemoveIfExists( self._logfile_stdout )
+      utils.RemoveIfExists( self._logfile_stderr )
 
     self._logger.info( 'Stopping JediHTTP' )
 
