@@ -49,11 +49,19 @@ def RunCompleterCommand_GoTo_Variation_Jedi_ZeroBasedLineAndColumn_test():
   tests = [
       {
         'command_arguments': [ 'GoToDefinition' ],
-        'response': { 'filepath': '/foo.py',  'line_num': 1, 'column_num': 5 }
+        'response': {
+          'filepath': os.path.abspath( '/foo.py' ),
+          'line_num': 1,
+          'column_num': 5
+        }
       },
       {
         'command_arguments': [ 'GoToDeclaration' ],
-        'response': { 'filepath': '/foo.py', 'line_num': 6, 'column_num': 1 }
+        'response': {
+          'filepath': os.path.abspath( '/foo.py' ),
+          'line_num': 6,
+          'column_num': 1
+        }
       }
   ]
   for test in tests:
