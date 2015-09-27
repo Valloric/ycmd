@@ -319,6 +319,10 @@ def GetCompletions_ClangCompleter_Forced_NoFallback_test():
 def GetCompletions_JediCompleter_NoSuggestions_Fallback_test():
   # jedi completer doesn't raise NO_COMPLETIONS_MESSAGE, so this is a different
   # code path to the ClangCompleter cases
+  app = TestApp( handlers.app )
+
+  ActivateJediHTTPServer( app )
+  WaitUntilJediHTTPServerReady( app )
 
   # TESTCASE2 (general_fallback/lang_python.py)
   GetCompletions_RunTest( {
@@ -342,6 +346,9 @@ def GetCompletions_JediCompleter_NoSuggestions_Fallback_test():
       } )
     },
   } )
+
+  StopJediHTTPServer( app )
+
 
 @with_setup( Setup )
 def GetCompletions_ClangCompleter_Filtered_No_Results_Fallback_test():
