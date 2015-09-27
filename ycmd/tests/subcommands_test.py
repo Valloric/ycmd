@@ -45,7 +45,22 @@ from ycmd.completers.cpp.clang_completer import NO_DOCUMENTATION_MESSAGE
 bottle.debug( True )
 
 @with_setup( Setup )
-def RunCompleterCommand_GoTo_Jedi_ZeroBasedLineAndColumn_test():
+def RunCompleterCommand_GoTo_Variation_Jedi_ZeroBasedLineAndColumn_test():
+  tests = [
+      {
+        'command_arguments': [ 'GoToDefinition' ],
+        'response': { 'filepath': '/foo.py',  'line_num': 1, 'column_num': 5 }
+      },
+      {
+        'command_arguments': [ 'GoToDeclaration' ],
+        'response': { 'filepath': '/foo.py', 'line_num': 6, 'column_num': 1 }
+      }
+  ]
+  for test in tests:
+    yield _RunCompleterCommand_GoTo_Variation_Jedi_ZeroBasedLineAndColumn, test
+
+
+def _RunCompleterCommand_GoTo_Variation_Jedi_ZeroBasedLineAndColumn( test ):
   app = TestApp( handlers.app )
   # Example taken directly from jedi docs
   # http://jedi.jedidjah.ch/en/latest/docs/plugin-api.html#examples
@@ -62,40 +77,60 @@ inception()
   ActivateJediHTTPServer( app )
   WaitUntilJediHTTPServerReady( app )
 
-  common_goto_data = {
-      'completer_target': 'filetype_default',
-      'line_num': 8,
-      'contents': contents,
-      'filetype': 'python',
-      'filepath': '/foo.py'
-  }
+  goto_data = BuildRequest( completer_target = 'filetype_default',
+                            command_arguments = test[ 'command_arguments' ],
+                            line_num = 8,
+                            contents = contents,
+                            filetype = 'python',
+                            filepath = '/foo.py' )
 
-  gotodefinition_data = common_goto_data
-  gotodefinition_data.update( {
-    'command_arguments': [ 'GoToDefinition' ]
-  } )
+  eq_( test[ 'response' ],
+       app.post_json( '/run_completer_command', goto_data ).json )
 
-  eq_( {
-         'filepath': os.path.abspath( '/foo.py' ),
-         'line_num': 1,
-         'column_num': 5
-       },
-       app.post_json( '/run_completer_command',
-                      BuildRequest( **gotodefinition_data ) ).json )
+  StopJediHTTPServer( app )
 
 
-  gotodeclaration_data = common_goto_data
-  gotodeclaration_data.update( {
-    'command_arguments': [ 'GoToDeclaration' ]
-  } )
+@with_setup( Setup )
+def RunCompleterCommand_GoTo_Jedi_test():
+  # Those tests are taken from https://github.com/Valloric/YouCompleteMe/issues/1236
+  tests = [
+      {
+        'request': { 'filename': 'goto_file1.py', 'line_num': 2 },
+        'response': {
+            'filepath': PathToTestFile( 'goto_file3.py' ),
+            'line_num': 1,
+            'column_num': 5
+        }
+      },
+      {
+        'request': { 'filename': 'goto_file4.py', 'line_num': 2 },
+        'response': {
+            'filepath': PathToTestFile( 'goto_file4.py' ),
+            'line_num': 1,
+            'column_num': 18
+        }
+      }
+  ]
+  for test in tests:
+    yield _RunCompleterCommand_GoTo_Jedi, test
 
-  eq_( {
-         'filepath': os.path.abspath( '/foo.py' ),
-         'line_num': 6,
-         'column_num': 1
-       },
-       app.post_json( '/run_completer_command',
-                      BuildRequest( **gotodeclaration_data ) ).json )
+
+def _RunCompleterCommand_GoTo_Jedi( test ):
+  app = TestApp( handlers.app )
+
+  ActivateJediHTTPServer( app )
+  WaitUntilJediHTTPServerReady( app )
+
+  filepath = PathToTestFile( test[ 'request' ][ 'filename' ] )
+  goto_data  = BuildRequest( completer_target = 'filetype_default',
+                             command_arguments = [ 'GoTo' ],
+                             line_num = test[ 'request' ][ 'line_num' ],
+                             contents = open( filepath ).read(),
+                             filetype = 'python',
+                             filepath = filepath )
+
+  response = test[ 'response' ]
+  eq_( response, app.post_json( '/run_completer_command', goto_data ).json )
 
   StopJediHTTPServer( app )
 
