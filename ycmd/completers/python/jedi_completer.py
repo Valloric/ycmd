@@ -231,7 +231,7 @@ class JediCompleter( Completer ):
       definitions = self._GetDefinitionsList( '/gotodefinition', request_data )
       return self._BuildGoToResponse( definitions )
     except:
-      raise RuntimeError( 'Can\'t jump do definition.' )
+      raise RuntimeError( 'Can\'t jump to definition.' )
 
 
   def _GoToDeclaration( self, request_data ):
