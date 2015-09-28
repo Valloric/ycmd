@@ -71,7 +71,7 @@ class JediCompleter( Completer ):
     """ Check if JediHTTP server is ready. """
     try:
       return bool( self._GetResponse( '/ready' ) )
-    except:
+    except Exception:
       return False
 
 
@@ -79,7 +79,7 @@ class JediCompleter( Completer ):
     """ Check if JediHTTP server is running (up and serving). """
     try:
       return bool( self._GetResponse( '/healthy' ) )
-    except:
+    except Exception:
       return False
 
 
@@ -224,7 +224,7 @@ class JediCompleter( Completer ):
     try:
       definitions = self._GetDefinitionsList( '/gotodefinition', request_data )
       return self._BuildGoToResponse( definitions )
-    except:
+    except Exception:
       raise RuntimeError( 'Can\'t jump to definition.' )
 
 
@@ -232,17 +232,17 @@ class JediCompleter( Completer ):
     try:
       definitions = self._GetDefinitionsList( '/gotoassignment', request_data )
       return self._BuildGoToResponse( definitions )
-    except:
+    except Exception:
       raise RuntimeError( 'Can\'t jump do declaration.' )
 
 
   def _GoTo( self, request_data ):
     try:
       return self._GoToDefinition( request_data )
-    except:
+    except Exception:
       try:
         return self._GoToDeclaration( request_data )
-      except:
+      except Exception:
         raise RuntimeError( 'Can\'t jump to definition or declaration.' )
 
 
@@ -250,7 +250,7 @@ class JediCompleter( Completer ):
     try:
       definitions = self._GetDefinitionsList( '/gotodefinition', request_data )
       return self._BuildDetailedInfoResponse( definitions )
-    except:
+    except Exception:
       raise RuntimeError( 'Can\'t find a definition.' )
 
 
@@ -258,7 +258,7 @@ class JediCompleter( Completer ):
     try:
       response = self._GetResponse( handle, request_data )
       return response[ 'definitions' ]
-    except:
+    except Exception:
       raise RuntimeError( 'Cannot follow nothing. Put your cursor on a valid name.' )
 
 
