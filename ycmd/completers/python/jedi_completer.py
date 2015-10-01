@@ -246,10 +246,12 @@ class JediCompleter( Completer ):
     try:
       return self._GoToDefinition( request_data )
     except Exception:
-      try:
-        return self._GoToDeclaration( request_data )
-      except Exception:
-        raise RuntimeError( 'Can\'t jump to definition or declaration.' )
+      pass
+
+    try:
+      return self._GoToDeclaration( request_data )
+    except Exception:
+      raise RuntimeError( 'Can\'t jump to definition or declaration.' )
 
 
   def _GetDoc( self, request_data ):
