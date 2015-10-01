@@ -110,7 +110,7 @@ def StopGoCodeServer( app ):
 
 
 def WaitUntilJediHTTPServerReady( app ):
-  retries = 10;
+  retries = 10
 
   while retries > 0:
     result = app.get( '/ready', { 'subserver': 'python' } ).json
