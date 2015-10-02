@@ -1,38 +1,29 @@
-sudo: false
 language: csharp
-mono:
-  - beta
 os:
   - linux
-  #- osx
+  - osx
+sudo: false
+mono:
+  - beta
 before_install:
   - git submodule update --init --recursive
 install:
-  - export YCMD_VENV_DIR=${HOME}/venvs/ycmd_test
-  - mkdir ${HOME}/bin
-  - export PATH=${HOME}/bin:$PATH
-  - ln -s /usr/bin/g++-4.8 ${HOME}/bin/g++
-  - ln -s /usr/bin/gcc-4.8 ${HOME}/bin/gcc
-  - ln -s ${HOME}/bin/g++ ${HOME}/bin/c++
-  - virtualenv -p python${PYTHON_VERSION} $YCMD_VENV_DIR
-  - cp /usr/bin/python${PYTHON_VERSION}-config ${YCMD_VENV_DIR}/bin/python-config
-  - source ${YCMD_VENV_DIR}/bin/activate
-  - pip install -U pip wheel setuptools
-  - pip install -r test_requirements.txt
-  - npm install -g typescript
-  # Travis can run out of RAM when compiling if don't prevent parallelization.
-  - export YCM_CORES=1
+  # source because it sets up env vars on some platforms
+  - source travis/travis_install.sh
 compiler:
   - gcc
-  - clang
-before_script:
-  - if [ $TRAVIS_OS_NAME == "osx" ] ; then sudo sysctl -w kern.maxfiles=64000 ; sudo sysctl -w kern.maxfilesperproc=64000 ; sudo launchctl limit maxfiles 64000 64000 ; fi ; ulimit -n 64000
 script: ./run_tests.py
 env:
-  - PYTHON_VERSION="2.6" USE_CLANG_COMPLETER="true" MONO_THREADS_PER_CPU=2000 MONO_MANAGED_WATCHER=disabled
-  - PYTHON_VERSION="2.6" USE_CLANG_COMPLETER="false" MONO_THREADS_PER_CPU=2000 MONO_MANAGED_WATCHER=disabled
-  - PYTHON_VERSION="2.7" USE_CLANG_COMPLETER="true" MONO_THREADS_PER_CPU=2000 MONO_MANAGED_WATCHER=disabled
-  - PYTHON_VERSION="2.7" USE_CLANG_COMPLETER="false" MONO_THREADS_PER_CPU=2000 MONO_MANAGED_WATCHER=disabled
+  global:
+    - MONO_THREADS_PER_CPU=2000
+    - MONO_MANAGED_WATCHER=disabled
+    # Travis can run out of RAM when compiling if we don't prevent parallelization.
+    - YCM_CORES=1
+  matrix:
+    - USE_CLANG_COMPLETER=true YCMD_PYTHON_VERSION=2.7
+    - USE_CLANG_COMPLETER=false YCMD_PYTHON_VERSION=2.7
+    - USE_CLANG_COMPLETER=true YCMD_PYTHON_VERSION=2.6
+    - USE_CLANG_COMPLETER=false YCMD_PYTHON_VERSION=2.6
 addons:
   apt:
     sources:
