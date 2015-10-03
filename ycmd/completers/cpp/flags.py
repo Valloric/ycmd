@@ -137,6 +137,7 @@ def _CallExtraConfFlagsForFile( module, filename, client_data ):
 
 
 def PrepareFlagsForClang( flags, filename ):
+  flags = _CompilerToLanguageFlag( flags )
   flags = _RemoveXclangFlags( flags )
   flags = _RemoveUnusedFlags( flags, filename )
   flags = _SanitizeFlags( flags )
@@ -187,24 +188,29 @@ def _SanitizeFlags( flags ):
   return vector
 
 
+def _CompilerToLanguageFlag( flags ):
+  """When flags come from the compile_commands.json file, the first flag is
+  usually the path to the compiler that should be invoked. We want to strip
+  that. If it's a C++ compiler, we want to replace it with a language flag for
+  C++."""
+
+  compiler = flags[ 0 ]
+  if not compiler.startswith( '-' ):
+    flags = flags[ 1: ]
+    if compiler.endswith( '++' ):
+      flags = [ '-x', 'c++' ] + flags
+  return flags
+
+
 def _RemoveUnusedFlags( flags, filename ):
   """Given an iterable object that produces strings (flags for Clang), removes
   the '-c' and '-o' options that Clang does not like to see when it's producing
   completions for a file. Same for '-MD' etc.
 
-  Also removes the first flag in the list if it does not
-  start with a '-' (it's highly likely to be the compiler name/path).
-
   We also try to remove any stray filenames in the flags that aren't include
   dirs."""
 
   new_flags = []
-
-  # When flags come from the compile_commands.json file, the first flag is
-  # usually the path to the compiler that should be invoked. We want to strip
-  # that.
-  if not flags[ 0 ].startswith( '-' ):
-    flags = flags[ 1: ]
 
   skip_next = False
   previous_flag_is_include = False
