@@ -191,7 +191,7 @@ class JediCompleter( Completer ):
 
 
   def OnFileReadyToParse( self, request_data ):
-    if ( not self.ServerIsRunning() ):
+    if not self.ServerIsRunning():
       self._StartServer( request_data )
 
 
