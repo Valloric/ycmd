@@ -186,8 +186,7 @@ class JediCompleter( Completer ):
 
 
   def _JediCompletions( self, request_data ):
-    resp = self._GetResponse( '/completions', request_data )[ 'completions' ]
-    return resp
+    return self._GetResponse( '/completions', request_data )[ 'completions' ]
 
 
   def OnFileReadyToParse( self, request_data ):
