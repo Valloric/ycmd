@@ -89,6 +89,7 @@ class JediCompleter( Completer ):
     self._StartServer( request_data )
 
   def _StopServer( self ):
+    self._logger.info( 'Stopping JediHTTP' )
     utils.TerminateProcess( self._jedihttp_phandle.pid )
     self._jedihttp_phandle = None
     self._jedihttp_port = None
@@ -97,10 +98,10 @@ class JediCompleter( Completer ):
       utils.RemoveIfExists( self._logfile_stdout )
       utils.RemoveIfExists( self._logfile_stderr )
 
-    self._logger.info( 'Stopping JediHTTP' )
 
 
   def _StartServer( self, request_data ):
+    self._logger.info( 'Starting JediHTTP server' )
     self._ChoosePort()
 
     command = [ PYTHON_EXECUTABLE_PATH,
@@ -118,7 +119,6 @@ class JediCompleter( Completer ):
         self._jedihttp_phandle = utils.SafePopen( command,
                                                   stdout = logout,
                                                   stderr = logerr )
-    self._logger.info( 'Starting JediHTTP server' )
 
 
   def _ChoosePort( self ):
