@@ -132,8 +132,7 @@ class JediCompleter( Completer ):
     target = urlparse.urljoin( self._ServerLocation(), handler )
     parameters = self._TranslateRequestForJediHTTP( request_data )
     response = requests.post( target, json = parameters )
-    if response.status_code != requests.codes.ok:
-      raise RuntimeError( response[ 'message' ] )
+    response.raise_for_status()
     return response.json()
 
 
