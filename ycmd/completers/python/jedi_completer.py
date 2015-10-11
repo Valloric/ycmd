@@ -217,7 +217,7 @@ class JediCompleter( Completer ):
       return self._GetDoc( request_data )
     elif command == 'RestartServer':
       return self._RestartServer( request_data )
-    # This sub-command is not available as a DefinedSubcommands because is not
+    # This sub-command is not available as a DefinedSubcommands because it's not
     # really needed for the user but is useful in tests for tearing down the
     # server
     elif command == 'StopServer':
