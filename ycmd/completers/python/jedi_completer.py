@@ -88,6 +88,7 @@ class JediCompleter( Completer ):
     self._Shutdown()
     self._StartServer( request_data )
 
+
   def _StopServer( self ):
     self._logger.info( 'Stopping JediHTTP' )
     utils.TerminateProcess( self._jedihttp_phandle.pid )
@@ -97,7 +98,6 @@ class JediCompleter( Completer ):
     if not self._keep_logfiles:
       utils.RemoveIfExists( self._logfile_stdout )
       utils.RemoveIfExists( self._logfile_stderr )
-
 
 
   def _StartServer( self, request_data ):
@@ -294,4 +294,3 @@ class JediCompleter( Completer ):
   def _BuildDetailedInfoResponse( self, definition_list ):
     docs = [ definition[ 'docstring' ] for definition in definition_list ]
     return responses.BuildDetailedInfoResponse( '\n---\n'.join( docs ) )
-
