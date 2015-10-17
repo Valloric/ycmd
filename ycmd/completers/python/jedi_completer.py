@@ -128,7 +128,7 @@ class JediCompleter( Completer ):
 
 
   def _GetResponse( self, handler, request_data = {} ):
-    """ Handle comunication with server """
+    """ Handle communication with server """
     target = urlparse.urljoin( self._ServerLocation(), handler )
     parameters = self._TranslateRequestForJediHTTP( request_data )
     response = requests.post( target, json = parameters )
