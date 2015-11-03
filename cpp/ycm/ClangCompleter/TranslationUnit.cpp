@@ -42,6 +42,11 @@ unsigned editingOptions() {
          clang_defaultEditingTranslationUnitOptions();
 }
 
+unsigned reparseOptions(
+    CXTranslationUnit translationUnit) {
+    return clang_defaultReparseOptions( translationUnit );
+}
+
 
 unsigned completionOptions() {
   return clang_defaultCodeCompleteOptions() |
@@ -141,17 +146,6 @@ std::vector< Diagnostic > TranslationUnit::Reparse(
 }
 
 
-void TranslationUnit::ReparseForIndexing(
-  const std::vector< UnsavedFile > &unsaved_files ) {
-  std::vector< CXUnsavedFile > cxunsaved_files =
-    ToCXUnsavedFiles( unsaved_files );
-
-  Reparse( cxunsaved_files,
-           CXTranslationUnit_PrecompiledPreamble |
-           CXTranslationUnit_SkipFunctionBodies );
-}
-
-
 std::vector< CompletionData > TranslationUnit::CandidatesForLocation(
   int line,
   int column,
@@ -197,7 +191,7 @@ Location TranslationUnit::GetDeclarationLocation(
   const std::vector< UnsavedFile > &unsaved_files,
   bool reparse ) {
   if ( reparse )
-    ReparseForIndexing( unsaved_files );
+    Reparse( unsaved_files );
 
   unique_lock< mutex > lock( clang_access_mutex_ );
 
@@ -228,7 +222,7 @@ Location TranslationUnit::GetDefinitionLocation(
   const std::vector< UnsavedFile > &unsaved_files,
   bool reparse ) {
   if ( reparse )
-    ReparseForIndexing( unsaved_files );
+    Reparse( unsaved_files );
 
   unique_lock< mutex > lock( clang_access_mutex_ );
 
@@ -255,7 +249,7 @@ std::string TranslationUnit::GetTypeAtLocation(
   bool reparse ) {
 
   if (reparse)
-    ReparseForIndexing( unsaved_files );
+    Reparse( unsaved_files );
 
   unique_lock< mutex > lock( clang_access_mutex_ );
 
@@ -312,7 +306,7 @@ std::string TranslationUnit::GetEnclosingFunctionAtLocation(
   bool reparse ) {
 
   if (reparse)
-    ReparseForIndexing( unsaved_files );
+    Reparse( unsaved_files );
 
   unique_lock< mutex > lock( clang_access_mutex_ );
 
@@ -340,7 +334,14 @@ std::string TranslationUnit::GetEnclosingFunctionAtLocation(
 // param though.
 void TranslationUnit::Reparse(
   std::vector< CXUnsavedFile > &unsaved_files ) {
-  Reparse( unsaved_files, editingOptions() );
+  uint options;
+  {
+    unique_lock< mutex > lock( clang_access_mutex_ );
+    options = ( clang_translation_unit_
+                ? reparseOptions( clang_translation_unit_ )
+                : static_cast<unsigned>(CXReparse_None) );
+  }
+  Reparse( unsaved_files, options );
 }
 
 
@@ -420,7 +421,7 @@ std::vector< FixIt > TranslationUnit::GetFixItsForLocationInFile(
   bool reparse ) {
 
   if ( reparse )
-    ReparseForIndexing( unsaved_files );
+    Reparse( unsaved_files );
 
   std::vector< FixIt > fixits;
 
@@ -459,7 +460,7 @@ DocumentationData TranslationUnit::GetDocsForLocationInFile(
   bool reparse ) {
 
   if ( reparse )
-    ReparseForIndexing( unsaved_files );
+    Reparse( unsaved_files );
 
   unique_lock< mutex > lock( clang_access_mutex_ );
 
