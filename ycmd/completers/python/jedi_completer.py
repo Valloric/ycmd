@@ -22,6 +22,7 @@
 from ycmd.utils import ToUtf8IfNeeded
 from ycmd.completers.completer import Completer
 from ycmd import responses, utils
+from jedihttp import hmaclib
 
 import logging
 import urlparse
@@ -29,15 +30,29 @@ import requests
 
 import sys
 import os
+import base64
 
 
+HMAC_SECRET_LENGTH = 16
 PYTHON_EXECUTABLE_PATH = sys.executable
 PATH_TO_JEDIHTTP = os.path.join( os.path.abspath( os.path.dirname( __file__ ) ),
                                  '..', '..', '..',
-                                 'third_party', 'JediHTTP', 'jedihttp' )
+                                 'third_party', 'JediHTTP', 'jedihttp.py' )
 
 LOG_FILENAME_FORMAT = os.path.join( utils.PathToTempDir(),
                                     u'jedihttp_{port}_{std}.log' )
+
+
+class HMACAuth( requests.auth.AuthBase ):
+  def __init__( self, secret ):
+    self._hmachelper = hmaclib.JediHTTPHmacHelper( secret )
+
+  def __call__( self, req ):
+    self._hmachelper.SignRequestHeaders( req.headers,
+                                         req.method,
+                                         req.path_url,
+                                         req.body )
+    return req
 
 
 class JediCompleter( Completer ):
@@ -55,6 +70,7 @@ class JediCompleter( Completer ):
     self._logfile_stdout = None
     self._logfile_stderr = None
     self._keep_logfiles = user_options[ 'server_keep_logfiles' ]
+    self._hmac_secret = ''
 
 
   def SupportedFiletypes( self ):
@@ -103,11 +119,13 @@ class JediCompleter( Completer ):
   def _StartServer( self, request_data ):
     self._logger.info( 'Starting JediHTTP server' )
     self._ChoosePort()
+    self._GenerateHmacSecret()
 
-    command = [ PYTHON_EXECUTABLE_PATH,
-                PATH_TO_JEDIHTTP,
-                '--port',
-                str( self._jedihttp_port ) ]
+    with hmaclib.TemporaryHmacSecretFile( self._hmac_secret ) as hmac_file:
+      command = [ PYTHON_EXECUTABLE_PATH,
+                  PATH_TO_JEDIHTTP,
+                  '--port', str( self._jedihttp_port ),
+                  '--hmac-file-secret', hmac_file.name ]
 
     self._logfile_stdout = LOG_FILENAME_FORMAT.format(
         port = self._jedihttp_port, std = 'stdout' )
@@ -127,11 +145,17 @@ class JediCompleter( Completer ):
     self._logger.info( u'using port {0}'.format( self._jedihttp_port ) )
 
 
+  def _GenerateHmacSecret( self ):
+    self._hmac_secret = base64.b64encode( os.urandom( HMAC_SECRET_LENGTH ) )
+
+
   def _GetResponse( self, handler, request_data = {} ):
     """ Handle communication with server """
     target = urlparse.urljoin( self._ServerLocation(), handler )
     parameters = self._TranslateRequestForJediHTTP( request_data )
-    response = requests.post( target, json = parameters )
+    response = requests.post( target,
+                              json = parameters,
+                              auth = HMACAuth( self._hmac_secret ) )
     response.raise_for_status()
     return response.json()
 
@@ -150,7 +174,7 @@ class JediCompleter( Completer ):
         'source': source,
         'line': line,
         'col': col,
-        'path': path
+        'source_path': path
     }
 
 
