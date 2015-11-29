@@ -128,6 +128,10 @@ class FilenameCompleter( Completer ):
         working_dir) )
 
 
+  def GetSubcommandsMap( self ):
+    return {}
+
+
   def GetPathsIncludeCase( self, path_dir, quoted_include, filepath,
                            client_data ):
     paths = []

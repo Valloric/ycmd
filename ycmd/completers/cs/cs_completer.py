@@ -149,8 +149,130 @@ class CsharpCompleter( Completer ):
     return result
 
 
-  def DefinedSubcommands( self ):
-    return CsharpSolutionCompleter.subcommands.keys()
+  def GetSubcommandsMap( self ):
+    return {
+      'StartServer': {
+        'method'    : self._SolutionSubcommand,
+        'extra_args': {
+          'method'         : '_StartServer',
+          'no_request_data': True
+        }
+      },
+      'StopServer': {
+        'method'    : self._SolutionSubcommand,
+        'extra_args': {
+          'method'         : '_StopServer',
+          'no_request_data': True
+        }
+      },
+      'RestartServer': {
+        'method'    : self._SolutionSubcommand,
+        'extra_args': {
+          'method'         : '_RestartServer',
+          'no_request_data': True
+        }
+      },
+      'ReloadSolution': {
+        'method'    : self._SolutionSubcommand,
+        'extra_args': {
+          'method'         : '_ReloadSolution',
+          'no_request_data': True
+        }
+      },
+      'SolutionFile': {
+        'method'    : self._SolutionSubcommand,
+        'extra_args': {
+          'method'         : '_SolutionFile',
+          'no_request_data': True
+        }
+      },
+      'GoToDefinition': {
+        'method'    : self._SolutionSubcommand,
+        'extra_args': {
+          'method': '_GoToDefinition'
+        }
+      },
+      'GoToDeclaration': {
+        'method'    : self._SolutionSubcommand,
+        'extra_args': {
+          'method': '_GoToDefinition'
+        }
+      },
+      'GoTo': {
+        'method'    : self._SolutionSubcommand,
+        'extra_args': {
+          'method'                 : '_GoToImplementation',
+          'fallback_to_declaration': True
+        }
+      },
+      'GoToDefinitionElseDeclaration': {
+        'method'    : self._SolutionSubcommand,
+        'extra_args': {
+          'method': '_GoToDefinition'
+        }
+      },
+      'GoToImplementation': {
+        'method'    : self._SolutionSubcommand,
+        'extra_args': {
+          'method'                 : '_GoToImplementation',
+          'fallback_to_declaration': False
+        }
+      },
+      'GoToImplementationElseDeclaration': {
+        'method'      : self._SolutionSubcommand,
+        'extra_args'  : {
+          'method'                 : '_GoToImplementation',
+          'fallback_to_declaration': True
+        }
+      },
+      'GetType': {
+        'method'    : self._SolutionSubcommand,
+        'extra_args': {
+          'method': '_GetType'
+        }
+      },
+      'FixIt': {
+        'method'    : self._SolutionSubcommand,
+        'extra_args': {
+          'method': '_FixIt'
+        }
+      },
+      'GetDoc': {
+        'method'    : self._SolutionSubcommand,
+        'extra_args': {
+          'method': '_GetDoc'
+        }
+      },
+      'ServerRunning': {
+        'method'    : self._SolutionSubcommand,
+        'extra_args': {
+          'method'         : 'ServerRunning',
+          'no_request_data': True
+        }
+      },
+      'ServerReady': {
+        'method'    : self._SolutionSubcommand,
+        'extra_args': {
+          'method'         : 'ServerReady',
+          'no_request_data': True
+        }
+      },
+      'ServerTerminated': {
+        'method'    : self._SolutionSubcommand,
+        'extra_args': {
+          'method'         : 'ServerTerminated',
+          'no_request_data': True
+        }
+      }
+    }
+
+
+  def _SolutionSubcommand( self, request_data, method,
+                           no_request_data = False, **kwargs ):
+    solutioncompleter = self._GetSolutionCompleter( request_data )
+    if not no_request_data:
+      kwargs[ 'request_data' ] = request_data
+    return getattr( solutioncompleter, method )( **kwargs )
 
 
   def OnFileReadyToParse( self, request_data ):
@@ -210,18 +332,6 @@ class CsharpCompleter( Completer ):
       closest_diagnostic.text_ )
 
 
-  def OnUserCommand( self, arguments, request_data ):
-    if not arguments:
-      raise ValueError( self.UserCommandsHelpMessage() )
-
-    command = arguments[ 0 ]
-    if command in CsharpSolutionCompleter.subcommands:
-      solutioncompleter = self._GetSolutionCompleter( request_data )
-      return solutioncompleter.Subcommand( command, arguments, request_data )
-    else:
-      raise ValueError( self.UserCommandsHelpMessage() )
-
-
   def DebugInfo( self, request_data ):
     solutioncompleter = self._GetSolutionCompleter( request_data )
     if solutioncompleter.ServerIsRunning():
@@ -275,34 +385,6 @@ class CsharpCompleter( Completer ):
 
 
 class CsharpSolutionCompleter:
-  subcommands = {
-    'StartServer': ( lambda self, request_data: self._StartServer() ),
-    'StopServer': ( lambda self, request_data: self._StopServer() ),
-    'RestartServer': ( lambda self, request_data: self._RestartServer() ),
-    'ReloadSolution': ( lambda self, request_data: self._ReloadSolution() ),
-    'SolutionFile': ( lambda self, request_data: self._SolutionFile() ),
-    'GoToDefinition': ( lambda self, request_data: self._GoToDefinition(
-        request_data ) ),
-    'GoToDeclaration': ( lambda self, request_data: self._GoToDefinition(
-        request_data ) ),
-    'GoTo': ( lambda self, request_data: self._GoToImplementation(
-        request_data, True ) ),
-    'GoToDefinitionElseDeclaration': ( lambda self, request_data:
-        self._GoToDefinition( request_data ) ),
-    'GoToImplementation': ( lambda self, request_data:
-        self._GoToImplementation( request_data, False ) ),
-    'GoToImplementationElseDeclaration': ( lambda self, request_data:
-        self._GoToImplementation( request_data, True ) ),
-    'GetType': ( lambda self, request_data: self._GetType(
-        request_data ) ),
-    'FixIt': ( lambda self, request_data: self._FixIt( request_data ) ),
-    'GetDoc': ( lambda self, request_data: self._GetDoc( request_data ) ),
-    'ServerRunning': ( lambda self, request_data: self.ServerIsRunning() ),
-    'ServerReady': ( lambda self, request_data: self.ServerIsReady() ),
-    'ServerTerminated': ( lambda self, request_data: self.ServerTerminated() ),
-  }
-
-
   def __init__( self, solution_path, keep_logfiles, desired_omnisharp_port ):
     self._logger = logging.getLogger( __name__ )
     self._solution_path = solution_path
@@ -312,15 +394,6 @@ class CsharpSolutionCompleter:
     self._omnisharp_port = None
     self._omnisharp_phandle = None
     self._desired_omnisharp_port = desired_omnisharp_port;
-
-
-  def Subcommand( self, command, arguments, request_data ):
-    command_lamba = CsharpSolutionCompleter.subcommands[ command ]
-    return command_lamba( self, request_data )
-
-
-  def DefinedSubcommands( self ):
-    return CsharpSolutionCompleter.subcommands.keys()
 
 
   def CodeCheck( self, request_data ):

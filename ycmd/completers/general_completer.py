@@ -35,3 +35,7 @@ class GeneralCompleter( Completer ):
 
   def SupportedFiletypes( self ):
     return set()
+
+
+  def GetSubcommandsMap( self ):
+    return {}

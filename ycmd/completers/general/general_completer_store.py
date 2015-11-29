@@ -85,6 +85,10 @@ class GeneralCompleterStore( Completer ):
     return candidates
 
 
+  def GetSubcommandsMap( self ):
+    return {}
+
+
   def OnFileReadyToParse( self, request_data ):
     for completer in self._all_completers:
       completer.OnFileReadyToParse( request_data )
