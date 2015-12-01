@@ -27,7 +27,7 @@ from jedihttp import hmaclib
 import logging
 import urlparse
 import requests
-
+import threading
 import sys
 import os
 import base64
@@ -35,12 +35,11 @@ import base64
 
 HMAC_SECRET_LENGTH = 16
 PYTHON_EXECUTABLE_PATH = sys.executable
+LOG_FILENAME_FORMAT = os.path.join( utils.PathToTempDir(),
+                                    u'jedihttp_{port}_{std}.log' )
 PATH_TO_JEDIHTTP = os.path.join( os.path.abspath( os.path.dirname( __file__ ) ),
                                  '..', '..', '..',
                                  'third_party', 'JediHTTP', 'jedihttp.py' )
-
-LOG_FILENAME_FORMAT = os.path.join( utils.PathToTempDir(),
-                                    u'jedihttp_{port}_{std}.log' )
 
 
 class HMACAuth( requests.auth.AuthBase ):
@@ -64,6 +63,7 @@ class JediCompleter( Completer ):
 
   def __init__( self, user_options ):
     super( JediCompleter, self ).__init__( user_options )
+    self._server_lock = threading.Lock()
     self._jedihttp_port = None
     self._jedihttp_phandle = None
     self._logger = logging.getLogger( __name__ )
@@ -79,8 +79,9 @@ class JediCompleter( Completer ):
 
 
   def _Shutdown( self ):
-    if self.ServerIsRunning():
-      self._StopServer()
+    with self._server_lock:
+      if self.ServerIsRunning():
+        self._StopServer()
 
 
   def ServerIsReady( self ):
@@ -117,6 +118,9 @@ class JediCompleter( Completer ):
 
 
   def _StartServer( self, request_data ):
+    if self.ServerIsRunning():
+      return
+
     self._logger.info( 'Starting JediHTTP server' )
     self._ChoosePort()
     self._GenerateHmacSecret()
@@ -213,7 +217,7 @@ class JediCompleter( Completer ):
 
 
   def OnFileReadyToParse( self, request_data ):
-    if not self.ServerIsRunning():
+    with self._server_lock:
       self._StartServer( request_data )
 
 
