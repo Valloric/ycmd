@@ -35,12 +35,11 @@ import base64
 
 HMAC_SECRET_LENGTH = 16
 PYTHON_EXECUTABLE_PATH = sys.executable
+LOG_FILENAME_FORMAT = os.path.join( utils.PathToTempDir(),
+                                    u'jedihttp_{port}_{std}.log' )
 PATH_TO_JEDIHTTP = os.path.join( os.path.abspath( os.path.dirname( __file__ ) ),
                                  '..', '..', '..',
                                  'third_party', 'JediHTTP', 'jedihttp.py' )
-
-LOG_FILENAME_FORMAT = os.path.join( utils.PathToTempDir(),
-                                    u'jedihttp_{port}_{std}.log' )
 
 
 class HMACAuth( requests.auth.AuthBase ):
