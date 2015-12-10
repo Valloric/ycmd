@@ -29,7 +29,6 @@ import urlparse
 import requests
 import subprocess
 
-import sys
 import os
 
 from os import path as p
@@ -64,7 +63,6 @@ class RustCompleter( Completer ):
     super( RustCompleter, self ).__init__( user_options )
     self._racerd_host = None
     self._logger = logging.getLogger( __name__ )
-    self._logger.info('building RustCompleter')
     self._keep_logfiles = user_options[ 'server_keep_logfiles' ]
     self._StartServer()
 
