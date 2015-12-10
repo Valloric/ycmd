@@ -28,6 +28,7 @@ import logging
 import urlparse
 import requests
 import subprocess
+import httplib
 
 import os
 
@@ -85,7 +86,7 @@ class RustCompleter( Completer ):
     response = requests.post( target, json = parameters )
     response.raise_for_status()
 
-    if response.status_code is 204:
+    if response.status_code is httplib.NO_CONTENT:
       return None
 
     return response.json()
