@@ -183,7 +183,7 @@ class JediCompleter( Completer ):
 
 
   def _ServerLocation( self ):
-    return 'http://localhost:' + str( self._jedihttp_port )
+    return 'http://127.0.0.1:' + str( self._jedihttp_port )
 
 
   def _GetExtraData( self, completion ):
