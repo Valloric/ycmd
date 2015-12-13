@@ -78,7 +78,7 @@ class JediCompleter( Completer ):
     return [ 'python' ]
 
 
-  def _Shutdown( self ):
+  def Shutdown( self ):
     with self._server_lock:
       if self.ServerIsRunning():
         self._StopServer()
@@ -102,7 +102,7 @@ class JediCompleter( Completer ):
 
   def RestartServer( self, request_data ):
     """ Restart the JediHTTP Server. """
-    self._Shutdown()
+    self.Shutdown()
     self._StartServer( request_data )
 
 
@@ -240,9 +240,9 @@ class JediCompleter( Completer ):
       'GetDoc'         : ( lambda self, request_data:
                            self._GetDoc( request_data ) ),
       'StopServer'     : ( lambda self, request_data:
-                           self._StopServer() ),
+                           self.Shutdown() ),
       'RestartServer'  : ( lambda self, request_data:
-                           self._RestartServer( request_data ) )
+                           self.RestartServer( request_data ) )
     }
 
 
