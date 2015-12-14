@@ -169,7 +169,6 @@ def ParseArguments():
   parser.add_argument( '--arch', type = int, choices = [ 32, 64 ],
                        help = 'Force architecture to 32 or 64 bits on '
                        'Windows (default: python interpreter architecture).' )
-
   args = parser.parse_args()
 
   if args.system_libclang and not args.clang_completer:
