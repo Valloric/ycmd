@@ -69,7 +69,7 @@ class RustCompleter( Completer ):
     return [ 'rust' ]
 
 
-  def _GetResponse( self, handler, request_data = {} ):
+  def _GetResponse( self, handler, request_data = None, method = 'POST' ):
     """
     Query racerd via HTTP
 
@@ -78,9 +78,10 @@ class RustCompleter( Completer ):
     were found.
     """
     self._logger.info( 'RustCompleter._GetResponse' )
-    target = urlparse.urljoin( self._racerd_host, handler )
+    url = urlparse.urljoin( self._racerd_host, handler )
     parameters = self._TranslateRequest( request_data )
-    response = requests.post( target, json = parameters )
+    response = requests.request( method, url, json = parameters )
+
     response.raise_for_status()
 
     if response.status_code is httplib.NO_CONTENT:
@@ -93,8 +94,8 @@ class RustCompleter( Completer ):
     """
     Transform ycm request into racerd request
     """
-    if not request_data:
-      return {}
+    if request_data is None:
+      return None
 
     file_path = request_data[ 'filepath' ]
     buffers = []
@@ -165,7 +166,15 @@ class RustCompleter( Completer ):
 
 
   def ServerIsRunning( self ):
-    self._GetResponse( '/ping' )
+    if self._racerd_host is None or self._racerd_phandle is None:
+      return False
+
+    try:
+      self._GetResponse( '/ping', method = 'GET' )
+      return True
+    except requests.HTTPError:
+      self._StopServer()
+      return False
 
 
   def _StopServer( self ):
