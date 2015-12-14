@@ -164,15 +164,6 @@ class RustCompleter( Completer ):
     self._racerd_host = 'http://' + host
 
 
-  def DefinedSubcommands( self ):
-    return [
-      'GoTo',
-      'GoToDefinition'
-      'RestartServer',
-      'StopServer',
-    ]
-
-
   def ServerIsRunning( self ):
     self._GetResponse( '/ping' )
 
@@ -198,39 +189,19 @@ class RustCompleter( Completer ):
   #     self._StartServer( request_data )
 
 
-  def OnUserCommand( self, arguments, request_data ):
-    if not arguments:
-      raise ValueError( self.UserCommandsHelpMessage() )
-
-    command_map = {
-      'GoTo' : {
-        'method': self._GoToDefinition,
-        'args': { 'request_data': request_data }
-      },
-      'GoToDefinition' : {
-        'method': self._GoToDefinition,
-        'args': { 'request_data': request_data }
-      },
-      'GoToDeclaration' : {
-        'method': self._GoToDefinition,
-        'args': { 'request_data': request_data }
-      },
-      'StopServer' : {
-        'method': self._StopServer,
-        'args': { 'request_data': request_data }
-      },
-      'RestartServer' : {
-        'method': self._RestartServer,
-        'args': { 'request_data': request_data }
-      }
+  def GetSubcommandsMap( self ):
+    return {
+      'GoTo' : ( lambda self, request_data:
+                 self._GoToDefinition( request_data ) ),
+      'GoToDefinition' : ( lambda self, request_data:
+                           self._GoToDefinition( request_data ) ),
+      'GoToDeclaration' : ( lambda self, request_data:
+                           self._GoToDefinition( request_data ) ),
+      'StopServer' : ( lambda self, request_data:
+                           self._StopServer( request_data ) ),
+      'RestartServer' : ( lambda self, request_data:
+                           self._RestartServer( request_data ) ),
     }
-
-    try:
-      command_def = command_map[ arguments[ 0 ] ]
-    except KeyError:
-      raise ValueError( self.UserCommandsHelpMessage() )
-
-    return command_def[ 'method' ]( **( command_def[ 'args' ] ) )
 
 
   def _GoToDefinition( self, request_data ):
