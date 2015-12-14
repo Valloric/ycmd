@@ -1,24 +1,21 @@
 #!/usr/bin/env python
-# vim: ts=2 sw=2 cc=80 tw=79
 #
-# Copyright (C) 2011, 2012  Stephen Sugden <me@stephensugden.com>
-#                           Google Inc.
-#                           Stanislav Golovanov <stgolovanov@gmail.com>
+# Copyright (C) 2015  ycmd contributors
 #
-# This file is part of YouCompleteMe.
+# This file is part of ycmd.
 #
-# YouCompleteMe is free software: you can redistribute it and/or modify
+# ycmd is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# YouCompleteMe is distributed in the hope that it will be useful,
+# ycmd is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with YouCompleteMe.  If not, see <http://www.gnu.org/licenses/>.
+# along with ycmd.  If not, see <http://www.gnu.org/licenses/>.
 
 from ycmd.utils import ToUtf8IfNeeded
 from ycmd.completers.completer import Completer
@@ -54,10 +51,10 @@ class RustCompleter( Completer ):
     become necessary anyways.
     """
     src_key = 'RUST_SRC_PATH'
-    if not os.environ.has_key(src_key):
+    if not os.environ.has_key( src_key ):
       raise RuntimeError( src_key + ' environment variable is not set' )
 
-    return os.environ[src_key]
+    return os.environ[ src_key ]
 
 
   def __init__( self, user_options ):
@@ -80,7 +77,7 @@ class RustCompleter( Completer ):
     when no errors were encountered but no completions, definitions, or errors
     were found.
     """
-    self._logger.info('RustCompleter._GetResponse')
+    self._logger.info( 'RustCompleter._GetResponse' )
     target = urlparse.urljoin( self._racerd_host, handler )
     parameters = self._TranslateRequest( request_data )
     response = requests.post( target, json = parameters )
@@ -102,10 +99,10 @@ class RustCompleter( Completer ):
     file_path = request_data[ 'filepath' ]
     buffers = []
     for path, obj in request_data[ 'file_data' ].items():
-        buffers.append({
-            'contents': obj['contents'],
+        buffers.append( {
+            'contents': obj[ 'contents' ],
             'file_path': path
-        })
+        } )
 
     line = request_data[ 'line_num' ]
     col = request_data[ 'column_num' ] - 1
@@ -136,7 +133,6 @@ class RustCompleter( Completer ):
 
 
   def ComputeCandidatesInner( self, request_data ):
-    self._logger.info( 'rust ComputeCandidatesInner' )
     completions = self._FetchCompletions( request_data )
     if completions is None:
       return []
@@ -152,8 +148,9 @@ class RustCompleter( Completer ):
   def _FetchCompletions( self, request_data ):
     return self._GetResponse( '/list_completions', request_data )
 
+
   def _StartServer( self ):
-    self._logger.info('_StartServer using RACERD = ' + RACERD)
+    self._logger.info( '_StartServer using RACERD = ' + RACERD )
     self._racerd_phandle = utils.SafePopen( [
         RACERD, 'serve', '--port=0', '--secret-file=not_supported',
                 '--rust-src-path=' + self._GetRustSrcPath()
@@ -162,9 +159,10 @@ class RustCompleter( Completer ):
     # The first line output by racerd includes the host and port the server is
     # listening on.
     host = self._racerd_phandle.stdout.readline()
-    self._logger.info('_StartServer using host = ' + host)
+    self._logger.info( '_StartServer using host = ' + host )
     host = host.split()[3]
     self._racerd_host = 'http://' + host
+
 
   def DefinedSubcommands( self ):
     return [
@@ -174,25 +172,31 @@ class RustCompleter( Completer ):
       'StopServer',
     ]
 
+
   def ServerIsRunning( self ):
-    self._GetResponse( '/ping', { 'ping': True } )
+    self._GetResponse( '/ping' )
+
 
   def _StopServer( self ):
     self._racerd_phandle.terminate()
     self._racerd_phandle = None
 
+
   def RestartServer( self ):
     self._StopServer()
     self._StartServer()
+
 
   def _RestartServer( self, request_data ):
     # TODO request_data
     self._RestartServer()
 
+
   # TODO
   # def OnFileReadyToParse( self, request_data ):
   #   if not self.ServerIsRunning():
   #     self._StartServer( request_data )
+
 
   def OnUserCommand( self, arguments, request_data ):
     if not arguments:
@@ -237,6 +241,7 @@ class RustCompleter( Completer ):
                                           definition[ 'column' ] + 1 )
     except Exception:
       raise RuntimeError( 'Can\'t jump to definition.' )
+
 
   def Shutdown( self ):
     self._racerd_phandle.terminate()
