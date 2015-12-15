@@ -19,13 +19,17 @@
 
 from ycmd.utils import ToUtf8IfNeeded
 from ycmd.completers.completer import Completer
-from ycmd import responses, utils
+from ycmd import responses, utils, hmac_utils
 
 import logging
 import urlparse
 import requests
 import subprocess
 import httplib
+import json
+import tempfile
+import base64
+import binascii
 
 import os
 
@@ -35,6 +39,8 @@ DIR_OF_THIS_SCRIPT = p.dirname( p.abspath( __file__ ) )
 DIR_OF_THIRD_PARTY = p.abspath( p.join( DIR_OF_THIS_SCRIPT,
                              '..', '..', '..', 'third_party' ) )
 RACERD = p.join( DIR_OF_THIRD_PARTY, 'racerd', 'target', 'release', 'racerd' )
+RACERD_HMAC_HEADER = 'x-racerd-hmac'
+HMAC_SECRET_LENGTH = 16
 
 class RustCompleter( Completer ):
   """
@@ -62,11 +68,17 @@ class RustCompleter( Completer ):
     self._racerd_host = None
     self._logger = logging.getLogger( __name__ )
     self._keep_logfiles = user_options[ 'server_keep_logfiles' ]
+    self._hmac_secret = ''
     self._StartServer()
 
 
   def SupportedFiletypes( self ):
     return [ 'rust' ]
+
+
+  def _ComputeRequestHmac( self, method, path, body ):
+    hmac = hmac_utils.CreateRequestHmac( method, path, body, self._hmac_secret )
+    return binascii.hexlify( hmac )
 
 
   def _GetResponse( self, handler, request_data = None, method = 'POST' ):
@@ -80,7 +92,16 @@ class RustCompleter( Completer ):
     self._logger.info( 'RustCompleter._GetResponse' )
     url = urlparse.urljoin( self._racerd_host, handler )
     parameters = self._TranslateRequest( request_data )
-    response = requests.request( method, url, json = parameters )
+    body = json.dumps( parameters )
+    request_hmac = self._ComputeRequestHmac( method, handler, body )
+
+    extra_headers = { 'content-type': 'application/json' }
+    extra_headers[ RACERD_HMAC_HEADER ] = request_hmac
+
+    response = requests.request( method,
+                                 url,
+                                 data = body,
+                                 headers = extra_headers )
 
     response.raise_for_status()
 
@@ -150,11 +171,35 @@ class RustCompleter( Completer ):
     return self._GetResponse( '/list_completions', request_data )
 
 
+  def _WriteSecretFile( self, secret ):
+    """
+    Write a file containing the `secret` argument. The path to this file is
+    returned.
+
+    Note that racerd consumes the file upon reading; removal of the temp file is
+    intentionally not handled here.
+    """
+
+    # Make temp file
+    secret_fd, secret_path = tempfile.mkstemp( text=True )
+
+    # Write secret
+    secret_file = os.fdopen( secret_fd, 'w' )
+    secret_file.write( secret )
+    secret_file.close()
+
+    return secret_path
+
+
   def _StartServer( self ):
     self._logger.info( '_StartServer using RACERD = ' + RACERD )
+
+    self._hmac_secret = self._CreateHmacSecret()
+    secret_file_path = self._WriteSecretFile( self._hmac_secret )
+
     self._racerd_phandle = utils.SafePopen( [
-        RACERD, 'serve', '--port=0', '--secret-file=not_supported',
-                '--rust-src-path=' + self._GetRustSrcPath()
+        RACERD, 'serve', '--port=0', '--secret-file', secret_file_path,
+                '--rust-src-path', self._GetRustSrcPath()
       ], stdout = subprocess.PIPE )
 
     # The first line output by racerd includes the host and port the server is
@@ -225,3 +270,7 @@ class RustCompleter( Completer ):
 
   def Shutdown( self ):
     self._racerd_phandle.terminate()
+
+
+  def _CreateHmacSecret( self ):
+    return base64.b64encode( os.urandom( HMAC_SECRET_LENGTH ) )
