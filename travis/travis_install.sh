@@ -36,6 +36,15 @@ if [ x"${COVERAGE}" = x"true" ]; then
   pip install coveralls
 fi
 
+# Need rust available, but travis doesn't give it to you without language: rust
+START_DIR=$(pwd)
+cd ${HOME}
+git clone --recursive https://github.com/brson/multirust
+cd multirust
+./build.sh
+./install.sh --prefix=${HOME}
+cd ${START_DIR}
+
 # The build infrastructure prints a lot of spam after this script runs, so make
 # sure to disable printing, and failing on non-zero exit code after this script
 # finishes
