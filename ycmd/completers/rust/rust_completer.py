@@ -223,8 +223,9 @@ class RustCompleter( Completer ):
 
 
   def _StopServer( self ):
-    self._racerd_phandle.terminate()
-    self._racerd_phandle = None
+    if self._racerd_phandle:
+      self._racerd_phandle.terminate()
+      self._racerd_phandle = None
 
 
   def RestartServer( self ):
@@ -269,7 +270,7 @@ class RustCompleter( Completer ):
 
 
   def Shutdown( self ):
-    self._racerd_phandle.terminate()
+    self._StopServer()
 
 
   def _CreateHmacSecret( self ):
