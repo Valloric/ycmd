@@ -290,7 +290,7 @@ def BuildRacerd():
   attempting to build with the system cargo/rustc if multirust is not
   available. For now, multirust is required.
   """
-  if not find_executable( 'multirust' ):
+  if not FindExecutable( 'multirust' ):
     sys.exit( 'multirust is required for the rust completer' )
 
   os.chdir( p.join( DIR_OF_THIRD_PARTY, 'racerd' ) )
