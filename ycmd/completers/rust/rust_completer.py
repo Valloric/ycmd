@@ -245,15 +245,15 @@ class RustCompleter( Completer ):
 
   def GetSubcommandsMap( self ):
     return {
-      'GoTo' : ( lambda self, request_data:
+      'GoTo' : ( lambda self, request_data, args:
                  self._GoToDefinition( request_data ) ),
-      'GoToDefinition' : ( lambda self, request_data:
+      'GoToDefinition' : ( lambda self, request_data, args:
                            self._GoToDefinition( request_data ) ),
-      'GoToDeclaration' : ( lambda self, request_data:
+      'GoToDeclaration' : ( lambda self, request_data, args:
                            self._GoToDefinition( request_data ) ),
-      'StopServer' : ( lambda self, request_data:
-                           self._StopServer( request_data ) ),
-      'RestartServer' : ( lambda self, request_data:
+      'StopServer' : ( lambda self, request_data, args:
+                           self._StopServer() ),
+      'RestartServer' : ( lambda self, request_data, args:
                            self._RestartServer( request_data ) ),
     }
 
