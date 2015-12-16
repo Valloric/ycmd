@@ -233,15 +233,8 @@ class RustCompleter( Completer ):
     self._StartServer()
 
 
-  def _RestartServer( self, request_data ):
-    # TODO request_data
+  def _RestartServer( self ):
     self._RestartServer()
-
-
-  # TODO
-  # def OnFileReadyToParse( self, request_data ):
-  #   if not self.ServerIsRunning():
-  #     self._StartServer( request_data )
 
 
   def GetSubcommandsMap( self ):
@@ -255,7 +248,7 @@ class RustCompleter( Completer ):
       'StopServer' : ( lambda self, request_data, args:
                            self._StopServer() ),
       'RestartServer' : ( lambda self, request_data, args:
-                           self._RestartServer( request_data ) ),
+                           self._RestartServer() ),
     }
 
 
