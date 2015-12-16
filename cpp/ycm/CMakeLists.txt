@@ -415,6 +415,11 @@ if ( EXTERNAL_LIBCLANG_PATH AND APPLE )
                     )
 endif()
 
+# Hack to make old libclangs work. Remove after moving to clang 3.8.
+if ( APPLE )
+  set_property(TARGET ${SERVER_LIB} APPEND_STRING
+    PROPERTY LINK_FLAGS " -Wl,-U,_clang_parseTranslationUnit2FullArgv")
+endif()
 
 #############################################################################
 

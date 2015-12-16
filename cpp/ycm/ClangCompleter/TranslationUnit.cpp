@@ -31,6 +31,42 @@ using boost::try_to_lock_t;
 using boost::shared_ptr;
 using boost::remove_pointer;
 
+// TODO: Remove hackery after moving to Clang 3.8.
+#ifdef __GNUC__
+extern "C" {
+  CINDEX_LINKAGE enum CXErrorCode clang_parseTranslationUnit2FullArgv(
+    CXIndex CIdx, const char *source_filename,
+    const char *const *command_line_args, int num_command_line_args,
+    struct CXUnsavedFile *unsaved_files, unsigned num_unsaved_files,
+    unsigned options, CXTranslationUnit *out_TU )
+      __attribute__( ( weak ) );
+}
+static enum CXErrorCode wrap_parseTranslationUnit2(
+  CXIndex CIdx, const char *source_filename,
+  const char *const *command_line_args, int num_command_line_args,
+  struct CXUnsavedFile *unsaved_files, unsigned num_unsaved_files,
+  unsigned options, CXTranslationUnit *out_TU ) {
+  if ( clang_parseTranslationUnit2FullArgv )
+    return clang_parseTranslationUnit2FullArgv(
+             CIdx, source_filename, command_line_args, num_command_line_args,
+             unsaved_files, num_unsaved_files, options, out_TU );
+
+  return clang_parseTranslationUnit2(
+           CIdx, source_filename, command_line_args + 1, num_command_line_args - 1,
+           unsaved_files, num_unsaved_files, options, out_TU );
+}
+#else
+static enum CXErrorCode wrap_parseTranslationUnit2(
+  CXIndex CIdx, const char *source_filename,
+  const char *const *command_line_args, int num_command_line_args,
+  struct CXUnsavedFile *unsaved_files, unsigned num_unsaved_files,
+  unsigned options, CXTranslationUnit *out_TU ) {
+  return clang_parseTranslationUnit2(
+           CIdx, source_filename, command_line_args + 1, num_command_line_args - 1,
+           unsaved_files, num_unsaved_files, options, out_TU );
+}
+#endif
+
 namespace YouCompleteMe {
 
 namespace {
@@ -76,21 +112,26 @@ TranslationUnit::TranslationUnit(
     pointer_flags.push_back( flag.c_str() );
   }
 
+  // Add a dummy compiler name when the flags are empty or there is no compiler.
+  if (flags.empty() || (!flags.front().empty() && flags.front().front() == '-'))
+    pointer_flags.insert( pointer_flags.begin(), "clang" );
+
   std::vector< CXUnsavedFile > cxunsaved_files =
     ToCXUnsavedFiles( unsaved_files );
   const CXUnsavedFile *unsaved = cxunsaved_files.size() > 0
                                  ? &cxunsaved_files[ 0 ] : NULL;
 
-  clang_translation_unit_ = clang_parseTranslationUnit(
-                              clang_index,
-                              filename.c_str(),
-                              &pointer_flags[ 0 ],
-                              pointer_flags.size(),
-                              const_cast<CXUnsavedFile *>( unsaved ),
-                              cxunsaved_files.size(),
-                              editingOptions() );
+  CXErrorCode result = wrap_parseTranslationUnit2(
+                         clang_index,
+                         filename.c_str(),
+                         &pointer_flags[ 0 ],
+                         pointer_flags.size(),
+                         const_cast<CXUnsavedFile *>( unsaved ),
+                         cxunsaved_files.size(),
+                         editingOptions(),
+                         &clang_translation_unit_ );
 
-  if ( !clang_translation_unit_ )
+  if ( result != CXError_Success )
     boost_throw( ClangParseError() );
 
   // Only with a reparse is the preable precompiled. I do not know why...
