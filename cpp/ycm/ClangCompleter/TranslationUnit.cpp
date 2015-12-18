@@ -76,21 +76,26 @@ TranslationUnit::TranslationUnit(
     pointer_flags.push_back( flag.c_str() );
   }
 
+  // Add a dummy compiler name when the flags are empty or there is no compiler.
+  if (flags.empty() || (!flags.front().empty() && flags.front().front() == '-'))
+    pointer_flags.insert( pointer_flags.begin(), "clang" );
+
   std::vector< CXUnsavedFile > cxunsaved_files =
     ToCXUnsavedFiles( unsaved_files );
   const CXUnsavedFile *unsaved = cxunsaved_files.size() > 0
                                  ? &cxunsaved_files[ 0 ] : NULL;
 
-  clang_translation_unit_ = clang_parseTranslationUnit(
-                              clang_index,
-                              filename.c_str(),
-                              &pointer_flags[ 0 ],
-                              pointer_flags.size(),
-                              const_cast<CXUnsavedFile *>( unsaved ),
-                              cxunsaved_files.size(),
-                              editingOptions() );
+  CXErrorCode result = clang_parseTranslationUnit2(
+                         clang_index,
+                         filename.c_str(),
+                         &pointer_flags[ 1 ],
+                         pointer_flags.size() - 1,
+                         const_cast<CXUnsavedFile *>( unsaved ),
+                         cxunsaved_files.size(),
+                         editingOptions(),
+                         &clang_translation_unit_ );
 
-  if ( !clang_translation_unit_ )
+  if ( result != CXError_Success )
     boost_throw( ClangParseError() );
 
   // Only with a reparse is the preable precompiled. I do not know why...
