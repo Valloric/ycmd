@@ -50,17 +50,23 @@ class RustCompleter( Completer ):
 
   def _GetRustSrcPath( self ):
     """
-    Provide path to rust source directory for use by the completer.
-
-    This could just be passed through by the environment, but it may be moved
-    into editor configuration or some other location in which case this would
-    become necessary anyways.
+    Attempt to read user option for rust_src_path. Fallback to environment
+    variable if it's not provided.
     """
-    src_key = 'RUST_SRC_PATH'
-    if not os.environ.has_key( src_key ):
-      raise RuntimeError( src_key + ' environment variable is not set' )
+    rust_src_path  = self.user_options[ 'rust_src_path' ]
 
-    return os.environ[ src_key ]
+    # Early return if user provided config
+    if rust_src_path != '':
+      return rust_src_path
+
+    # Fall back to environment variable
+    env_key = 'RUST_SRC_PATH'
+    if os.environ.has_key( env_key ):
+      return os.environ[ env_key ]
+
+    self._logger.warn( 'No path provided for the rustc source. Please set the '
+                       'ycm_rust_src_path option' )
+    return None
 
 
   def __init__( self, user_options ):
@@ -197,10 +203,13 @@ class RustCompleter( Completer ):
     self._hmac_secret = self._CreateHmacSecret()
     secret_file_path = self._WriteSecretFile( self._hmac_secret )
 
-    self._racerd_phandle = utils.SafePopen( [
-        RACERD, 'serve', '--port=0', '--secret-file', secret_file_path,
-                '--rust-src-path', self._GetRustSrcPath()
-      ], stdout = subprocess.PIPE )
+    args = [ RACERD, 'serve', '--port=0', '--secret-file', secret_file_path ]
+
+    rust_src_path = self._GetRustSrcPath()
+    if rust_src_path is not None:
+      args.extend( [ '--rust-src-path',rust_src_path ] )
+
+    self._racerd_phandle = utils.SafePopen( args, stdout = subprocess.PIPE )
 
     # The first line output by racerd includes the host and port the server is
     # listening on.

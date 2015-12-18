@@ -19,23 +19,10 @@
 
 from ..handlers_test import Handlers_test
 
-import os
-
 class Rust_Handlers_test( Handlers_test ):
 
   def __init__( self ):
     self._file = __file__
-    self._SetEnvRustSrcPath()
-
-
-  def _SetEnvRustSrcPath( self ):
-    """
-    Hack for tests so that the RustCompleter can start server
-
-    This is only temporary until ycmd config for racerd exists
-    """
-    if not os.environ.has_key ( 'RUST_SRC_PATH' ):
-      os.environ[ 'RUST_SRC_PATH' ] = ''
 
 
   def tearDown( self ):
