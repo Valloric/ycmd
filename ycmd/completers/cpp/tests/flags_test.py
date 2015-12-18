@@ -111,7 +111,7 @@ def RemoveUnusedFlags_RemoveMP_test():
 
 
 def RemoveUnusedFlags_RemoveFilename_test():
-  expected = [ '-foo', '-bar' ]
+  expected = [ 'foo', '-bar' ]
   to_remove = [ 'file' ]
   filename = 'file'
 
@@ -119,7 +119,8 @@ def RemoveUnusedFlags_RemoveFilename_test():
        flags._RemoveUnusedFlags( expected + to_remove, filename ) )
 
   eq_( expected,
-       flags._RemoveUnusedFlags( to_remove + expected, filename ) )
+        flags._RemoveUnusedFlags( expected[ :1 ] + to_remove + expected[ 1: ],
+                                  filename ) )
 
   eq_( expected,
        flags._RemoveUnusedFlags(
@@ -127,7 +128,7 @@ def RemoveUnusedFlags_RemoveFilename_test():
 
 
 def RemoveUnusedFlags_RemoveFlagWithoutPrecedingDashFlag_test():
-  expected = [ '-foo', '-x', 'c++', '-bar', 'include_dir' ]
+  expected = [ 'g++', '-foo', '-x', 'c++', '-bar', 'include_dir' ]
   to_remove = [ 'unrelated_file' ]
   filename = 'file'
 
@@ -135,21 +136,23 @@ def RemoveUnusedFlags_RemoveFlagWithoutPrecedingDashFlag_test():
        flags._RemoveUnusedFlags( expected + to_remove, filename ) )
 
   eq_( expected,
-       flags._RemoveUnusedFlags( to_remove + expected, filename ) )
+        flags._RemoveUnusedFlags( expected[ :1 ] + to_remove + expected[ 1: ],
+                                  filename ) )
 
 
 def RemoveUnusedFlags_RemoveFilenameWithoutPrecedingInclude_test():
   def tester( flag ):
-    expected = [ flag, '/foo/bar', '-isystem/zoo/goo' ]
+    expected = [ 'clang', flag, '/foo/bar', '-isystem/zoo/goo' ]
 
     eq_( expected,
          flags._RemoveUnusedFlags( expected + to_remove, filename ) )
 
     eq_( expected,
-         flags._RemoveUnusedFlags( to_remove + expected, filename ) )
+          flags._RemoveUnusedFlags( expected[ :1 ] + to_remove + expected[ 1: ],
+                                    filename ) )
 
-    eq_( expected + expected,
-         flags._RemoveUnusedFlags( expected + to_remove + expected,
+    eq_( expected + expected[ 1: ],
+          flags._RemoveUnusedFlags( expected + to_remove + expected[ 1: ],
                                    filename ) )
 
   include_flags = [ '-isystem', '-I', '-iquote', '--sysroot=', '-isysroot',
@@ -191,7 +194,7 @@ def _ReplaceCompilerTester( compiler, language ):
   expected = [ '-foo', '-bar' ]
 
   for to_remove in to_removes:
-    eq_( [ '-x', language ] + expected,
+    eq_( [ compiler, '-x', language ] + expected,
          flags._CompilerToLanguageFlag( to_remove + [ compiler ] + expected ) )
 
 
@@ -213,3 +216,14 @@ def CompilerToLanguageFlag_ReplaceCppCompiler_test():
 
   for compiler in compilers:
     yield _ReplaceCompilerTester, compiler, 'c++'
+
+def ExtraClangFlags_test():
+  flags_object = flags.Flags()
+  extra_clang_flags = flags_object.extra_clang_flags
+  num_found = 0
+  for flag in flags_object.extra_clang_flags:
+    if flag.startswith('-resource-dir='):
+      assert flag.endswith('ycmd/clang_includes')
+      num_found += 1
+
+  assert num_found == 1
