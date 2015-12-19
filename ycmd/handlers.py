@@ -35,6 +35,8 @@ import json
 import bottle
 import httplib
 import traceback
+import time
+import os
 from bottle import request, response
 import server_state
 from ycmd import user_options_store
@@ -42,6 +44,8 @@ from ycmd.responses import BuildExceptionResponse, BuildCompletionResponse
 from ycmd import hmac_plugin
 from ycmd import extra_conf_store
 from ycmd.request_wrap import RequestWrap
+from threading import Thread
+from utils import TerminateProcess
 
 
 # num bytes for the request body buffer; request.json only works if the request
@@ -212,6 +216,13 @@ def DebugInfo():
   return _JsonResponse( '\n'.join( output ) )
 
 
+@app.post( '/shutdown' )
+def ServerShutdown():
+  _logger.info( 'Server shutting down' )
+  ServerCleanup()
+  ServerTermination()
+
+
 # The type of the param is Bottle.HTTPError
 @app.error( httplib.INTERNAL_SERVER_ERROR )
 def ErrorHandler( httperror ):
@@ -247,11 +258,20 @@ def _GetCompleterForRequestData( request_data ):
 
 
 @atexit.register
-def ServerShutdown():
-  _logger.info( 'Server shutting down' )
+def ServerCleanup():
   if _server_state:
     _server_state.Shutdown()
     extra_conf_store.Shutdown()
+
+
+def ServerTermination( countdown = 0.1 ):
+  def Terminator():
+    time.sleep( countdown )
+    TerminateProcess( os.getpid() )
+
+  terminator = Thread( target = Terminator )
+  terminator.daemon = True
+  terminator.start()
 
 
 def SetHmacSecret( hmac_secret ):
