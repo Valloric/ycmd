@@ -29,6 +29,7 @@ import json
 import logging
 import traceback
 from bottle import request
+from threading import Thread
 
 import ycm_core
 from ycmd import extra_conf_store, hmac_plugin, server_state, user_options_store
@@ -42,6 +43,7 @@ from ycmd.completers.completer_utils import FilterAndSortCandidatesWrap
 # size is less than this
 bottle.Request.MEMFILE_MAX = 1000 * 1024
 
+_wsgi_server = None
 _server_state = None
 _hmac_secret = bytes()
 _logger = logging.getLogger( __name__ )
@@ -219,6 +221,12 @@ def DebugInfo():
   return _JsonResponse( '\n'.join( output ) )
 
 
+@app.post( '/shutdown' )
+def Shutdown():
+  _logger.info( 'Received shutdown request' )
+  ServerShutdown()
+
+
 # The type of the param is Bottle.HTTPError
 def ErrorHandler( httperror ):
   body = _JsonResponse( BuildExceptionResponse( httperror.exception,
@@ -255,9 +263,18 @@ def _GetCompleterForRequestData( request_data ):
     return _server_state.GetFiletypeCompleter( [ completer_target ] )
 
 
-@atexit.register
 def ServerShutdown():
-  _logger.info( 'Server shutting down' )
+  def Terminator():
+    if _wsgi_server:
+      _wsgi_server.Shutdown()
+
+  terminator = Thread( target = Terminator )
+  terminator.daemon = True
+  terminator.start()
+
+
+@atexit.register
+def ServerCleanup():
   if _server_state:
     _server_state.Shutdown()
     extra_conf_store.Shutdown()
