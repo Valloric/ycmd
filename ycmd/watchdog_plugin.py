@@ -23,6 +23,7 @@ import copy
 from ycmd import utils
 from threading import Thread, Lock
 
+
 # This class implements the Bottle plugin API:
 # http://bottlepy.org/docs/dev/plugindev.html
 #
@@ -41,7 +42,7 @@ class WatchdogPlugin( object ):
 
   def __init__( self,
                 idle_suicide_seconds,
-                check_interval_seconds = 60 * 10 ):
+                check_interval_seconds ):
     self._check_interval_seconds = check_interval_seconds
     self._idle_suicide_seconds = idle_suicide_seconds
 
