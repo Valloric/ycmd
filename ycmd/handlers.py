@@ -35,21 +35,23 @@ except ImportError as e:
       path.realpath( path.join( path.abspath( __file__ ), '..', '..' ) ),
       str( e ) ) )
 
+from threading import Thread
 import atexit
-import logging
-import json
 import bottle
+import json
+import logging
 import http.client
+import time
 import traceback
+import os
+
 from bottle import request
-from . import server_state
-from ycmd import user_options_store
-from ycmd.responses import BuildExceptionResponse, BuildCompletionResponse
-from ycmd import hmac_plugin
-from ycmd import extra_conf_store
-from ycmd.request_wrap import RequestWrap
+from ycmd import extra_conf_store, hmac_plugin, user_options_store, server_state
 from ycmd.bottle_utils import SetResponseHeader
 from ycmd.completers.completer_utils import FilterAndSortCandidatesWrap
+from ycmd.request_wrap import RequestWrap
+from ycmd.responses import BuildExceptionResponse, BuildCompletionResponse
+from ycmd.utils import TerminateProcess
 
 
 # num bytes for the request body buffer; request.json only works if the request
@@ -233,6 +235,13 @@ def DebugInfo():
   return _JsonResponse( '\n'.join( output ) )
 
 
+@app.post( '/shutdown' )
+def ServerShutdown():
+  _logger.info( 'Server shutting down' )
+  ServerCleanup()
+  ServerTermination()
+
+
 # The type of the param is Bottle.HTTPError
 @app.error( http.client.INTERNAL_SERVER_ERROR )
 def ErrorHandler( httperror ):
@@ -268,11 +277,20 @@ def _GetCompleterForRequestData( request_data ):
 
 
 @atexit.register
-def ServerShutdown():
-  _logger.info( 'Server shutting down' )
+def ServerCleanup():
   if _server_state:
     _server_state.Shutdown()
     extra_conf_store.Shutdown()
+
+
+def ServerTermination( countdown = 0.1 ):
+  def Terminator():
+    time.sleep( countdown )
+    TerminateProcess( os.getpid() )
+
+  terminator = Thread( target = Terminator )
+  terminator.daemon = True
+  terminator.start()
 
 
 def SetHmacSecret( hmac_secret ):
