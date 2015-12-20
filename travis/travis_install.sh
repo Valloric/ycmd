@@ -45,6 +45,8 @@ cd multirust
 ./install.sh --prefix=${HOME}
 cd ${START_DIR}
 
+multirust update stable
+
 # The build infrastructure prints a lot of spam after this script runs, so make
 # sure to disable printing, and failing on non-zero exit code after this script
 # finishes

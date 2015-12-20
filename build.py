@@ -286,17 +286,12 @@ def BuildGoCode():
 
 def BuildRacerd():
   """
-  Look for multirust and built racerd. Support will be added in the future for
-  attempting to build with the system cargo/rustc if multirust is not
-  available. For now, multirust is required.
+  Build racerd. This requires a reasonably new version of rustc/cargo.
   """
-  if not FindExecutable( 'multirust' ):
-    sys.exit( 'multirust is required for the rust completer' )
+  if not FindExecutable( 'cargo' ):
+    sys.exit( 'cargo is required for the rust completer' )
 
   os.chdir( p.join( DIR_OF_THIRD_PARTY, 'racerd' ) )
-  subprocess.check_call( [ 'multirust', 'update', 'beta' ] )
-  # Use beta cargo/rustc version for the racerd submodule
-  subprocess.check_call( [ 'multirust', 'override', 'beta' ] )
   subprocess.check_call( [ 'cargo', 'build', '--release' ] )
 
 
