@@ -24,10 +24,9 @@ standard_library.install_aliases()
 from builtins import *  # noqa
 
 import time
-import os
 import copy
-from ycmd import utils
 from threading import Thread, Lock
+from ycmd.handlers import ServerShutdown
 
 
 # This class implements the Bottle plugin API:
@@ -95,7 +94,7 @@ class WatchdogPlugin( object ):
       # wait interval to contact us before we die.
       if (self._TimeSinceLastRequest() > self._idle_suicide_seconds and
           self._TimeSinceLastWakeup() < 2 * self._check_interval_seconds):
-        utils.TerminateProcess( os.getpid() )
+        ServerShutdown()
 
       self._UpdateLastWakeupTime()
 
