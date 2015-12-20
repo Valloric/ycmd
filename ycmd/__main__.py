@@ -31,8 +31,8 @@ import base64
 from ycmd import user_options_store
 from ycmd import extra_conf_store
 from ycmd import utils
-from ycmd.watchdog_plugin import WatchdogPlugin
 from ycmd.hmac_plugin import HmacPlugin
+
 
 def YcmCoreSanityCheck():
   if 'ycm_core' in sys.modules:
@@ -152,10 +152,11 @@ def Main():
 
   PossiblyDetachFromTerminal()
 
-  # This can't be a top-level import because it transitively imports
+  # Those can't be top-level imports because they transitively import
   # ycm_core which we want to be imported ONLY after extra conf
   # preload has executed.
   from ycmd import handlers
+  from ycmd.watchdog_plugin import WatchdogPlugin
   handlers.UpdateUserOptions( options )
   handlers.SetHmacSecret( hmac_secret )
   SetUpSignalHandler( args.stdout, args.stderr, args.keep_logfiles )
