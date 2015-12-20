@@ -144,6 +144,11 @@ class Server_test( object ):
       self._port = GetUnusedLocalhostPort()
       self._location = 'http://127.0.0.1:' + str( self._port )
 
+      # Define environment variable to enable subprocesses coverage. See:
+      # http://coverage.readthedocs.org/en/coverage-4.0.3/subprocess.html
+      env = os.environ.copy()
+      env[ 'COVERAGE_PROCESS_START' ] = '.coveragerc'
+
       ycmd_args = [
         sys.executable,
         PATH_TO_YCMD,
@@ -159,7 +164,8 @@ class Server_test( object ):
         self._popen_handle = SafePopen( ycmd_args,
                                         stdin_windows = subprocess.PIPE,
                                         stdout = stdout,
-                                        stderr = subprocess.STDOUT )
+                                        stderr = subprocess.STDOUT,
+                                        env = env )
 
 
   def _DefaultSettings( self ):
