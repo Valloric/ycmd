@@ -91,7 +91,9 @@ def NoseTests( parsed_args, extra_nosetests_args ):
     nosetests_args.append( '--exclude=.*Clang.*' )
 
   if parsed_args.coverage:
-    nosetests_args += [ '--with-coverage', '--cover-package=ycmd' ]
+    nosetests_args += [ '--with-coverage',
+                        '--cover-erase',
+                        '--cover-package=ycmd' ]
 
   if extra_nosetests_args:
     nosetests_args.extend( extra_nosetests_args )
