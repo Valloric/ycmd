@@ -46,6 +46,7 @@ cd multirust
 cd ${START_DIR}
 
 multirust update stable
+multirust default stable
 
 # The build infrastructure prints a lot of spam after this script runs, so make
 # sure to disable printing, and failing on non-zero exit code after this script
