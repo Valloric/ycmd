@@ -37,13 +37,14 @@ if [ x"${COVERAGE}" = x"true" ]; then
 fi
 
 # Need rust available, but travis doesn't give it to you without language: rust
-START_DIR=$(pwd)
-cd ${HOME}
+pushd ${HOME}
 git clone --recursive https://github.com/brson/multirust
-cd multirust
+pushd multirust
+git reset --hard f3974f2b966476ad656afba311b50a9c23fe6d2e
 ./build.sh
 ./install.sh --prefix=${HOME}
-cd ${START_DIR}
+popd
+popd
 
 multirust update stable
 multirust default stable
