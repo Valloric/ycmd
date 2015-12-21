@@ -1,6 +1,9 @@
 version: '{build}'
 environment:
   USE_CLANG_COMPLETER: true
+  OPENSSL_INCLUDE_DIR: C:\OpenSSL\include
+  OPENSSL_LIB_DIR: C:\OpenSSL\lib
+  OPENSSL_LIBS: ssleay32:libeay32
   matrix:
   - msvc: 11
     arch: 32
@@ -25,8 +28,11 @@ install:
   - ps: Start-FileDownload 'https://static.rust-lang.org/dist/rust-1.5.0-i686-pc-windows-gnu.exe'
   - rust-1.5.0-i686-pc-windows-gnu.exe /VERYSILENT /NORESTART /DIR="C:\Program Files (x86)\Rust"
   - SET PATH=%PATH%;C:\Program Files (x86)\Rust\bin
+  - SET PATH=%PATH%;C:\MinGW\bin
   - rustc -V
   - cargo -V
+  - ps: Start-FileDownload "http://slproweb.com/download/Win32OpenSSL-1_0_2e.exe"
+  - Win32OpenSSL-1_0_2e.exe /SILENT /VERYSILENT /SP- /DIR="C:\OpenSSL"
 build_script:
   - python run_tests.py --msvc %MSVC%
 # Disable automatic tests
