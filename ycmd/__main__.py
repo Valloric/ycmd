@@ -152,7 +152,7 @@ def Main():
 
   PossiblyDetachFromTerminal()
 
-  # Those can't be top-level imports because they transitively import
+  # These can't be top-level imports because they transitively import
   # ycm_core which we want to be imported ONLY after extra conf
   # preload has executed.
   from ycmd import handlers
