@@ -203,7 +203,7 @@ class RustCompleter( Completer ):
 
     rust_src_path = self._GetRustSrcPath()
     if rust_src_path is not None:
-      args.extend( [ '--rust-src-path',rust_src_path ] )
+      args.extend( [ '--rust-src-path', rust_src_path ] )
 
     self._racerd_phandle = utils.SafePopen( args, stdout = subprocess.PIPE )
 
