@@ -185,11 +185,7 @@ class Server_test( object ):
 
 
   def _GetChildren( self ):
-    children = []
-    for proc in psutil.process_iter():
-      if proc.ppid() == self._popen_handle.pid:
-        children.append( proc )
-    return children
+    return psutil.Process( self._popen_handle.pid ).children()
 
 
   def _WaitUntilReady( self, timeout = 5 ):
