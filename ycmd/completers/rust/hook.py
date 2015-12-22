@@ -15,7 +15,11 @@
 # You should have received a copy of the GNU General Public License
 # along with ycmd.  If not, see <http://www.gnu.org/licenses/>.
 
-from ycmd.completers.rust.rust_completer import RustCompleter
+from ycmd.completers.rust.rust_completer import ( RustCompleter,
+                                                  ShouldEnableRustCompleter )
 
 def GetCompleter( user_options ):
+  if not ShouldEnableRustCompleter():
+    return None
+
   return RustCompleter( user_options )

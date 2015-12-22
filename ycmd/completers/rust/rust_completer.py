@@ -26,12 +26,24 @@ import binascii, threading, os
 
 from os import path as p
 
+_logger = logging.getLogger( __name__ )
+
 DIR_OF_THIS_SCRIPT = p.dirname( p.abspath( __file__ ) )
 DIR_OF_THIRD_PARTY = p.abspath( p.join( DIR_OF_THIS_SCRIPT,
                              '..', '..', '..', 'third_party' ) )
 RACERD = p.join( DIR_OF_THIRD_PARTY, 'racerd', 'target', 'release', 'racerd' )
 RACERD_HMAC_HEADER = 'x-racerd-hmac'
 HMAC_SECRET_LENGTH = 16
+
+def ShouldEnableRustCompleter():
+  """
+  Checks whether ycmd was built with racerd support
+  """
+  built_with_racerd = p.exists( RACERD )
+  if not built_with_racerd:
+    _logger.info( 'Not using Rust completer: '
+                  'ycmd was not built with --racer-completer' )
+  return built_with_racerd
 
 class RustCompleter( Completer ):
   """
@@ -42,7 +54,6 @@ class RustCompleter( Completer ):
   def __init__( self, user_options ):
     super( RustCompleter, self ).__init__( user_options )
     self._racerd_host = None
-    self._logger = logging.getLogger( __name__ )
     self._lock = threading.Lock()
     self._keep_logfiles = user_options[ 'server_keep_logfiles' ]
     self._hmac_secret = ''
@@ -66,8 +77,8 @@ class RustCompleter( Completer ):
     if os.environ.has_key( env_key ):
       return os.environ[ env_key ]
 
-    self._logger.warn( 'No path provided for the rustc source. Please set the '
-                       'ycm_rust_src_path option' )
+    _logger.warn( 'No path provided for the rustc source. Please set the '
+                  'ycm_rust_src_path option' )
     return None
 
 
@@ -91,7 +102,7 @@ class RustCompleter( Completer ):
     when no errors were encountered but no completions, definitions, or errors
     were found.
     """
-    self._logger.info( 'RustCompleter._GetResponse' )
+    _logger.info( 'RustCompleter._GetResponse' )
     url = urlparse.urljoin( self._racerd_host, handler )
     parameters = self._TranslateRequest( request_data )
     body = json.dumps( parameters ) if parameters else None
@@ -197,7 +208,7 @@ class RustCompleter( Completer ):
     """
     Start racerd. `self._lock` must be held when this is called.
     """
-    self._logger.info( 'RustCompleter using RACERD = ' + RACERD )
+    _logger.info( 'RustCompleter using RACERD = ' + RACERD )
 
     self._hmac_secret = self._CreateHmacSecret()
     secret_file_path = self._WriteSecretFile( self._hmac_secret )
@@ -214,7 +225,7 @@ class RustCompleter( Completer ):
     # listening on. Expected output is `racerd listening at x.x.x.x:n`.
     host = self._racerd_phandle.stdout.readline().split()[3]
     self._racerd_host = 'http://' + host
-    self._logger.info( 'RustCompleter using host = ' + self._racerd_host )
+    _logger.info( 'RustCompleter using host = ' + self._racerd_host )
 
 
   def ServerIsRunningNoLock( self ):
@@ -251,14 +262,14 @@ class RustCompleter( Completer ):
     """
     Thread safe server restart
     """
-    self._logger.debug( 'RustCompleter restarting racerd' )
+    _logger.debug( 'RustCompleter restarting racerd' )
 
     with self._lock:
       if self.ServerIsRunningNoLock():
         self._StopServerNoLock()
       self._StartServerNoLock()
 
-    self._logger.debug( 'RustCompleter has restarted racerd' )
+    _logger.debug( 'RustCompleter has restarted racerd' )
 
 
   def GetSubcommandsMap( self ):
