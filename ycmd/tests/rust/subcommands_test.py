@@ -17,10 +17,6 @@
 # You should have received a copy of the GNU General Public License
 # along with ycmd.  If not, see <http://www.gnu.org/licenses/>.
 
-# from webtest import AppError
-# from nose.tools import eq_
-# from hamcrest import assert_that, raises, calling
-
 from rust_handlers_test import Rust_Handlers_test
 from nose.tools import eq_
 
