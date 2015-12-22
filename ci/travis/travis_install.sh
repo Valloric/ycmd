@@ -59,7 +59,8 @@ npm install -g typescript
 
 # Enable coverage for Python subprocesses. See:
 # http://coverage.readthedocs.org/en/coverage-4.0.3/subprocess.html
-echo -e "import coverage\ncoverage.process_startup()" > ${YCMD_VENV_DIR}/lib/python${YCMD_PYTHON_VERSION}/sitecustomize.py
+echo -e "import coverage\ncoverage.process_startup()" > \
+  ${YCMD_VENV_DIR}/lib/python${YCMD_PYTHON_VERSION}/sitecustomize.py
 
 ############
 # rust setup
