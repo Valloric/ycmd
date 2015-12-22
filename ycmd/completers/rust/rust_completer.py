@@ -292,3 +292,11 @@ class RustCompleter( Completer ):
 
   def _CreateHmacSecret( self ):
     return base64.b64encode( os.urandom( HMAC_SECRET_LENGTH ) )
+
+
+  def DebugInfo( self, request_data ):
+    with self._lock:
+      if self.ServerIsRunningNoLock():
+        return ( 'racerd running at: {0}' ).format( self._racerd_host )
+      else:
+        return 'racerd is not running'
