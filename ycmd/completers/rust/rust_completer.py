@@ -76,6 +76,9 @@ class RustCompleter( Completer ):
 
 
   def _ComputeRequestHmac( self, method, path, body ):
+    if body is None:
+      body = ''
+
     hmac = hmac_utils.CreateRequestHmac( method, path, body, self._hmac_secret )
     return binascii.hexlify( hmac )
 
@@ -91,7 +94,7 @@ class RustCompleter( Completer ):
     self._logger.info( 'RustCompleter._GetResponse' )
     url = urlparse.urljoin( self._racerd_host, handler )
     parameters = self._TranslateRequest( request_data )
-    body = json.dumps( parameters )
+    body = json.dumps( parameters ) if parameters else None
     request_hmac = self._ComputeRequestHmac( method, handler, body )
 
     extra_headers = { 'content-type': 'application/json' }
