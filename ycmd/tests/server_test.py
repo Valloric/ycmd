@@ -17,8 +17,8 @@
 # You should have received a copy of the GNU General Public License
 # along with ycmd.  If not, see <http://www.gnu.org/licenses/>.
 
-from ycmd.utils import ( GetUnusedLocalhostPort, SafePopen, PathToTempDir,
-                         RemoveIfExists )
+from ycmd.utils import ( GetUnusedLocalhostPort, PathToTempDir,
+                         RemoveIfExists, SafePopen, ToUtf8Json )
 from ycmd.hmac_utils import CreateHmac, CreateRequestHmac, SecureStringsEqual
 from base64 import b64encode, b64decode
 from hamcrest import ( assert_that, equal_to, greater_than, is_in,
@@ -242,7 +242,7 @@ class Server_test( object ):
   def _Request( self, method, handler, data = None, params = None ):
     url = self._BuildURL( handler )
     if isinstance( data, collections.Mapping ):
-      data = self._ToUtf8Json( data )
+      data = ToUtf8Json( data )
     headers = self._Headers( method,
                              urlparse.urlparse( url ).path,
                              data )
@@ -252,29 +252,6 @@ class Server_test( object ):
                                  data = data,
                                  params = params )
     return response
-
-
-  def _ToUtf8Json( self, data ):
-    return json.dumps( self._RecursiveEncodeUnicodeToUtf8( data ),
-                       ensure_ascii = False,
-                       # This is the encoding of INPUT str data
-                       encoding = 'utf-8' )
-
-
-  # Recurses through the object if it's a dict/iterable and converts all the
-  # unicode objects to utf-8 strings.
-  def _RecursiveEncodeUnicodeToUtf8( self, value ):
-    if isinstance( value, unicode ):
-      return value.encode( 'utf8' )
-    if isinstance( value, str ):
-      return value
-    elif isinstance( value, collections.Mapping ):
-      return dict( map( self._RecursiveEncodeUnicodeToUtf8,
-                        value.iteritems() ) )
-    elif isinstance( value, collections.Iterable ):
-      return type( value )( map( self._RecursiveEncodeUnicodeToUtf8, value ) )
-    else:
-      return value
 
 
   def _BuildURL( self, handler ):
