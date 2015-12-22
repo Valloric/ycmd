@@ -62,7 +62,8 @@ if [ x"${COVERAGE}" = x"true" ]; then
   pip install coveralls
   # Enable coverage for Python subprocesses. See:
   # http://coverage.readthedocs.org/en/coverage-4.0.3/subprocess.html
-  echo -e "import coverage\ncoverage.process_startup()" > ${YCMD_VENV_DIR}/lib/python${YCMD_PYTHON_VERSION}/sitecustomize.py
+  echo -e "import coverage\ncoverage.process_startup()" > \
+    ${YCMD_VENV_DIR}/lib/python${YCMD_PYTHON_VERSION}/sitecustomize.py
 fi
 
 
