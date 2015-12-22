@@ -22,7 +22,7 @@ from ycmd.completers.completer import Completer
 from ycmd import responses, utils, hmac_utils
 
 import logging, urlparse, requests, subprocess, httplib, json, tempfile, base64
-import binascii, os
+import binascii, threading, os
 
 from os import path as p
 
@@ -38,6 +38,17 @@ class RustCompleter( Completer ):
   A completer for the rust programming language backed by racerd.
   https://github.com/jwilm/racerd
   """
+
+  def __init__( self, user_options ):
+    super( RustCompleter, self ).__init__( user_options )
+    self._racerd_host = None
+    self._logger = logging.getLogger( __name__ )
+    self._lock = threading.Lock()
+    self._keep_logfiles = user_options[ 'server_keep_logfiles' ]
+    self._hmac_secret = ''
+    with self._lock:
+      self._StartServerNoLock()
+
 
   def _GetRustSrcPath( self ):
     """
@@ -58,15 +69,6 @@ class RustCompleter( Completer ):
     self._logger.warn( 'No path provided for the rustc source. Please set the '
                        'ycm_rust_src_path option' )
     return None
-
-
-  def __init__( self, user_options ):
-    super( RustCompleter, self ).__init__( user_options )
-    self._racerd_host = None
-    self._logger = logging.getLogger( __name__ )
-    self._keep_logfiles = user_options[ 'server_keep_logfiles' ]
-    self._hmac_secret = ''
-    self._StartServer()
 
 
   def SupportedFiletypes( self ):
@@ -188,8 +190,11 @@ class RustCompleter( Completer ):
     return secret_path
 
 
-  def _StartServer( self ):
-    self._logger.info( '_StartServer using RACERD = ' + RACERD )
+  def _StartServerNoLock( self ):
+    """
+    Start racerd. `self._lock` must be held when this is called.
+    """
+    self._logger.info( 'RustCompleter using RACERD = ' + RACERD )
 
     self._hmac_secret = self._CreateHmacSecret()
     secret_file_path = self._WriteSecretFile( self._hmac_secret )
@@ -205,12 +210,15 @@ class RustCompleter( Completer ):
     # The first line output by racerd includes the host and port the server is
     # listening on.
     host = self._racerd_phandle.stdout.readline()
-    self._logger.info( '_StartServer using host = ' + host )
+    self._logger.info( 'RustCompleter using host = ' + host )
     host = host.split()[3]
     self._racerd_host = 'http://' + host
 
 
-  def ServerIsRunning( self ):
+  def ServerIsRunningNoLock( self ):
+    """
+    Check racerd status. `self._lock` must be held when this is called.
+    """
     if self._racerd_host is None or self._racerd_phandle is None:
       return False
 
@@ -218,23 +226,37 @@ class RustCompleter( Completer ):
       self._GetResponse( '/ping', method = 'GET' )
       return True
     except requests.HTTPError:
-      self._StopServer()
+      self._StopServerNoLock()
       return False
 
 
-  def _StopServer( self ):
+  def _StopServerNoLock( self ):
+    """
+    Stop racerd. `self._lock` must be held when this is called.
+    """
     if self._racerd_phandle:
       self._racerd_phandle.terminate()
       self._racerd_phandle = None
+      self._racerd_host = None
 
 
-  def RestartServer( self ):
-    self._StopServer()
-    self._StartServer()
+  def _StopServer( self ):
+    with self._lock:
+      self._StopServerNoLock()
 
 
   def _RestartServer( self ):
-    self._RestartServer()
+    """
+    Thread safe server restart
+    """
+    self._logger.debug( 'RustCompleter restarting racerd' )
+
+    with self._lock:
+      if self.ServerIsRunningNoLock():
+        self._StopServerNoLock()
+      self._StartServerNoLock()
+
+    self._logger.debug( 'RustCompleter has restarted racerd' )
 
 
   def GetSubcommandsMap( self ):
