@@ -37,3 +37,7 @@ build_script:
   - python run_tests.py --msvc %MSVC%
 # Disable automatic tests
 test: off
+
+cache:
+  - 'C:\Users\appveyor\.cargo -> third_party\racerd'
+  - 'third_party\racerd\target -> third_party\racerd'
