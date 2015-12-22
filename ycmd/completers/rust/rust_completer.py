@@ -21,17 +21,8 @@ from ycmd.utils import ToUtf8IfNeeded
 from ycmd.completers.completer import Completer
 from ycmd import responses, utils, hmac_utils
 
-import logging
-import urlparse
-import requests
-import subprocess
-import httplib
-import json
-import tempfile
-import base64
-import binascii
-
-import os
+import logging, urlparse, requests, subprocess, httplib, json, tempfile, base64
+import binascii, os
 
 from os import path as p
 
