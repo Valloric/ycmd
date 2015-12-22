@@ -233,7 +233,7 @@ class RustCompleter( Completer ):
 
   def _StopServer( self ):
     if self._racerd_phandle:
-      utils.TerminateProcess( self._racerd_phandle.pid )
+      self._racerd_phandle.terminate()
       self._racerd_phandle = None
 
 
