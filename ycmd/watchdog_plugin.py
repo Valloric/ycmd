@@ -19,8 +19,11 @@
 
 import time
 import copy
+import logging
 from threading import Thread, Lock
 from ycmd.handlers import ServerShutdown
+
+_logger = logging.getLogger( __name__ )
 
 
 # This class implements the Bottle plugin API:
@@ -89,6 +92,7 @@ class WatchdogPlugin( object ):
       # wait interval to contact us before we die.
       if (self._TimeSinceLastRequest() > self._idle_suicide_seconds and
           self._TimeSinceLastWakeup() < 2 * self._check_interval_seconds):
+        _logger.info( 'Shutting down server for inactivity' )
         ServerShutdown()
 
       self._UpdateLastWakeupTime()
