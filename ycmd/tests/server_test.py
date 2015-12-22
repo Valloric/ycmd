@@ -26,7 +26,6 @@ from builtins import *  # noqa
 from base64 import b64encode, b64decode
 from hamcrest import ( assert_that, equal_to, greater_than, is_in,
                        less_than_or_equal_to )
-from test_utils import BuildRequest
 import collections
 import httplib
 import json
@@ -40,8 +39,9 @@ import time
 import urlparse
 
 from ycmd.hmac_utils import CreateHmac, CreateRequestHmac, SecureStringsEqual
-from ycmd.utils import ( GetUnusedLocalhostPort, SafePopen, PathToTempDir,
-                         RemoveIfExists )
+from ycmd.tests.test_utils import BuildRequest
+from ycmd.utils import ( GetUnusedLocalhostPort, PathToTempDir,
+                         RemoveIfExists, SafePopen, ToUtf8Json )
 
 HMAC_HEADER = 'X-Ycm-Hmac'
 HMAC_SECRET_LENGTH = 16
@@ -249,7 +249,7 @@ class Server_test( object ):
   def _Request( self, method, handler, data = None, params = None ):
     url = self._BuildURL( handler )
     if isinstance( data, collections.Mapping ):
-      data = self._ToUtf8Json( data )
+      data = ToUtf8Json( data )
     headers = self._Headers( method,
                              urlparse.urlparse( url ).path,
                              data )
@@ -259,29 +259,6 @@ class Server_test( object ):
                                  data = data,
                                  params = params )
     return response
-
-
-  def _ToUtf8Json( self, data ):
-    return json.dumps( self._RecursiveEncodeUnicodeToUtf8( data ),
-                       ensure_ascii = False,
-                       # This is the encoding of INPUT str data
-                       encoding = 'utf-8' )
-
-
-  # Recurses through the object if it's a dict/iterable and converts all the
-  # unicode objects to utf-8 strings.
-  def _RecursiveEncodeUnicodeToUtf8( self, value ):
-    if isinstance( value, unicode ):
-      return value.encode( 'utf8' )
-    if isinstance( value, str ):
-      return value
-    elif isinstance( value, collections.Mapping ):
-      return dict( map( self._RecursiveEncodeUnicodeToUtf8,
-                        value.iteritems() ) )
-    elif isinstance( value, collections.Iterable ):
-      return type( value )( map( self._RecursiveEncodeUnicodeToUtf8, value ) )
-    else:
-      return value
 
 
   def _BuildURL( self, handler ):
