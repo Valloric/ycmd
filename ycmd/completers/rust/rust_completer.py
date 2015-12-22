@@ -208,11 +208,10 @@ class RustCompleter( Completer ):
     self._racerd_phandle = utils.SafePopen( args, stdout = subprocess.PIPE )
 
     # The first line output by racerd includes the host and port the server is
-    # listening on.
-    host = self._racerd_phandle.stdout.readline()
-    self._logger.info( 'RustCompleter using host = ' + host )
-    host = host.split()[3]
+    # listening on. Expected output is `racerd listening at x.x.x.x:n`.
+    host = self._racerd_phandle.stdout.readline().split()[3]
     self._racerd_host = 'http://' + host
+    self._logger.info( 'RustCompleter using host = ' + self._racerd_host )
 
 
   def ServerIsRunningNoLock( self ):
