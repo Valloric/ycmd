@@ -236,10 +236,9 @@ def DebugInfo():
 
 
 @app.post( '/shutdown' )
-def ServerShutdown():
-  _logger.info( 'Server shutting down' )
-  ServerCleanup()
-  ServerTermination()
+def Shutdown():
+  _logger.info( 'Received shutdown request' )
+  ServerShutdown()
 
 
 # The type of the param is Bottle.HTTPError
@@ -274,6 +273,11 @@ def _GetCompleterForRequestData( request_data ):
     return _server_state.GetFiletypeCompleter( request_data[ 'filetypes' ] )
   else:
     return _server_state.GetFiletypeCompleter( [ completer_target ] )
+
+
+def ServerShutdown():
+  ServerCleanup()
+  ServerTermination()
 
 
 @atexit.register
