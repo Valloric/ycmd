@@ -24,7 +24,7 @@ standard_library.install_aliases()
 from builtins import *  # noqa
 
 from base64 import b64encode, b64decode
-from hamcrest import assert_that, equal_to, greater_than, has_length, is_in
+from hamcrest import assert_that, equal_to, has_length, is_in
 import collections
 import httplib
 import json
@@ -38,7 +38,6 @@ import time
 import urlparse
 
 from ycmd.hmac_utils import CreateHmac, CreateRequestHmac, SecureStringsEqual
-from ycmd.tests.test_utils import BuildRequest
 from ycmd.utils import ( GetUnusedLocalhostPort, PathToTempDir,
                          RemoveIfExists, SafePopen, ToUtf8Json )
 
@@ -48,7 +47,7 @@ DIR_OF_THIS_SCRIPT = os.path.dirname( os.path.abspath( __file__ ) )
 PATH_TO_YCMD = os.path.join( DIR_OF_THIS_SCRIPT, '..' )
 
 
-class Server_test( object ):
+class Client_test( object ):
 
   def __init__( self ):
     self._location = None
@@ -74,60 +73,6 @@ class Server_test( object ):
       for subserver in self._subservers:
         if subserver.is_running():
           subserver.terminate()
-
-
-  def ShutdownWithNoSubserver_test( self ):
-    self._Start()
-    self._WaitUntilReady()
-
-    response = self._PostRequest( 'shutdown' )
-    self._AssertResponse( response )
-
-    self._AssertServerAndSubserversShutdown()
-
-
-  def ShutdownWithSubserver_test( self ):
-    self._Start()
-    self._WaitUntilReady()
-
-    response = self._PostRequest(
-      'run_completer_command',
-      BuildRequest( command_arguments = [ 'StartServer' ],
-                    filetype = 'javascript' )
-    )
-    self._AssertResponse( response )
-
-    self._subservers = self._GetSubservers()
-    assert_that( self._subservers, has_length( greater_than( 0 ) ) )
-
-    response = self._PostRequest( 'shutdown' )
-    self._AssertResponse( response )
-
-    self._AssertServerAndSubserversShutdown()
-
-
-  def WatchdogWithNoSubserver_test( self ):
-    self._Start( idle_suicide_seconds = 2, check_interval_seconds = 1 )
-    self._WaitUntilReady()
-
-    self._AssertServerAndSubserversShutdown()
-
-
-  def WatchdogWithSubserver_test( self ):
-    self._Start( idle_suicide_seconds = 2, check_interval_seconds = 1 )
-    self._WaitUntilReady()
-
-    response = self._PostRequest(
-      'run_completer_command',
-      BuildRequest( command_arguments = [ 'StartServer' ],
-                    filetype = 'javascript' )
-    )
-    self._AssertResponse( response )
-
-    self._subservers = self._GetSubservers()
-    assert_that( self._subservers, has_length( greater_than( 0 ) ) )
-
-    self._AssertServerAndSubserversShutdown()
 
 
   def _Start( self, idle_suicide_seconds = 60,
@@ -195,7 +140,7 @@ class Server_test( object ):
         total_slept += 0.1
 
 
-  def _AssertServerAndSubserversShutdown( self, timeout = 5 ):
+  def _AssertServerAndSubserversShutDown( self, timeout = 5 ):
     _, alive = psutil.wait_procs( [ self._server ] + self._subservers,
                                   timeout = timeout )
     assert_that( alive, has_length( equal_to( 0 ) ) )
