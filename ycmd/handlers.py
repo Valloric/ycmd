@@ -41,9 +41,7 @@ import bottle
 import json
 import logging
 import http.client
-import time
 import traceback
-import os
 
 from bottle import request
 from ycmd import extra_conf_store, hmac_plugin, user_options_store, server_state
@@ -51,13 +49,14 @@ from ycmd.bottle_utils import SetResponseHeader
 from ycmd.completers.completer_utils import FilterAndSortCandidatesWrap
 from ycmd.request_wrap import RequestWrap
 from ycmd.responses import BuildExceptionResponse, BuildCompletionResponse
-from ycmd.utils import TerminateProcess
 
 
 # num bytes for the request body buffer; request.json only works if the request
 # size is less than this
 bottle.Request.MEMFILE_MAX = 1000 * 1024
 
+
+_wsgi_server = None
 _server_state = None
 _hmac_secret = bytes()
 _logger = logging.getLogger( __name__ )
@@ -276,8 +275,13 @@ def _GetCompleterForRequestData( request_data ):
 
 
 def ServerShutdown():
-  ServerCleanup()
-  ServerTermination()
+  def Terminator():
+    if _wsgi_server:
+      _wsgi_server.Shutdown()
+
+  terminator = Thread( target = Terminator )
+  terminator.daemon = True
+  terminator.start()
 
 
 @atexit.register
@@ -285,16 +289,6 @@ def ServerCleanup():
   if _server_state:
     _server_state.Shutdown()
     extra_conf_store.Shutdown()
-
-
-def ServerTermination( countdown = 0.1 ):
-  def Terminator():
-    time.sleep( countdown )
-    TerminateProcess( os.getpid() )
-
-  terminator = Thread( target = Terminator )
-  terminator.daemon = True
-  terminator.start()
 
 
 def SetHmacSecret( hmac_secret ):
