@@ -35,15 +35,40 @@ RACERD = p.join( DIR_OF_THIRD_PARTY, 'racerd', 'target', 'release', 'racerd' )
 RACERD_HMAC_HEADER = 'x-racerd-hmac'
 HMAC_SECRET_LENGTH = 16
 
-def ShouldEnableRustCompleter():
+def ShouldEnableRustCompleter( user_options ):
   """
   Checks whether ycmd was built with racerd support
   """
-  built_with_racerd = p.exists( RACERD )
-  if not built_with_racerd:
+  racerd_binary = FindRacerdBinary( user_options )
+  if not racerd_binary:
     _logger.info( 'Not using Rust completer: '
                   'ycmd was not built with --racer-completer' )
-  return built_with_racerd
+    return False
+
+  return True
+
+
+def FindRacerdBinary( user_options ):
+  """
+  Find path to racerd binary
+
+  This function prefers the 'racerd_binary_path' value as provided in
+  user_options if available. It then falls back to ycmd's racerd build. If
+  that's not found, attempts to use racerd from current path.
+  """
+  racerd_user_binary = user_options.get( 'racerd_binary_path' )
+  if racerd_user_binary:
+    # The user has explicitly specified a path.
+    if os.path.isfile( racerd_user_binary ):
+      return racerd_user_binary
+    else:
+      _logger.warn( 'user provided racerd_binary_path is not file' )
+      return None
+  if os.path.isfile( RACERD ):
+    return RACERD
+
+  return utils.PathToFirstExistingExecutable( [ 'racerd' ] )
+
 
 class RustCompleter( Completer ):
   """
@@ -53,6 +78,7 @@ class RustCompleter( Completer ):
 
   def __init__( self, user_options ):
     super( RustCompleter, self ).__init__( user_options )
+    self._racerd = FindRacerdBinary( user_options )
     self._racerd_host = None
     self._lock = threading.Lock()
     self._keep_logfiles = user_options[ 'server_keep_logfiles' ]
@@ -208,12 +234,13 @@ class RustCompleter( Completer ):
     """
     Start racerd. `self._lock` must be held when this is called.
     """
-    _logger.info( 'RustCompleter using RACERD = ' + RACERD )
 
     self._hmac_secret = self._CreateHmacSecret()
     secret_file_path = self._WriteSecretFile( self._hmac_secret )
 
-    args = [ RACERD, 'serve', '--port=0', '--secret-file', secret_file_path ]
+    args = [ self._racerd, 'serve',
+             '--port', '0',
+             '--secret-file', secret_file_path ]
 
     rust_src_path = self._GetRustSrcPath()
     if rust_src_path is not None:
@@ -308,6 +335,9 @@ class RustCompleter( Completer ):
   def DebugInfo( self, request_data ):
     with self._lock:
       if self.ServerIsRunningNoLock():
-        return ( 'racerd running at: {0}' ).format( self._racerd_host )
+        return ( 'racerd\n'
+                 '  listening at: {0}\n'
+                 '  racerd path: {1}' ).format( self._racerd_host,
+                                                self._racerd )
       else:
         return 'racerd is not running'
