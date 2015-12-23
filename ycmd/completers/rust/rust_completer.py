@@ -63,7 +63,7 @@ def FindRacerdBinary( user_options ):
       return racerd_user_binary
     else:
       _logger.warn( 'user provided racerd_binary_path is not file' )
-      return None
+
   if os.path.isfile( RACERD ):
     return RACERD
 
