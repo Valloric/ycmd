@@ -21,8 +21,7 @@ from ycmd.utils import ( GetUnusedLocalhostPort, PathToTempDir,
                          RemoveIfExists, SafePopen, ToUtf8Json )
 from ycmd.hmac_utils import CreateHmac, CreateRequestHmac, SecureStringsEqual
 from base64 import b64encode, b64decode
-from hamcrest import ( assert_that, equal_to, greater_than, is_in,
-                       less_than_or_equal_to )
+from hamcrest import assert_that, equal_to, greater_than, has_length, is_in
 from test_utils import BuildRequest
 import collections
 import sys
@@ -45,12 +44,12 @@ PATH_TO_YCMD = os.path.join( DIR_OF_THIS_SCRIPT, '..' )
 class Server_test( object ):
 
   def __init__( self ):
-    self._popen_handle = None
     self._location = None
     self._port = None
     self._hmac_secret = None
     self._stdout = None
-    self._children = None
+    self._server = None
+    self._subservers = []
     self._settings = self._DefaultSettings()
 
 
@@ -60,14 +59,14 @@ class Server_test( object ):
 
 
   def tearDown( self ):
-    if self._popen_handle and self._IsAlive():
-      self._popen_handle.terminate()
+    if self._server.is_running():
+      self._server.terminate()
     if self._stdout:
       RemoveIfExists( self._stdout )
-    if self._children:
-      for child in self._children:
-        if child.is_running():
-          child.terminate()
+    if self._subservers:
+      for subserver in self._subservers:
+        if subserver.is_running():
+          subserver.terminate()
 
 
   def ShutdownWithNoSubserver_test( self ):
@@ -75,11 +74,9 @@ class Server_test( object ):
     self._WaitUntilReady()
 
     response = self._PostRequest( 'shutdown' )
-    self._CheckResponse( response )
+    self._AssertResponse( response )
 
-    self._WaitUntilShutdown()
-
-    assert_that( self._popen_handle.returncode, less_than_or_equal_to( 0 ) )
+    self._AssertServerAndSubserversShutdown()
 
 
   def ShutdownWithSubserver_test( self ):
@@ -91,27 +88,22 @@ class Server_test( object ):
       BuildRequest( command_arguments = [ 'StartServer' ],
                     filetype = 'javascript' )
     )
-    self._CheckResponse( response )
+    self._AssertResponse( response )
 
-    self._children = self._GetChildren()
-    assert_that( self._children, greater_than( 0 ) )
+    self._subservers = self._GetSubservers()
+    assert_that( self._subservers, has_length( greater_than( 0 ) ) )
 
     response = self._PostRequest( 'shutdown' )
-    self._CheckResponse( response )
+    self._AssertResponse( response )
 
-    self._WaitUntilShutdown()
-
-    assert_that( self._popen_handle.returncode, less_than_or_equal_to( 0 ) )
-    for child in self._children:
-      assert_that( child.is_running(), equal_to( False ) )
+    self._AssertServerAndSubserversShutdown()
 
 
   def WatchdogWithNoSubserver_test( self ):
     self._Start( idle_suicide_seconds = 2, check_interval_seconds = 1 )
     self._WaitUntilReady()
-    self._WaitUntilShutdown()
 
-    assert_that( self._popen_handle.returncode, less_than_or_equal_to( 0 ) )
+    self._AssertServerAndSubserversShutdown()
 
 
   def WatchdogWithSubserver_test( self ):
@@ -123,16 +115,12 @@ class Server_test( object ):
       BuildRequest( command_arguments = [ 'StartServer' ],
                     filetype = 'javascript' )
     )
-    self._CheckResponse( response )
+    self._AssertResponse( response )
 
-    self._children = self._GetChildren()
-    assert_that( self._children, greater_than( 0 ) )
+    self._subservers = self._GetSubservers()
+    assert_that( self._subservers, has_length( greater_than( 0 ) ) )
 
-    self._WaitUntilShutdown()
-
-    assert_that( self._popen_handle.returncode, less_than_or_equal_to( 0 ) )
-    for child in self._children:
-      assert_that( child.is_running(), equal_to( False ) )
+    self._AssertServerAndSubserversShutdown()
 
 
   def _Start( self, idle_suicide_seconds = 60,
@@ -161,11 +149,12 @@ class Server_test( object ):
 
       self._stdout = os.path.join( PathToTempDir(), 'test.log' )
       with open( self._stdout, 'w' ) as stdout:
-        self._popen_handle = SafePopen( ycmd_args,
-                                        stdin_windows = subprocess.PIPE,
-                                        stdout = stdout,
-                                        stderr = subprocess.STDOUT,
-                                        env = env )
+        _popen_handle = SafePopen( ycmd_args,
+                                   stdin_windows = subprocess.PIPE,
+                                   stdout = stdout,
+                                   stderr = subprocess.STDOUT,
+                                   env = env )
+        self._server = psutil.Process( _popen_handle.pid )
 
 
   def _DefaultSettings( self ):
@@ -177,8 +166,8 @@ class Server_test( object ):
       return json.loads( f.read() )
 
 
-  def _GetChildren( self ):
-    return psutil.Process( self._popen_handle.pid ).children()
+  def _GetSubservers( self ):
+    return self._server.children()
 
 
   def _WaitUntilReady( self, timeout = 5 ):
@@ -199,28 +188,14 @@ class Server_test( object ):
         total_slept += 0.1
 
 
-  def _WaitUntilShutdown( self, timeout = 5 ):
-    total_slept = 0
-    while True:
-      if total_slept > timeout:
-        raise RuntimeError( 'waited for the server to be shutdown '
-                            'for {0} seconds, aborting'.format(
-                              timeout ) )
-
-      if self._popen_handle.poll() is not None:
-        return
-      time.sleep( 0.1 )
-      total_slept += 0.1
-
-
-  def _IsAlive( self ):
-    returncode = self._popen_handle.poll()
-    # When the process hasn't finished yet, poll() returns None.
-    return returncode is None
+  def _AssertServerAndSubserversShutdown( self, timeout = 5 ):
+    _, alive = psutil.wait_procs( [ self._server ] + self._subservers,
+                                  timeout = timeout )
+    assert_that( alive, has_length( equal_to( 0 ) ) )
 
 
   def _IsReady( self ):
-    if not self._IsAlive():
+    if not self._server.is_running():
       return False
     response = self._GetRequest( 'ready' )
     response.raise_for_status()
@@ -265,7 +240,7 @@ class Server_test( object ):
                                          body,
                                          self._hmac_secret ) )
 
-  def _CheckResponse( self, response ):
+  def _AssertResponse( self, response ):
     assert_that( response.status_code, equal_to( httplib.OK ) )
     assert_that( HMAC_HEADER, is_in( response.headers ) )
     assert_that(
