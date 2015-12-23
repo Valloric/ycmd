@@ -36,16 +36,14 @@ import sys
 import logging
 import json
 import argparse
-import waitress
 import signal
 import os
 import base64
-from ycmd import user_options_store
-from ycmd import extra_conf_store
-from ycmd import utils
+
+from ycmd import extra_conf_store, user_options_store, utils
 from ycmd.hmac_plugin import HmacPlugin
 from ycmd.utils import ToBytes, ReadFile, OpenForStdHandle
-
+from ycmd.wsgi_server import StoppableWSGIServer
 
 
 def YcmCoreSanityCheck():
@@ -178,10 +176,11 @@ def Main():
                                         args.check_interval_seconds ) )
   handlers.app.install( HmacPlugin( hmac_secret ) )
   CloseStdin()
-  waitress.serve( handlers.app,
-                  host = args.host,
-                  port = args.port,
-                  threads = 30 )
+  handlers._wsgi_server = StoppableWSGIServer( handlers.app,
+                                               host = args.host,
+                                               port = args.port,
+                                               threads = 30 )
+  handlers._wsgi_server.Run()
 
 
 if __name__ == "__main__":
