@@ -285,6 +285,14 @@ class RustCompleter( Completer ):
       return False
 
 
+  def ServerIsReady( self ):
+    try:
+      self._GetResponse( '/ping', method = 'GET' )
+      return True
+    except Exception:
+      return False
+
+
   def _StopServerNoLock( self ):
     """
     Stop racerd. `self._lock` must be held when this is called.

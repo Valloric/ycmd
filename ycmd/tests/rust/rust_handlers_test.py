@@ -19,6 +19,8 @@
 
 from ..handlers_test import Handlers_test
 
+import time
+
 class Rust_Handlers_test( Handlers_test ):
 
   def __init__( self ):
@@ -39,4 +41,16 @@ class Rust_Handlers_test( Handlers_test ):
       )
     except:
       pass
+
+  def _WaitUntilServerReady( self ):
+    retries = 100
+
+    while retries > 0:
+      result = self._app.get( '/ready', { 'subserver': 'rust' } ).json
+      if result:
+        return
+      time.sleep( 0.2 )
+      retries = retries - 1
+
+    raise RuntimeError( "Timeout waiting for racerd" )
 
