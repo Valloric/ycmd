@@ -25,6 +25,8 @@ class Rust_Subcommands_test( Rust_Handlers_test ):
     filepath = self._PathToTestFile( 'test.rs' )
     contents = open( filepath ).read()
 
+    self._WaitUntilServerReady()
+
     event_data = self._BuildRequest( filepath = filepath,
                                      filetype = 'rust',
                                      contents = contents,

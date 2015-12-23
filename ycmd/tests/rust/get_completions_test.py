@@ -40,6 +40,8 @@ class Rust_GetCompletions_test( Rust_Handlers_test ):
                                           line_num = 9,
                                           column_num = 11 )
 
+    self._WaitUntilServerReady()
+
     results = self._app.post_json( '/completions',
                                    completion_data ).json[ 'completions' ]
 
