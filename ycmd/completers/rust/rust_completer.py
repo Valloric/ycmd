@@ -21,7 +21,7 @@ from ycmd.utils import ToUtf8IfNeeded
 from ycmd.completers.completer import Completer
 from ycmd import responses, utils, hmac_utils
 
-import logging, urlparse, requests, subprocess, httplib, json, tempfile, base64
+import logging, urlparse, requests, httplib, json, tempfile, base64
 import binascii, threading, os
 
 from os import path as p
@@ -238,20 +238,35 @@ class RustCompleter( Completer ):
     self._hmac_secret = self._CreateHmacSecret()
     secret_file_path = self._WriteSecretFile( self._hmac_secret )
 
+    port = utils.GetUnusedLocalhostPort()
+
     args = [ self._racerd, 'serve',
-             '--port', '0',
+             '--port', str(port),
+             '-l',
              '--secret-file', secret_file_path ]
+
+    # Enable logging of crashes
+    env = os.environ.copy()
+    env['RUST_BACKTRACE'] = '1'
 
     rust_src_path = self._GetRustSrcPath()
     if rust_src_path is not None:
       args.extend( [ '--rust-src-path', rust_src_path ] )
 
-    self._racerd_phandle = utils.SafePopen( args, stdout = subprocess.PIPE )
+    filename_format = p.join( utils.PathToTempDir(),
+                              'racerd_{port}_{std}.log' )
 
-    # The first line output by racerd includes the host and port the server is
-    # listening on. Expected output is `racerd listening at x.x.x.x:n`.
-    host = self._racerd_phandle.stdout.readline().split()[3]
-    self._racerd_host = 'http://' + host
+    self._server_stdout = filename_format.format( port = port, std = 'stdout' )
+    self._server_stderr = filename_format.format( port = port, std = 'stderr' )
+
+    with open( self._server_stderr, 'w' ) as fstderr:
+      with open( self._server_stdout, 'w' ) as fstdout:
+        self._racerd_phandle = utils.SafePopen( args,
+                                                stdout = fstdout,
+                                                stderr = fstderr,
+                                                env = env )
+
+    self._racerd_host = 'http://127.0.0.1:{0}'.format( port )
     _logger.info( 'RustCompleter using host = ' + self._racerd_host )
 
 
@@ -337,7 +352,11 @@ class RustCompleter( Completer ):
       if self.ServerIsRunningNoLock():
         return ( 'racerd\n'
                  '  listening at: {0}\n'
-                 '  racerd path: {1}' ).format( self._racerd_host,
-                                                self._racerd )
+                 '  racerd path: {1}\n'
+                 '  stdout log: {2}\n'
+                 '  stderr log: {3}').format( self._racerd_host,
+                                              self._racerd,
+                                              self._server_stdout,
+                                              self._server_stderr )
       else:
         return 'racerd is not running'
