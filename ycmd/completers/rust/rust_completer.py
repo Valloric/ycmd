@@ -35,18 +35,9 @@ RACERD = p.join( DIR_OF_THIRD_PARTY, 'racerd', 'target', 'release', 'racerd' )
 RACERD_HMAC_HEADER = 'x-racerd-hmac'
 HMAC_SECRET_LENGTH = 16
 
-def ShouldEnableRustCompleter( user_options ):
-  """
-  Checks whether ycmd was built with racerd support
-  """
-  racerd_binary = FindRacerdBinary( user_options )
-  if not racerd_binary:
-    _logger.info( 'Not using Rust completer: '
-                  'ycmd was not built with --racer-completer' )
-    return False
-
-  return True
-
+BINARY_NOT_FOUND_MESSAGE = ( 'racerd binary not found. Did you build it? ' +
+                             'You can do so by running ' +
+                             '"./build.py --racer-completer".' )
 
 def FindRacerdBinary( user_options ):
   """
@@ -83,6 +74,11 @@ class RustCompleter( Completer ):
     self._lock = threading.Lock()
     self._keep_logfiles = user_options[ 'server_keep_logfiles' ]
     self._hmac_secret = ''
+
+    if not self._racerd:
+      _logger.error( BINARY_NOT_FOUND_MESSAGE )
+      raise RuntimeError( BINARY_NOT_FOUND_MESSAGE )
+
     with self._lock:
       self._StartServerNoLock()
 
