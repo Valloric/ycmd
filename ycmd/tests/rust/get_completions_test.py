@@ -26,12 +26,7 @@ class Rust_GetCompletions_test( Rust_Handlers_test ):
     filepath = self._PathToTestFile( 'test.rs' )
     contents = open( filepath ).read()
 
-    event_data = self._BuildRequest( filepath = filepath,
-                                     filetype = 'rust',
-                                     contents = contents,
-                                     event_name = 'BufferVisit' )
-
-    self._app.post_json( '/event_notification', event_data )
+    self._StartServer()
 
     completion_data = self._BuildRequest( filepath = filepath,
                                           filetype = 'rust',
@@ -39,8 +34,6 @@ class Rust_GetCompletions_test( Rust_Handlers_test ):
                                           force_semantic = True,
                                           line_num = 9,
                                           column_num = 11 )
-
-    self._WaitUntilServerReady()
 
     results = self._app.post_json( '/completions',
                                    completion_data ).json[ 'completions' ]
