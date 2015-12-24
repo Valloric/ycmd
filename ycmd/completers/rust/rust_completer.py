@@ -29,9 +29,13 @@ from os import path as p
 _logger = logging.getLogger( __name__ )
 
 DIR_OF_THIS_SCRIPT = p.dirname( p.abspath( __file__ ) )
-DIR_OF_THIRD_PARTY = p.abspath( p.join( DIR_OF_THIS_SCRIPT,
-                             '..', '..', '..', 'third_party' ) )
-RACERD = p.join( DIR_OF_THIRD_PARTY, 'racerd', 'target', 'release', 'racerd' )
+DIR_OF_THIRD_PARTY = utils.PathToNearestThirdPartyFolder( DIR_OF_THIS_SCRIPT )
+
+RACERD_BINARY_NAME = 'racerd' + ( '.exe' if utils.OnWindows() else '' )
+RACERD_BINRARY = p.join( DIR_OF_THIRD_PARTY,
+                         'racerd', 'target', 'release', RACERD_BINARY_NAME )
+
+
 RACERD_HMAC_HEADER = 'x-racerd-hmac'
 HMAC_SECRET_LENGTH = 16
 
@@ -55,8 +59,8 @@ def FindRacerdBinary( user_options ):
     else:
       _logger.warn( 'user provided racerd_binary_path is not file' )
 
-  if os.path.isfile( RACERD ):
-    return RACERD
+  if os.path.isfile( RACERD_BINRARY ):
+    return RACERD_BINRARY
 
   return utils.PathToFirstExistingExecutable( [ 'racerd' ] )
 
