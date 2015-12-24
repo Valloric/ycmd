@@ -113,7 +113,7 @@ class RustCompleter( Completer ):
 
 
   def _ComputeRequestHmac( self, method, path, body ):
-    if body is None:
+    if not body:
       body = ''
 
     hmac = hmac_utils.CreateRequestHmac( method, path, body, self._hmac_secret )
@@ -154,7 +154,7 @@ class RustCompleter( Completer ):
     """
     Transform ycm request into racerd request
     """
-    if request_data is None:
+    if not request_data:
       return None
 
     file_path = request_data[ 'filepath' ]
@@ -195,7 +195,7 @@ class RustCompleter( Completer ):
 
   def ComputeCandidatesInner( self, request_data ):
     completions = self._FetchCompletions( request_data )
-    if completions is None:
+    if not completions:
       return []
 
     return [ responses.BuildCompletionData(
@@ -250,7 +250,7 @@ class RustCompleter( Completer ):
     env['RUST_BACKTRACE'] = '1'
 
     rust_src_path = self._GetRustSrcPath()
-    if rust_src_path is not None:
+    if rust_src_path:
       args.extend( [ '--rust-src-path', rust_src_path ] )
 
     filename_format = p.join( utils.PathToTempDir(),
@@ -274,7 +274,7 @@ class RustCompleter( Completer ):
     """
     Check racerd status. `self._lock` must be held when this is called.
     """
-    if self._racerd_host is None or self._racerd_phandle is None:
+    if not self._racerd_host or not self._racerd_phandle:
       return False
 
     try:
