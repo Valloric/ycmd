@@ -31,15 +31,6 @@ class Rust_Handlers_test( Handlers_test ):
     self._StopServer()
 
 
-  def _StartServer( self ):
-    self._WaitUntilServerReady()
-
-    event_data = self._BuildRequest( filetype = 'rust',
-                                     event_name = 'BufferVisit' )
-
-    self._app.post_json( '/event_notification', event_data )
-
-
   def _StopServer( self ):
     try:
       self._app.post_json(

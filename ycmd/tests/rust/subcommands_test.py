@@ -25,7 +25,7 @@ class Rust_Subcommands_test( Rust_Handlers_test ):
     filepath = self._PathToTestFile( 'test.rs' )
     contents = open( filepath ).read()
 
-    self._StartServer()
+    self._WaitUntilServerReady()
 
     goto_data = self._BuildRequest( completer_target = 'filetype_default',
                                     command_arguments = [ 'GoTo' ],
