@@ -231,17 +231,17 @@ class JediCompleter( Completer ):
 
   def GetSubcommandsMap( self ):
     return {
-      'GoToDefinition' : ( lambda self, request_data:
+      'GoToDefinition' : ( lambda self, request_data, args:
                            self._GoToDefinition( request_data ) ),
-      'GoToDeclaration': ( lambda self, request_data:
+      'GoToDeclaration': ( lambda self, request_data, args:
                            self._GoToDeclaration( request_data ) ),
-      'GoTo'           : ( lambda self, request_data:
+      'GoTo'           : ( lambda self, request_data, args:
                            self._GoTo( request_data ) ),
-      'GetDoc'         : ( lambda self, request_data:
+      'GetDoc'         : ( lambda self, request_data, args:
                            self._GetDoc( request_data ) ),
-      'StopServer'     : ( lambda self, request_data:
+      'StopServer'     : ( lambda self, request_data, args:
                            self.Shutdown() ),
-      'RestartServer'  : ( lambda self, request_data:
+      'RestartServer'  : ( lambda self, request_data, args:
                            self.RestartServer( request_data ) )
     }
 

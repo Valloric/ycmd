@@ -50,6 +50,7 @@ class Python_GetCompletions_test( Python_Handlers_test ):
                                          'event_name': 'FileReadyToParse',
                                          'contents': contents,
                                          } ) )
+    self.WaitUntilJediHTTPServerReady()
 
 
     # We ignore errors here and we check the response code ourself.
@@ -66,6 +67,9 @@ class Python_GetCompletions_test( Python_Handlers_test ):
 
 
   def Basic_test( self ):
+    self.ActivateJediHTTPServer()
+    self.WaitUntilJediHTTPServerReady()
+
     filepath = self._PathToTestFile( 'basic.py' )
     completion_data = self._BuildRequest( filepath = filepath,
                                           filetype = 'python',
@@ -87,6 +91,9 @@ class Python_GetCompletions_test( Python_Handlers_test ):
 
 
   def UnicodeDescription_test( self ):
+    self.ActivateJediHTTPServer()
+    self.WaitUntilJediHTTPServerReady()
+
     filepath = self._PathToTestFile( 'unicode.py' )
     completion_data = self._BuildRequest( filepath = filepath,
                                           filetype = 'python',
