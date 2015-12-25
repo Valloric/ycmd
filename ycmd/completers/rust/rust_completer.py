@@ -92,10 +92,10 @@ class RustCompleter( Completer ):
     Attempt to read user option for rust_src_path. Fallback to environment
     variable if it's not provided.
     """
-    rust_src_path  = self.user_options[ 'rust_src_path' ]
+    rust_src_path = self.user_options[ 'rust_src_path' ]
 
     # Early return if user provided config
-    if rust_src_path != '':
+    if rust_src_path:
       return rust_src_path
 
     # Fall back to environment variable
@@ -177,20 +177,20 @@ class RustCompleter( Completer ):
 
 
   def _GetExtraData( self, completion ):
-      location = {}
-      if completion[ 'file_path' ]:
-        location[ 'filepath' ] = ToUtf8IfNeeded( completion[ 'file_path' ] )
-      if completion[ 'line' ]:
-        location[ 'line_num' ] = completion[ 'line' ]
-      if completion[ 'column' ]:
-        location[ 'column_num' ] = completion[ 'column' ] + 1
+    location = {}
+    if completion[ 'file_path' ]:
+      location[ 'filepath' ] = ToUtf8IfNeeded( completion[ 'file_path' ] )
+    if completion[ 'line' ]:
+      location[ 'line_num' ] = completion[ 'line' ]
+    if completion[ 'column' ]:
+      location[ 'column_num' ] = completion[ 'column' ] + 1
 
-      if location:
-        extra_data = {}
-        extra_data[ 'location' ] = location
-        return extra_data
-      else:
-        return None
+    if location:
+      extra_data = {}
+      extra_data[ 'location' ] = location
+      return extra_data
+    else:
+      return None
 
 
   def ComputeCandidatesInner( self, request_data ):
@@ -223,9 +223,8 @@ class RustCompleter( Completer ):
     secret_fd, secret_path = tempfile.mkstemp( text=True )
 
     # Write secret
-    secret_file = os.fdopen( secret_fd, 'w' )
-    secret_file.write( secret )
-    secret_file.close()
+    with os.fdopen( secret_fd, 'w' ) as secret_file:
+      secret_file.write( secret )
 
     return secret_path
 
@@ -247,7 +246,7 @@ class RustCompleter( Completer ):
 
     # Enable logging of crashes
     env = os.environ.copy()
-    env['RUST_BACKTRACE'] = '1'
+    env[ 'RUST_BACKTRACE' ] = '1'
 
     rust_src_path = self._GetRustSrcPath()
     if rust_src_path:
@@ -364,6 +363,13 @@ class RustCompleter( Completer ):
                  '  stdout log: {2}\n'
                  '  stderr log: {3}').format( self._racerd_host,
                                               self._racerd,
+                                              self._server_stdout,
+                                              self._server_stderr )
+      elif self._server_stdout and self._server_stderr:
+        return ( 'racerd is no longer running\n',
+                 '  racerd path: {0}\n'
+                 '  stdout log: {1}\n'
+                 '  stderr log: {2}').format( self._racerd,
                                               self._server_stdout,
                                               self._server_stderr )
       else:
