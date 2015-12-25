@@ -75,7 +75,7 @@ class RustCompleter( Completer ):
     super( RustCompleter, self ).__init__( user_options )
     self._racerd = FindRacerdBinary( user_options )
     self._racerd_host = None
-    self._server_state_lock = threading.Lock()
+    self._server_state_lock = threading.RLock()
     self._keep_logfiles = user_options[ 'server_keep_logfiles' ]
     self._hmac_secret = ''
 
@@ -83,8 +83,7 @@ class RustCompleter( Completer ):
       _logger.error( BINARY_NOT_FOUND_MESSAGE )
       raise RuntimeError( BINARY_NOT_FOUND_MESSAGE )
 
-    with self._server_state_lock:
-      self._StartServerNoLock()
+    self._StartServer()
 
 
   def _GetRustSrcPath( self ):
@@ -229,60 +228,61 @@ class RustCompleter( Completer ):
     return secret_path
 
 
-  def _StartServerNoLock( self ):
+  def _StartServer( self ):
     """
-    Start racerd. `self._server_state_lock` must be held when this is called.
+    Start racerd.
     """
+    with self._server_state_lock:
 
-    self._hmac_secret = self._CreateHmacSecret()
-    secret_file_path = self._WriteSecretFile( self._hmac_secret )
+      self._hmac_secret = self._CreateHmacSecret()
+      secret_file_path = self._WriteSecretFile( self._hmac_secret )
 
-    port = utils.GetUnusedLocalhostPort()
+      port = utils.GetUnusedLocalhostPort()
 
-    args = [ self._racerd, 'serve',
-             '--port', str(port),
-             '-l',
-             '--secret-file', secret_file_path ]
+      args = [ self._racerd, 'serve',
+               '--port', str(port),
+               '-l',
+               '--secret-file', secret_file_path ]
 
-    # Enable logging of crashes
-    env = os.environ.copy()
-    env[ 'RUST_BACKTRACE' ] = '1'
+      # Enable logging of crashes
+      env = os.environ.copy()
+      env[ 'RUST_BACKTRACE' ] = '1'
 
-    rust_src_path = self._GetRustSrcPath()
-    if rust_src_path:
-      args.extend( [ '--rust-src-path', rust_src_path ] )
+      rust_src_path = self._GetRustSrcPath()
+      if rust_src_path:
+        args.extend( [ '--rust-src-path', rust_src_path ] )
 
-    filename_format = p.join( utils.PathToTempDir(),
-                              'racerd_{port}_{std}.log' )
+      filename_format = p.join( utils.PathToTempDir(),
+                                'racerd_{port}_{std}.log' )
 
-    self._server_stdout = filename_format.format( port = port, std = 'stdout' )
-    self._server_stderr = filename_format.format( port = port, std = 'stderr' )
+      self._server_stdout = filename_format.format( port = port, std = 'stdout' )
+      self._server_stderr = filename_format.format( port = port, std = 'stderr' )
 
-    with open( self._server_stderr, 'w' ) as fstderr:
-      with open( self._server_stdout, 'w' ) as fstdout:
-        self._racerd_phandle = utils.SafePopen( args,
-                                                stdout = fstdout,
-                                                stderr = fstderr,
-                                                env = env )
+      with open( self._server_stderr, 'w' ) as fstderr:
+        with open( self._server_stdout, 'w' ) as fstdout:
+          self._racerd_phandle = utils.SafePopen( args,
+                                                  stdout = fstdout,
+                                                  stderr = fstderr,
+                                                  env = env )
 
-    self._racerd_host = 'http://127.0.0.1:{0}'.format( port )
-    _logger.info( 'RustCompleter using host = ' + self._racerd_host )
+      self._racerd_host = 'http://127.0.0.1:{0}'.format( port )
+      _logger.info( 'RustCompleter using host = ' + self._racerd_host )
 
 
-  def ServerIsRunningNoLock( self ):
+  def ServerIsRunning( self ):
     """
-    Check racerd status. `self._server_state_lock` must be held when this is
-    called.
+    Check racerd status.
     """
-    if not self._racerd_host or not self._racerd_phandle:
-      return False
+    with self._server_state_lock:
+      if not self._racerd_host or not self._racerd_phandle:
+        return False
 
-    try:
-      self._GetResponse( '/ping', method = 'GET' )
-      return True
-    except requests.HTTPError:
-      self._StopServerNoLock()
-      return False
+      try:
+        self._GetResponse( '/ping', method = 'GET' )
+        return True
+      except requests.HTTPError:
+        self._StopServer()
+        return False
 
 
   def ServerIsReady( self ):
@@ -293,31 +293,27 @@ class RustCompleter( Completer ):
       return False
 
 
-  def _StopServerNoLock( self ):
-    """
-    Stop racerd. `self._server_state_lock` must be held when this is called.
-    """
-    if self._racerd_phandle:
-      self._racerd_phandle.terminate()
-      self._racerd_phandle = None
-      self._racerd_host = None
-
-
   def _StopServer( self ):
+    """
+    Stop racerd.
+    """
     with self._server_state_lock:
-      self._StopServerNoLock()
+      if self._racerd_phandle:
+        self._racerd_phandle.terminate()
+        self._racerd_phandle = None
+        self._racerd_host = None
 
 
   def _RestartServer( self ):
     """
-    Thread safe server restart
+    Restart racerd
     """
     _logger.debug( 'RustCompleter restarting racerd' )
 
     with self._server_state_lock:
-      if self.ServerIsRunningNoLock():
-        self._StopServerNoLock()
-      self._StartServerNoLock()
+      if self.ServerIsRunning():
+        self._StopServer()
+      self._StartServer()
 
     _logger.debug( 'RustCompleter has restarted racerd' )
 
@@ -357,7 +353,7 @@ class RustCompleter( Completer ):
 
   def DebugInfo( self, request_data ):
     with self._server_state_lock:
-      if self.ServerIsRunningNoLock():
+      if self.ServerIsRunning():
         return ( 'racerd\n'
                  '  listening at: {0}\n'
                  '  racerd path: {1}\n'
