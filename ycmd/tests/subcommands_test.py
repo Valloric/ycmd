@@ -24,13 +24,17 @@ from .handlers_test import Handlers_test
 
 class Subcommands_test( Handlers_test ):
 
+  # XXX(vheon): The logic for this is actually in the `Completer` class.
+  # Should we test this in a different way?
+  # Maybe with a made up test object Completer.
   def Basic_test( self ):
     subcommands_data = self._BuildRequest( completer_target = 'python' )
 
     eq_( [ 'GetDoc',
            'GoTo',
            'GoToDeclaration',
-           'GoToDefinition' ],
+           'GoToDefinition',
+           'RestartServer' ],
          self._app.post_json( '/defined_subcommands', subcommands_data ).json )
 
 
@@ -40,5 +44,6 @@ class Subcommands_test( Handlers_test ):
     eq_( [ 'GetDoc',
            'GoTo',
            'GoToDeclaration',
-           'GoToDefinition' ],
+           'GoToDefinition',
+           'RestartServer' ],
          self._app.post_json( '/defined_subcommands', subcommands_data ).json )

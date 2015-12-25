@@ -25,6 +25,9 @@ import os.path
 class Python_Subcommands_test( Python_Handlers_test ):
 
   def GoTo_ZeroBasedLineAndColumn_test( self ):
+    self.ActivateJediHTTPServer()
+    self.WaitUntilJediHTTPServerReady()
+
     contents = """
 def foo():
     pass
@@ -47,6 +50,9 @@ foo()
 
 
   def GetDoc_Method_test( self ):
+    self.ActivateJediHTTPServer()
+    self.WaitUntilJediHTTPServerReady()
+
     # Testcase1
     filepath = self._PathToTestFile( 'GetDoc.py' )
     contents = open( filepath ).read()
@@ -69,6 +75,9 @@ foo()
 
 
   def GetDoc_Class_test( self ):
+    self.ActivateJediHTTPServer()
+    self.WaitUntilJediHTTPServerReady()
+
     # Testcase1
     filepath = self._PathToTestFile( 'GetDoc.py' )
     contents = open( filepath ).read()

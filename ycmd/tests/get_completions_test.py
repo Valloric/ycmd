@@ -94,6 +94,11 @@ class GetCompletions_test( Handlers_test ):
 
 
   def ForceSemantic_Works_test( self ):
+    # XXX(vheon): as with subcommand test I believe we should build a fake
+    # `Completer`. Before we would get this test "for free" since the python
+    # completer didn't have to be started. Moreover we want to test that in the
+    # fallback scenario if a user have forced the semantic completion he would
+    # get a semantic completion, so it doesnt have much to do with python.
     completion_data = self._BuildRequest( filetype = 'python',
                                           force_semantic = True )
 
