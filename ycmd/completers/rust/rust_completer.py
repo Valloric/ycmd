@@ -75,7 +75,7 @@ class RustCompleter( Completer ):
     super( RustCompleter, self ).__init__( user_options )
     self._racerd = FindRacerdBinary( user_options )
     self._racerd_host = None
-    self._lock = threading.Lock()
+    self._server_state_lock = threading.Lock()
     self._keep_logfiles = user_options[ 'server_keep_logfiles' ]
     self._hmac_secret = ''
 
@@ -83,7 +83,7 @@ class RustCompleter( Completer ):
       _logger.error( BINARY_NOT_FOUND_MESSAGE )
       raise RuntimeError( BINARY_NOT_FOUND_MESSAGE )
 
-    with self._lock:
+    with self._server_state_lock:
       self._StartServerNoLock()
 
 
@@ -231,7 +231,7 @@ class RustCompleter( Completer ):
 
   def _StartServerNoLock( self ):
     """
-    Start racerd. `self._lock` must be held when this is called.
+    Start racerd. `self._server_state_lock` must be held when this is called.
     """
 
     self._hmac_secret = self._CreateHmacSecret()
@@ -271,7 +271,8 @@ class RustCompleter( Completer ):
 
   def ServerIsRunningNoLock( self ):
     """
-    Check racerd status. `self._lock` must be held when this is called.
+    Check racerd status. `self._server_state_lock` must be held when this is
+    called.
     """
     if not self._racerd_host or not self._racerd_phandle:
       return False
@@ -294,7 +295,7 @@ class RustCompleter( Completer ):
 
   def _StopServerNoLock( self ):
     """
-    Stop racerd. `self._lock` must be held when this is called.
+    Stop racerd. `self._server_state_lock` must be held when this is called.
     """
     if self._racerd_phandle:
       self._racerd_phandle.terminate()
@@ -303,7 +304,7 @@ class RustCompleter( Completer ):
 
 
   def _StopServer( self ):
-    with self._lock:
+    with self._server_state_lock:
       self._StopServerNoLock()
 
 
@@ -313,7 +314,7 @@ class RustCompleter( Completer ):
     """
     _logger.debug( 'RustCompleter restarting racerd' )
 
-    with self._lock:
+    with self._server_state_lock:
       if self.ServerIsRunningNoLock():
         self._StopServerNoLock()
       self._StartServerNoLock()
@@ -355,7 +356,7 @@ class RustCompleter( Completer ):
 
 
   def DebugInfo( self, request_data ):
-    with self._lock:
+    with self._server_state_lock:
       if self.ServerIsRunningNoLock():
         return ( 'racerd\n'
                  '  listening at: {0}\n'
