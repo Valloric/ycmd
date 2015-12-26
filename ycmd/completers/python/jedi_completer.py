@@ -63,7 +63,7 @@ class JediCompleter( Completer ):
 
   def __init__( self, user_options ):
     super( JediCompleter, self ).__init__( user_options )
-    self._server_lock = threading.Lock()
+    self._server_lock = threading.RLock()
     self._jedihttp_port = None
     self._jedihttp_phandle = None
     self._logger = logging.getLogger( __name__ )
@@ -71,6 +71,7 @@ class JediCompleter( Completer ):
     self._logfile_stderr = None
     self._keep_logfiles = user_options[ 'server_keep_logfiles' ]
     self._hmac_secret = ''
+    self._StartServer()
 
 
   def SupportedFiletypes( self ):
@@ -79,9 +80,8 @@ class JediCompleter( Completer ):
 
 
   def Shutdown( self ):
-    with self._server_lock:
-      if self.ServerIsRunning():
-        self._StopServer()
+    if self.ServerIsRunning():
+      self._StopServer()
 
 
   def ServerIsReady( self ):
@@ -94,53 +94,58 @@ class JediCompleter( Completer ):
 
   def ServerIsRunning( self ):
     """ Check if JediHTTP server is running (up and serving). """
-    try:
-      return bool( self._GetResponse( '/healthy' ) )
-    except Exception:
-      return False
+    with self._server_lock:
+      if not self._jedihttp_phandle or not self._jedihttp_port:
+        return False
+
+      try:
+        return bool( self._GetResponse( '/healthy' ) )
+      except Exception:
+        return False
 
 
   def RestartServer( self, request_data ):
     """ Restart the JediHTTP Server. """
-    self.Shutdown()
-    self._StartServer( request_data )
+    with self._server_lock:
+      self._StopServer()
+      self._StartServer()
 
 
   def _StopServer( self ):
-    self._logger.info( 'Stopping JediHTTP' )
-    utils.TerminateProcess( self._jedihttp_phandle.pid )
-    self._jedihttp_phandle = None
-    self._jedihttp_port = None
+    with self._server_lock:
+      self._logger.info( 'Stopping JediHTTP' )
+      if self._jedihttp_phandle:
+        utils.TerminateProcess( self._jedihttp_phandle.pid )
+        self._jedihttp_phandle = None
+        self._jedihttp_port = None
 
-    if not self._keep_logfiles:
-      utils.RemoveIfExists( self._logfile_stdout )
-      utils.RemoveIfExists( self._logfile_stderr )
+      if not self._keep_logfiles:
+        utils.RemoveIfExists( self._logfile_stdout )
+        utils.RemoveIfExists( self._logfile_stderr )
 
 
-  def _StartServer( self, request_data ):
-    if self.ServerIsRunning():
-      return
+  def _StartServer( self ):
+    with self._server_lock:
+      self._logger.info( 'Starting JediHTTP server' )
+      self._ChoosePort()
+      self._GenerateHmacSecret()
 
-    self._logger.info( 'Starting JediHTTP server' )
-    self._ChoosePort()
-    self._GenerateHmacSecret()
+      with hmaclib.TemporaryHmacSecretFile( self._hmac_secret ) as hmac_file:
+        command = [ PYTHON_EXECUTABLE_PATH,
+                    PATH_TO_JEDIHTTP,
+                    '--port', str( self._jedihttp_port ),
+                    '--hmac-file-secret', hmac_file.name ]
 
-    with hmaclib.TemporaryHmacSecretFile( self._hmac_secret ) as hmac_file:
-      command = [ PYTHON_EXECUTABLE_PATH,
-                  PATH_TO_JEDIHTTP,
-                  '--port', str( self._jedihttp_port ),
-                  '--hmac-file-secret', hmac_file.name ]
+      self._logfile_stdout = LOG_FILENAME_FORMAT.format(
+          port = self._jedihttp_port, std = 'stdout' )
+      self._logfile_stderr = LOG_FILENAME_FORMAT.format(
+          port = self._jedihttp_port, std = 'stderr' )
 
-    self._logfile_stdout = LOG_FILENAME_FORMAT.format(
-        port = self._jedihttp_port, std = 'stdout' )
-    self._logfile_stderr = LOG_FILENAME_FORMAT.format(
-        port = self._jedihttp_port, std = 'stderr' )
-
-    with open( self._logfile_stderr, 'w' ) as logerr:
-      with open( self._logfile_stdout, 'w' ) as logout:
-        self._jedihttp_phandle = utils.SafePopen( command,
-                                                  stdout = logout,
-                                                  stderr = logerr )
+      with open( self._logfile_stderr, 'w' ) as logerr:
+        with open( self._logfile_stdout, 'w' ) as logout:
+          self._jedihttp_phandle = utils.SafePopen( command,
+                                                    stdout = logout,
+                                                    stderr = logerr )
 
 
   def _ChoosePort( self ):
@@ -216,11 +221,6 @@ class JediCompleter( Completer ):
     return self._GetResponse( '/completions', request_data )[ 'completions' ]
 
 
-  def OnFileReadyToParse( self, request_data ):
-    with self._server_lock:
-      self._StartServer( request_data )
-
-
   def DefinedSubcommands( self ):
     # We don't want expose this sub-command because is not really needed for
     # the user but is useful in tests for tearing down the server
@@ -242,7 +242,7 @@ class JediCompleter( Completer ):
       'StopServer'     : ( lambda self, request_data, args:
                            self.Shutdown() ),
       'RestartServer'  : ( lambda self, request_data, args:
-                           self.RestartServer( request_data ) )
+                           self.RestartServer() )
     }
 
 
