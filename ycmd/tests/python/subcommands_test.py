@@ -24,29 +24,95 @@ import os.path
 
 class Python_Subcommands_test( Python_Handlers_test ):
 
-  def GoTo_ZeroBasedLineAndColumn_test( self ):
+  def GoTo_Variation_ZeroBasedLineAndColumn_test( self ):
+    tests = [
+          {
+            'command_arguments': [ 'GoToDefinition' ],
+            'response': {
+              'filepath': os.path.abspath( '/foo.py' ),
+              'line_num': 2,
+              'column_num': 5
+            }
+          },
+          {
+            'command_arguments': [ 'GoToDeclaration' ],
+            'response': {
+              'filepath': os.path.abspath( '/foo.py' ),
+              'line_num': 7,
+              'column_num': 1
+            }
+          }
+      ]
+    for test in tests:
+      yield self._Run_GoTo_Variation_ZeroBasedLineAndColumn, test
+
+
+  def _Run_GoTo_Variation_ZeroBasedLineAndColumn( self, test ):
     self.ActivateJediHTTPServer()
     self.WaitUntilJediHTTPServerReady()
 
+    # Example taken directly from jedi docs
+    # http://jedi.jedidjah.ch/en/latest/docs/plugin-api.html#examples
     contents = """
-def foo():
-    pass
+def my_func():
+  print 'called'
 
-foo()
+alias = my_func
+my_list = [1, None, alias]
+inception = my_list[2]
+
+inception()
 """
 
     goto_data = self._BuildRequest( completer_target = 'filetype_default',
-                                    command_arguments = ['GoToDefinition'],
-                                    line_num = 5,
+                                    command_arguments = test[ 'command_arguments' ],
+                                    line_num = 9,
                                     contents = contents,
                                     filetype = 'python',
                                     filepath = '/foo.py' )
 
-    eq_( {
-      'filepath': os.path.abspath( '/foo.py' ),
-      'line_num': 2,
-      'column_num': 5
-    }, self._app.post_json( '/run_completer_command', goto_data ).json )
+    eq_( test[ 'response' ],
+         self._app.post_json( '/run_completer_command', goto_data ).json )
+
+
+  def GoTo_test( self ):
+    # Those tests are taken from https://github.com/Valloric/YouCompleteMe/issues/1236
+    tests = [
+        {
+          'request': { 'filename': 'goto_file1.py', 'line_num': 2 },
+          'response': {
+              'filepath': self._PathToTestFile( 'goto_file3.py' ),
+              'line_num': 1,
+              'column_num': 5
+          }
+        },
+        {
+          'request': { 'filename': 'goto_file4.py', 'line_num': 2 },
+          'response': {
+              'filepath': self._PathToTestFile( 'goto_file4.py' ),
+              'line_num': 1,
+              'column_num': 18
+          }
+        }
+    ]
+    for test in tests:
+      yield self._Run_GoTo, test
+
+
+  def _Run_GoTo( self, test ):
+    self.ActivateJediHTTPServer()
+    self.WaitUntilJediHTTPServerReady()
+
+    filepath = self._PathToTestFile( test[ 'request' ][ 'filename' ] )
+    goto_data  = self._BuildRequest( completer_target = 'filetype_default',
+                                     command_arguments = [ 'GoTo' ],
+                                     line_num = test[ 'request' ][ 'line_num' ],
+                                     contents = open( filepath ).read(),
+                                     filetype = 'python',
+                                     filepath = filepath )
+
+    eq_( test[ 'response' ],
+         self._app.post_json( '/run_completer_command', goto_data ).json )
 
 
   def GetDoc_Method_test( self ):
