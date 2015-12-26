@@ -321,3 +321,16 @@ class JediCompleter( Completer ):
   def _BuildDetailedInfoResponse( self, definition_list ):
     docs = [ definition[ 'docstring' ] for definition in definition_list ]
     return responses.BuildDetailedInfoResponse( '\n---\n'.join( docs ) )
+
+
+  def DebugInfo( self, request_data ):
+     with self._server_lock:
+       if not self._jedihttp_phandle:
+         return 'JediHTTP is not running'
+
+       if self.ServerIsRunning():
+         return ( 'JediHTTP running at 127.0.0.1:{0}\n'
+                  '  stdout log: {1}\n'
+                  '  stderr log: {2}' ).format( self._jedihttp_port,
+                                                self._logfile_stdout,
+                                                self._logfile_stderr )
