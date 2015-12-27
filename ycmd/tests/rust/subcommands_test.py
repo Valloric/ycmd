@@ -20,7 +20,10 @@
 from rust_handlers_test import Rust_Handlers_test
 from nose.tools import eq_
 
+
 class Rust_Subcommands_test( Rust_Handlers_test ):
+
+
   def GetType_Basic_test( self ):
     filepath = self._PathToTestFile( 'test.rs' )
     contents = open( filepath ).read()

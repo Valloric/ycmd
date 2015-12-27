@@ -17,5 +17,6 @@
 
 from ycmd.completers.rust.rust_completer import RustCompleter
 
+
 def GetCompleter( user_options ):
   return RustCompleter( user_options )

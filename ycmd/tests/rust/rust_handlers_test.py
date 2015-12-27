@@ -21,7 +21,9 @@ from ..handlers_test import Handlers_test
 
 import time
 
+
 class Rust_Handlers_test( Handlers_test ):
+
 
   def __init__( self ):
     self._file = __file__
@@ -41,6 +43,7 @@ class Rust_Handlers_test( Handlers_test ):
       )
     except:
       pass
+
 
   def _WaitUntilServerReady( self ):
     retries = 100
