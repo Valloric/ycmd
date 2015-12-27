@@ -20,7 +20,9 @@
 from hamcrest import assert_that, has_items
 from rust_handlers_test import Rust_Handlers_test
 
+
 class Rust_GetCompletions_test( Rust_Handlers_test ):
+
 
   def Basic_test( self ):
     filepath = self._PathToTestFile( 'test.rs' )

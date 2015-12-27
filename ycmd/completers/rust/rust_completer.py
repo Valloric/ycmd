@@ -21,8 +21,16 @@ from ycmd.utils import ToUtf8IfNeeded
 from ycmd.completers.completer import Completer
 from ycmd import responses, utils, hmac_utils
 
-import logging, urlparse, requests, httplib, json, tempfile, base64
-import binascii, threading, os
+import logging
+import urlparse
+import requests
+import httplib
+import json
+import tempfile
+import base64
+import binascii
+import threading
+import os
 
 from os import path as p
 
@@ -35,13 +43,13 @@ RACERD_BINARY_NAME = 'racerd' + ( '.exe' if utils.OnWindows() else '' )
 RACERD_BINRARY = p.join( DIR_OF_THIRD_PARTY,
                          'racerd', 'target', 'release', RACERD_BINARY_NAME )
 
-
 RACERD_HMAC_HEADER = 'x-racerd-hmac'
 HMAC_SECRET_LENGTH = 16
 
 BINARY_NOT_FOUND_MESSAGE = ( 'racerd binary not found. Did you build it? ' +
                              'You can do so by running ' +
                              '"./build.py --racer-completer".' )
+
 
 def FindRacerdBinary( user_options ):
   """
@@ -99,7 +107,7 @@ class RustCompleter( Completer ):
 
     # Fall back to environment variable
     env_key = 'RUST_SRC_PATH'
-    if os.environ.has_key( env_key ):
+    if env_key in os.environ:
       return os.environ[ env_key ]
 
     _logger.warn( 'No path provided for the rustc source. Please set the '
@@ -255,8 +263,10 @@ class RustCompleter( Completer ):
       filename_format = p.join( utils.PathToTempDir(),
                                 'racerd_{port}_{std}.log' )
 
-      self._server_stdout = filename_format.format( port = port, std = 'stdout' )
-      self._server_stderr = filename_format.format( port = port, std = 'stderr' )
+      self._server_stdout = filename_format.format( port = port,
+                                                    std = 'stdout' )
+      self._server_stderr = filename_format.format( port = port,
+                                                    std = 'stderr' )
 
       with open( self._server_stderr, 'w' ) as fstderr:
         with open( self._server_stdout, 'w' ) as fstdout:
@@ -335,7 +345,7 @@ class RustCompleter( Completer ):
 
   def _GoToDefinition( self, request_data ):
     try:
-      definition =  self._GetResponse( '/find_definition', request_data )
+      definition = self._GetResponse( '/find_definition', request_data )
       return responses.BuildGoToResponse( definition[ 'file_path' ],
                                           definition[ 'line' ],
                                           definition[ 'column' ] + 1 )
@@ -362,12 +372,13 @@ class RustCompleter( Completer ):
                                               self._racerd,
                                               self._server_stdout,
                                               self._server_stderr )
-      elif self._server_stdout and self._server_stderr:
+
+      if self._server_stdout and self._server_stderr:
         return ( 'racerd is no longer running\n',
                  '  racerd path: {0}\n'
                  '  stdout log: {1}\n'
                  '  stderr log: {2}').format( self._racerd,
                                               self._server_stdout,
                                               self._server_stderr )
-      else:
-        return 'racerd is not running'
+
+      return 'racerd is not running'
