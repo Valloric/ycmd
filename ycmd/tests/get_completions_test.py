@@ -23,7 +23,10 @@ from nose.tools import eq_
 from hamcrest import assert_that, has_items
 from .. import handlers
 from .handlers_test import Handlers_test
-from unittest import SkipTest
+try:
+  from unittest import SkipTest
+except ImportError:
+  from unittest2 import SkipTest
 
 
 class GetCompletions_test( Handlers_test ):
