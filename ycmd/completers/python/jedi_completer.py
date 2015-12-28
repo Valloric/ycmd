@@ -115,7 +115,7 @@ class JediCompleter( Completer ):
     with self._server_lock:
       self._logger.info( 'Stopping JediHTTP' )
       if self._jedihttp_phandle:
-        utils.TerminateProcess( self._jedihttp_phandle.pid )
+        self._jedihttp_phandle.terminate()
         self._jedihttp_phandle = None
         self._jedihttp_port = None
 
