@@ -20,11 +20,17 @@
 
 from nose.tools import ok_
 from .handlers_test import Handlers_test
+try:
+  from unittest import SkipTest
+except ImportError:
+  from unittest2 import SkipTest
 
 
 class MiscHandlers_test( Handlers_test ):
 
   def SemanticCompletionAvailable_test( self ):
+    raise SkipTest
+
     request_data = self._BuildRequest( filetype = 'python' )
     ok_( self._app.post_json( '/semantic_completion_available',
                               request_data ).json )
