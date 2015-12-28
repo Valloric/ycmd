@@ -20,12 +20,16 @@
 from nose.tools import eq_
 from hamcrest import assert_that, has_entry
 from ...responses import NoDiagnosticSupport
-from ..handlers_test import Handlers_test
+from python_handlers_test import Python_Handlers_test
 import httplib
 
 
-class Python_Diagnostics_test( Handlers_test ):
+class Python_Diagnostics_test( Python_Handlers_test ):
 
+  # XXX(vheon): this is another instance where a mock Completer would be useful
+  # jedi has a branch with linter functionality that we might think of adding
+  # and then this test would change. With a mock Completer we would not have
+  # test fragility
   def DoesntWork_test( self ):
     diag_data = self._BuildRequest( contents = "foo = 5",
                                     line_num = 2,
