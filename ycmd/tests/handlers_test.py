@@ -40,6 +40,12 @@ class Handlers_test( object ):
     self._app = TestApp( handlers.app )
 
 
+  def InstallCompleter( self, completer, filetype ):
+    user_options = handlers._server_state._user_options
+    handlers._server_state._filetype_completers[ filetype ] = completer( user_options )
+    self._app = TestApp( handlers.app )
+
+
   @staticmethod
   def _BuildRequest( **kwargs ):
     return BuildRequest( **kwargs )
