@@ -20,37 +20,39 @@
 
 from nose.tools import eq_
 from .handlers_test import Handlers_test
-try:
-  from unittest import SkipTest
-except ImportError:
-  from unittest2 import SkipTest
+from ycmd.completers.completer import Completer
+
+
+class DummyCompleter( Completer ):
+  def __init__( self, user_options ):
+    pass
+
+
+  def SupportedFiletypes( self ):
+    return [ 'dummy_filetype' ]
+
+
+  def GetSubcommandsMap( self ):
+    return {
+      'A': lambda x: x,
+      'B': lambda x: x,
+      'C': lambda x: x
+    }
+
 
 class Subcommands_test( Handlers_test ):
 
-  # XXX(vheon): The logic for this is actually in the `Completer` class.
-  # Should we test this in a different way?
-  # Maybe with a made up test object Completer.
-  def Basic_test( self ):
-    raise SkipTest
+  def Basic_test( self, *args ):
+    self.InstallCompleter( DummyCompleter, 'dummy_filetype' )
+    subcommands_data = self._BuildRequest( completer_target = 'dummy_filetype' )
 
-    subcommands_data = self._BuildRequest( completer_target = 'python' )
-
-    eq_( [ 'GetDoc',
-           'GoTo',
-           'GoToDeclaration',
-           'GoToDefinition',
-           'RestartServer' ],
+    eq_( [ 'A', 'B', 'C' ],
          self._app.post_json( '/defined_subcommands', subcommands_data ).json )
 
 
   def NoExplicitCompleterTargetSpecified_test( self ):
-    raise SkipTest
+    self.InstallCompleter( DummyCompleter, 'dummy_filetype' )
+    subcommands_data = self._BuildRequest( filetype = 'dummy_filetype' )
 
-    subcommands_data = self._BuildRequest( filetype = 'python' )
-
-    eq_( [ 'GetDoc',
-           'GoTo',
-           'GoToDeclaration',
-           'GoToDefinition',
-           'RestartServer' ],
+    eq_( [ 'A', 'B', 'C' ],
          self._app.post_json( '/defined_subcommands', subcommands_data ).json )
