@@ -27,6 +27,11 @@ class Python_Handlers_test( Handlers_test ):
     self._file = __file__
 
 
+  def setUp( self ):
+    super( Python_Handlers_test, self ).setUp()
+    self.WaitUntilJediHTTPServerReady()
+
+
   def tearDown( self ):
     self.StopJediHTTPServer()
 
