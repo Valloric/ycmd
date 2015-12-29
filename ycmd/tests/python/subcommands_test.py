@@ -48,8 +48,6 @@ class Python_Subcommands_test( Python_Handlers_test ):
 
 
   def _Run_GoTo_Variation_ZeroBasedLineAndColumn( self, test ):
-    self.WaitUntilJediHTTPServerReady()
-
     # Example taken directly from jedi docs
     # http://jedi.jedidjah.ch/en/latest/docs/plugin-api.html#examples
     contents = """
@@ -99,8 +97,6 @@ inception()
 
 
   def _Run_GoTo( self, test ):
-    self.WaitUntilJediHTTPServerReady()
-
     filepath = self._PathToTestFile( test[ 'request' ][ 'filename' ] )
     goto_data  = self._BuildRequest( completer_target = 'filetype_default',
                                      command_arguments = [ 'GoTo' ],
@@ -114,8 +110,6 @@ inception()
 
 
   def GetDoc_Method_test( self ):
-    self.WaitUntilJediHTTPServerReady()
-
     # Testcase1
     filepath = self._PathToTestFile( 'GetDoc.py' )
     contents = open( filepath ).read()
@@ -138,8 +132,6 @@ inception()
 
 
   def GetDoc_Class_test( self ):
-    self.WaitUntilJediHTTPServerReady()
-
     # Testcase1
     filepath = self._PathToTestFile( 'GetDoc.py' )
     contents = open( filepath ).read()
