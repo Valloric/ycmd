@@ -31,12 +31,6 @@ class Python_Handlers_test( Handlers_test ):
     self.StopJediHTTPServer()
 
 
-  def ActivateJediHTTPServer( self ):
-    self._app.post_json( '/event_notification',
-                          self._BuildRequest( filetype = 'python',
-                                              event_name = 'FileReadyToParse' ) )
-
-
   def WaitUntilJediHTTPServerReady( self ):
     retries = 10
 

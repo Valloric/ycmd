@@ -48,7 +48,6 @@ class Python_Subcommands_test( Python_Handlers_test ):
 
 
   def _Run_GoTo_Variation_ZeroBasedLineAndColumn( self, test ):
-    self.ActivateJediHTTPServer()
     self.WaitUntilJediHTTPServerReady()
 
     # Example taken directly from jedi docs
@@ -100,7 +99,6 @@ inception()
 
 
   def _Run_GoTo( self, test ):
-    self.ActivateJediHTTPServer()
     self.WaitUntilJediHTTPServerReady()
 
     filepath = self._PathToTestFile( test[ 'request' ][ 'filename' ] )
@@ -116,7 +114,6 @@ inception()
 
 
   def GetDoc_Method_test( self ):
-    self.ActivateJediHTTPServer()
     self.WaitUntilJediHTTPServerReady()
 
     # Testcase1
@@ -141,7 +138,6 @@ inception()
 
 
   def GetDoc_Class_test( self ):
-    self.ActivateJediHTTPServer()
     self.WaitUntilJediHTTPServerReady()
 
     # Testcase1

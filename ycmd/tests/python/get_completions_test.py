@@ -67,7 +67,6 @@ class Python_GetCompletions_test( Python_Handlers_test ):
 
 
   def Basic_test( self ):
-    self.ActivateJediHTTPServer()
     self.WaitUntilJediHTTPServerReady()
 
     filepath = self._PathToTestFile( 'basic.py' )
@@ -91,7 +90,6 @@ class Python_GetCompletions_test( Python_Handlers_test ):
 
 
   def UnicodeDescription_test( self ):
-    self.ActivateJediHTTPServer()
     self.WaitUntilJediHTTPServerReady()
 
     filepath = self._PathToTestFile( 'unicode.py' )
