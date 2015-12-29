@@ -310,8 +310,21 @@ class RustCompleter( Completer ):
     with self._server_state_lock:
       if self._racerd_phandle:
         self._racerd_phandle.terminate()
+        self._racerd_phandle.wait()
         self._racerd_phandle = None
         self._racerd_host = None
+
+      if not self._keep_logfiles:
+        # Remove stdout log
+        if self._server_stdout and p.exists( self._server_stdout ):
+          os.unlink( self._server_stdout )
+          self._server_stdout = None
+
+        # Remove stderr log
+        if self._server_stderr and p.exists( self._server_stderr ):
+          os.unlink( self._server_stderr )
+          self._server_stderr = None
+
 
 
   def _RestartServer( self ):
