@@ -23,10 +23,7 @@ from nose.tools import eq_
 from hamcrest import assert_that, has_items
 from .. import handlers
 from .handlers_test import Handlers_test
-try:
-  from unittest import SkipTest
-except ImportError:
-  from unittest2 import SkipTest
+from ycmd.tests.test_utils import DummyCompleter
 
 
 class GetCompletions_test( Handlers_test ):
@@ -98,20 +95,15 @@ class GetCompletions_test( Handlers_test ):
 
 
   def ForceSemantic_Works_test( self ):
-    raise SkipTest
-    # XXX(vheon): as with subcommand test I believe we should build a fake
-    # `Completer`. Before we would get this test "for free" since the python
-    # completer didn't have to be started. Moreover we want to test that in the
-    # fallback scenario if a user have forced the semantic completion he would
-    # get a semantic completion, so it doesnt have much to do with python.
-    completion_data = self._BuildRequest( filetype = 'python',
+    self.InstallCompleter( DummyCompleter, filetype = 'dummy_filetype' )
+    completion_data = self._BuildRequest( filetype = 'dummy_filetype',
                                           force_semantic = True )
 
     results = self._app.post_json( '/completions',
                                    completion_data ).json[ 'completions' ]
-    assert_that( results, has_items( self._CompletionEntryMatcher( 'abs' ),
-                                     self._CompletionEntryMatcher( 'open' ),
-                                     self._CompletionEntryMatcher( 'bool' ) ) )
+    assert_that( results, has_items( self._CompletionEntryMatcher( 'foo' ),
+                                     self._CompletionEntryMatcher( 'bar' ),
+                                     self._CompletionEntryMatcher( 'qux' ) ) )
 
 
   def IdentifierCompleter_SyntaxKeywordsAdded_test( self ):
