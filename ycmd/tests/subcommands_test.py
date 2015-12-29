@@ -20,29 +20,11 @@
 
 from nose.tools import eq_
 from .handlers_test import Handlers_test
-from ycmd.completers.completer import Completer
-
-
-class DummyCompleter( Completer ):
-  def __init__( self, user_options ):
-    pass
-
-
-  def SupportedFiletypes( self ):
-    return [ 'dummy_filetype' ]
-
-
-  def GetSubcommandsMap( self ):
-    return {
-      'A': lambda x: x,
-      'B': lambda x: x,
-      'C': lambda x: x
-    }
-
+from ycmd.tests.test_utils import DummyCompleter
 
 class Subcommands_test( Handlers_test ):
 
-  def Basic_test( self, *args ):
+  def Basic_test( self ):
     self.InstallCompleter( DummyCompleter, 'dummy_filetype' )
     subcommands_data = self._BuildRequest( completer_target = 'dummy_filetype' )
 
