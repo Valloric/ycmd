@@ -61,19 +61,21 @@ inception = my_list[2]
 inception()
 """
 
-    goto_data = self._BuildRequest( completer_target = 'filetype_default',
-                                    command_arguments = test[ 'command_arguments' ],
-                                    line_num = 9,
-                                    contents = contents,
-                                    filetype = 'python',
-                                    filepath = '/foo.py' )
+    goto_data = self._BuildRequest(
+        completer_target = 'filetype_default',
+        command_arguments = test[ 'command_arguments' ],
+        line_num = 9,
+        contents = contents,
+        filetype = 'python',
+        filepath = '/foo.py'
+    )
 
     eq_( test[ 'response' ],
          self._app.post_json( '/run_completer_command', goto_data ).json )
 
 
   def GoTo_test( self ):
-    # Those tests are taken from https://github.com/Valloric/YouCompleteMe/issues/1236
+    # Tests taken from https://github.com/Valloric/YouCompleteMe/issues/1236
     tests = [
         {
           'request': { 'filename': 'goto_file1.py', 'line_num': 2 },
@@ -98,12 +100,12 @@ inception()
 
   def _Run_GoTo( self, test ):
     filepath = self._PathToTestFile( test[ 'request' ][ 'filename' ] )
-    goto_data  = self._BuildRequest( completer_target = 'filetype_default',
-                                     command_arguments = [ 'GoTo' ],
-                                     line_num = test[ 'request' ][ 'line_num' ],
-                                     contents = open( filepath ).read(),
-                                     filetype = 'python',
-                                     filepath = filepath )
+    goto_data = self._BuildRequest( completer_target = 'filetype_default',
+                                    command_arguments = [ 'GoTo' ],
+                                    line_num = test[ 'request' ][ 'line_num' ],
+                                    contents = open( filepath ).read(),
+                                    filetype = 'python',
+                                    filepath = filepath )
 
     eq_( test[ 'response' ],
          self._app.post_json( '/run_completer_command', goto_data ).json )
