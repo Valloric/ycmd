@@ -24,7 +24,7 @@ from .client_test import Client_test
 
 class Shutdown_test( Client_test ):
 
-  def FromHandlerWithNoSubserver_test( self ):
+  def FromHandlerWithoutSubserver_test( self ):
     self._Start()
     self._WaitUntilReady()
 
@@ -54,7 +54,7 @@ class Shutdown_test( Client_test ):
     self._AssertServerAndSubserversShutDown()
 
 
-  def FromWatchdogWithNoSubserver_test( self ):
+  def FromWatchdogWithoutSubserver_test( self ):
     self._Start( idle_suicide_seconds = 2, check_interval_seconds = 1 )
     self._WaitUntilReady()
 
