@@ -26,17 +26,13 @@ from ycmd.completers.completer import Completer
 from ycmd.utils import ForceSemanticCompletion
 from ycmd import responses
 from ycmd import utils
-import json
 import requests
 import urlparse
 import logging
 import solutiondetection
-from threading import ( Thread, RLock )
-from Queue import Queue, Empty
-from ptyprocess import PtyProcessUnicode
+from threading import ( Thread )
 import traceback
 from subprocess import PIPE
-import types
 
 SERVER_NOT_FOUND_MSG = ( 'OmniSharp server binary not found at {0}. ' +
                          'Did you compile it? You can do so by running ' +
