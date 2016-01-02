@@ -101,7 +101,6 @@ class CsharpCompleter( Completer ):
     self._max_diagnostics_to_display = user_options[
       'max_diagnostics_to_display' ]
     self._omnisharp_path = PATH_TO_ROSLYN_OMNISHARP_BINARY
-    self._use_stdio = True
 
 
   def Shutdown( self ):
@@ -118,12 +117,9 @@ class CsharpCompleter( Completer ):
   def _GetSolutionCompleter( self, request_data ):
     solution = self._GetSolutionFile( request_data[ "filepath" ] )
     if not solution in self._completer_per_solution:
-      if self._use_stdio:
-        completer = StdioCsharpSolutionCompleter( self._omnisharp_path, solution )
-      else:
-        keep_logfiles = self.user_options[ 'server_keep_logfiles' ]
-        desired_omnisharp_port = self.user_options.get( 'csharp_server_port' )
-        completer = HttpCsharpSolutionCompleter( self._omnisharp_path, solution, keep_logfiles, desired_omnisharp_port )
+      keep_logfiles = self.user_options[ 'server_keep_logfiles' ]
+      desired_omnisharp_port = self.user_options.get( 'csharp_server_port' )
+      completer = HttpCsharpSolutionCompleter( self._omnisharp_path, solution, keep_logfiles, desired_omnisharp_port )
       self._completer_per_solution[ solution ] = completer
 
     return self._completer_per_solution[ solution ]
@@ -228,9 +224,9 @@ class CsharpCompleter( Completer ):
       'SetOmnisharpPath': ( lambda self, request_data, arguments:
           self._SetOmnisharpPath( request_data, arguments ) ),
       'UseLegacyOmnisharp': ( lambda self, request_data, arguments:
-          self._SetOmnisharpPath( request_data, [ PATH_TO_LEGACY_OMNISHARP_BINARY, False ] ) ),
+          self._SetOmnisharpPath( request_data, [ PATH_TO_LEGACY_OMNISHARP_BINARY ] ) ),
       'UseRoslynOmnisharp': ( lambda self, request_data, arguments:
-          self._SetOmnisharpPath( request_data, [ PATH_TO_ROSLYN_OMNISHARP_BINARY, True ] ) )
+          self._SetOmnisharpPath( request_data, [ PATH_TO_ROSLYN_OMNISHARP_BINARY ] ) )
     }
 
 
@@ -329,7 +325,6 @@ class CsharpCompleter( Completer ):
 
   def _SetOmnisharpPath( self, request_data, arguments ):
     self._omnisharp_path = arguments[0]
-    self._use_stdio = bool( arguments[1] )
 
     if not os.path.isfile( self._omnisharp_path ):
       raise RuntimeError(
@@ -603,7 +598,7 @@ class HttpCsharpSolutionCompleter( CsharpSolutionCompleter ):
                 '-s',
                 u'{0}'.format( self._solution_path ) ]
 
-    if not utils.OnWindows() and not utils.OnCygwin():
+    if not utils.OnWindows() and not utils.OnCygwin() and self._omnisharp_path.endswith(".exe"):
       command.insert( 0, 'mono' )
 
     if utils.OnCygwin():
@@ -751,252 +746,6 @@ class HttpCsharpSolutionCompleter( CsharpSolutionCompleter ):
           pass
         else:
           raise
-
-
-class StdioCsharpSolutionCompleter( CsharpSolutionCompleter ):
-  def __init__( self, omnisharp_path, solution_path ):
-    super( StdioCsharpSolutionCompleter, self ).__init__( omnisharp_path, solution_path )
-    self._stdio_in_queue = None
-    self._stdio_out_queue = None
-    self._stdio_seq = 0
-    self._stdio_lock = None
-    self._stdio_responses = {}
-    self._stdio_aborted_seq = []
-
-
-  def _StartServer( self ):
-    self._logger.info( 'startup' )
-
-    self._CleanupAfterServerStop()
-
-    self._logger.info(
-        u'Loading solution file {0}'.format( self._solution_path ) )
-
-    command = [ self._omnisharp_path,
-                '--stdio',
-                '-s',
-                u'{0}'.format( self._solution_path ) ]
-
-    if utils.OnCygwin():
-      command.extend( [ '--client-path-mode', 'Cygwin' ] )
-
-    self._stdio_in_queue = Queue()
-    self._stdio_out_queue = Queue()
-    self._stdio_seq = 0
-    self._stdio_lock = RLock()
-    if not utils.OnWindows() and not utils.OnCygwin():
-        phandle = utils.SafePopen( command, stdout = PIPE, stdin = PIPE )
-        def read( self, count ):
-            return os.read( self.stdout.fileno(), count )
-        def write( self, data ):
-            return self.stdin.write( data )
-        def isalive( self ):
-            return not self.stdout.closed or not self.stdin.closed
-        def close( self ):
-          self.stdout.close()
-          self.stdin.close()
-          self.kill()
-        for method in [ read, write, isalive, close ]:
-            phandle.__dict__[ method.__name__ ] = types.MethodType( method, phandle )
-        self._omnisharp_phandle = phandle
-    else:
-        phandle = PtyProcessUnicode.spawn( command, echo = False )
-        self._omnisharp_phandle = phandle
-
-    Thread( target = self._GenerateInLoop() ).start()
-    Thread( target = self._GenerateOutLoop() ).start()
-
-    self._logger.info( 'Starting OmniSharp server' )
-
-
-  def _ProcessPacket( self, packet ):
-    if 'Type' not in packet:
-      self._logger.info( "Invalid packet: No Type\n" + str( packet ) )
-    elif packet[ 'Type' ] == 'response':
-      self._stdio_out_queue.put( packet );
-    elif packet[ 'Type' ] == 'event': 
-      if 'Event' not in packet:
-        self._logger.info( "Invalid packet: No Event\n" + str( packet ) )
-      elif packet[ 'Event' ] == 'log':
-        try:
-          log_message = packet[ "Body" ][ "Message" ]
-        except (TypeError, KeyError) as e:
-          self._logger.info( "Invalid log packet\n "+ str ( e ) + "\n\n" + str( packet ) )
-        else:
-          self._logger.info( "Omnisharp: " + log_message )
-      elif packet[ 'Event' ] in [ 'MsBuildProjectDiagnostics', 'ProjectAdded', 'ProjectChanged', 'started' ]:
-        pass
-      else:
-          self._logger.info( "Unknown event type: " + packet[ 'Event' ] + "\n\n" + str( packet ) )
-    else:
-        self._logger.info( "Unknown type: " + packet[ 'Type' ] + "\n\n" + str( packet ) )
-
-
-  def _GenerateOutLoop( self ):
-    def out_loop():
-      try:
-        data = ""
-        while self._omnisharp_phandle is not None:
-          data += self._omnisharp_phandle.read( 1024 * 1024 * 10 )
-          while "\n" in data:
-            (line, data) = data.split("\n", 1)
-            try:
-              packet = json.loads( line )
-            except ValueError:
-              self._logger.error( "Omnisharp: " + line.rstrip() )
-              continue
-
-            self._ProcessPacket( packet )
-      except EOFError:
-        pass
-      except Exception:
-        self._logger.error( "Read error: " + traceback.format_exc() )
-
-    return out_loop
-
-
-  def _GenerateInLoop( self ):
-    def in_loop():
-      try:
-        while self._omnisharp_phandle is not None:
-          try:
-            data = self._stdio_in_queue.get( True, 1 )
-          except Empty:
-            continue
-          if self._omnisharp_phandle is None:
-            continue
-          self._omnisharp_phandle.write(data + "\n")
-      except Exception:
-        self._logger.error( "Write error: " + traceback.format_exc() )
-
-    return in_loop
-
-
-  def _CleanupAfterServerStop( self ):
-    super( StdioCsharpSolutionCompleter, self )._CleanupAfterServerStop()
-    self._stdio_out_queue = None
-    if self._stdio_in_queue is not None:
-      self._stdio_in_queue.put( "" )
-    self._stdio_in_queue = None
-    self._stdio_seq = 0
-    self._stdio_lock = None
-    self._stdio_responses = {}
-    self._stdio_aborted_seq = []
-
-
-  def _ServerLocation( self ):
-    return "STDIO"
-
-
-  def _GetResponse( self, handler, parameters = {}, timeout = 10 ):
-    """ Handle communication with server """
-    self._stdio_lock.acquire( True )
-
-    seq = self._stdio_seq + 1
-    self._stdio_seq = seq
-
-    try:
-      parameters_json = json.dumps( parameters )
-      request = { 'command': handler, 'seq': seq, 'arguments': parameters_json }
-      request_json = json.dumps( request )
-
-      self._stdio_in_queue.put( request_json )
-
-      #self._logger.error( "Wrote for " + str( seq ) )
-
-      self._ReadAllLines( seq, True, timeout )
-            
-      try:
-        result = self._stdio_responses[ seq ]
-        del self._stdio_responses[ seq ]
-        return result
-      except KeyError:
-        return None
-    except Exception:
-      self._logger.error( "_GetResponse Error: " + traceback.format_exc() )
-    finally:
-      self._stdio_lock.release()
-
-
-  def _ReadAllLines( self, seq = None, wait = False, timeout = None ):
-    try:
-      self._stdio_lock.acquire( True )
-      self._pending_request = self._pending_request + 1
-      while True:
-        try:
-          response = self._stdio_out_queue.get( wait, timeout )
-        except Empty:
-          response = None
-        if response is None:
-          self._stdio_aborted_seq.append( seq )
-          return
-        try:
-          if 'Type' in response and response[ 'Type' ] == 'response':
-            request_seq = response[ 'Request_seq' ]
-            body =  response[ 'Body' ] if 'Body' in response else None
-            self._stdio_responses[ request_seq ] = body
-
-            #self._logger.error( "Read for " + str( request_seq ) )
-              
-            if seq is not None and request_seq == seq:
-              return
-            elif request_seq in self._stdio_aborted_seq:
-              del self._stdio_responses[ request_seq ]
-              self._stdio_aborted_seq.remove( request_seq )
-        except Exception:
-          self._logger.error( "_ReadAllLines Error: " + traceback.format_exc() )
-    finally:
-      self._pending_request = (
-        self._pending_request - 1 if self._pending_request > 0
-        else 0 )
-      self._stdio_lock.release()
-
-
-  def ServerIsActive( self ):
-    """ Check if our OmniSharp server is active (started, not yet stopped)."""
-    try:
-      return bool( self._stdio_lock )
-    except Exception:
-      self._logger.info( "Active Error: " + traceback.format_exc() )
-      return False
-
-
-  def ServerIsRunning( self ):
-    """ Check if our OmniSharp server is running (up and serving)."""
-    try:
-      return bool( self._stdio_lock and
-                   self._GetResponse( '/checkalivestatus', timeout = 3 ) )
-    except Exception:
-      self._logger.info( "Running Error:" + traceback.format_exc() )
-      return False
-
-
-  def ServerIsReady( self ):
-    """ Check if our OmniSharp server is ready (loaded solution file)."""
-    try:
-      return bool( self._stdio_lock and
-                   self._GetResponse( '/checkreadystatus', timeout = .2 ) )
-    except Exception:
-      self._logger.info( "Ready error: " + traceback.format_exc() )
-      return False
-
-
-  def ServerTerminated( self ):
-    """ Check if the server process has already terminated. """
-    return ( self._omnisharp_phandle is not None and
-             not self._omnisharp_phandle.isalive() )
-
-
-  def DebugInfo( self, request_data ):
-    """ Get debug info. """
-    return "Omnisharp logs: included in ycmd logs"
-
-
-  def _ForceStopServer( self ):
-    # Kill it if it's still up
-    if self._omnisharp_phandle is not None:
-      self._logger.info( 'Killing OmniSharp server' )
-      self._omnisharp_phandle.close()
 
 
 def _CompleteSorterByImport( a, b ):
