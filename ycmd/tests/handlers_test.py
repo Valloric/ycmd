@@ -24,6 +24,8 @@ from .. import handlers
 from ycmd import user_options_store
 from hamcrest import has_entries, has_entry
 from test_utils import BuildRequest
+from mock import patch
+import contextlib
 import bottle
 import os
 
@@ -40,10 +42,12 @@ class Handlers_test( object ):
     self._app = TestApp( handlers.app )
 
 
-  def InstallCompleter( self, completer, filetype ):
+  @contextlib.contextmanager
+  def PatchCompleter( self, completer, filetype ):
     user_options = handlers._server_state._user_options
-    handlers._server_state._filetype_completers[ filetype ] = completer( user_options )
-    self._app = TestApp( handlers.app )
+    with patch.dict( 'ycmd.handlers._server_state._filetype_completers',
+                     { filetype: completer( user_options ) } ):
+      yield
 
 
   @staticmethod

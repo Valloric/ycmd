@@ -25,16 +25,16 @@ from ycmd.tests.test_utils import DummyCompleter
 class Subcommands_test( Handlers_test ):
 
   def Basic_test( self ):
-    self.InstallCompleter( DummyCompleter, 'dummy_filetype' )
-    subcommands_data = self._BuildRequest( completer_target = 'dummy_filetype' )
+    with self.PatchCompleter( DummyCompleter, 'dummy_filetype' ):
+      subcommands_data = self._BuildRequest( completer_target = 'dummy_filetype' )
 
-    eq_( [ 'A', 'B', 'C' ],
-         self._app.post_json( '/defined_subcommands', subcommands_data ).json )
+      eq_( [ 'A', 'B', 'C' ],
+           self._app.post_json( '/defined_subcommands', subcommands_data ).json )
 
 
   def NoExplicitCompleterTargetSpecified_test( self ):
-    self.InstallCompleter( DummyCompleter, 'dummy_filetype' )
-    subcommands_data = self._BuildRequest( filetype = 'dummy_filetype' )
+    with self.PatchCompleter( DummyCompleter, 'dummy_filetype' ):
+      subcommands_data = self._BuildRequest( filetype = 'dummy_filetype' )
 
-    eq_( [ 'A', 'B', 'C' ],
-         self._app.post_json( '/defined_subcommands', subcommands_data ).json )
+      eq_( [ 'A', 'B', 'C' ],
+           self._app.post_json( '/defined_subcommands', subcommands_data ).json )

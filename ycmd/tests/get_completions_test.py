@@ -95,15 +95,15 @@ class GetCompletions_test( Handlers_test ):
 
 
   def ForceSemantic_Works_test( self ):
-    self.InstallCompleter( DummyCompleter, filetype = 'dummy_filetype' )
-    completion_data = self._BuildRequest( filetype = 'dummy_filetype',
-                                          force_semantic = True )
+    with self.PatchCompleter( DummyCompleter, 'dummy_filetype' ):
+      completion_data = self._BuildRequest( filetype = 'dummy_filetype',
+                                            force_semantic = True )
 
-    results = self._app.post_json( '/completions',
-                                   completion_data ).json[ 'completions' ]
-    assert_that( results, has_items( self._CompletionEntryMatcher( 'foo' ),
-                                     self._CompletionEntryMatcher( 'bar' ),
-                                     self._CompletionEntryMatcher( 'qux' ) ) )
+      results = self._app.post_json( '/completions',
+                                     completion_data ).json[ 'completions' ]
+      assert_that( results, has_items( self._CompletionEntryMatcher( 'foo' ),
+                                       self._CompletionEntryMatcher( 'bar' ),
+                                       self._CompletionEntryMatcher( 'qux' ) ) )
 
 
   def IdentifierCompleter_SyntaxKeywordsAdded_test( self ):
