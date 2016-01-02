@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with ycmd.  If not, see <http://www.gnu.org/licenses/>.
 
-from hamcrest import assert_that, greater_than, has_length
+from hamcrest import assert_that, equal_to, has_length
 from test_utils import BuildRequest
 from .client_test import Client_test
 
@@ -46,7 +46,7 @@ class Shutdown_test( Client_test ):
     self._AssertResponse( response )
 
     self._subservers = self._GetSubservers()
-    assert_that( self._subservers, has_length( greater_than( 0 ) ) )
+    assert_that( self._subservers, has_length( equal_to( 1 ) ) )
 
     response = self._PostRequest( 'shutdown' )
     self._AssertResponse( response )
@@ -73,6 +73,6 @@ class Shutdown_test( Client_test ):
     self._AssertResponse( response )
 
     self._subservers = self._GetSubservers()
-    assert_that( self._subservers, has_length( greater_than( 0 ) ) )
+    assert_that( self._subservers, has_length( equal_to( 1 ) ) )
 
     self._AssertServerAndSubserversShutDown()
