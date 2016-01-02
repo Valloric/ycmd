@@ -90,12 +90,17 @@ class Completer( object ):
   command :YcmCompleter and is passed all extra arguments used on command
   invocation (e.g. OnUserCommand(['first argument', 'second'])).  This can be
   used for completer-specific commands such as reloading external configuration.
-  When the command is called with no arguments you should print a short summary
-  of the supported commands or point the user to the help section where this
-  information can be found.
+  Do not override this function. Instead, you need to implement the
+  GetSubcommandsMap method. It should return a map between the user commands
+  and the methods of your completer. See the documentation of this method for
+  more informations on how to implement it.
 
   Override the Shutdown() member function if your Completer subclass needs to do
-  custom cleanup logic on server shutdown."""
+  custom cleanup logic on server shutdown.
+
+  If your completer uses an external server process, then it can be useful to
+  implement the ServerIsReady member function to handle the /ready request. This
+  is very useful for the test suite."""
 
   __metaclass__ = abc.ABCMeta
 
@@ -190,7 +195,24 @@ class Completer( object ):
 
 
   def DefinedSubcommands( self ):
-    return []
+    return sorted( self.GetSubcommandsMap().keys() )
+
+
+  def GetSubcommandsMap( self ):
+    """This method should return a dictionary where each key represents the
+    completer command name and its value is a lambda function of this form:
+
+      ( self, request_data, args ) -> method
+
+    where "method" is the call to the completer method with corresponding
+    parameters. See the already implemented completers for examples.
+
+    Arguments:
+     - request_data : the request data supplied by the client
+     - args: any additional command arguments (after the command name). Usually
+             empty.
+    """
+    return {}
 
 
   def UserCommandsHelpMessage( self ):
@@ -242,7 +264,17 @@ class Completer( object ):
 
 
   def OnUserCommand( self, arguments, request_data ):
-    raise NotImplementedError( NO_USER_COMMANDS )
+    if not arguments:
+      raise ValueError( self.UserCommandsHelpMessage() )
+
+    command_map = self.GetSubcommandsMap()
+
+    try:
+      command = command_map[ arguments[ 0 ] ]
+    except KeyError:
+      raise ValueError( self.UserCommandsHelpMessage() )
+
+    return command( self, request_data, arguments[ 1: ] )
 
 
   def OnCurrentIdentifierFinished( self, request_data ):
@@ -278,6 +310,12 @@ class Completer( object ):
 
   def Shutdown( self ):
     pass
+
+
+  def ServerIsReady( self ):
+    """Called by the /ready handler to check if the underlying completion
+    server is started and ready to receive requests. Returns bool."""
+    return True
 
 
 class CompletionsCache( object ):

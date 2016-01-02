@@ -39,7 +39,13 @@ unsigned editingOptions() {
   return CXTranslationUnit_DetailedPreprocessingRecord |
          CXTranslationUnit_Incomplete |
          CXTranslationUnit_IncludeBriefCommentsInCodeCompletion |
+         // TODO: Use the actual enum value when removing Clang 3.7 support.
+         0x100 /*CXTranslationUnit_CreatePreambleOnFirstParse*/ |
          clang_defaultEditingTranslationUnitOptions();
+}
+
+unsigned reparseOptions( CXTranslationUnit translationUnit ) {
+    return clang_defaultReparseOptions( translationUnit );
 }
 
 
@@ -89,8 +95,9 @@ TranslationUnit::TranslationUnit(
   if ( !clang_translation_unit_ )
     boost_throw( ClangParseError() );
 
-  // Only with a reparse is the preable precompiled. I do not know why...
-  // TODO: report this bug on the clang tracker
+  // Only with a reparse is the preamble precompiled. This issue was fixed
+  // upstream in r255635.
+  // TODO: Remove this after dropping support for Clang 3.7.
   Reparse( cxunsaved_files );
 }
 
@@ -141,17 +148,6 @@ std::vector< Diagnostic > TranslationUnit::Reparse(
 }
 
 
-void TranslationUnit::ReparseForIndexing(
-  const std::vector< UnsavedFile > &unsaved_files ) {
-  std::vector< CXUnsavedFile > cxunsaved_files =
-    ToCXUnsavedFiles( unsaved_files );
-
-  Reparse( cxunsaved_files,
-           CXTranslationUnit_PrecompiledPreamble |
-           CXTranslationUnit_SkipFunctionBodies );
-}
-
-
 std::vector< CompletionData > TranslationUnit::CandidatesForLocation(
   int line,
   int column,
@@ -197,7 +193,7 @@ Location TranslationUnit::GetDeclarationLocation(
   const std::vector< UnsavedFile > &unsaved_files,
   bool reparse ) {
   if ( reparse )
-    ReparseForIndexing( unsaved_files );
+    Reparse( unsaved_files );
 
   unique_lock< mutex > lock( clang_access_mutex_ );
 
@@ -228,7 +224,7 @@ Location TranslationUnit::GetDefinitionLocation(
   const std::vector< UnsavedFile > &unsaved_files,
   bool reparse ) {
   if ( reparse )
-    ReparseForIndexing( unsaved_files );
+    Reparse( unsaved_files );
 
   unique_lock< mutex > lock( clang_access_mutex_ );
 
@@ -255,7 +251,7 @@ std::string TranslationUnit::GetTypeAtLocation(
   bool reparse ) {
 
   if (reparse)
-    ReparseForIndexing( unsaved_files );
+    Reparse( unsaved_files );
 
   unique_lock< mutex > lock( clang_access_mutex_ );
 
@@ -312,7 +308,7 @@ std::string TranslationUnit::GetEnclosingFunctionAtLocation(
   bool reparse ) {
 
   if (reparse)
-    ReparseForIndexing( unsaved_files );
+    Reparse( unsaved_files );
 
   unique_lock< mutex > lock( clang_access_mutex_ );
 
@@ -340,7 +336,11 @@ std::string TranslationUnit::GetEnclosingFunctionAtLocation(
 // param though.
 void TranslationUnit::Reparse(
   std::vector< CXUnsavedFile > &unsaved_files ) {
-  Reparse( unsaved_files, editingOptions() );
+  unsigned options = ( clang_translation_unit_
+                       ? reparseOptions( clang_translation_unit_ )
+                       : static_cast<unsigned>( CXReparse_None ) );
+
+  Reparse( unsaved_files, options );
 }
 
 
@@ -420,7 +420,7 @@ std::vector< FixIt > TranslationUnit::GetFixItsForLocationInFile(
   bool reparse ) {
 
   if ( reparse )
-    ReparseForIndexing( unsaved_files );
+    Reparse( unsaved_files );
 
   std::vector< FixIt > fixits;
 
@@ -459,7 +459,7 @@ DocumentationData TranslationUnit::GetDocsForLocationInFile(
   bool reparse ) {
 
   if ( reparse )
-    ReparseForIndexing( unsaved_files );
+    Reparse( unsaved_files );
 
   unique_lock< mutex > lock( clang_access_mutex_ );
 

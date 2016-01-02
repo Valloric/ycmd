@@ -60,6 +60,17 @@ class TypeScriptCompleter( Completer ):
       _logger.error( BINARY_NOT_FOUND_MESSAGE )
       raise RuntimeError( BINARY_NOT_FOUND_MESSAGE )
 
+    self._logfile = _LogFileName()
+    tsserver_log = '-file {path} -level {level}'.format( path = self._logfile,
+                                                         level = _LogLevel() )
+
+    # TSServer get the configuration for the log file through the environment
+    # variable 'TSS_LOG'. This seems to be undocumented but looking at the
+    # source code it seems like this is the way:
+    # https://github.com/Microsoft/TypeScript/blob/8a93b489454fdcbdf544edef05f73a913449be1d/src/server/server.ts#L136
+    self._environ = os.environ.copy()
+    self._environ[ 'TSS_LOG' ] = tsserver_log
+
     # Each request sent to tsserver must have a sequence id.
     # Responses contain the id sent in the corresponding request.
     self._sequenceid = 0
@@ -74,6 +85,7 @@ class TypeScriptCompleter( Completer ):
                                              stdout = subprocess.PIPE,
                                              stdin = subprocess.PIPE,
                                              stderr = subprocess.STDOUT,
+                                             env = self._environ,
                                              universal_newlines = True )
 
     _logger.info( 'Enabling typescript completion' )
@@ -196,6 +208,17 @@ class TypeScriptCompleter( Completer ):
                for e in detailed_entries ]
 
 
+  def GetSubcommandsMap( self ):
+    return {
+      'GoToDefinition': ( lambda self, request_data, args:
+                          self._GoToDefinition( request_data ) ),
+      'GetType'       : ( lambda self, request_data, args:
+                          self._GetType( request_data ) ),
+      'GetDoc'        : ( lambda self, request_data, args:
+                          self._GetDoc( request_data ) )
+    }
+
+
   def OnBufferVisit( self, request_data ):
     filename = request_data[ 'filepath' ]
     with self._lock:
@@ -211,24 +234,6 @@ class TypeScriptCompleter( Completer ):
   def OnFileReadyToParse( self, request_data ):
     with self._lock:
       self._Reload( request_data )
-
-
-  def DefinedSubcommands( self ):
-    return [ 'GoToDefinition',
-             'GetType',
-             'GetDoc' ]
-
-
-  def OnUserCommand( self, arguments, request_data ):
-    command = arguments[ 0 ]
-    if command == 'GoToDefinition':
-      return self._GoToDefinition( request_data )
-    if command == 'GetType':
-      return self._GetType( request_data )
-    if command == 'GetDoc':
-      return self._GetDoc( request_data )
-
-    raise ValueError( self.UserCommandsHelpMessage() )
 
 
   def _GoToDefinition( self, request_data ):
@@ -283,6 +288,25 @@ class TypeScriptCompleter( Completer ):
   def Shutdown( self ):
     with self._lock:
       self._SendRequest( 'exit' )
+    if not self.user_options[ 'server_keep_logfiles' ]:
+      os.unlink( self._logfile )
+      self._logfile = None
+
+
+  def DebugInfo( self, request_data ):
+    return ( 'TSServer logfile:\n  {0}' ).format( self._logfile )
+
+
+def _LogFileName():
+  with NamedTemporaryFile( dir = utils.PathToTempDir(),
+                           prefix = 'tsserver_',
+                           suffix = '.log',
+                           delete = False ) as logfile:
+    return logfile.name
+
+
+def _LogLevel():
+  return 'verbose' if _logger.isEnabledFor( logging.DEBUG ) else 'normal'
 
 
 def _ConvertCompletionData( completion_data ):

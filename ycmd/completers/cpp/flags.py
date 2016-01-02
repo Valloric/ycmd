@@ -20,6 +20,7 @@
 import ycm_core
 import os
 import inspect
+import re
 from ycmd import extra_conf_store
 from ycmd.utils import ToUtf8IfNeeded, OnMac, OnWindows
 from ycmd.responses import NoExtraConfDetected
@@ -50,6 +51,11 @@ MAC_INCLUDE_PATHS = [
  '/Library/Frameworks',
 ]
 
+# Use a regex to correctly detect c++/c language for both versioned and
+# non-versioned compiler executable names suffixes
+# (e.g., c++, g++, clang++, g++-4.9, clang++-3.7, c++-10.2 etc).
+# See Valloric/ycmd#266
+CPP_COMPILER_REGEX = re.compile( r'\+\+(-\d+(\.\d+){0,2})?$' )
 
 class Flags( object ):
   """Keeps track of the flags necessary to compile a file.
@@ -99,27 +105,36 @@ class Flags( object ):
 
   def UserIncludePaths( self, filename, client_data ):
     flags = self.FlagsForFile( filename, client_data = client_data )
-    if not flags:
-      return []
 
+    quoted_include_paths = [ os.path.dirname( filename ) ]
     include_paths = []
-    path_flags = [ '-isystem', '-I', '-iquote' ]
 
-    next_flag_is_include_path = False
-    for flag in flags:
-      if next_flag_is_include_path:
-        next_flag_is_include_path = False
-        include_paths.append( flag )
+    if flags:
+      quote_flag = '-iquote'
+      path_flags = [ '-isystem', '-I' ]
 
-      for path_flag in path_flags:
-        if flag == path_flag:
-          next_flag_is_include_path = True
-          break
+      try:
+        it = iter(flags)
+        for flag in it:
+          flag_len = len( flag )
+          if flag.startswith( quote_flag ):
+            quote_flag_len = len( quote_flag )
+            # Add next flag to the include paths if current flag equals to
+            # '-iquote', or add remaining string otherwise.
+            quoted_include_paths.append( it.next() if flag_len == quote_flag_len
+                                                 else flag[ quote_flag_len: ] )
+          else:
+            for path_flag in path_flags:
+              if flag.startswith( path_flag ):
+                path_flag_len = len( path_flag )
+                include_paths.append( it.next() if flag_len == path_flag_len
+                                              else flag[ path_flag_len: ] )
+                break
+      except StopIteration:
+        pass
 
-        if flag.startswith( path_flag ):
-          path = flag[ len( path_flag ): ]
-          include_paths.append( path )
-    return [ x for x in include_paths if x ]
+    return ( [ x for x in quoted_include_paths if x ],
+             [ x for x in include_paths if x ] )
 
 
   def Clear( self ):
@@ -137,6 +152,7 @@ def _CallExtraConfFlagsForFile( module, filename, client_data ):
 
 
 def PrepareFlagsForClang( flags, filename ):
+  flags = _CompilerToLanguageFlag( flags )
   flags = _RemoveXclangFlags( flags )
   flags = _RemoveUnusedFlags( flags, filename )
   flags = _SanitizeFlags( flags )
@@ -187,24 +203,44 @@ def _SanitizeFlags( flags ):
   return vector
 
 
+def _RemoveFlagsPrecedingCompiler( flags ):
+  """Assuming that the flag just before the first flag starting with a dash is
+  the compiler path, removes all flags preceding it."""
+
+  for index, flag in enumerate( flags ):
+    if flag.startswith( '-' ):
+      return ( flags[ index - 1: ] if index > 1 else
+               flags )
+  return flags[ :-1 ]
+
+
+def _CompilerToLanguageFlag( flags ):
+  """When flags come from the compile_commands.json file, the flag preceding
+  the first flag starting with a dash is usually the path to the compiler that
+  should be invoked.  We want to replace it with a corresponding language flag.
+  E.g., -x c for gcc and -x c++ for g++."""
+
+  flags = _RemoveFlagsPrecedingCompiler( flags )
+
+  # First flag is now the compiler path or a flag starting with a dash
+  if flags[ 0 ].startswith( '-' ):
+    return flags
+
+  language = ( 'c++' if CPP_COMPILER_REGEX.search( flags[ 0 ] ) else
+               'c' )
+
+  return [ '-x', language ] + flags[ 1: ]
+
+
 def _RemoveUnusedFlags( flags, filename ):
   """Given an iterable object that produces strings (flags for Clang), removes
   the '-c' and '-o' options that Clang does not like to see when it's producing
   completions for a file. Same for '-MD' etc.
 
-  Also removes the first flag in the list if it does not
-  start with a '-' (it's highly likely to be the compiler name/path).
-
   We also try to remove any stray filenames in the flags that aren't include
   dirs."""
 
   new_flags = []
-
-  # When flags come from the compile_commands.json file, the first flag is
-  # usually the path to the compiler that should be invoked. We want to strip
-  # that.
-  if not flags[ 0 ].startswith( '-' ):
-    flags = flags[ 1: ]
 
   skip_next = False
   previous_flag_is_include = False
