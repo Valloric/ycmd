@@ -25,8 +25,8 @@ from .cs_handlers_test import Cs_Handlers_test
 class Cs_Diagnostics_test( Cs_Handlers_test ):
 
   def ZeroBasedLineAndColumn_test( self ):
-    yield _ZeroBasedLineAndColumn_test, True
-    yield _ZeroBasedLineAndColumn_test, False
+    yield self._ZeroBasedLineAndColumn_test, True
+    yield self._ZeroBasedLineAndColumn_test, False
 
 
   def _ZeroBasedLineAndColumn_test( self, use_roslyn ):
@@ -50,14 +50,14 @@ class Cs_Diagnostics_test( Cs_Handlers_test ):
 
     try:
       assert_that( results,
-      _Diagnostics_CsCompleter_ExpectedResult( use_roslyn, True ) )
+      _Diagnostics_ExpectedResult( use_roslyn, True ) )
     finally:
         self._StopOmniSharpServer( filepath )
 
 
   def MultipleSolution_test( self ):
-    yield _MultipleSolution_test, True
-    yield _MultipleSolution_test, False
+    yield self._MultipleSolution_test, True
+    yield self._MultipleSolution_test, False
 
 
   def _MultipleSolution_test( self, use_roslyn ):
@@ -87,64 +87,15 @@ class Cs_Diagnostics_test( Cs_Handlers_test ):
 
       try:
         assert_that( results,
-          _Diagnostics_CsCompleter_ExpectedResult( use_roslyn, main_error ) )
+          _Diagnostics_ExpectedResult( use_roslyn, main_error ) )
       finally:
         self._StopOmniSharpServer( filepath )
-
-  
-  def _Diagnostics_CsCompleter_ExpectedResult( use_roslyn, flag ):
-    def build_matcher( kind, message, line, column ):
-      return has_entries( {
-        'kind': equal_to( kind ),
-        'text': contains_string( message ),
-        'location': has_entries( {
-          'line_num': line,
-          'column_num': column
-        } ),
-        'location_extent': has_entries( {
-          'start': has_entries( {
-            'line_num': line,
-            'column_num': column
-          } ),
-          'end': has_entries( {
-            'line_num': line,
-            'column_num': column
-          } ),
-        } )
-      } )
-    entries = []
-    if use_roslyn:
-      entries.append(
-        build_matcher( 'ERROR', "Identifier expected", 10, 12 )
-      )
-      entries.append(
-        build_matcher( 'ERROR', "; expected", 10, 12 ),
-    )
-      entries.append(
-        build_matcher( 'ERROR',
-          "'Console' does not contain a definition for ''", 11, 1 ),
-      )
-      entries.append(
-        build_matcher( 'WARNING',
-          "is assigned but its value is never used", 9, 8 ),
-      )
-      if flag:
-        entries.append(
-          build_matcher( 'ERROR',
-            "Program has more than one entry point defined. Compile with /main to "
-            +"specify the type that contains the entry point.", 7, 22 ),
-        )
-    else:
-      entries.append(
-        build_matcher( 'ERROR', "Unexpected symbol `}'', expecting identifier", 11, 2 )
-      )
-    return contains( *entries )
 
 
   # This test seems identical to ZeroBasedLineAndColumn one
   def Basic_test( self ):
-    yield _Basic_test, True
-    yield _Basic_test, False
+    yield self._Basic_test, True
+    yield self._Basic_test, False
 
 
   def _Basic_test( self, use_roslyn ):
@@ -177,3 +128,52 @@ class Cs_Diagnostics_test( Cs_Handlers_test ):
                         contains_string( expected ) ) )
     finally:
         self._StopOmniSharpServer( filepath )
+
+
+def _Diagnostics_ExpectedResult( use_roslyn, flag ):
+  def build_matcher( kind, message, line, column ):
+    return has_entries( {
+      'kind': equal_to( kind ),
+      'text': contains_string( message ),
+      'location': has_entries( {
+        'line_num': line,
+        'column_num': column
+      } ),
+      'location_extent': has_entries( {
+        'start': has_entries( {
+          'line_num': line,
+          'column_num': column
+        } ),
+        'end': has_entries( {
+          'line_num': line,
+          'column_num': column
+        } ),
+      } )
+    } )
+  entries = []
+  if use_roslyn:
+    entries.append(
+      build_matcher( 'ERROR', "Identifier expected", 10, 12 )
+    )
+    entries.append(
+      build_matcher( 'ERROR', "; expected", 10, 12 ),
+  )
+    entries.append(
+      build_matcher( 'ERROR',
+        "'Console' does not contain a definition for ''", 11, 1 ),
+    )
+    entries.append(
+      build_matcher( 'WARNING',
+        "is assigned but its value is never used", 9, 8 ),
+    )
+    if flag:
+      entries.append(
+        build_matcher( 'ERROR',
+          "Program has more than one entry point defined. Compile with /main to "
+          +"specify the type that contains the entry point.", 7, 22 ),
+      )
+  else:
+    entries.append(
+      build_matcher( 'ERROR', "Unexpected symbol `}'', expecting identifier", 11, 2 )
+    )
+  return contains( *entries )

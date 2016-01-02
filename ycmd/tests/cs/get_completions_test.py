@@ -19,18 +19,18 @@
 # along with ycmd.  If not, see <http://www.gnu.org/licenses/>.
 
 from webtest import AppError
+from nose import SkipTest
 from nose.tools import eq_
 from hamcrest import ( assert_that, empty, greater_than, has_item, has_items,
                        has_entries )
 from cs_handlers_test import Cs_Handlers_test
-from nose import SkipTest
 
 
 class Cs_GetCompletions_test( Cs_Handlers_test ):
 
   def Basic_test( self ):
-    yield _Basic_test, True
-    yield _Basic_test, False
+    yield self._Basic_test, True
+    yield self._Basic_test, False
 
 
   def _Basic_test( self, use_roslyn ):
@@ -61,8 +61,8 @@ class Cs_GetCompletions_test( Cs_Handlers_test ):
 
 
   def MultipleSolution_test( self ):
-    yield _MultipleSolution_test, True
-    yield _MultipleSolution_test, False
+    yield self._MultipleSolution_test, True
+    yield self._MultipleSolution_test, False
 
 
   def _MultipleSolution_test( self, use_roslyn ):
@@ -89,18 +89,18 @@ class Cs_GetCompletions_test( Cs_Handlers_test ):
                                             column_num = 12 )
 
       try:
-        response_data = app.post_json( '/completions', completion_data ).json
+        response_data = self._app.post_json( '/completions', completion_data ).json
         assert_that( response_data[ 'completions' ],
-                      has_items( CompletionEntryMatcher( 'CursorLeft' ),
-                                CompletionEntryMatcher( 'CursorSize' ) ) )
+                     has_items( self._CompletionEntryMatcher( 'CursorLeft' ),
+                                self._CompletionEntryMatcher( 'CursorSize' ) ) )
         eq_( 12, response_data[ 'completion_start_column' ] )
       finally:
         self._StopOmniSharpServer( filepath )
 
 
   def PathWithSpace_test( self ):
-    yield _PathWithSpace_test, True
-    yield _PathWithSpace_test, False
+    yield self._PathWithSpace_test, True
+    yield self._PathWithSpace_test, False
 
 
   def _PathWithSpace_test( self, use_roslyn ):
@@ -131,8 +131,8 @@ class Cs_GetCompletions_test( Cs_Handlers_test ):
 
 
   def HasBothImportsAndNonImport_test( self ):
-    yield _HasBothImportsAndNonImport_test, True
-    yield _HasBothImportsAndNonImport_test, False
+    yield self._HasBothImportsAndNonImport_test, True
+    yield self._HasBothImportsAndNonImport_test, False
 
 
   def _HasBothImportsAndNonImport_test( self, use_roslyn ):
@@ -169,8 +169,8 @@ class Cs_GetCompletions_test( Cs_Handlers_test ):
 
 
   def ImportsOrderedAfter_test( self ):
-    yield _ImportsOrderedAfter_test, True
-    yield _ImportsOrderedAfter_test, False
+    yield self._ImportsOrderedAfter_test, True
+    yield self._ImportsOrderedAfter_test, False
 
 
   def _ImportsOrderedAfter_test( self, use_roslyn ):
@@ -215,8 +215,8 @@ class Cs_GetCompletions_test( Cs_Handlers_test ):
 
 
   def ForcedReturnsResults_test( self ):
-    yield _ForcedReturnsResults_test, True
-    yield _ForcedReturnsResults_test, False
+    yield self._ForcedReturnsResults_test, True
+    yield self._ForcedReturnsResults_test, False
 
 
   def _ForcedReturnsResults_test( self, use_roslyn ):
@@ -251,8 +251,8 @@ class Cs_GetCompletions_test( Cs_Handlers_test ):
 
 
   def NonForcedReturnsNoResults_test( self ):
-    yield _NonForcedReturnsNoResults_test, True
-    yield _NonForcedReturnsNoResults_test, False
+    yield self._NonForcedReturnsNoResults_test, True
+    yield self._NonForcedReturnsNoResults_test, False
 
 
   def _NonForcedReturnsNoResults_test( self, use_roslyn ):
@@ -293,8 +293,8 @@ class Cs_GetCompletions_test( Cs_Handlers_test ):
 
 
   def ForcedDividesCache_test( self ):
-    yield _ForcedDividesCache_test, True
-    yield _ForcedDividesCache_test, False
+    yield self._ForcedDividesCache_test, True
+    yield self._ForcedDividesCache_test, False
 
 
   def _ForcedDividesCache_test( self, use_roslyn ):
@@ -347,8 +347,8 @@ class Cs_GetCompletions_test( Cs_Handlers_test ):
 
 
   def ReloadSolution_Basic_test( self ):
-    yield _ReloadSolution_Basic_test, True
-    yield _ReloadSolution_Basic_test, False
+    yield self._ReloadSolution_Basic_test, True
+    yield self._ReloadSolution_Basic_test, False
 
 
   def _ReloadSolution_Basic_test( self, use_roslyn ):
@@ -370,12 +370,12 @@ class Cs_GetCompletions_test( Cs_Handlers_test ):
                           filetype = 'cs' ) ).json
 
     self._StopOmniSharpServer( filepath )
-    eq_( result, True )
+    eq_( result, None if use_roslyn else True )
 
 
   def ReloadSolution_MultipleSolution_test( self ):
-    yield _ReloadSolution_MultipleSolution_test, True
-    yield _ReloadSolution_MultipleSolution_test, False
+    yield self._ReloadSolution_MultipleSolution_test, True
+    yield self._ReloadSolution_MultipleSolution_test, False
 
 
   def _ReloadSolution_MultipleSolution_test( self, use_roslyn ):
@@ -402,7 +402,7 @@ class Cs_GetCompletions_test( Cs_Handlers_test ):
                             filetype = 'cs' ) ).json
 
       self._StopOmniSharpServer( filepath )
-      eq_( result, True )
+      eq_( result, None if use_roslyn else True )
 
 
   def _SolutionSelectCheck( self, sourcefile, reference_solution,

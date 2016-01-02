@@ -224,13 +224,13 @@ class CsharpCompleter( Completer ):
       'ServerTerminated'                 : ( lambda self, request_data, args:
          self._SolutionSubcommand( request_data,
                                    method = 'ServerTerminated',
-                                   no_request_data = True ) )
+                                   no_request_data = True ) ),
       'SetOmnisharpPath': ( lambda self, request_data, arguments:
           self._SetOmnisharpPath( request_data, arguments ) ),
       'UseLegacyOmnisharp': ( lambda self, request_data, arguments:
           self._SetOmnisharpPath( request_data, [ PATH_TO_LEGACY_OMNISHARP_BINARY, False ] ) ),
       'UseRoslynOmnisharp': ( lambda self, request_data, arguments:
-          self._SetOmnisharpPath( request_data, [ PATH_TO_ROSLYN_OMNISHARP_BINARY, True ] ) ),
+          self._SetOmnisharpPath( request_data, [ PATH_TO_ROSLYN_OMNISHARP_BINARY, True ] ) )
     }
 
 

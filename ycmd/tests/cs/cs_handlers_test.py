@@ -39,11 +39,11 @@ class Cs_Handlers_test( Handlers_test ):
     command = 'UseRoslynOmnisharp' if should_use_roslyn else 'UseLegacyOmnisharp'
     self._app.post_json(
       '/run_completer_command',
-       BuildRequest( completer_target = 'filetype_default',
-                     command_arguments = [ command ],
-                     filepath = filename,
-                     filetype = 'cs' ) )
-
+       self._BuildRequest( completer_target = 'filetype_default',
+                           command_arguments = [ command ],
+                           filepath = filename,
+                           filetype = 'cs' ) )
+              
 
   def _StopOmniSharpServer( self, filename ):
     self._app.post_json(

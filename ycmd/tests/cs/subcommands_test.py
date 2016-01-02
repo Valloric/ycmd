@@ -18,19 +18,21 @@
 # along with ycmd.  If not, see <http://www.gnu.org/licenses/>.
 
 from webtest import TestApp, AppError
+from nose import SkipTest
 from nose.tools import eq_, ok_
-from hamcrest import contains_string
+from hamcrest import ( assert_that, contains_string )
 from ... import handlers
 from .cs_handlers_test import Cs_Handlers_test
 import re
 import os.path
 
 
+
 class Cs_Subcommands_test( Cs_Handlers_test ):
 
   def GoTo_Basic_test( self ):
-    yield _GoTo_Basic_test, True
-    yield _GoTo_Basic_test, False
+    yield self._GoTo_Basic_test, True
+    yield self._GoTo_Basic_test, False
 
 
   def _GoTo_Basic_test( self, use_roslyn ):
@@ -65,8 +67,8 @@ class Cs_Subcommands_test( Cs_Handlers_test ):
 
 
   def GoToImplementation_Basic_test( self ):
-    yield _GoToImplementation_Basic_test, True
-    yield _GoToImplementation_Basic_test, False
+    yield self._GoToImplementation_Basic_test, True
+    yield self._GoToImplementation_Basic_test, False
 
 
   def _GoToImplementation_Basic_test( self, use_roslyn ):
@@ -102,8 +104,8 @@ class Cs_Subcommands_test( Cs_Handlers_test ):
 
 
   def GoToImplementation_NoImplementation_test( self ):
-    yield _GoToImplementation_NoImplementation_test, True
-    yield _GoToImplementation_NoImplementation_test, False
+    yield self._GoToImplementation_NoImplementation_test, True
+    yield self._GoToImplementation_NoImplementation_test, False
 
 
   def _GoToImplementation_NoImplementation_test( self, use_roslyn ):
@@ -141,8 +143,8 @@ class Cs_Subcommands_test( Cs_Handlers_test ):
 
 
   def CsCompleter_InvalidLocation_test( self ):
-    yield _CsCompleter_InvalidLocation_test, True
-    yield _CsCompleter_InvalidLocation_test, False
+    yield self._CsCompleter_InvalidLocation_test, True
+    yield self._CsCompleter_InvalidLocation_test, False
 
 
   def _CsCompleter_InvalidLocation_test( self, use_roslyn ):
@@ -182,8 +184,8 @@ class Cs_Subcommands_test( Cs_Handlers_test ):
 
 
   def GoToImplementationElseDeclaration_NoImplementation_test( self ):
-    yield _GoToImplementationElseDeclaration_NoImplementation_test, True
-    yield _GoToImplementationElseDeclaration_NoImplementation_test, False
+    yield self._GoToImplementationElseDeclaration_NoImplementation_test, True
+    yield self._GoToImplementationElseDeclaration_NoImplementation_test, False
 
 
   def _GoToImplementationElseDeclaration_NoImplementation_test( self, use_roslyn ):
@@ -212,7 +214,7 @@ class Cs_Subcommands_test( Cs_Handlers_test ):
       eq_( {
         'filepath': self._PathToTestFile( 'testy', 'GotoTestCase.cs' ),
         'line_num': 35,
-        'column_num': 15 if use_roslyn else 3
+        'column_num': 8 if use_roslyn else 3
       }, self._app.post_json( '/run_completer_command', goto_data ).json )
 
     finally:
@@ -220,8 +222,8 @@ class Cs_Subcommands_test( Cs_Handlers_test ):
 
 
   def GoToImplementationElseDeclaration_SingleImplementation_test( self ):
-    yield _GoToImplementationElseDeclaration_SingleImplementation_test, True
-    yield _GoToImplementationElseDeclaration_SingleImplementation_test, False
+    yield self._GoToImplementationElseDeclaration_SingleImplementation_test, True
+    yield self._GoToImplementationElseDeclaration_SingleImplementation_test, False
 
 
   def _GoToImplementationElseDeclaration_SingleImplementation_test( self, use_roslyn ):
@@ -258,8 +260,8 @@ class Cs_Subcommands_test( Cs_Handlers_test ):
 
 
   def GoToImplementationElseDeclaration_MultipleImplementations_test( self ):
-    yield _GoToImplementationElseDeclaration_MultipleImplementations_test, True
-    yield _GoToImplementationElseDeclaration_MultipleImplementations_test, False
+    yield self._GoToImplementationElseDeclaration_MultipleImplementations_test, True
+    yield self._GoToImplementationElseDeclaration_MultipleImplementations_test, False
 
 
   def _GoToImplementationElseDeclaration_MultipleImplementations_test( self, use_roslyn ):
@@ -300,8 +302,8 @@ class Cs_Subcommands_test( Cs_Handlers_test ):
 
 
   def GetType_EmptyMessage_test( self ):
-    yield _GetType_EmptyMessage_test, True
-    yield _GetType_EmptyMessage_test, False
+    yield self._GetType_EmptyMessage_test, True
+    yield self._GetType_EmptyMessage_test, False
 
 
   def _GetType_EmptyMessage_test( self, use_roslyn ):
@@ -329,14 +331,14 @@ class Cs_Subcommands_test( Cs_Handlers_test ):
       eq_( {
             u'message': expected
           },
-          app.post_json( '/run_completer_command', gettype_data ).json )
+          self._app.post_json( '/run_completer_command', gettype_data ).json )
     finally:
       self._StopOmniSharpServer( filepath )
 
 
   def GetType_VariableDeclaration_test( self ):
-    yield _GetType_VariableDeclaration_test, True
-    yield _GetType_VariableDeclaration_test, False
+    yield self._GetType_VariableDeclaration_test, True
+    yield self._GetType_VariableDeclaration_test, False
 
 
   def _GetType_VariableDeclaration_test( self, use_roslyn ):
@@ -361,17 +363,16 @@ class Cs_Subcommands_test( Cs_Handlers_test ):
 
     expected = contains_string( u'System.string' if use_roslyn else u"string" )
     try:
-      eq_( {
-        u'message': expected
-      }, self._app.post_json( '/run_completer_command', gettype_data ).json )
-
+      assert_that( 
+        self._app.post_json( '/run_completer_command', gettype_data ).json,
+        { u'message': expected } )
     finally:
       self._StopOmniSharpServer( filepath )
 
 
   def GetType_VariableUsage_test( self ):
-    yield _GetType_VariableUsage_test, True
-    yield _GetType_VariableUsage_test, False
+    yield self._GetType_VariableUsage_test, True
+    yield self._GetType_VariableUsage_test, False
 
 
   def _GetType_VariableUsage_test( self, use_roslyn ):
@@ -403,8 +404,8 @@ class Cs_Subcommands_test( Cs_Handlers_test ):
 
 
   def GetType_Constant_test( self ):
-    yield _GetType_Constant_test, True
-    yield _GetType_Constant_test, False
+    yield self._GetType_Constant_test, True
+    yield self._GetType_Constant_test, False
 
 
   def _GetType_Constant_test( self, use_roslyn ):
@@ -439,8 +440,8 @@ class Cs_Subcommands_test( Cs_Handlers_test ):
 
 
   def GetType_DocsIgnored_test( self ):
-    yield _GetType_DocsIgnored_test, True
-    yield _GetType_DocsIgnored_test, False
+    yield self._GetType_DocsIgnored_test, True
+    yield self._GetType_DocsIgnored_test, False
 
 
   def _GetType_DocsIgnored_test( self, use_roslyn ):
@@ -468,14 +469,14 @@ class Cs_Subcommands_test( Cs_Handlers_test ):
       eq_( {
             u'message': u"int GetTypeTestCase.an_int_with_docs" + first_line_end,
           },
-          app.post_json( '/run_completer_command', gettype_data ).json )
+          self._app.post_json( '/run_completer_command', gettype_data ).json )
     finally:
      self._StopOmniSharpServer( filepath )
 
 
   def GetDoc_Variable_test( self ):
-    yield _GetDoc_Variable_test, True
-    yield _GetDoc_Variable_test, False
+    yield self._GetDoc_Variable_test, True
+    yield self._GetDoc_Variable_test, False
 
 
   def _GetDoc_Variable_test( self, use_roslyn ):
@@ -504,14 +505,14 @@ class Cs_Subcommands_test( Cs_Handlers_test ):
             'detailed_info': 'int GetDocTestCase.an_int'+first_line_end+'\n'
                              'an integer, or something',
           },
-          app.post_json( '/run_completer_command', getdoc_data ).json )
+          self._app.post_json( '/run_completer_command', getdoc_data ).json )
     finally:
       self._StopOmniSharpServer( filepath )
 
 
   def GetDoc_Function_test( self ):
-    yield _GetDoc_Function_test, True
-    yield _GetDoc_Function_test, False
+    yield self._GetDoc_Function_test, True
+    yield self._GetDoc_Function_test, False
 
 
   def _GetDoc_Function_test( self, use_roslyn ):
@@ -550,7 +551,7 @@ class Cs_Subcommands_test( Cs_Handlers_test ):
       eq_( {
             'detailed_info': expected,
           },
-          app.post_json( '/run_completer_command', getdoc_data ).json )
+          self._app.post_json( '/run_completer_command', getdoc_data ).json )
     finally:
       self._StopOmniSharpServer( filepath )
 
@@ -586,8 +587,8 @@ class Cs_Subcommands_test( Cs_Handlers_test ):
 
 
   def FixIt_RemoveSingleLine_test( self ):
-    yield _FixIt_RemoveSingleLine_test, True
-    yield _FixIt_RemoveSingleLine_test, False
+    yield self._FixIt_RemoveSingleLine_test, True
+    yield self._FixIt_RemoveSingleLine_test, False
 
 
   def _FixIt_RemoveSingleLine_test( self, use_roslyn ):
@@ -623,8 +624,8 @@ class Cs_Subcommands_test( Cs_Handlers_test ):
 
 
   def FixIt_MultipleLines_test( self ):
-    yield _FixIt_MultipleLines_test, True
-    yield _FixIt_MultipleLines_test, False
+    yield self._FixIt_MultipleLines_test, True
+    yield self._FixIt_MultipleLines_test, False
 
 
   def _FixIt_MultipleLines_test( self, use_roslyn ):
@@ -660,8 +661,8 @@ class Cs_Subcommands_test( Cs_Handlers_test ):
 
 
   def FixIt_SpanFileEdge_test( self ):
-    yield _FixIt_SpanFileEdge_test, True
-    yield _FixIt_SpanFileEdge_test, False
+    yield self._FixIt_SpanFileEdge_test, True
+    yield self._FixIt_SpanFileEdge_test, False
 
 
   def _FixIt_SpanFileEdge_test( self, use_roslyn ):
@@ -697,8 +698,8 @@ class Cs_Subcommands_test( Cs_Handlers_test ):
 
 
   def FixIt_AddTextInLine_test( self ):
-    yield _FixIt_AddTextInLine_test, True
-    yield _FixIt_AddTextInLine_test, False
+    yield self._FixIt_AddTextInLine_test, True
+    yield self._FixIt_AddTextInLine_test, False
 
 
   def _FixIt_AddTextInLine_test( self, use_roslyn ):
@@ -734,8 +735,8 @@ class Cs_Subcommands_test( Cs_Handlers_test ):
 
 
   def FixIt_ReplaceTextInLine_test( self ):
-    yield _FixIt_ReplaceTextInLine_test, True
-    yield _FixIt_ReplaceTextInLine_test, False
+    yield self._FixIt_ReplaceTextInLine_test, True
+    yield self._FixIt_ReplaceTextInLine_test, False
 
 
   def _FixIt_ReplaceTextInLine_test( self, use_roslyn ):
@@ -771,8 +772,8 @@ class Cs_Subcommands_test( Cs_Handlers_test ):
 
 
   def StopServer_NoErrorIfNotStarted_test( self ):
-    yield _StopServer_NoErrorIfNotStarted_test, True
-    yield _StopServer_NoErrorIfNotStarted_test, False
+    yield self._StopServer_NoErrorIfNotStarted_test, True
+    yield self._StopServer_NoErrorIfNotStarted_test, False
 
 
   def _StopServer_NoErrorIfNotStarted_test( self, use_roslyn ):
