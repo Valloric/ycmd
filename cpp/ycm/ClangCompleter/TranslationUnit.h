@@ -20,7 +20,7 @@
 
 #include "../DLLDefines.h"
 #include "UnsavedFile.h"
-#include "Diagnostic.h"
+#include "ParseResult.h"
 #include "Location.h"
 #include "Documentation.h"
 
@@ -54,11 +54,11 @@ public:
 
   void Destroy();
 
-  std::vector< Diagnostic > LatestDiagnostics();
+  ParseResult LatestParseResult();
 
   bool IsCurrentlyUpdating() const;
 
-  std::vector< Diagnostic > Reparse(
+  ParseResult Reparse(
     const std::vector< UnsavedFile > &unsaved_files );
 
   std::vector< CompletionData > CandidatesForLocation(
@@ -108,7 +108,11 @@ private:
   void Reparse( std::vector< CXUnsavedFile > &unsaved_files,
                 uint parse_options );
 
+  void UpdateLatestParseResult();
+
   void UpdateLatestDiagnostics();
+
+  void UpdateLatestSemantics();
 
   CXCursor GetCursor( int line, int column );
 
@@ -118,8 +122,8 @@ private:
 
   std::string filename_;
 
-  boost::mutex diagnostics_mutex_;
-  std::vector< Diagnostic > latest_diagnostics_;
+  boost::mutex parse_result_mutex_;
+  ParseResult latest_parse_result_;
 
   mutable boost::mutex clang_access_mutex_;
   CXTranslationUnit clang_translation_unit_;

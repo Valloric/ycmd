@@ -132,6 +132,15 @@ def BuildRangeData( source_range ):
     'end': BuildLocationData( source_range.end_ ),
   }
 
+def BuildTokenData( token ):
+
+  kind = ( token.kind_.name if hasattr( token.kind_, 'name' )
+           else token.kind_ )
+  return {
+    'kind': kind,
+    'location_extent': BuildRangeData( token.location_extent_ ),
+  }
+
 def BuildDiagnosticData( diagnostic ):
 
   kind = ( diagnostic.kind_.name if hasattr( diagnostic.kind_, 'name' )

@@ -311,15 +311,22 @@ class ClangCompleter( Completer ):
       raise ValueError( NO_COMPILE_FLAGS_MESSAGE )
 
     with self._files_being_compiled.GetExclusive( filename ):
-      diagnostics = self._completer.UpdateTranslationUnit(
+      parse_result = self._completer.UpdateTranslationUnit(
         ToUtf8IfNeeded( filename ),
         self.GetUnsavedFilesVector( request_data ),
         flags )
 
-    diagnostics = _FilterDiagnostics( diagnostics )
+    diagnostics = _FilterDiagnostics( parse_result.diagnostics )
     self._diagnostic_store = DiagnosticsToDiagStructure( diagnostics )
-    return [ responses.BuildDiagnosticData( x ) for x in
-             diagnostics[ : self._max_diagnostics_to_display ] ]
+
+    return {
+            'diagnostics':
+              [ responses.BuildDiagnosticData( x ) for x in
+                diagnostics[ : self._max_diagnostics_to_display ] ],
+            'semantics':
+              [ responses.BuildTokenData( x ) for x in
+                parse_result.semantics ]
+           }
 
 
   def OnBufferUnload( self, request_data ):
