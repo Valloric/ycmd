@@ -73,7 +73,7 @@ bool ClangCompleter::UpdatingTranslationUnit( const std::string &filename ) {
 }
 
 
-std::vector< Diagnostic > ClangCompleter::UpdateTranslationUnit(
+ParseResult ClangCompleter::UpdateTranslationUnit(
   const std::string &filename,
   const std::vector< UnsavedFile > &unsaved_files,
   const std::vector< std::string > &flags ) {
@@ -86,7 +86,7 @@ std::vector< Diagnostic > ClangCompleter::UpdateTranslationUnit(
                                          translation_unit_created );
 
   if ( !unit )
-    return std::vector< Diagnostic >();
+    return ParseResult();
 
   try {
     // There's no point in reparsing a TU that was just created, it was just
@@ -94,7 +94,7 @@ std::vector< Diagnostic > ClangCompleter::UpdateTranslationUnit(
     if ( !translation_unit_created )
       return unit->Reparse( unsaved_files );
 
-    return unit->LatestDiagnostics();
+    return unit->LatestParseResult();
   }
 
   catch ( ClangParseError & ) {
@@ -104,7 +104,7 @@ std::vector< Diagnostic > ClangCompleter::UpdateTranslationUnit(
     translation_unit_store_.Remove( filename );
   }
 
-  return std::vector< Diagnostic >();
+  return ParseResult();
 }
 
 

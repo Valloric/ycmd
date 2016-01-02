@@ -24,6 +24,8 @@
 #  include "ClangUtils.h"
 #  include "CompletionData.h"
 #  include "Diagnostic.h"
+#  include "Token.h"
+#  include "ParseResult.h"
 #  include "Location.h"
 #  include "Range.h"
 #  include "UnsavedFile.h"
@@ -181,6 +183,31 @@ BOOST_PYTHON_MODULE(ycm_core)
 
   class_< std::vector< Diagnostic > >( "DiagnosticVector" )
     .def( vector_indexing_suite< std::vector< Diagnostic > >() );
+
+  enum_< Token::Kind >( "TokenKind" )
+    .value( "Namespace", Token::NAMESPACE )
+    .value( "Class", Token::CLASS )
+    .value( "Struct", Token::STRUCT )
+    .value( "Union", Token::UNION )
+    .value( "Typedef", Token::TYPEDEF )
+    .value( "Enum", Token::ENUM )
+    .value( "EnumConstant", Token::ENUM_CONSTANT )
+    .value( "Macro", Token::MACRO )
+    .value( "Function", Token::FUNCTION )
+    .value( "FunctionParam", Token::FUNCTION_PARAM )
+    .value( "Unsupported", Token::UNSUPPORTED )
+    .export_values();
+
+  class_< Token >( "Token" )
+    .def_readonly( "kind_", &Token::kind_ )
+    .def_readonly( "location_extent_", &Token::location_extent_ );
+
+  class_< std::vector< Token > >( "TokenVector" )
+    .def( vector_indexing_suite< std::vector< Token > >() );
+
+  class_< ParseResult >( "ParseResult" )
+    .def_readonly( "diagnostics", &ParseResult::diagnostics_ )
+    .def_readonly( "semantics", &ParseResult::semantics_ );
 
   class_< DocumentationData >( "DocumentationData" )
     .def_readonly( "comment_xml", &DocumentationData::comment_xml )

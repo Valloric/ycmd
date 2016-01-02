@@ -78,6 +78,7 @@ def EventNotification():
     response_data = getattr( _server_state.GetFiletypeCompleter( filetypes ),
                              event_handler )( request_data )
 
+  _logger.info( 'response: %s', _JsonResponse( response_data ) )
   if response_data:
     return _JsonResponse( response_data )
   return _JsonResponse( {} )

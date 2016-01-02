@@ -23,6 +23,7 @@
 #include "ClangHelpers.h"
 
 #include <boost/shared_ptr.hpp>
+#include <boost/scoped_array.hpp>
 #include <boost/type_traits/remove_pointer.hpp>
 
 using boost::unique_lock;
@@ -128,13 +129,13 @@ void TranslationUnit::Destroy() {
   }
 }
 
+ParseResult TranslationUnit::LatestParseResult() {
+  if ( !clang_translation_unit_ ) {
+    return ParseResult();
+  }
 
-std::vector< Diagnostic > TranslationUnit::LatestDiagnostics() {
-  if ( !clang_translation_unit_ )
-    return std::vector< Diagnostic >();
-
-  unique_lock< mutex > lock( diagnostics_mutex_ );
-  return latest_diagnostics_;
+  unique_lock< mutex > lock( parse_result_mutex_ );
+  return latest_parse_result_;
 }
 
 
@@ -149,15 +150,15 @@ bool TranslationUnit::IsCurrentlyUpdating() const {
 }
 
 
-std::vector< Diagnostic > TranslationUnit::Reparse(
+ParseResult TranslationUnit::Reparse(
   const std::vector< UnsavedFile > &unsaved_files ) {
   std::vector< CXUnsavedFile > cxunsaved_files =
     ToCXUnsavedFiles( unsaved_files );
 
   Reparse( cxunsaved_files );
 
-  unique_lock< mutex > lock( diagnostics_mutex_ );
-  return latest_diagnostics_;
+  unique_lock< mutex > lock( parse_result_mutex_ );
+  return latest_parse_result_;
 }
 
 
@@ -383,16 +384,23 @@ void TranslationUnit::Reparse( std::vector< CXUnsavedFile > &unsaved_files,
     boost_throw( ClangParseError() );
   }
 
-  UpdateLatestDiagnostics();
+  UpdateLatestParseResult();
+}
+
+void TranslationUnit::UpdateLatestParseResult() {
+        UpdateLatestDiagnostics();
+        UpdateLatestSemantics();
 }
 
 void TranslationUnit::UpdateLatestDiagnostics() {
   unique_lock< mutex > lock1( clang_access_mutex_ );
-  unique_lock< mutex > lock2( diagnostics_mutex_ );
+  unique_lock< mutex > lock2( parse_result_mutex_ );
 
-  latest_diagnostics_.clear();
+  ParseResult::Diagnostics& diagnostics = latest_parse_result_.diagnostics_;
+
+  diagnostics.clear();
   uint num_diagnostics = clang_getNumDiagnostics( clang_translation_unit_ );
-  latest_diagnostics_.reserve( num_diagnostics );
+  diagnostics.reserve( num_diagnostics );
 
   for ( uint i = 0; i < num_diagnostics; ++i ) {
     Diagnostic diagnostic =
@@ -402,8 +410,41 @@ void TranslationUnit::UpdateLatestDiagnostics() {
         clang_translation_unit_ );
 
     if ( diagnostic.kind_ != INFORMATION )
-      latest_diagnostics_.push_back( diagnostic );
+      diagnostics.push_back( diagnostic );
   }
+}
+
+void TranslationUnit::UpdateLatestSemantics() {
+  unique_lock< mutex > lock1( clang_access_mutex_ );
+  unique_lock< mutex > lock2( parse_result_mutex_ );
+
+  ParseResult::Semantics& semantics = latest_parse_result_.semantics_;
+  semantics.clear();
+
+  CXSourceRange all = clang_getCursorExtent(
+                  clang_getTranslationUnitCursor( clang_translation_unit_ ));
+
+  CXToken* tokens = 0;
+  uint num_tokens = 0;
+  clang_tokenize( clang_translation_unit_, all, &tokens, &num_tokens );
+
+  boost::scoped_array< CXCursor > cursors( new CXCursor[ num_tokens ] );
+  clang_annotateTokens( clang_translation_unit_, tokens, num_tokens,
+                        cursors.get() );
+
+  for ( uint i = 0; i < num_tokens; ++i ) {
+    if ( clang_getTokenKind( tokens[ i ] ) != CXToken_Identifier ) {
+      continue;
+    }
+    CXSourceRange tokenRange = clang_getTokenExtent( clang_translation_unit_,
+                                                     tokens[ i ] );
+    Token token( tokenRange, cursors[ i ] );
+    if ( token.kind_ != Token::UNSUPPORTED ) {
+      semantics.push_back( token );
+    }
+  }
+
+  clang_disposeTokens( clang_translation_unit_, tokens, num_tokens );
 }
 
 namespace {
@@ -438,7 +479,7 @@ std::vector< FixIt > TranslationUnit::GetFixItsForLocationInFile(
   std::vector< FixIt > fixits;
 
   {
-    unique_lock< mutex > lock( diagnostics_mutex_ );
+    unique_lock< mutex > lock( parse_result_mutex_ );
 
     for ( std::vector< Diagnostic >::const_iterator it
           = latest_diagnostics_.begin();

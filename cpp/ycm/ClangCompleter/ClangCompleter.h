@@ -20,7 +20,7 @@
 
 #include "../DLLDefines.h"
 #include "UnsavedFile.h"
-#include "Diagnostic.h"
+#include "ParseResult.h"
 #include "TranslationUnitStore.h"
 #include "Documentation.h"
 
@@ -47,7 +47,7 @@ public:
 
   bool UpdatingTranslationUnit( const std::string &filename );
 
-  std::vector< Diagnostic > UpdateTranslationUnit(
+  ParseResult UpdateTranslationUnit(
     const std::string &filename,
     const std::vector< UnsavedFile > &unsaved_files,
     const std::vector< std::string > &flags );

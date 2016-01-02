@@ -325,10 +325,17 @@ class ClangCompleter( Completer ):
         self.GetUnsavedFilesVector( request_data ),
         flags )
 
-    diagnostics = _FilterDiagnostics( diagnostics )
+    diagnostics = _FilterDiagnostics( parse_result.diagnostics )
     self._diagnostic_store = DiagnosticsToDiagStructure( diagnostics )
-    return [ responses.BuildDiagnosticData( x ) for x in
-             diagnostics[ : self._max_diagnostics_to_display ] ]
+
+    return {
+            'diagnostics':
+              [ responses.BuildDiagnosticData( x ) for x in
+                diagnostics[ : self._max_diagnostics_to_display ] ],
+            'semantics':
+              [ responses.BuildTokenData( x ) for x in
+                parse_result.semantics ]
+           }
 
 
   def OnBufferUnload( self, request_data ):
