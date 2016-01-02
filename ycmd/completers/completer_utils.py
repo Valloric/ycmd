@@ -98,6 +98,8 @@ def _MatchesSemanticTrigger( line_value, start_column, trigger_list ):
     return False
 
   match = False
+  line_value = line_value[ :start_column ]
+
   for trigger in trigger_list:
     match = ( _StringTriggerMatches( trigger, line_value, start_column )
         if isinstance( trigger, basestring ) else
