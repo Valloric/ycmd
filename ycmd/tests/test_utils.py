@@ -71,5 +71,10 @@ class DummyCompleter( Completer ):
 
 
   def ComputeCandidatesInner( self, request_data ):
-    completions = [ 'foo', 'bar', 'qux' ]
-    return [ BuildCompletionData( candidate ) for candidate in completions ]
+    return [ BuildCompletionData( candidate )
+             for candidate in self.CandidatesList() ]
+
+
+  # This method is here for testing purpose, so it can be mocked during tests
+  def CandidatesList( self ):
+    return []
