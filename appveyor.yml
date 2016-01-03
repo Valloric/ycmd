@@ -27,14 +27,12 @@ install:
   - python C:\get-pip.py
   - pip install -r test_requirements.txt
   - npm install -g typescript
-  - ps: Start-FileDownload 'https://static.rust-lang.org/dist/rust-1.5.0-x86_64-pc-windows-msvc.exe'
-  - rust-1.5.0-x86_64-pc-windows-msvc.exe /VERYSILENT /NORESTART /DIR="C:\Program Files (x86)\Rust"
+  - ps: Start-FileDownload 'https://static.rust-lang.org/dist/rust-1.5.0-x86_64-pc-windows-gnu.exe'
+  - rust-1.5.0-x86_64-pc-windows-gnu.exe /VERYSILENT /NORESTART /DIR="C:\Program Files (x86)\Rust"
   - SET PATH=C:\Program Files (x86)\Rust\bin;C:\MinGW\bin;%PATH%
   - rustc -Vv
   - cargo -Vv
 build_script:
-  # fix for rust compilation on windows 10
-  # - CALL "C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\bin\\amd64\\vcvars64.bat"
   - python run_tests.py --msvc %MSVC%
 # Disable automatic tests
 test: off
