@@ -78,7 +78,6 @@ def EventNotification():
     response_data = getattr( _server_state.GetFiletypeCompleter( filetypes ),
                              event_handler )( request_data )
 
-  _logger.info( 'response: %s', _JsonResponse( response_data ) )
   if response_data:
     return _JsonResponse( response_data )
   return _JsonResponse( {} )
@@ -146,6 +145,15 @@ def FilterAndSortCandidates():
     request_data[ 'candidates'],
     request_data[ 'sort_property' ],
     request_data[ 'query' ] ) )
+
+
+@app.post( '/semantics' )
+def getSemantics():
+  _logger.info( 'Received semantics request' )
+  request_data = request.json
+  completer = _server_state.GetFiletypeCompleter( request_data[ 'filetypes' ] )
+
+  return _JsonResponse( completer.GetSemantics( request_data ) )
 
 
 @app.get( '/healthy' )

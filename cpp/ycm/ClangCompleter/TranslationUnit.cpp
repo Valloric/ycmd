@@ -129,13 +129,22 @@ void TranslationUnit::Destroy() {
   }
 }
 
-ParseResult TranslationUnit::LatestParseResult() {
-  if ( !clang_translation_unit_ ) {
-    return ParseResult();
-  }
 
-  unique_lock< mutex > lock( parse_result_mutex_ );
-  return latest_parse_result_;
+std::vector< Diagnostic > TranslationUnit::LatestDiagnostics() {
+  if ( !clang_translation_unit_ )
+    return std::vector< Diagnostic >();
+
+  unique_lock< mutex > lock( diagnostics_mutex_ );
+  return latest_diagnostics_;
+}
+
+
+std::vector< Token > TranslationUnit::LatestSemantics() {
+  if ( !clang_translation_unit_ )
+    return std::vector< Token >();
+
+  unique_lock< mutex > lock( semantics_mutex_ );
+  return latest_semantics_;
 }
 
 
@@ -150,15 +159,15 @@ bool TranslationUnit::IsCurrentlyUpdating() const {
 }
 
 
-ParseResult TranslationUnit::Reparse(
+std::vector< Diagnostic > TranslationUnit::Reparse(
   const std::vector< UnsavedFile > &unsaved_files ) {
   std::vector< CXUnsavedFile > cxunsaved_files =
     ToCXUnsavedFiles( unsaved_files );
 
   Reparse( cxunsaved_files );
 
-  unique_lock< mutex > lock( parse_result_mutex_ );
-  return latest_parse_result_;
+  unique_lock< mutex > lock( diagnostics_mutex_ );
+  return latest_diagnostics_;
 }
 
 
@@ -384,23 +393,17 @@ void TranslationUnit::Reparse( std::vector< CXUnsavedFile > &unsaved_files,
     boost_throw( ClangParseError() );
   }
 
-  UpdateLatestParseResult();
-}
-
-void TranslationUnit::UpdateLatestParseResult() {
-        UpdateLatestDiagnostics();
-        UpdateLatestSemantics();
+  UpdateLatestDiagnostics();
+  UpdateLatestSemantics();
 }
 
 void TranslationUnit::UpdateLatestDiagnostics() {
   unique_lock< mutex > lock1( clang_access_mutex_ );
-  unique_lock< mutex > lock2( parse_result_mutex_ );
+  unique_lock< mutex > lock2( diagnostics_mutex_ );
 
-  ParseResult::Diagnostics& diagnostics = latest_parse_result_.diagnostics_;
-
-  diagnostics.clear();
+  latest_diagnostics_.clear();
   uint num_diagnostics = clang_getNumDiagnostics( clang_translation_unit_ );
-  diagnostics.reserve( num_diagnostics );
+  latest_diagnostics_.reserve( num_diagnostics );
 
   for ( uint i = 0; i < num_diagnostics; ++i ) {
     Diagnostic diagnostic =
@@ -410,19 +413,18 @@ void TranslationUnit::UpdateLatestDiagnostics() {
         clang_translation_unit_ );
 
     if ( diagnostic.kind_ != INFORMATION )
-      diagnostics.push_back( diagnostic );
+      latest_diagnostics_.push_back( diagnostic );
   }
 }
 
 void TranslationUnit::UpdateLatestSemantics() {
   unique_lock< mutex > lock1( clang_access_mutex_ );
-  unique_lock< mutex > lock2( parse_result_mutex_ );
+  unique_lock< mutex > lock2( semantics_mutex_ );
 
-  ParseResult::Semantics& semantics = latest_parse_result_.semantics_;
-  semantics.clear();
+  latest_semantics_.clear();
 
   CXSourceRange all = clang_getCursorExtent(
-                  clang_getTranslationUnitCursor( clang_translation_unit_ ));
+    clang_getTranslationUnitCursor( clang_translation_unit_ ) );
 
   CXToken* tokens = 0;
   uint num_tokens = 0;
@@ -440,7 +442,7 @@ void TranslationUnit::UpdateLatestSemantics() {
                                                      tokens[ i ] );
     Token token( tokenRange, cursors[ i ] );
     if ( token.kind_ != Token::UNSUPPORTED ) {
-      semantics.push_back( token );
+      latest_semantics_.push_back( token );
     }
   }
 
@@ -479,7 +481,7 @@ std::vector< FixIt > TranslationUnit::GetFixItsForLocationInFile(
   std::vector< FixIt > fixits;
 
   {
-    unique_lock< mutex > lock( parse_result_mutex_ );
+    unique_lock< mutex > lock( diagnostics_mutex_ );
 
     for ( std::vector< Diagnostic >::const_iterator it
           = latest_diagnostics_.begin();

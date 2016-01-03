@@ -25,7 +25,6 @@
 #  include "CompletionData.h"
 #  include "Diagnostic.h"
 #  include "Token.h"
-#  include "ParseResult.h"
 #  include "Location.h"
 #  include "Range.h"
 #  include "UnsavedFile.h"
@@ -110,7 +109,8 @@ BOOST_PYTHON_MODULE(ycm_core)
     .def( "GetFixItsForLocationInFile",
           &ClangCompleter::GetFixItsForLocationInFile )
     .def( "GetDocsForLocationInFile",
-          &ClangCompleter::GetDocsForLocationInFile );
+          &ClangCompleter::GetDocsForLocationInFile )
+    .def( "GetLatestSemantics", &ClangCompleter::GetLatestSemantics );
 
   enum_< CompletionKind >( "CompletionKind" )
     .value( "STRUCT", STRUCT )
@@ -200,14 +200,12 @@ BOOST_PYTHON_MODULE(ycm_core)
 
   class_< Token >( "Token" )
     .def_readonly( "kind_", &Token::kind_ )
-    .def_readonly( "location_extent_", &Token::location_extent_ );
+    .def_readonly( "line_number_", &Token::line_number_ )
+    .def_readonly( "column_number_", &Token::column_number_ )
+    .def_readonly( "offset_", &Token::offset_ );
 
   class_< std::vector< Token > >( "TokenVector" )
     .def( vector_indexing_suite< std::vector< Token > >() );
-
-  class_< ParseResult >( "ParseResult" )
-    .def_readonly( "diagnostics", &ParseResult::diagnostics_ )
-    .def_readonly( "semantics", &ParseResult::semantics_ );
 
   class_< DocumentationData >( "DocumentationData" )
     .def_readonly( "comment_xml", &DocumentationData::comment_xml )

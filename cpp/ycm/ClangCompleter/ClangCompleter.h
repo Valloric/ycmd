@@ -20,7 +20,8 @@
 
 #include "../DLLDefines.h"
 #include "UnsavedFile.h"
-#include "ParseResult.h"
+#include "Diagnostic.h"
+#include "Token.h"
 #include "TranslationUnitStore.h"
 #include "Documentation.h"
 
@@ -47,7 +48,7 @@ public:
 
   bool UpdatingTranslationUnit( const std::string &filename );
 
-  ParseResult UpdateTranslationUnit(
+  std::vector< Diagnostic > UpdateTranslationUnit(
     const std::string &filename,
     const std::vector< UnsavedFile > &unsaved_files,
     const std::vector< std::string > &flags );
@@ -106,6 +107,8 @@ public:
     const std::vector< UnsavedFile > &unsaved_files,
     const std::vector< std::string > &flags,
     bool reparse = true );
+
+  std::vector< Token > GetLatestSemantics(const std::string& filename);
 
   void DeleteCachesForFile( const std::string &filename );
 
