@@ -17,11 +17,13 @@
 
 #include "Token.h"
 
+#include "Range.h"
+
 namespace YouCompleteMe {
 
 namespace {
 
-Token::Kind CursorToTokenKind( CXCursor cursor ) {
+Token::Kind CursorToTokenKind( const CXCursor& cursor ) {
   CXCursorKind kind = clang_getCursorKind( cursor );
   switch (kind) {
     case CXCursor_Namespace:
@@ -48,8 +50,8 @@ Token::Kind CursorToTokenKind( CXCursor cursor ) {
     case CXCursor_EnumConstantDecl:
       return Token::ENUM_CONSTANT;
 
-    //case CXCursor_MacroDefinition: // Definition is easily recognized by a regexp.
-    //case CXCursor_MacroExpansion: // Currently is the same as CXCursor_MacroInstantiation
+    //case CXCursor_MacroDefinition: // Can be recognized by regexp.
+    //case CXCursor_MacroExpansion: // Same as CXCursor_MacroInstantiation
     case CXCursor_MacroInstantiation:
       return Token::MACRO;
 
@@ -93,18 +95,36 @@ Token::Token( const CXSourceRange& tokenRange, const CXCursor& cursor ) {
     return;
   }
 
-  location_extent_ = Range( tokenRange );
+  CXFile unused_file;
+  uint unused_offset;
+  clang_getExpansionLocation( clang_getRangeStart( tokenRange ),
+                              &unused_file,
+                              &line_number_,
+                              &column_number_,
+                              &unused_offset );
+
+  uint end_line;
+  uint end_column;
+  clang_getExpansionLocation( clang_getRangeEnd( tokenRange ),
+                              &unused_file,
+                              &end_line,
+                              &end_column,
+                              &unused_offset );
+
   // There shouldn't exist any multiline Token, except for multiline strings,
   // which is unsupported at the moment, but better be safe then sorry.
-  if ( location_extent_.start_.line_number_ !=
-         location_extent_.end_.line_number_ ) {
+  if ( line_number_ != end_line ) {
     kind_ = UNSUPPORTED;
+    return;
   }
+  offset_ = end_column - column_number_;
 }
 
 bool Token::operator== ( const Token& other ) const {
   return kind_ == other.kind_ &&
-         location_extent_ == other.location_extent_;
+         line_number_ == other.line_number_ &&
+         column_number_ == other.column_number_ &&
+         offset_ == other.offset_;
 }
 
 } // YouCompleteMe

@@ -73,7 +73,7 @@ bool ClangCompleter::UpdatingTranslationUnit( const std::string &filename ) {
 }
 
 
-ParseResult ClangCompleter::UpdateTranslationUnit(
+std::vector< Diagnostic > ClangCompleter::UpdateTranslationUnit(
   const std::string &filename,
   const std::vector< UnsavedFile > &unsaved_files,
   const std::vector< std::string > &flags ) {
@@ -86,7 +86,7 @@ ParseResult ClangCompleter::UpdateTranslationUnit(
                                          translation_unit_created );
 
   if ( !unit )
-    return ParseResult();
+    return std::vector< Diagnostic >();
 
   try {
     // There's no point in reparsing a TU that was just created, it was just
@@ -94,7 +94,7 @@ ParseResult ClangCompleter::UpdateTranslationUnit(
     if ( !translation_unit_created )
       return unit->Reparse( unsaved_files );
 
-    return unit->LatestParseResult();
+    return unit->LatestDiagnostics();
   }
 
   catch ( ClangParseError & ) {
@@ -104,7 +104,7 @@ ParseResult ClangCompleter::UpdateTranslationUnit(
     translation_unit_store_.Remove( filename );
   }
 
-  return ParseResult();
+  return std::vector< Diagnostic >();
 }
 
 
@@ -253,6 +253,18 @@ DocumentationData ClangCompleter::GetDocsForLocationInFile(
                                          unsaved_files,
                                          reparse );
 
+}
+
+std::vector< Token > ClangCompleter::GetLatestSemantics(
+  const std::string& filename) {
+
+  ReleaseGil unlock;
+  shared_ptr< TranslationUnit > unit = translation_unit_store_.Get( filename );
+
+  if ( !unit )
+    return std::vector< Token >();
+
+  return unit->LatestSemantics();
 }
 
 void ClangCompleter::DeleteCachesForFile( const std::string &filename ) {

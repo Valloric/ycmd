@@ -18,11 +18,11 @@
 #ifndef SYNTAX_H_IC9ZDM5T
 #define SYNTAX_H_IC9ZDM5T
 
-#include "Range.h"
-
-#include <clang-c/Index.h>
+#include "standard.h"
 
 #include <string>
+
+#include <clang-c/Index.h>
 
 namespace YouCompleteMe {
 
@@ -50,7 +50,11 @@ struct Token {
 
   Kind kind_;
 
-  Range location_extent_;
+  uint line_number_;
+
+  uint column_number_;
+
+  uint offset_;
 
 };
 

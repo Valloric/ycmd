@@ -138,7 +138,9 @@ def BuildTokenData( token ):
            else token.kind_ )
   return {
     'kind': kind,
-    'location_extent': BuildRangeData( token.location_extent_ ),
+    'line_number': token.line_number_,
+    'column_number': token.column_number_,
+    'offset': token.offset_,
   }
 
 def BuildDiagnosticData( diagnostic ):

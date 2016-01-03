@@ -289,6 +289,10 @@ class Completer( object ):
     raise NoDiagnosticSupport
 
 
+  def GetSemantics( self, request_data ):
+    pass
+
+
   def _CurrentFiletype( self, filetypes ):
     supported = self.SupportedFiletypes()
 
