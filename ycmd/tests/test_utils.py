@@ -62,14 +62,6 @@ class DummyCompleter( Completer ):
     return [ 'dummy_filetype' ]
 
 
-  def GetSubcommandsMap( self ):
-    return {
-      'A': lambda x: x,
-      'B': lambda x: x,
-      'C': lambda x: x
-    }
-
-
   def ComputeCandidatesInner( self, request_data ):
     return [ BuildCompletionData( candidate )
              for candidate in self.CandidatesList() ]
