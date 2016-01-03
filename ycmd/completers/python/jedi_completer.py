@@ -282,9 +282,9 @@ class JediCompleter( Completer ):
       raise RuntimeError( 'Can\'t find a definition.' )
 
 
-  def _GetDefinitionsList( self, handle, request_data ):
+  def _GetDefinitionsList( self, handler, request_data ):
     try:
-      response = self._GetResponse( handle, request_data )
+      response = self._GetResponse( handler, request_data )
       return response[ 'definitions' ]
     except Exception:
       raise RuntimeError( 'Cannot follow nothing. Put your cursor on a valid name.' )
