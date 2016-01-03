@@ -1,9 +1,6 @@
 version: '{build}'
 environment:
   USE_CLANG_COMPLETER: true
-  OPENSSL_INCLUDE_DIR: C:\OpenSSL\include
-  OPENSSL_LIB_DIR: C:\OpenSSL\lib
-  OPENSSL_LIBS: ssleay32:libeay32
   matrix:
   - msvc: 11
     arch: 32
@@ -33,11 +30,11 @@ install:
   - ps: Start-FileDownload 'https://static.rust-lang.org/dist/rust-1.5.0-i686-pc-windows-gnu.exe'
   - rust-1.5.0-i686-pc-windows-gnu.exe /VERYSILENT /NORESTART /DIR="C:\Program Files (x86)\Rust"
   - SET PATH=C:\Program Files (x86)\Rust\bin;C:\MinGW\bin;%PATH%
-  - rustc -V
-  - cargo -V
-  - ps: Start-FileDownload "http://slproweb.com/download/Win32OpenSSL-1_0_2e.exe"
-  - Win32OpenSSL-1_0_2e.exe /VERYSILENT /SP- /DIR="C:\OpenSSL"
+  - rustc -Vv
+  - cargo -Vv
 build_script:
+  # fix for rust compilation on windows 10
+  - CALL "C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\bin\\amd64\\vcvars64.bat"
   - python run_tests.py --msvc %MSVC%
 # Disable automatic tests
 test: off
