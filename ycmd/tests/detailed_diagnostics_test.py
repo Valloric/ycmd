@@ -16,7 +16,7 @@
 # along with ycmd.  If not, see <http://www.gnu.org/licenses/>.
 
 from nose.tools import eq_
-from hamcrest import assert_that, has_entry, contains_string
+from hamcrest import assert_that
 from ..responses import NoDiagnosticSupport, BuildDisplayMessageResponse
 from .handlers_test import Handlers_test
 from .test_utils import DummyCompleter
@@ -48,6 +48,4 @@ class Diagnostics_test( Handlers_test ):
                                       filetype = 'dummy_filetype' )
 
       response = self._app.post_json( '/detailed_diagnostic', diag_data )
-      assert_that( response.json,
-                   has_entry( 'message',
-                              contains_string( "detailed diagnostic" ) )
+      assert_that( response.json, self._MessageMatcher( "detailed diagnostic" ) )

@@ -22,7 +22,7 @@ SetUpPythonPath()
 from webtest import TestApp
 from .. import handlers
 from ycmd import user_options_store
-from hamcrest import has_entries, has_entry
+from hamcrest import has_entries, has_entry, contains_string
 from test_utils import BuildRequest
 from mock import patch
 import contextlib
@@ -93,6 +93,11 @@ class Handlers_test( object ):
       entry.update( { 'message': msg } )
 
     return has_entries( entry )
+
+
+  @staticmethod
+  def _MessageMatcher( msg ):
+    return has_entry( 'message', contains_string( msg ) )
 
 
   def _PathToTestFile( self, *args ):
