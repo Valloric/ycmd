@@ -42,15 +42,15 @@ PATH_TO_JEDIHTTP = os.path.join( os.path.abspath( os.path.dirname( __file__ ) ),
                                  'third_party', 'JediHTTP', 'jedihttp.py' )
 
 
-class HMACAuth( requests.auth.AuthBase ):
+class HmacAuth( requests.auth.AuthBase ):
   def __init__( self, secret ):
-    self._hmachelper = hmaclib.JediHTTPHmacHelper( secret )
+    self._hmac_helper = hmaclib.JediHTTPHmacHelper( secret )
 
   def __call__( self, req ):
-    self._hmachelper.SignRequestHeaders( req.headers,
-                                         req.method,
-                                         req.path_url,
-                                         req.body )
+    self._hmac_helper.SignRequestHeaders( req.headers,
+                                          req.method,
+                                          req.path_url,
+                                          req.body )
     return req
 
 
@@ -164,7 +164,7 @@ class JediCompleter( Completer ):
     parameters = self._TranslateRequestForJediHTTP( request_data )
     response = requests.post( target,
                               json = parameters,
-                              auth = HMACAuth( self._hmac_secret ) )
+                              auth = HmacAuth( self._hmac_secret ) )
     response.raise_for_status()
     return response.json()
 
