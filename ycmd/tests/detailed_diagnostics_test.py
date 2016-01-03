@@ -16,10 +16,11 @@
 # along with ycmd.  If not, see <http://www.gnu.org/licenses/>.
 
 from nose.tools import eq_
-from hamcrest import assert_that, has_entry
-from ..responses import NoDiagnosticSupport
+from hamcrest import assert_that, has_entry, contains_string
+from ..responses import NoDiagnosticSupport, BuildDisplayMessageResponse
 from .handlers_test import Handlers_test
 from .test_utils import DummyCompleter
+from mock import patch
 import httplib
 
 
@@ -40,3 +41,16 @@ class Diagnostics_test( Handlers_test ):
                    has_entry( 'exception',
                               has_entry( 'TYPE',
                                          NoDiagnosticSupport.__name__ ) ) )
+
+
+  @patch( 'ycmd.tests.test_utils.DummyCompleter.GetDetailedDiagnostic',
+          return_value = BuildDisplayMessageResponse( "detailed diagnostic" ) )
+  def DoesWork_test( self, *args ):
+    with self.PatchCompleter( DummyCompleter, filetype = 'dummy_filetype' ):
+      diag_data = self._BuildRequest( contents = "foo = 5",
+                                      filetype = 'dummy_filetype' )
+
+      response = self._app.post_json( '/detailed_diagnostic', diag_data )
+      assert_that( response.json,
+                   has_entry( 'message',
+                              contains_string( "detailed diagnostic" ) )
