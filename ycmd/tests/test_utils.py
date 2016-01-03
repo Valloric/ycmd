@@ -59,7 +59,7 @@ class DummyCompleter( Completer ):
 
 
   def SupportedFiletypes( self ):
-    return [ 'dummy_filetype' ]
+    return []
 
 
   def ComputeCandidatesInner( self, request_data ):
