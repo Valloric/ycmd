@@ -37,10 +37,7 @@ class Diagnostics_test( Handlers_test ):
                                       expect_errors = True )
 
       eq_( response.status_code, httplib.INTERNAL_SERVER_ERROR )
-      assert_that( response.json,
-                   has_entry( 'exception',
-                              has_entry( 'TYPE',
-                                         NoDiagnosticSupport.__name__ ) ) )
+      assert_that( response.json, self._ErrorMatcher( NoDiagnosticSupport ) )
 
 
   @patch( 'ycmd.tests.test_utils.DummyCompleter.GetDetailedDiagnostic',

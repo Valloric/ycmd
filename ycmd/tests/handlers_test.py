@@ -85,12 +85,14 @@ class Handlers_test( object ):
 
 
   @staticmethod
-  def _ErrorMatcher( cls, msg ):
+  def _ErrorMatcher( cls, msg = None ):
     """ Returns a hamcrest matcher for a server exception response """
-    return has_entries( {
-      'exception': has_entry( 'TYPE', cls.__name__ ),
-      'message': msg,
-    } )
+    entry = { 'exception': has_entry( 'TYPE', cls.__name__ ) }
+
+    if msg:
+      entry.update( { 'message': msg } )
+
+    return has_entries( entry )
 
 
   def _PathToTestFile( self, *args ):
