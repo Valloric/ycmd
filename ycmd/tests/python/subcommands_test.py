@@ -17,6 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with ycmd.  If not, see <http://www.gnu.org/licenses/>.
 
+from hamcrest import assert_that
 from nose.tools import eq_
 from python_handlers_test import Python_Handlers_test
 import os.path
@@ -72,6 +73,21 @@ inception()
 
     eq_( test[ 'response' ],
          self._app.post_json( '/run_completer_command', goto_data ).json )
+
+
+  def GoToDefinition_NotFound_test( self ):
+    filepath = self._PathToTestFile( 'goto_file5.py' )
+    goto_data = self._BuildRequest( command_arguments = [ 'GoToDefinition' ],
+                                    line_num = 4,
+                                    contents = open( filepath ).read(),
+                                    filetype = 'python',
+                                    filepath = filepath )
+
+    response = self._app.post_json( '/run_completer_command',
+                                    goto_data,
+                                    expect_errors = True  ).json
+    assert_that( response,
+                 self._ErrorMatcher( RuntimeError, "Can\'t jump to definition." ) )
 
 
   def GoTo_test( self ):

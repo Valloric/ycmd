@@ -291,6 +291,9 @@ class JediCompleter( Completer ):
 
 
   def _BuildGoToResponse( self, definition_list ):
+    if not definition_list:
+      raise RuntimeError( 'No Definition was found.' )
+
     if len( definition_list ) == 1:
       definition = definition_list[ 0 ]
       if definition[ 'in_builtin_module' ]:
