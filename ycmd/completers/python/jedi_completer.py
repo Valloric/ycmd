@@ -247,19 +247,19 @@ class JediCompleter( Completer ):
 
 
   def _GoToDefinition( self, request_data ):
-    try:
-      definitions = self._GetDefinitionsList( '/gotodefinition', request_data )
+    definitions = self._GetDefinitionsList( '/gotodefinition', request_data )
+    if definitions:
       return self._BuildGoToResponse( definitions )
-    except Exception:
+    else:
       raise RuntimeError( 'Can\'t jump to definition.' )
 
 
   def _GoToDeclaration( self, request_data ):
-    try:
-      definitions = self._GetDefinitionsList( '/gotoassignment', request_data )
+    definitions = self._GetDefinitionsList( '/gotoassignment', request_data )
+    if definitions:
       return self._BuildGoToResponse( definitions )
-    except Exception:
-      raise RuntimeError( 'Can\'t jump do declaration.' )
+    else:
+      raise RuntimeError( 'Can\'t jump to declaration.' )
 
 
   def _GoTo( self, request_data ):
@@ -291,9 +291,6 @@ class JediCompleter( Completer ):
 
 
   def _BuildGoToResponse( self, definition_list ):
-    if not definition_list:
-      raise RuntimeError( 'No Definition was found.' )
-
     if len( definition_list ) == 1:
       definition = definition_list[ 0 ]
       if definition[ 'in_builtin_module' ]:
