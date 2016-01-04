@@ -326,7 +326,6 @@ class RustCompleter( Completer ):
           self._server_stderr = None
 
 
-
   def _RestartServer( self ):
     """
     Restart racerd
