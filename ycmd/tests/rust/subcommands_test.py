@@ -24,14 +24,15 @@ from nose.tools import eq_
 class Rust_Subcommands_test( Rust_Handlers_test ):
 
 
-  def GetType_Basic_test( self ):
+  def _GoTo( self, params ):
     filepath = self._PathToTestFile( 'test.rs' )
     contents = open( filepath ).read()
 
     self._WaitUntilServerReady()
 
+    command = params[ 'command' ]
     goto_data = self._BuildRequest( completer_target = 'filetype_default',
-                                    command_arguments = [ 'GoTo' ],
+                                    command_arguments = [ command ],
                                     line_num = 7,
                                     column_num = 12,
                                     contents = contents,
@@ -44,3 +45,13 @@ class Rust_Subcommands_test( Rust_Handlers_test ):
     eq_( {
       'line_num': 1, 'column_num': 8, 'filepath': filepath
     }, results.json )
+
+  def GoTo_all_test( self ):
+    tests = [
+      { 'command': 'GoTo' },
+      { 'command': 'GoToDefinition' },
+      { 'command': 'GoToDeclaration' }
+    ]
+
+    for test in tests:
+      yield ( self._GoTo, test )
