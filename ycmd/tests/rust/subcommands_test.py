@@ -46,6 +46,7 @@ class Rust_Subcommands_test( Rust_Handlers_test ):
       'line_num': 1, 'column_num': 8, 'filepath': filepath
     }, results.json )
 
+
   def GoTo_all_test( self ):
     tests = [
       { 'command': 'GoTo' },
