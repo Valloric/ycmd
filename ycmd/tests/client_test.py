@@ -39,6 +39,7 @@ import time
 import urlparse
 
 from ycmd.hmac_utils import CreateHmac, CreateRequestHmac, SecureStringsEqual
+from ycmd.tests.test_utils import BuildRequest
 from ycmd.utils import ( GetUnusedLocalhostPort, PathToTempDir,
                          RemoveIfExists, SafePopen, ToUtf8Json )
 
@@ -139,6 +140,49 @@ class Client_test( object ):
       finally:
         time.sleep( 0.1 )
         total_slept += 0.1
+
+
+  def _StartSubserverForFiletype( self, filetype ):
+    # TODO: uniformize the way subservers are started in completers. Current
+    # status for each completer is:
+    #  - Clang: no subserver;
+    #  - C#: StartServer/RestartServer commands and FileReadyToParse event;
+    #  - Go: StartServer command and FileReadyToParse event;
+    #  - Javascript: StartServer command and completer initialization;
+    #  - Python: RestartServer command and completer initialization;
+    #  - Rust: RestartServer command and completer initialization;
+    #  - Typescript: completer initialization.
+
+    # Completers have different ways to start their subservers. We first
+    # attempt to start the subserver by using StartServer and RestartServer
+    # commands. If both commands fail, we send a BufferVisit notification
+    # as a last resort.
+    # This is working for all completers with a subserver except C# which
+    # requires a solution to start.
+    # NOTE: due to the way Go subserver is started, it will not be a child of
+    # ycmd server. This is why it is not used in the tests.
+    response = self._PostRequest(
+      'run_completer_command',
+      BuildRequest( command_arguments = [ 'StartServer' ],
+                    filetype = filetype )
+    )
+    if response.status_code is httplib.OK:
+      return response
+
+    response = self._PostRequest(
+      'run_completer_command',
+      BuildRequest( command_arguments = [ 'RestartServer' ],
+                    filetype = filetype )
+    )
+    if response.status_code is httplib.OK:
+      return response
+
+    response = self._PostRequest(
+      'event_notification',
+      BuildRequest( event_name = 'BufferVisit',
+                    filetype = filetype )
+    )
+    return response
 
 
   def _AssertServerAndSubserversShutDown( self, timeout = 5 ):
