@@ -33,7 +33,9 @@ struct Token {
     CLASS,
     STRUCT,
     UNION,
+    MEMBER_VARIABLE,
     TYPEDEF,
+    TEMPLATE_TYPE,
     ENUM,
     ENUM_CONSTANT,
     MACRO,
@@ -42,11 +44,15 @@ struct Token {
     UNSUPPORTED
   };
 
-  Token( const CXSourceRange& tokenRange, const CXCursor& cursor );
-
   Token();
 
+  Token( uint line, uint column, uint offset );
+
+  Token( const CXSourceRange& tokenRange, const CXCursor& cursor );
+
   bool operator== ( const Token& other ) const;
+
+  bool operator< (const Token& other ) const;
 
   Kind kind_;
 

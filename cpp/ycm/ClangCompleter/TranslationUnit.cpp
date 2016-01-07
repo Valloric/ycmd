@@ -22,6 +22,8 @@
 #include "ClangUtils.h"
 #include "ClangHelpers.h"
 
+#include <algorithm>
+
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_array.hpp>
 #include <boost/type_traits/remove_pointer.hpp>
@@ -136,15 +138,6 @@ std::vector< Diagnostic > TranslationUnit::LatestDiagnostics() {
 
   unique_lock< mutex > lock( diagnostics_mutex_ );
   return latest_diagnostics_;
-}
-
-
-std::vector< Token > TranslationUnit::LatestSemantics() {
-  if ( !clang_translation_unit_ )
-    return std::vector< Token >();
-
-  unique_lock< mutex > lock( semantics_mutex_ );
-  return latest_semantics_;
 }
 
 
@@ -394,7 +387,7 @@ void TranslationUnit::Reparse( std::vector< CXUnsavedFile > &unsaved_files,
   }
 
   UpdateLatestDiagnostics();
-  UpdateLatestSemantics();
+  UpdateLatestSemanticTokens();
 }
 
 void TranslationUnit::UpdateLatestDiagnostics() {
@@ -417,11 +410,11 @@ void TranslationUnit::UpdateLatestDiagnostics() {
   }
 }
 
-void TranslationUnit::UpdateLatestSemantics() {
+void TranslationUnit::UpdateLatestSemanticTokens() {
   unique_lock< mutex > lock1( clang_access_mutex_ );
-  unique_lock< mutex > lock2( semantics_mutex_ );
+  unique_lock< mutex > lock2( semantic_tokens_mutex_ );
 
-  latest_semantics_.clear();
+  latest_semantic_tokens_.clear();
 
   CXSourceRange all = clang_getCursorExtent(
     clang_getTranslationUnitCursor( clang_translation_unit_ ) );
@@ -442,7 +435,7 @@ void TranslationUnit::UpdateLatestSemantics() {
                                                      tokens[ i ] );
     Token token( tokenRange, cursors[ i ] );
     if ( token.kind_ != Token::UNSUPPORTED ) {
-      latest_semantics_.push_back( token );
+      latest_semantic_tokens_.push_back( token );
     }
   }
 
@@ -542,6 +535,43 @@ DocumentationData TranslationUnit::GetDocsForLocationInFile(
 
   return DocumentationData( canonical_cursor );
 }
+
+
+std::vector< Token > TranslationUnit::GetSemanticTokens(
+  uint start_line,
+  uint start_column,
+  uint end_line,
+  uint end_column ) {
+
+  if ( !clang_translation_unit_ )
+    return std::vector< Token >();
+
+  unique_lock< mutex > lock( semantic_tokens_mutex_ );
+
+  typedef std::vector< Token >::const_iterator TokenIter;
+  TokenIter range_start = latest_semantic_tokens_.begin();
+  TokenIter range_end = latest_semantic_tokens_.end();
+
+  if ( start_line > 1 || start_column > 1 ) {
+    Token key( start_line, start_column, 1 );
+    range_start = std::lower_bound( latest_semantic_tokens_.begin(),
+                                    latest_semantic_tokens_.end(), key );
+  }
+
+  uint last_token_line = latest_semantic_tokens_.back().line_number_;
+  if ( end_line != 0 && end_line <= last_token_line ) {
+    Token key( end_line, end_column, 1 );
+    range_end = std::upper_bound( latest_semantic_tokens_.begin(),
+                                  latest_semantic_tokens_.end(), key );
+  }
+
+  if ( range_start == latest_semantic_tokens_.begin() &&
+       range_end == latest_semantic_tokens_.end() ) {
+    return latest_semantic_tokens_;
+  }
+  return std::vector< Token >( range_start, range_end );
+}
+
 
 CXCursor TranslationUnit::GetCursor( int line, int column ) {
   // ASSUMES A LOCK IS ALREADY HELD ON clang_access_mutex_!

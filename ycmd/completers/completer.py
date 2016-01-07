@@ -291,8 +291,8 @@ class Completer( with_metaclass( abc.ABCMeta, object ) ):
     raise NoDiagnosticSupport
 
 
-  def GetSemantics( self, request_data ):
-    pass
+  def GetSemanticTokens( self, request_data ):
+    return []
 
 
   def _CurrentFiletype( self, filetypes ):

@@ -147,13 +147,13 @@ def FilterAndSortCandidates():
     request_data[ 'query' ] ) )
 
 
-@app.post( '/semantics' )
-def getSemantics():
-  _logger.info( 'Received semantics request' )
+@app.post( '/semantic_tokens' )
+def GetSemanticTokens():
+  _logger.info( 'Received semantic tokens request' )
   request_data = request.json
   completer = _server_state.GetFiletypeCompleter( request_data[ 'filetypes' ] )
 
-  return _JsonResponse( completer.GetSemantics( request_data ) )
+  return _JsonResponse( completer.GetSemanticTokens( request_data ) )
 
 
 @app.get( '/healthy' )

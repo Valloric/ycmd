@@ -110,7 +110,7 @@ BOOST_PYTHON_MODULE(ycm_core)
           &ClangCompleter::GetFixItsForLocationInFile )
     .def( "GetDocsForLocationInFile",
           &ClangCompleter::GetDocsForLocationInFile )
-    .def( "GetLatestSemantics", &ClangCompleter::GetLatestSemantics );
+    .def( "GetSemanticTokens", &ClangCompleter::GetSemanticTokens );
 
   enum_< CompletionKind >( "CompletionKind" )
     .value( "STRUCT", STRUCT )
@@ -189,7 +189,9 @@ BOOST_PYTHON_MODULE(ycm_core)
     .value( "Class", Token::CLASS )
     .value( "Struct", Token::STRUCT )
     .value( "Union", Token::UNION )
+    .value( "MemberVariable", Token::MEMBER_VARIABLE )
     .value( "Typedef", Token::TYPEDEF )
+    .value( "TemplateType", Token::TEMPLATE_TYPE )
     .value( "Enum", Token::ENUM )
     .value( "EnumConstant", Token::ENUM_CONSTANT )
     .value( "Macro", Token::MACRO )

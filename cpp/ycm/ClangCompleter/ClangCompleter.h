@@ -108,7 +108,12 @@ public:
     const std::vector< std::string > &flags,
     bool reparse = true );
 
-  std::vector< Token > GetLatestSemantics(const std::string& filename);
+  std::vector< Token > GetSemanticTokens(
+    const std::string& filename,
+    uint start_line,
+    uint start_column,
+    uint end_line,
+    uint end_column);
 
   void DeleteCachesForFile( const std::string &filename );
 

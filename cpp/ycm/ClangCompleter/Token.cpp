@@ -23,7 +23,7 @@ namespace YouCompleteMe {
 
 namespace {
 
-Token::Kind CursorToTokenKind( const CXCursor& cursor ) {
+Token::Kind CXCursorToTokenKind( const CXCursor& cursor ) {
   CXCursorKind kind = clang_getCursorKind( cursor );
   switch (kind) {
     case CXCursor_Namespace:
@@ -41,8 +41,15 @@ Token::Kind CursorToTokenKind( const CXCursor& cursor ) {
     case CXCursor_UnionDecl:
       return Token::UNION;
 
-    case CXCursor_TypedefDecl:
+    case CXCursor_FieldDecl:
+      return Token::MEMBER_VARIABLE;
+
+    case CXCursor_TypedefDecl: // typedef
+    case CXCursor_TypeAliasDecl: // using
       return Token::TYPEDEF;
+
+    case CXCursor_TemplateTypeParameter:
+      return Token::TEMPLATE_TYPE;
 
     case CXCursor_EnumDecl:
       return Token::ENUM;
@@ -63,17 +70,18 @@ Token::Kind CursorToTokenKind( const CXCursor& cursor ) {
       return Token::FUNCTION_PARAM;
 
     // When we have a type reference we need to do one more step
-    // to find out whether it is referencing class, enum, ... or typedef.
+    // to find out what it is referencing.
     case CXCursor_TypeRef:
+    case CXCursor_TemplateRef:
     case CXCursor_DeclRefExpr:
     case CXCursor_MemberRefExpr:
-    case CXCursor_TemplateRef:
+    case CXCursor_VariableRef:
     {
       CXCursor ref = clang_getCursorReferenced( cursor );
       if ( clang_Cursor_isNull( ref ) ) {
         return Token::UNSUPPORTED;
       } else {
-        return CursorToTokenKind( ref );
+        return CXCursorToTokenKind( ref );
       }
     }
 
@@ -88,9 +96,17 @@ Token::Token()
   : kind_( UNSUPPORTED ) {
 }
 
+Token::Token( uint line, uint column, uint offset )
+  : kind_( UNSUPPORTED )
+  , line_number_( line )
+  , column_number_( column )
+  , offset_( offset ) {
+
+}
+
 Token::Token( const CXSourceRange& tokenRange, const CXCursor& cursor ) {
 
-  kind_ = CursorToTokenKind( cursor );
+  kind_ = CXCursorToTokenKind( cursor );
   if ( kind_ == UNSUPPORTED ) {
     return;
   }
@@ -112,7 +128,7 @@ Token::Token( const CXSourceRange& tokenRange, const CXCursor& cursor ) {
                               &unused_offset );
 
   // There shouldn't exist any multiline Token, except for multiline strings,
-  // which is unsupported at the moment, but better be safe then sorry.
+  // which is a job for syntax highlighter, but better be safe then sorry.
   if ( line_number_ != end_line ) {
     kind_ = UNSUPPORTED;
     return;
@@ -125,6 +141,15 @@ bool Token::operator== ( const Token& other ) const {
          line_number_ == other.line_number_ &&
          column_number_ == other.column_number_ &&
          offset_ == other.offset_;
+}
+
+// This function checks if the given token is upper or more left
+// then the given one. Intersecting tokens considered equal.
+bool Token::operator< ( const Token& other ) const {
+  if ( line_number_ != other.line_number_ ) {
+    return line_number_ < other.line_number_;
+  }
+  return column_number_ + offset_ - 1 < other.column_number_;
 }
 
 } // YouCompleteMe

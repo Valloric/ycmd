@@ -57,8 +57,6 @@ public:
 
   std::vector< Diagnostic > LatestDiagnostics();
 
-  std::vector< Token > LatestSemantics();
-
   bool IsCurrentlyUpdating() const;
 
   std::vector< Diagnostic > Reparse(
@@ -105,6 +103,12 @@ public:
     const std::vector< UnsavedFile > &unsaved_files,
     bool reparse = true );
 
+  std::vector< Token > GetSemanticTokens(
+    uint start_line,
+    uint start_column,
+    uint end_line,
+    uint end_column );
+
 private:
   void Reparse( std::vector< CXUnsavedFile > &unsaved_files );
 
@@ -113,7 +117,7 @@ private:
 
   void UpdateLatestDiagnostics();
 
-  void UpdateLatestSemantics();
+  void UpdateLatestSemanticTokens();
 
   CXCursor GetCursor( int line, int column );
 
@@ -126,8 +130,8 @@ private:
   boost::mutex diagnostics_mutex_;
   std::vector< Diagnostic > latest_diagnostics_;
 
-  boost::mutex semantics_mutex_;
-  std::vector< Token > latest_semantics_;
+  boost::mutex semantic_tokens_mutex_;
+  std::vector< Token > latest_semantic_tokens_;
 
   mutable boost::mutex clang_access_mutex_;
   CXTranslationUnit clang_translation_unit_;
