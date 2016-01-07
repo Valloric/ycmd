@@ -44,22 +44,22 @@ if ( USE_CLANG_COMPLETER AND
      NOT PATH_TO_LLVM_ROOT AND
      NOT EXTERNAL_LIBCLANG_PATH )
 
-  set( CLANG_VERSION "3.7.0" )
+  set( CLANG_VERSION "3.8.0" )
 
   if ( APPLE )
-    set( CLANG_DIRNAME "clang+llvm-${CLANG_VERSION}-x86_64-apple-darwin" )
+    set( CLANG_DIRNAME "clang+llvm-${CLANG_VERSION}-rc2-x86_64-apple-darwin" )
     set( CLANG_SHA256
-         "057e56b445ac5dfbf0d5475badab374edebe8db5428001c8829340e40724b50d" )
+         "ae145d3342b0d096249b7cd776e761dfd00c03ccd4374c68d1510ab268ab1625" )
     set( CLANG_FILENAME "${CLANG_DIRNAME}.tar.xz" )
   elseif ( WIN32 )
     if( 64_BIT_PLATFORM )
-      set( CLANG_DIRNAME "LLVM-${CLANG_VERSION}-win64" )
+      set( CLANG_DIRNAME "LLVM-${CLANG_VERSION}-rc2-win64" )
       set( CLANG_SHA256
-           "04a393cf73bc7416c9903aa08f47f15c77cf475b22a607ac4b7493a658a11a3f" )
+           "6712dafce3357b4c184059ac38920cea93719666d511658ea28f5d7586391ed4" )
     else()
-      set( CLANG_DIRNAME "LLVM-${CLANG_VERSION}-win32" )
+      set( CLANG_DIRNAME "LLVM-${CLANG_VERSION}-rc2-win32" )
       set( CLANG_SHA256
-           "75933480c8f8e3ae3cf9281494bf0057e9e4cfae4315f59c468a4e850a86f544" )
+           "43f153f5a83645eb95696b7d1b58b8a8bab5040966898584d994e27a4f697a76" )
     endif()
     set( CLANG_FILENAME "${CLANG_DIRNAME}.exe" )
   else()
@@ -67,9 +67,9 @@ if ( USE_CLANG_COMPLETER AND
       # We MUST support the latest Ubuntu LTS release!
       # At the time of writing, that's 14.04. Switch to next LTS ~6 months after
       # it comes out.
-      set( CLANG_DIRNAME "clang+llvm-${CLANG_VERSION}-x86_64-linux-gnu-ubuntu-14.04" )
+      set( CLANG_DIRNAME "clang+llvm-${CLANG_VERSION}-rc2-x86_64-linux-gnu-ubuntu-14.04" )
       set( CLANG_SHA256
-           "093a94ff8982ae78461f0d2604c98f6b454c15e2ef768d34c235c6676c336460" )
+           "84e557596d3e01672809990e894741fb49fa86aac07a6c118b2e012eeade3a7c" )
       set( CLANG_FILENAME "${CLANG_DIRNAME}.tar.xz" )
     else()
       # Clang 3.3 is the last version with pre-built x86 binaries upstream.
@@ -99,7 +99,7 @@ if ( USE_CLANG_COMPLETER AND
   if( CLANG_DOWNLOAD )
     message( "Downloading Clang ${CLANG_VERSION}" )
 
-    set( CLANG_URL "http://llvm.org/releases/${CLANG_VERSION}" )
+    set( CLANG_URL "http://llvm.org/pre-releases/${CLANG_VERSION}/rc2" )
 
     # Try to download Clang several times until successful to prevent failure
     # from network issues on CI services.
