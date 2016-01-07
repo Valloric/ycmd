@@ -26,7 +26,8 @@ from builtins import *  # noqa
 from base64 import b64encode, b64decode
 from hamcrest import assert_that, equal_to, has_length, is_in
 import collections
-import httplib
+import functools
+import http.client
 import json
 import os
 import psutil
@@ -193,7 +194,7 @@ class Client_test( object ):
                                          self._hmac_secret ) )
 
   def _AssertResponse( self, response ):
-    assert_that( response.status_code, equal_to( httplib.OK ) )
+    assert_that( response.status_code, equal_to( http.client.OK ) )
     assert_that( HMAC_HEADER, is_in( response.headers ) )
     assert_that(
       self._ContentHmacValid( response.content,
@@ -204,3 +205,15 @@ class Client_test( object ):
 
   def _ContentHmacValid( self, content, hmac ):
     return SecureStringsEqual( CreateHmac( content, self._hmac_secret ), hmac )
+
+
+  @staticmethod
+  def CaptureOutputFromServer( test ):
+    @functools.wraps( test )
+    def Wrapper( self, *args ):
+      try:
+        test( self, *args )
+      finally:
+        sys.stdout.write( open( self._stdout ).read() )
+
+    return Wrapper
