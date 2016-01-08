@@ -239,6 +239,8 @@ class JediCompleter( Completer ):
                            self._GoTo( request_data ) ),
       'GetDoc'         : ( lambda self, request_data, args:
                            self._GetDoc( request_data ) ),
+      'FindUsages'     : ( lambda self, request_data, args:
+                           self._FindUsages( request_data ) ),
       'StopServer'     : ( lambda self, request_data, args:
                            self.Shutdown() ),
       'RestartServer'  : ( lambda self, request_data, args:
@@ -278,6 +280,14 @@ class JediCompleter( Completer ):
       return self._BuildDetailedInfoResponse( definitions )
     except Exception:
       raise RuntimeError( 'Can\'t find a definition.' )
+
+
+  def _FindUsages( self, request_data ):
+    try:
+      definitions = self._GetDefinitionsList( '/usages', request_data )
+      return self._BuildGoToResponse( definitions )
+    except Exception:
+      raise RuntimeError( 'Can\'t find usages.' )
 
 
   def _GetDefinitionsList( self, handler, request_data ):
