@@ -75,6 +75,7 @@ Token::Kind CXCursorToTokenKind( const CXCursor& cursor ) {
     case CXCursor_TemplateRef:
     case CXCursor_DeclRefExpr:
     case CXCursor_MemberRefExpr:
+    case CXCursor_MemberRef:
     case CXCursor_VariableRef:
     {
       CXCursor ref = clang_getCursorReferenced( cursor );
