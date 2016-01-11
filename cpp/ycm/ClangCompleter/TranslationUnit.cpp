@@ -387,7 +387,6 @@ void TranslationUnit::Reparse( std::vector< CXUnsavedFile > &unsaved_files,
   }
 
   UpdateLatestDiagnostics();
-  UpdateLatestSemanticTokens();
 }
 
 void TranslationUnit::UpdateLatestDiagnostics() {
@@ -408,38 +407,6 @@ void TranslationUnit::UpdateLatestDiagnostics() {
     if ( diagnostic.kind_ != INFORMATION )
       latest_diagnostics_.push_back( diagnostic );
   }
-}
-
-void TranslationUnit::UpdateLatestSemanticTokens() {
-  unique_lock< mutex > lock1( clang_access_mutex_ );
-  unique_lock< mutex > lock2( semantic_tokens_mutex_ );
-
-  latest_semantic_tokens_.clear();
-
-  CXSourceRange all = clang_getCursorExtent(
-    clang_getTranslationUnitCursor( clang_translation_unit_ ) );
-
-  CXToken* tokens = 0;
-  uint num_tokens = 0;
-  clang_tokenize( clang_translation_unit_, all, &tokens, &num_tokens );
-
-  boost::scoped_array< CXCursor > cursors( new CXCursor[ num_tokens ] );
-  clang_annotateTokens( clang_translation_unit_, tokens, num_tokens,
-                        cursors.get() );
-
-  for ( uint i = 0; i < num_tokens; ++i ) {
-    if ( clang_getTokenKind( tokens[ i ] ) != CXToken_Identifier ) {
-      continue;
-    }
-    CXSourceRange tokenRange = clang_getTokenExtent( clang_translation_unit_,
-                                                     tokens[ i ] );
-    Token token( tokenRange, cursors[ i ] );
-    if ( token.kind_ != Token::UNSUPPORTED ) {
-      latest_semantic_tokens_.push_back( token );
-    }
-  }
-
-  clang_disposeTokens( clang_translation_unit_, tokens, num_tokens );
 }
 
 namespace {
@@ -537,53 +504,93 @@ DocumentationData TranslationUnit::GetDocsForLocationInFile(
 }
 
 
+namespace {
+
+void zeroToOne( uint& value ) {
+  if ( value == 0 ) {
+    value = 1;
+  }
+}
+
+} // unnamed namespace
+
 std::vector< Token > TranslationUnit::GetSemanticTokens(
   uint start_line,
   uint start_column,
   uint end_line,
   uint end_column ) {
 
-  if ( !clang_translation_unit_ )
+  unique_lock< mutex > lock1( clang_access_mutex_ );
+  if ( !clang_translation_unit_ ) {
     return std::vector< Token >();
-
-  unique_lock< mutex > lock( semantic_tokens_mutex_ );
-
-  typedef std::vector< Token >::const_iterator TokenIter;
-  TokenIter range_start = latest_semantic_tokens_.begin();
-  TokenIter range_end = latest_semantic_tokens_.end();
-
-  if ( start_line > 1 || start_column > 1 ) {
-    Token key( start_line, start_column, 1 );
-    range_start = std::lower_bound( latest_semantic_tokens_.begin(),
-                                    latest_semantic_tokens_.end(), key );
   }
 
-  uint last_token_line = latest_semantic_tokens_.back().line_number_;
-  if ( end_line != 0 && end_line <= last_token_line ) {
-    Token key( end_line, end_column, 1 );
-    range_end = std::upper_bound( latest_semantic_tokens_.begin(),
-                                  latest_semantic_tokens_.end(), key );
+  zeroToOne( start_line );
+  zeroToOne( start_column );
+  zeroToOne( end_column );
+  if ( end_line == 0 ) {
+    // In this case we should tokenize till the end.
+    // We are just setting maximum possible line number, clang supports this.
+    end_line = static_cast< uint >( -1 );
   }
 
-  if ( range_start == latest_semantic_tokens_.begin() &&
-       range_end == latest_semantic_tokens_.end() ) {
-    return latest_semantic_tokens_;
+  CXFile file = GetFile();
+  CXSourceLocation start = GetLocation( file, start_line, start_column );
+  CXSourceLocation end = GetLocation( file, end_line, end_column );
+  CXSourceRange range = clang_getRange( start, end );
+
+  CXToken* tokens = 0;
+  uint num_tokens = 0;
+  clang_tokenize( clang_translation_unit_, range, &tokens, &num_tokens );
+
+  boost::scoped_array< CXCursor > cursors( new CXCursor[ num_tokens ] );
+  clang_annotateTokens( clang_translation_unit_, tokens, num_tokens,
+                        cursors.get() );
+
+  std::vector< Token > semantic_tokens;
+  for ( uint i = 0; i < num_tokens; ++i ) {
+    if ( clang_getTokenKind( tokens[ i ] ) != CXToken_Identifier ) {
+      continue;
+    }
+    CXSourceRange tokenRange = clang_getTokenExtent( clang_translation_unit_,
+                                                     tokens[ i ] );
+    Token token( tokenRange, cursors[ i ] );
+    if ( token.kind_ != Token::UNSUPPORTED ) {
+      semantic_tokens.push_back( token );
+    }
   }
-  return std::vector< Token >( range_start, range_end );
+
+  clang_disposeTokens( clang_translation_unit_, tokens, num_tokens );
+  return semantic_tokens;
 }
 
+
+CXFile TranslationUnit::GetFile() {
+  // ASSUMES A LOCK IS ALREADY HELD ON clang_access_mutex_!
+  // and clang_translation_unit_ is valid!
+  return clang_getFile( clang_translation_unit_, filename_.c_str() );
+}
+
+CXSourceLocation TranslationUnit::GetLocation(
+  CXFile file, int line, int column ) {
+
+  // ASSUMES A LOCK IS ALREADY HELD ON clang_access_mutex_!
+  // and clang_translation_unit_ is valid!
+  return clang_getLocation( clang_translation_unit_, file, line, column );
+}
+
+CXSourceLocation TranslationUnit::GetLocation( int line, int column ) {
+  // ASSUMES A LOCK IS ALREADY HELD ON clang_access_mutex_!
+  // and clang_translation_unit_ is valid!
+  return clang_getLocation( clang_translation_unit_, GetFile(), line, column );
+}
 
 CXCursor TranslationUnit::GetCursor( int line, int column ) {
   // ASSUMES A LOCK IS ALREADY HELD ON clang_access_mutex_!
   if ( !clang_translation_unit_ )
     return clang_getNullCursor();
 
-  CXFile file = clang_getFile( clang_translation_unit_, filename_.c_str() );
-  CXSourceLocation source_location = clang_getLocation(
-                                       clang_translation_unit_,
-                                       file,
-                                       line,
-                                       column );
+  CXSourceLocation source_location = GetLocation(line, column);
 
   return clang_getCursor( clang_translation_unit_, source_location );
 }

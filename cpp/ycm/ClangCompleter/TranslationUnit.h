@@ -117,7 +117,11 @@ private:
 
   void UpdateLatestDiagnostics();
 
-  void UpdateLatestSemanticTokens();
+  CXFile GetFile();
+
+  CXSourceLocation GetLocation( CXFile file, int line, int column );
+
+  CXSourceLocation GetLocation( int line, int column );
 
   CXCursor GetCursor( int line, int column );
 
@@ -129,9 +133,6 @@ private:
 
   boost::mutex diagnostics_mutex_;
   std::vector< Diagnostic > latest_diagnostics_;
-
-  boost::mutex semantic_tokens_mutex_;
-  std::vector< Token > latest_semantic_tokens_;
 
   mutable boost::mutex clang_access_mutex_;
   CXTranslationUnit clang_translation_unit_;

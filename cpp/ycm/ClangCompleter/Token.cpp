@@ -97,14 +97,6 @@ Token::Token()
   : kind_( UNSUPPORTED ) {
 }
 
-Token::Token( uint line, uint column, uint offset )
-  : kind_( UNSUPPORTED )
-  , line_number_( line )
-  , column_number_( column )
-  , offset_( offset ) {
-
-}
-
 Token::Token( const CXSourceRange& tokenRange, const CXCursor& cursor ) {
 
   kind_ = CXCursorToTokenKind( cursor );
@@ -142,15 +134,6 @@ bool Token::operator== ( const Token& other ) const {
          line_number_ == other.line_number_ &&
          column_number_ == other.column_number_ &&
          offset_ == other.offset_;
-}
-
-// This function checks if the given token is upper or more left
-// then the given one. Intersecting tokens considered equal.
-bool Token::operator< ( const Token& other ) const {
-  if ( line_number_ != other.line_number_ ) {
-    return line_number_ < other.line_number_;
-  }
-  return column_number_ + offset_ - 1 < other.column_number_;
 }
 
 } // YouCompleteMe
