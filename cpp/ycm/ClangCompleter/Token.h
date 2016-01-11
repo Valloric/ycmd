@@ -46,13 +46,9 @@ struct Token {
 
   Token();
 
-  Token( uint line, uint column, uint offset );
-
   Token( const CXSourceRange& tokenRange, const CXCursor& cursor );
 
   bool operator== ( const Token& other ) const;
-
-  bool operator< (const Token& other ) const;
 
   Kind kind_;
 
