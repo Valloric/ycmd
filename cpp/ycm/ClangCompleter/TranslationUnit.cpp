@@ -511,19 +511,25 @@ std::vector< Token > TranslationUnit::GetSemanticTokens(
     return std::vector< Token >();
   }
 
-  zeroToOne( start_line );
-  zeroToOne( start_column );
-  zeroToOne( end_column );
-  if ( end_line == 0 ) {
-    // In this case we should tokenize till the end.
-    // We are just setting maximum possible line number, clang supports this.
-    end_line = static_cast< uint >( -1 );
-  }
+  CXSourceRange range;
+  if ( start_line == 0 && end_line == 0 ) {
+    range = clang_getCursorExtent(
+              clang_getTranslationUnitCursor( clang_translation_unit_ ) );
+  } else {
+    zeroToOne( start_line );
+    zeroToOne( start_column );
+    zeroToOne( end_column );
+    if ( end_line == 0 ) {
+      // In this case we should tokenize till the end.
+      // We are just setting maximum possible line number, clang supports this.
+      end_line = static_cast< uint >( -1 );
+    }
 
-  CXFile file = GetFile();
-  CXSourceLocation start = GetLocation( file, start_line, start_column );
-  CXSourceLocation end = GetLocation( file, end_line, end_column );
-  CXSourceRange range = clang_getRange( start, end );
+    CXFile file = GetFile();
+    CXSourceLocation start = GetLocation( file, start_line, start_column );
+    CXSourceLocation end = GetLocation( file, end_line, end_column );
+    range = clang_getRange( start, end );
+  }
 
   CXToken* tokens = 0;
   uint num_tokens = 0;
