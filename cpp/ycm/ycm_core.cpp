@@ -201,10 +201,10 @@ BOOST_PYTHON_MODULE(ycm_core)
     .export_values();
 
   class_< Token >( "Token" )
-    .def_readonly( "kind_", &Token::kind_ )
-    .def_readonly( "line_number_", &Token::line_number_ )
-    .def_readonly( "column_number_", &Token::column_number_ )
-    .def_readonly( "offset_", &Token::offset_ );
+    .def_readonly( "kind", &Token::kind_ )
+    .def_readonly( "line_number", &Token::line_number_ )
+    .def_readonly( "column_number", &Token::column_number_ )
+    .def_readonly( "offset", &Token::offset_ );
 
   class_< std::vector< Token > >( "TokenVector" )
     .def( vector_indexing_suite< std::vector< Token > >() );

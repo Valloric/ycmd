@@ -1,6 +1,6 @@
-// Copyright (C) 2011, 2012  Google Inc.
+// Copyright (C) 2016 Davit Samvelyan
 //
-// This file is part of YouCompleteMe.
+// This file is part of ycmd.
 //
 // YouCompleteMe is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -26,6 +26,7 @@
 
 namespace YouCompleteMe {
 
+/// Represents single semantic token.
 struct Token {
 
   enum Kind {

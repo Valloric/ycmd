@@ -22,8 +22,6 @@
 #include "ClangUtils.h"
 #include "ClangHelpers.h"
 
-#include <algorithm>
-
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_array.hpp>
 #include <boost/type_traits/remove_pointer.hpp>
@@ -520,7 +518,7 @@ std::vector< Token > TranslationUnit::GetSemanticTokens(
   uint end_line,
   uint end_column ) {
 
-  unique_lock< mutex > lock1( clang_access_mutex_ );
+  unique_lock< mutex > lock( clang_access_mutex_ );
   if ( !clang_translation_unit_ ) {
     return std::vector< Token >();
   }
@@ -534,12 +532,14 @@ std::vector< Token > TranslationUnit::GetSemanticTokens(
     end_line = static_cast< uint >( -1 );
   }
 
-  CXFile file = GetFile();
-  CXSourceLocation start = GetLocation( file, start_line, start_column );
-  CXSourceLocation end = GetLocation( file, end_line, end_column );
+  CXFile file = clang_getFile( clang_translation_unit_, filename_.c_str() );
+  CXSourceLocation start = clang_getLocation( clang_translation_unit_, file,
+                                              start_line, start_column );
+  CXSourceLocation end = clang_getLocation( clang_translation_unit_, file,
+                                            end_line, end_column );
   CXSourceRange range = clang_getRange( start, end );
 
-  CXToken* tokens = 0;
+  CXToken* tokens = NULL;
   uint num_tokens = 0;
   clang_tokenize( clang_translation_unit_, range, &tokens, &num_tokens );
 
@@ -549,6 +549,9 @@ std::vector< Token > TranslationUnit::GetSemanticTokens(
 
   std::vector< Token > semantic_tokens;
   for ( uint i = 0; i < num_tokens; ++i ) {
+    // Syntax highlighting does a great job with language keywords,
+    // literals, comments... etc.
+    // We only need to extract identifiers.
     if ( clang_getTokenKind( tokens[ i ] ) != CXToken_Identifier ) {
       continue;
     }
@@ -564,33 +567,17 @@ std::vector< Token > TranslationUnit::GetSemanticTokens(
   return semantic_tokens;
 }
 
-
-CXFile TranslationUnit::GetFile() {
-  // ASSUMES A LOCK IS ALREADY HELD ON clang_access_mutex_!
-  // and clang_translation_unit_ is valid!
-  return clang_getFile( clang_translation_unit_, filename_.c_str() );
-}
-
-CXSourceLocation TranslationUnit::GetLocation(
-  CXFile file, int line, int column ) {
-
-  // ASSUMES A LOCK IS ALREADY HELD ON clang_access_mutex_!
-  // and clang_translation_unit_ is valid!
-  return clang_getLocation( clang_translation_unit_, file, line, column );
-}
-
-CXSourceLocation TranslationUnit::GetLocation( int line, int column ) {
-  // ASSUMES A LOCK IS ALREADY HELD ON clang_access_mutex_!
-  // and clang_translation_unit_ is valid!
-  return clang_getLocation( clang_translation_unit_, GetFile(), line, column );
-}
-
 CXCursor TranslationUnit::GetCursor( int line, int column ) {
   // ASSUMES A LOCK IS ALREADY HELD ON clang_access_mutex_!
   if ( !clang_translation_unit_ )
     return clang_getNullCursor();
 
-  CXSourceLocation source_location = GetLocation(line, column);
+  CXFile file = clang_getFile( clang_translation_unit_, filename_.c_str() );
+  CXSourceLocation source_location = clang_getLocation(
+                                       clang_translation_unit_,
+                                       file,
+                                       line,
+                                       column );
 
   return clang_getCursor( clang_translation_unit_, source_location );
 }

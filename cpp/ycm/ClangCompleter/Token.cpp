@@ -1,6 +1,6 @@
-// Copyright (C) 2011, 2012  Google Inc.
+// Copyright (C) 2016 Davit Samvelyan
 //
-// This file is part of YouCompleteMe.
+// This file is part of ycmd.
 //
 // YouCompleteMe is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,6 +23,9 @@ namespace YouCompleteMe {
 
 namespace {
 
+// This is a recursive function.
+// Recursive call is made for a reference cursors, to find out what kind of
+// cursors they are referencing, therefore recursion level should not exceed 2.
 Token::Kind CXCursorToTokenKind( const CXCursor& cursor ) {
   CXCursorKind kind = clang_getCursorKind( cursor );
   switch (kind) {
@@ -104,21 +107,19 @@ Token::Token( const CXSourceRange& tokenRange, const CXCursor& cursor ) {
     return;
   }
 
-  CXFile unused_file;
-  uint unused_offset;
   clang_getExpansionLocation( clang_getRangeStart( tokenRange ),
-                              &unused_file,
+                              0,
                               &line_number_,
                               &column_number_,
-                              &unused_offset );
+                              0 );
 
   uint end_line;
   uint end_column;
   clang_getExpansionLocation( clang_getRangeEnd( tokenRange ),
-                              &unused_file,
+                              0,
                               &end_line,
                               &end_column,
-                              &unused_offset );
+                              0 );
 
   // There shouldn't exist any multiline Token, except for multiline strings,
   // which is a job for syntax highlighter, but better be safe then sorry.

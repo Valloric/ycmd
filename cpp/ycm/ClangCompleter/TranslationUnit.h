@@ -117,12 +117,6 @@ private:
 
   void UpdateLatestDiagnostics();
 
-  CXFile GetFile();
-
-  CXSourceLocation GetLocation( CXFile file, int line, int column );
-
-  CXSourceLocation GetLocation( int line, int column );
-
   CXCursor GetCursor( int line, int column );
 
   /////////////////////////////

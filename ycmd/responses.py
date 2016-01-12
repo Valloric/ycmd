@@ -206,6 +206,15 @@ def BuildDiagnosticData( diagnostic ):
   }
 
 
+def BuildTokenData( token ):
+  return {
+    'kind': token.kind.name,
+    'line_number': token.line_number,
+    'column_number': token.column_number,
+    'offset': token.offset,
+  }
+
+
 def BuildFixItResponse( fixits ):
   """Build a response from a list of FixIt (aka Refactor) objects. This response
   can be used to apply arbitrary changes to arbitrary files and is suitable for
