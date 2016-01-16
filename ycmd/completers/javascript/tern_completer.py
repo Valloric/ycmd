@@ -440,8 +440,7 @@ class TernCompleter( Completer ):
 
 
   def _ServerIsRunning( self ):
-    return ( self._server_handle is not None and
-             self._server_handle.poll() is None )
+    return utils.ProcessIsRunning()
 
 
   def _GetType( self, request_data ):
