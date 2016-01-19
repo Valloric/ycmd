@@ -29,6 +29,7 @@ import requests
 import urlparse
 import logging
 import solutiondetection
+import threading
 
 SERVER_NOT_FOUND_MSG = ( 'OmniSharp server binary not found at {0}. ' +
                          'Did you compile it? You can do so by running ' +
@@ -231,8 +232,7 @@ class CsharpCompleter( Completer ):
     # automatically start one is set and no server process is already running.
     if ( self.user_options[ 'auto_start_csharp_server' ]
          and not solutioncompleter.ServerIsRunning() ):
-      solutioncompleter._StartServer()
-      return
+      return solutioncompleter._StartServer()
 
     # Bail out if the server is unresponsive. We don't start or restart the
     # server in this case because current one may still be warming up.
@@ -337,7 +337,8 @@ class CsharpSolutionCompleter:
     self._filename_stdout = None
     self._omnisharp_port = None
     self._omnisharp_phandle = None
-    self._desired_omnisharp_port = desired_omnisharp_port;
+    self._desired_omnisharp_port = desired_omnisharp_port
+    self._server_state_lock = threading.RLock()
 
 
   def CodeCheck( self, request_data ):
@@ -350,44 +351,47 @@ class CsharpSolutionCompleter:
 
 
   def _StartServer( self ):
-    """ Start the OmniSharp server """
-    self._logger.info( 'startup' )
+    """ Start the OmniSharp server if not already running. Use a lock to avoid
+    starting the server multiple times for the same solution. """
+    with self._server_state_lock:
+      if self.ServerIsRunning():
+        return
 
-    path_to_solutionfile = self._solution_path
-    self._logger.info(
-        u'Loading solution file {0}'.format( path_to_solutionfile ) )
+      self._logger.info( 'Starting OmniSharp server' )
 
-    self._ChooseOmnisharpPort()
+      path_to_solutionfile = self._solution_path
+      self._logger.info(
+          u'Loading solution file {0}'.format( path_to_solutionfile ) )
 
-    command = [ PATH_TO_OMNISHARP_BINARY,
-                '-p',
-                str( self._omnisharp_port ),
-                '-s',
-                u'{0}'.format( path_to_solutionfile ) ]
+      self._ChooseOmnisharpPort()
 
-    if not utils.OnWindows() and not utils.OnCygwin():
-      command.insert( 0, 'mono' )
+      command = [ PATH_TO_OMNISHARP_BINARY,
+                  '-p',
+                  str( self._omnisharp_port ),
+                  '-s',
+                  u'{0}'.format( path_to_solutionfile ) ]
 
-    if utils.OnCygwin():
-      command.extend( [ '--client-path-mode', 'Cygwin' ] )
+      if not utils.OnWindows() and not utils.OnCygwin():
+        command.insert( 0, 'mono' )
 
-    filename_format = os.path.join( utils.PathToTempDir(),
-                                    u'omnisharp_{port}_{sln}_{std}.log' )
+      if utils.OnCygwin():
+        command.extend( [ '--client-path-mode', 'Cygwin' ] )
 
-    solutionfile = os.path.basename( path_to_solutionfile )
-    self._filename_stdout = filename_format.format(
-        port = self._omnisharp_port, sln = solutionfile, std = 'stdout' )
-    self._filename_stderr = filename_format.format(
-        port = self._omnisharp_port, sln = solutionfile, std = 'stderr' )
+      filename_format = os.path.join( utils.PathToTempDir(),
+                                      u'omnisharp_{port}_{sln}_{std}.log' )
 
-    with open( self._filename_stderr, 'w' ) as fstderr:
-      with open( self._filename_stdout, 'w' ) as fstdout:
-        self._omnisharp_phandle = utils.SafePopen(
-            command, stdout = fstdout, stderr = fstderr )
+      solutionfile = os.path.basename( path_to_solutionfile )
+      self._filename_stdout = filename_format.format(
+          port = self._omnisharp_port, sln = solutionfile, std = 'stdout' )
+      self._filename_stderr = filename_format.format(
+          port = self._omnisharp_port, sln = solutionfile, std = 'stderr' )
 
-    self._solution_path = path_to_solutionfile
+      with open( self._filename_stderr, 'w' ) as fstderr:
+        with open( self._filename_stdout, 'w' ) as fstdout:
+          self._omnisharp_phandle = utils.SafePopen(
+              command, stdout = fstdout, stderr = fstderr )
 
-    self._logger.info( 'Starting OmniSharp server' )
+      self._solution_path = path_to_solutionfile
 
 
   def _StopServer( self ):
