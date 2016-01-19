@@ -90,6 +90,7 @@ class CsharpCompleter( Completer ):
     self._diagnostic_store = None
     self._max_diagnostics_to_display = user_options[
       'max_diagnostics_to_display' ]
+    self._solution_state_lock = threading.RLock()
 
     if not os.path.isfile( PATH_TO_OMNISHARP_BINARY ):
       raise RuntimeError(
@@ -109,12 +110,19 @@ class CsharpCompleter( Completer ):
 
 
   def _GetSolutionCompleter( self, request_data ):
+    """ Get the solution completer or create a new one if it does not already
+    exist. Use a lock to avoid creating the same solution completer multiple
+    times."""
     solution = self._GetSolutionFile( request_data[ "filepath" ] )
-    if not solution in self._completer_per_solution:
-      keep_logfiles = self.user_options[ 'server_keep_logfiles' ]
-      desired_omnisharp_port = self.user_options.get( 'csharp_server_port' )
-      completer = CsharpSolutionCompleter( solution, keep_logfiles, desired_omnisharp_port )
-      self._completer_per_solution[ solution ] = completer
+
+    with self._solution_state_lock:
+      if solution not in self._completer_per_solution:
+        keep_logfiles = self.user_options[ 'server_keep_logfiles' ]
+        desired_omnisharp_port = self.user_options.get( 'csharp_server_port' )
+        completer = CsharpSolutionCompleter( solution,
+                                             keep_logfiles,
+                                             desired_omnisharp_port )
+        self._completer_per_solution[ solution ] = completer
 
     return self._completer_per_solution[ solution ]
 
