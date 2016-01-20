@@ -90,7 +90,7 @@ class CsharpCompleter( Completer ):
     self._diagnostic_store = None
     self._max_diagnostics_to_display = user_options[
       'max_diagnostics_to_display' ]
-    self._solution_state_lock = threading.RLock()
+    self._solution_state_lock = threading.Lock()
 
     if not os.path.isfile( PATH_TO_OMNISHARP_BINARY ):
       raise RuntimeError(
@@ -346,7 +346,7 @@ class CsharpSolutionCompleter:
     self._omnisharp_port = None
     self._omnisharp_phandle = None
     self._desired_omnisharp_port = desired_omnisharp_port
-    self._server_state_lock = threading.RLock()
+    self._server_state_lock = threading.Lock()
 
 
   def CodeCheck( self, request_data ):
