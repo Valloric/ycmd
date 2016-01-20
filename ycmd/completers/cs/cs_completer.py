@@ -403,19 +403,23 @@ class CsharpSolutionCompleter:
 
 
   def _StopServer( self ):
-    """ Stop the OmniSharp server """
-    self._logger.info( 'Stopping OmniSharp server' )
+    """ Stop the OmniSharp server using a lock. """
+    with self._server_state_lock:
+      if not self.ServerIsRunning():
+        return
 
-    self._TryToStopServer()
+      self._logger.info( 'Stopping OmniSharp server' )
 
-    # Kill it if it's still up
-    if self.ServerIsRunning():
-      self._logger.info( 'Killing OmniSharp server' )
-      self._omnisharp_phandle.kill()
+      self._TryToStopServer()
 
-    self._CleanupAfterServerStop()
+      # Kill it if it's still up
+      if self.ServerIsRunning():
+        self._logger.info( 'Killing OmniSharp server' )
+        self._omnisharp_phandle.kill()
 
-    self._logger.info( 'Stopped OmniSharp server' )
+      self._CleanupAfterServerStop()
+
+      self._logger.info( 'Stopped OmniSharp server' )
 
 
   def _TryToStopServer( self ):
@@ -435,16 +439,15 @@ class CsharpSolutionCompleter:
     self._omnisharp_phandle = None
     if ( not self._keep_logfiles ):
       if self._filename_stdout:
-        os.unlink( self._filename_stdout );
+        os.unlink( self._filename_stdout )
       if self._filename_stderr:
-        os.unlink( self._filename_stderr );
+        os.unlink( self._filename_stderr )
 
 
-  def _RestartServer ( self ):
+  def _RestartServer( self ):
     """ Restarts the OmniSharp server """
-    if self.ServerIsRunning():
-      self._StopServer()
-    return self._StartServer()
+    self._StopServer()
+    self._StartServer()
 
 
   def _ReloadSolution( self ):
