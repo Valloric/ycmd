@@ -240,7 +240,8 @@ class CsharpCompleter( Completer ):
     # automatically start one is set and no server process is already running.
     if ( self.user_options[ 'auto_start_csharp_server' ]
          and not solutioncompleter.ServerIsRunning() ):
-      return solutioncompleter._StartServer()
+      solutioncompleter._StartServer()
+      return
 
     # Bail out if the server is unresponsive. We don't start or restart the
     # server in this case because current one may still be warming up.
