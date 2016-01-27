@@ -1,6 +1,6 @@
 // Copyright (C) 2016 Davit Samvelyan
 //
-// This file is part of YouCompleteMe.
+// This file is part of ycmd.
 //
 // YouCompleteMe is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,6 +23,9 @@ namespace YouCompleteMe {
 
 namespace {
 
+// This is a recursive function.
+// Recursive call is made for a reference cursors, to find out what kind of
+// cursors they are referencing, therefore recursion level should not exceed 2.
 Token::Kind CXCursorToTokenKind( const CXCursor& cursor ) {
   CXCursorKind kind = clang_getCursorKind( cursor );
   switch (kind) {

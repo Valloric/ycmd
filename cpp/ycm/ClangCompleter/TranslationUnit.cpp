@@ -22,8 +22,6 @@
 #include "ClangUtils.h"
 #include "ClangHelpers.h"
 
-#include <algorithm>
-
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_array.hpp>
 #include <boost/type_traits/remove_pointer.hpp>
@@ -519,7 +517,7 @@ std::vector< Token > TranslationUnit::GetSemanticTokens(
   uint end_line,
   uint end_column ) {
 
-  unique_lock< mutex > lock1( clang_access_mutex_ );
+  unique_lock< mutex > lock( clang_access_mutex_ );
   if ( !clang_translation_unit_ ) {
     return std::vector< Token >();
   }
@@ -540,7 +538,7 @@ std::vector< Token > TranslationUnit::GetSemanticTokens(
                                             end_line, end_column );
   CXSourceRange range = clang_getRange( start, end );
 
-  CXToken* tokens = 0;
+  CXToken* tokens = NULL;
   uint num_tokens = 0;
   clang_tokenize( clang_translation_unit_, range, &tokens, &num_tokens );
 

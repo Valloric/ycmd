@@ -203,13 +203,11 @@ def BuildDiagnosticData( diagnostic ):
 
 def BuildTokenData( token ):
 
-  kind = ( token.kind_.name if hasattr( token.kind_, 'name' )
-           else token.kind_ )
   return {
-    'kind': kind,
-    'line_number': token.line_number_,
-    'column_number': token.column_number_,
-    'offset': token.offset_,
+    'kind': token.kind.name,
+    'line_number': token.line_number,
+    'column_number': token.column_number,
+    'offset': token.offset,
   }
 
 

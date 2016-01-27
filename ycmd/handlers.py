@@ -135,7 +135,6 @@ def GetSemanticTokens():
   return _JsonResponse( completer.GetSemanticTokens( request_data ) )
 
 
-
 @app.get( '/healthy' )
 def GetHealthy():
   _logger.info( 'Received health request' )
