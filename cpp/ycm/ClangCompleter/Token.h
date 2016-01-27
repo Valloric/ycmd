@@ -1,4 +1,4 @@
-// Copyright (C) 2011, 2012  Google Inc.
+// Copyright (C) 2016 Davit Samvelyan
 //
 // This file is part of YouCompleteMe.
 //
