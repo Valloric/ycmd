@@ -27,6 +27,11 @@ import httplib
 
 class Python_GetCompletions_test( Python_Handlers_test ):
 
+  def setUp( self ):
+    super( Python_GetCompletions_test, self ).setUp()
+    self.WaitUntilJediHTTPServerReady()
+
+
   def _RunTest( self, test ):
     """
     Method to run a simple completion test and verify the result
@@ -50,7 +55,6 @@ class Python_GetCompletions_test( Python_Handlers_test ):
                                          'event_name': 'FileReadyToParse',
                                          'contents': contents,
                                          } ) )
-
 
     # We ignore errors here and we check the response code ourself.
     # This is to allow testing of requests returning errors.

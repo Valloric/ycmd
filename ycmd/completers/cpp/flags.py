@@ -25,8 +25,8 @@ from ycmd import extra_conf_store
 from ycmd.utils import ToUtf8IfNeeded, OnMac, OnWindows
 from ycmd.responses import NoExtraConfDetected
 
-INCLUDE_FLAGS = [ '-isystem', '-I', '-iquote', '--sysroot=', '-isysroot',
-                  '-include', '-iframework', '-F', '-imacros' ]
+INCLUDE_FLAGS = [ '-isystem', '-I', '-iquote', '-isysroot', '--sysroot',
+                  '-gcc-toolchain', '-include', '-iframework', '-F', '-imacros' ]
 
 # We need to remove --fcolor-diagnostics because it will cause shell escape
 # sequences to show up in editors, which is bad. See Valloric/YouCompleteMe#1421
@@ -229,7 +229,7 @@ def _CompilerToLanguageFlag( flags ):
   language = ( 'c++' if CPP_COMPILER_REGEX.search( flags[ 0 ] ) else
                'c' )
 
-  return [ '-x', language ] + flags[ 1: ]
+  return flags[ :1 ] + [ '-x', language ] + flags[ 1: ]
 
 
 def _RemoveUnusedFlags( flags, filename ):
@@ -241,6 +241,13 @@ def _RemoveUnusedFlags( flags, filename ):
   dirs."""
 
   new_flags = []
+
+  # When flags come from the compile_commands.json file, the first flag is
+  # usually the path to the compiler that should be invoked. Directly move it to
+  # the new_flags list so it doesn't get stripped of in the loop below.
+  if not flags[ 0 ].startswith( '-' ):
+    new_flags = flags[ :1 ]
+    flags = flags[ 1: ]
 
   skip_next = False
   previous_flag_is_include = False
@@ -300,6 +307,6 @@ def _ExtraClangFlags():
 def _SpecialClangIncludes():
   libclang_dir = os.path.dirname( ycm_core.__file__ )
   path_to_includes = os.path.join( libclang_dir, 'clang_includes' )
-  return [ '-isystem', path_to_includes ]
+  return [ '-resource-dir=' + path_to_includes ]
 
 

@@ -23,6 +23,8 @@ from nose.tools import eq_
 from hamcrest import assert_that, has_items
 from .. import handlers
 from .handlers_test import Handlers_test
+from ycmd.tests.test_utils import DummyCompleter
+from mock import patch
 
 
 class GetCompletions_test( Handlers_test ):
@@ -93,15 +95,18 @@ class GetCompletions_test( Handlers_test ):
     )
 
 
-  def ForceSemantic_Works_test( self ):
-    completion_data = self._BuildRequest( filetype = 'python',
-                                          force_semantic = True )
+  @patch( 'ycmd.tests.test_utils.DummyCompleter.CandidatesList',
+          return_value = [ 'foo', 'bar', 'qux' ] )
+  def ForceSemantic_Works_test( self, *args ):
+    with self.PatchCompleter( DummyCompleter, 'dummy_filetype' ):
+      completion_data = self._BuildRequest( filetype = 'dummy_filetype',
+                                            force_semantic = True )
 
-    results = self._app.post_json( '/completions',
-                                   completion_data ).json[ 'completions' ]
-    assert_that( results, has_items( self._CompletionEntryMatcher( 'abs' ),
-                                     self._CompletionEntryMatcher( 'open' ),
-                                     self._CompletionEntryMatcher( 'bool' ) ) )
+      results = self._app.post_json( '/completions',
+                                     completion_data ).json[ 'completions' ]
+      assert_that( results, has_items( self._CompletionEntryMatcher( 'foo' ),
+                                       self._CompletionEntryMatcher( 'bar' ),
+                                       self._CompletionEntryMatcher( 'qux' ) ) )
 
 
   def IdentifierCompleter_SyntaxKeywordsAdded_test( self ):
@@ -145,21 +150,39 @@ class GetCompletions_test( Handlers_test ):
 
 
   def UltiSnipsCompleter_UnusedWhenOffWithOption_test( self ):
-    self._ChangeSpecificOptions( { 'use_ultisnips_completer': False } )
-    self._app = TestApp( handlers.app )
+    with self.UserOption( 'use_ultisnips_completer', False ):
+      self._app = TestApp( handlers.app )
 
-    event_data = self._BuildRequest(
-      event_name = 'BufferVisit',
-      ultisnips_snippets = [
-          {'trigger': 'foo', 'description': 'bar'},
-          {'trigger': 'zoo', 'description': 'goo'},
-      ] )
+      event_data = self._BuildRequest(
+        event_name = 'BufferVisit',
+        ultisnips_snippets = [
+            {'trigger': 'foo', 'description': 'bar'},
+            {'trigger': 'zoo', 'description': 'goo'},
+        ] )
 
-    self._app.post_json( '/event_notification', event_data )
+      self._app.post_json( '/event_notification', event_data )
 
-    completion_data = self._BuildRequest( contents = 'oo ',
-                                          column_num = 3 )
+      completion_data = self._BuildRequest( contents = 'oo ',
+                                            column_num = 3 )
 
-    eq_( [],
-         self._app.post_json( '/completions',
-                              completion_data ).json[ 'completions' ] )
+      eq_( [],
+           self._app.post_json( '/completions',
+                                completion_data ).json[ 'completions' ] )
+
+
+  @patch( 'ycmd.tests.test_utils.DummyCompleter.CandidatesList',
+          return_value = [ 'some_candidate' ] )
+  def SemanticCompleter_WorksWhenTriggerIsIdentifier_test( self, *args ):
+    with self.UserOption( 'semantic_triggers',
+                          { 'dummy_filetype': [ '_' ] } ):
+      with self.PatchCompleter( DummyCompleter, 'dummy_filetype' ):
+        completion_data = self._BuildRequest( filetype = 'dummy_filetype',
+                                              contents = 'some_can',
+                                              column_num = 9 )
+
+        results = self._app.post_json( '/completions',
+                                       completion_data ).json[ 'completions' ]
+        assert_that(
+          results,
+          has_items( self._CompletionEntryMatcher( 'some_candidate' ) )
+        )

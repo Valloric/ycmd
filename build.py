@@ -4,6 +4,7 @@ import os
 import subprocess
 import os.path as p
 import sys
+import shlex
 
 major, minor = sys.version_info[ 0 : 2 ]
 if major != 2 or minor < 6:
@@ -158,11 +159,11 @@ def CustomPythonCmakeArgs():
 def GetGenerator( args ):
   if OnWindows():
     if args.msvc == 14:
-      generator = 'Visual Studio 14 2015'
+      generator = 'Visual Studio 14'
     elif args.msvc == 12:
-      generator = 'Visual Studio 12 2013'
+      generator = 'Visual Studio 12'
     else:
-      generator = 'Visual Studio 11 2012'
+      generator = 'Visual Studio 11'
 
     if ( not args.arch and platform.architecture()[ 0 ] == '64bit'
          or args.arch == 64 ):
@@ -184,6 +185,8 @@ def ParseArguments():
                        help = 'Build C# semantic completion engine.' )
   parser.add_argument( '--gocode-completer', action = 'store_true',
                        help = 'Build Go semantic completion engine.' )
+  parser.add_argument( '--racer-completer', action = 'store_true',
+                       help = 'Build rust semantic completion engine.' )
   parser.add_argument( '--system-boost', action = 'store_true',
                        help = 'Use the system boost instead of bundled one. '
                        'NOT RECOMMENDED OR SUPPORTED!')
@@ -217,7 +220,8 @@ def GetCmakeArgs( parsed_args ):
     cmake_args.append( '-DUSE_SYSTEM_BOOST=ON' )
 
   extra_cmake_args = os.environ.get( 'EXTRA_CMAKE_ARGS', '' )
-  cmake_args.extend( extra_cmake_args.split() )
+  # We use shlex split to properly parse quoted CMake arguments.
+  cmake_args.extend( shlex.split( extra_cmake_args ) )
   return cmake_args
 
 
@@ -283,6 +287,17 @@ def BuildGoCode():
   subprocess.check_call( [ 'go', 'build' ] )
 
 
+def BuildRacerd():
+  """
+  Build racerd. This requires a reasonably new version of rustc/cargo.
+  """
+  if not FindExecutable( 'cargo' ):
+    sys.exit( 'cargo is required for the rust completer' )
+
+  os.chdir( p.join( DIR_OF_THIRD_PARTY, 'racerd' ) )
+  subprocess.check_call( [ 'cargo', 'build', '--release' ] )
+
+
 def SetUpTern():
   paths = {}
   for exe in [ 'node', 'npm' ]:
@@ -292,8 +307,37 @@ def SetUpTern():
     else:
       paths[ exe ] = path
 
-  os.chdir( p.join( DIR_OF_THIS_SCRIPT, 'third_party', 'tern' ) )
+  # We install Tern into a runtime directory. This allows us to control
+  # precisely the version (and/or git commit) that is used by ycmd.  We use a
+  # separate runtime directory rather than a submodule checkout directory
+  # because we want to allow users to install third party plugins to
+  # node_modules of the Tern runtime.  We also want to be able to install our
+  # own plugins to improve the user experience for all users.
+  #
+  # This is not possible if we use a git submodle for Tern and simply run 'npm
+  # install' within the submodule source directory, as subsequent 'npm install
+  # tern-my-plugin' will (heinously) install another (arbitrary) version of Tern
+  # within the Tern source tree (e.g. third_party/tern/node_modules/tern. The
+  # reason for this is that the plugin that gets installed has "tern" as a
+  # dependency, and npm isn't smart enough to know that you're installing
+  # *within* the Tern distribution. Or it isn't intended to work that way.
+  #
+  # So instead, we have a package.json within our "Tern runtime" directory
+  # (third_party/tern_runtime) that defines the packages that we require,
+  # including Tern and any plugins which we require as standard.
+  TERN_RUNTIME_DIR = os.path.join( DIR_OF_THIS_SCRIPT,
+                                   'third_party',
+                                   'tern_runtime' )
+  try:
+    os.makedirs( TERN_RUNTIME_DIR )
+  except Exception:
+    # os.makedirs throws if the dir already exists, it also throws if the
+    # permissions prevent creating the directory. There's no way to know the
+    # difference, so we just let the call to os.chdir below throw if this fails
+    # to create the target directory.
+    pass
 
+  os.chdir( TERN_RUNTIME_DIR )
   subprocess.check_call( [ paths[ 'npm' ], 'install', '--production' ] )
 
 
@@ -307,6 +351,8 @@ def Main():
     BuildGoCode()
   if args.tern_completer:
     SetUpTern()
+  if args.racer_completer:
+    BuildRacerd()
 
 if __name__ == '__main__':
   Main()
