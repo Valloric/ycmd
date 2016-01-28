@@ -266,7 +266,7 @@ def BuildYcmdLibs( args ):
       RunYcmdTests( build_dir )
   finally:
     os.chdir( DIR_OF_THIS_SCRIPT )
-    rmtree( build_dir )
+    rmtree( build_dir, True )
 
 
 def BuildOmniSharp():
