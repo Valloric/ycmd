@@ -539,6 +539,9 @@ class CsharpSolutionCompleter:
       return self._GetResponse( '/checkalivestatus', timeout = .2 )
     except requests.exceptions.RequestException:
       return False
+    except ValueError:
+      return False
+
 
 
   def ServerIsReady( self ):
@@ -550,6 +553,9 @@ class CsharpSolutionCompleter:
       return self._GetResponse( '/checkreadystatus', timeout = .2 )
     except requests.exceptions.RequestException:
       return False
+    except ValueError:
+      return False
+
 
 
   def _SolutionFile( self ):
