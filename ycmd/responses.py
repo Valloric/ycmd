@@ -17,6 +17,9 @@
 # You should have received a copy of the GNU General Public License
 # along with YouCompleteMe.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import ( absolute_import, division,
+                         print_function, unicode_literals )
+from builtins import *  # flake8: noqa
 import os
 
 YCM_EXTRA_CONF_FILENAME = '.ycm_extra_conf.py'
@@ -135,7 +138,7 @@ def BuildRangeData( source_range ):
   }
 
 
-class Diagnostic:
+class Diagnostic( object ):
   def __init__ ( self, ranges, location, location_extent, text, kind ):
     self.ranges_ = ranges
     self.location_ = location
@@ -144,7 +147,7 @@ class Diagnostic:
     self.kind_ = kind
 
 
-class FixIt:
+class FixIt( object ):
   """A set of replacements (of type FixItChunk) to be applied to fix a single
   diagnostic. This can be used for any type of refactoring command, not just
   quick fixes. The individual chunks may span multiple files."""
@@ -155,7 +158,7 @@ class FixIt:
     self.chunks = chunks
 
 
-class FixItChunk:
+class FixItChunk( object ):
   """An individual replacement within a FixIt (aka Refactor)"""
 
   def __init__ ( self, replacement_text, range ):
@@ -164,7 +167,7 @@ class FixItChunk:
     self.range = range
 
 
-class Range:
+class Range( object ):
   """Source code range relating to a diagnostic or FixIt (aka Refactor)."""
 
   def __init__ ( self, start, end ):
@@ -173,7 +176,7 @@ class Range:
     self.end_ = end
 
 
-class Location:
+class Location( object ):
   """Source code location for a diagnostic or FixIt (aka Refactor)."""
 
   def __init__ ( self, line, column, filename ):
@@ -185,7 +188,6 @@ class Location:
 
 
 def BuildDiagnosticData( diagnostic ):
-
   kind = ( diagnostic.kind_.name if hasattr( diagnostic.kind_, 'name' )
            else diagnostic.kind_ )
 
