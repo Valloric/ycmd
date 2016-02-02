@@ -208,8 +208,7 @@ class GoCodeCompleter( Completer ):
       return responses.BuildGoToResponse( parsed[ 'filename' ],
                                           parsed[ 'line' ],
                                           parsed[ 'column' ] )
-    else:
-      raise RuntimeError( 'Can\'t jump to definition.' )
+    raise RuntimeError( 'Can\'t jump to definition.' )
 
 
 
