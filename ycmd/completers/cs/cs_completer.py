@@ -380,12 +380,11 @@ class CsharpSolutionCompleter:
       self._solution_path = path_to_solutionfile
 
 
-
   def _StopServer( self ):
     """ Stop the OmniSharp server using a lock. """
     with self._server_state_lock:
-      #if not self.ServerIsRunning():
-      #  return
+      if not self.ServerIsRunning():
+        return
 
       self._logger.info( 'Stopping OmniSharp server' )
 
@@ -535,7 +534,6 @@ class CsharpSolutionCompleter:
       request_data[ 'file_data' ][ filepath ][ 'contents' ] )
     parameters[ 'filename' ] = filepath
     return parameters
-
 
 
   def ServerIsExternal( self ):
