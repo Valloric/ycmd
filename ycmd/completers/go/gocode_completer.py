@@ -27,7 +27,7 @@ from ycmd import utils
 from ycmd.completers.completer import Completer
 
 GO_FILETYPES = set( [ 'go' ] )
-BINARY_NOT_FOUND_MESSAGE = ( 'Gocode binary not found. Did you build it? ' +
+BINARY_NOT_FOUND_MESSAGE = ( ' binary not found. Did you build it? ' +
                              'You can do so by running ' +
                              '"./install.py --gocode-completer".' )
 COMPLETION_ERROR_MESSAGE = 'Gocode shell call failed.'
@@ -52,14 +52,20 @@ class GoCodeCompleter( Completer ):
   def __init__( self, user_options ):
     super( GoCodeCompleter, self ).__init__( user_options )
     self._popener = utils.SafePopen # Overridden in test.
-    self._binary = self.FindGoCodeBinary( user_options )
+    self._binary_code = self.FindGoCodeBinary( user_options )
     self._binary_def = self.FindGoDefBinary( user_options )
 
-    if not self._binary:
-      _logger.error( BINARY_NOT_FOUND_MESSAGE )
-      raise RuntimeError( BINARY_NOT_FOUND_MESSAGE )
+    if not self._binary_code:
+      _logger.error( "Gocode" + BINARY_NOT_FOUND_MESSAGE )
+      raise RuntimeError( "Gocode" + BINARY_NOT_FOUND_MESSAGE )
 
-    _logger.info( 'Enabling go completion using %s binary', self._binary )
+    _logger.info( 'Enabling go completion using %s binary', self._binary_code )
+
+    if not self._binary_def:
+      _logger.error( "Godef" + BINARY_NOT_FOUND_MESSAGE )
+      raise RuntimeError( "Godef" + BINARY_NOT_FOUND_MESSAGE )
+
+    _logger.info( 'Enabling go definitions using %s binary', self._binary_def )
 
 
   def SupportedFiletypes( self ):
@@ -178,7 +184,7 @@ class GoCodeCompleter( Completer ):
     """ Execute the GoCode binary with given arguments. Use the contents
     argument to send data to GoCode. Return the standard output. """
     proc = self._popener(
-      [ self._binary ] + list(args), stdin = subprocess.PIPE,
+      [ self._binary_code ] + list(args), stdin = subprocess.PIPE,
       stdout = subprocess.PIPE, stderr = subprocess.PIPE )
     contents = kwargs[ 'contents' ] if 'contents' in kwargs else None
     stdoutdata, stderrdata = proc.communicate( contents )
@@ -192,7 +198,6 @@ class GoCodeCompleter( Completer ):
   def _ExecuteGoDefBinary(self, *args):
     """ Execute the GoDef binary with given arguments. Use the contents
     argument to send data to GoDef. Return the standard output. """
-    _logger.info( "godef GoTo request %s" % self._binary_def )
     proc = self._popener(
       [ self._binary_def ] + list(args), stdin = subprocess.PIPE,
       stdout = subprocess.PIPE, stderr = subprocess.PIPE )
@@ -216,19 +221,23 @@ class GoCodeCompleter( Completer ):
                                request_data[ 'column_num' ] )
       stdout = self._ExecuteGoDefBinary( "-f=%s" % filename, '-json',
                                          "-o=%s" % offset )
-      parsed = json.loads(stdout)
-      if 'filename' in parsed:
-        if 'column' in parsed:
-          return responses.BuildGoToResponse( parsed[ 'filename' ],
-                                              parsed[ 'line' ],
-                                              parsed[ 'column' ] )
-        else:
-          return responses.BuildGoToResponse( parsed[ 'filename' ],
-                                    0, 0 )
-      else:
-        raise RuntimeError( 'Can\'t jump to definition.' )
+      return self._ConstructGoToFromResponse( stdout )
     except Exception:
       raise RuntimeError( 'Can\'t jump to definition.' )
+
+  def _ConstructGoToFromResponse( self, response_str):
+    parsed = json.loads( response_str )
+    if 'filename' in parsed:
+      if 'column' in parsed:
+        return responses.BuildGoToResponse( parsed[ 'filename' ],
+                                            parsed[ 'line' ],
+                                            parsed[ 'column' ] )
+      else:
+        return responses.BuildGoToResponse( parsed[ 'filename' ],
+                                  0, 0 )
+    else:
+      raise RuntimeError( 'Can\'t jump to definition.' )
+
 
 
 
