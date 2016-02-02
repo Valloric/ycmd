@@ -59,13 +59,15 @@ class GoCodeCompleter( Completer ):
       _logger.error( BINARY_NOT_FOUND_MESSAGE.format( 'Gocode' ) )
       raise RuntimeError( BINARY_NOT_FOUND_MESSAGE.format( 'Gocode' ) )
 
-    _logger.info( 'Enabling go completion using %s binary', self._binary_gocode )
+    _logger.info( 'Enabling go completion using %s binary',
+                  self._binary_gocode )
 
     if not self._binary_godef:
       _logger.error( BINARY_NOT_FOUND_MESSAGE.format( 'Godef' ) )
       raise RuntimeError( BINARY_NOT_FOUND_MESSAGE.format( 'Godef' ) )
 
-    _logger.info( 'Enabling go definitions using %s binary', self._binary_godef )
+    _logger.info( 'Enabling go definitions using %s binary',
+                   self._binary_godef )
 
 
   def SupportedFiletypes( self ):
@@ -176,8 +178,9 @@ class GoCodeCompleter( Completer ):
       if binary == self._binary_godef:
         binary_str = "Godef"
 
-      _logger.error( SHELL_ERROR_MESSAGE.format( binary_str ) + " code %i stderr: %s",
-                     proc.returncode, stderrdata)
+      _logger.error( SHELL_ERROR_MESSAGE.format( binary_str ) +
+                     " code %i stderr: %s",
+                     popen_handle.returncode, stderrdata)
       raise RuntimeError( SHELL_ERROR_MESSAGE.format( binary_str )  )
 
     return stdoutdata
@@ -193,7 +196,7 @@ class GoCodeCompleter( Completer ):
           request_data[ 'file_data' ][ filename ][ 'contents' ] )
       offset = _ComputeOffset( contents, request_data[ 'line_num' ],
                                request_data[ 'column_num' ] )
-      stdout = self._ExecuteBinary( self._binary_godef, 
+      stdout = self._ExecuteBinary( self._binary_godef,
                                     "-f=%s" % filename,
                                     '-json',
                                     "-o=%s" % offset )
