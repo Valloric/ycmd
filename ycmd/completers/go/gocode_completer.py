@@ -52,20 +52,20 @@ class GoCodeCompleter( Completer ):
   def __init__( self, user_options ):
     super( GoCodeCompleter, self ).__init__( user_options )
     self._popener = utils.SafePopen # Overridden in test.
-    self._binary_code = self.FindGoCodeBinary( user_options )
-    self._binary_def = self.FindGoDefBinary( user_options )
+    self._binary_gocode = self.FindGoCodeBinary( user_options )
+    self._binary_godef = self.FindGoDefBinary( user_options )
 
-    if not self._binary_code:
+    if not self._binary_gocode:
       _logger.error( "Gocode" + BINARY_NOT_FOUND_MESSAGE )
       raise RuntimeError( "Gocode" + BINARY_NOT_FOUND_MESSAGE )
 
-    _logger.info( 'Enabling go completion using %s binary', self._binary_code )
+    _logger.info( 'Enabling go completion using %s binary', self._binary_gocode )
 
-    if not self._binary_def:
+    if not self._binary_godef:
       _logger.error( "Godef" + BINARY_NOT_FOUND_MESSAGE )
       raise RuntimeError( "Godef" + BINARY_NOT_FOUND_MESSAGE )
 
-    _logger.info( 'Enabling go definitions using %s binary', self._binary_def )
+    _logger.info( 'Enabling go definitions using %s binary', self._binary_godef )
 
 
   def SupportedFiletypes( self ):
@@ -185,12 +185,12 @@ class GoCodeCompleter( Completer ):
   def _ExecuteGoCodeBinary( self, *args, **kwargs ):
     """ Execute the GoCode binary with given arguments. Use the contents
     argument to send data to GoCode. Return the standard output. """
-    proc = self._popener(
-      [ self._binary_code ] + list(args), stdin = subprocess.PIPE,
+    popen_handle = self._popener(
+      [ self._binary_gocode ] + list(args), stdin = subprocess.PIPE,
       stdout = subprocess.PIPE, stderr = subprocess.PIPE )
     contents = kwargs[ 'contents' ] if 'contents' in kwargs else None
-    stdoutdata, stderrdata = proc.communicate( contents )
-    if proc.returncode:
+    stdoutdata, stderrdata = popen_handle.communicate( contents )
+    if popen_handle.returncode:
       _logger.error( COMPLETION_ERROR_MESSAGE + " code %i stderr: %s",
                      proc.returncode, stderrdata)
       raise RuntimeError( COMPLETION_ERROR_MESSAGE )
@@ -201,11 +201,11 @@ class GoCodeCompleter( Completer ):
   def _ExecuteGoDefBinary( self, *args ):
     """ Execute the GoDef binary with given arguments. Use the contents
     argument to send data to GoDef. Return the standard output. """
-    proc = self._popener(
-      [ self._binary_def ] + list(args), stdin = subprocess.PIPE,
+    popen_handle = self._popener(
+      [ self._binary_godef ] + list(args), stdin = subprocess.PIPE,
       stdout = subprocess.PIPE, stderr = subprocess.PIPE )
-    stdoutdata, stderrdata = proc.communicate()
-    if proc.returncode:
+    stdoutdata, stderrdata = popen_handle.communicate()
+    if popen_handle.returncode:
       _logger.error( COMPLETION_ERROR_MESSAGE + " code %i stderr: %s",
                      proc.returncode, stderrdata)
       raise RuntimeError( COMPLETION_ERROR_MESSAGE )
