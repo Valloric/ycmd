@@ -232,14 +232,10 @@ class GoCodeCompleter( Completer ):
 
   def _ConstructGoToFromResponse( self, response_str):
     parsed = json.loads( response_str )
-    if 'filename' in parsed:
-      if 'column' in parsed:
-        return responses.BuildGoToResponse( parsed[ 'filename' ],
-                                            parsed[ 'line' ],
-                                            parsed[ 'column' ] )
-      else:
-        return responses.BuildGoToResponse( parsed[ 'filename' ],
-                                            1, 1 )
+    if 'filename' in parsed and 'column' in parsed:
+      return responses.BuildGoToResponse( parsed[ 'filename' ],
+                                          parsed[ 'line' ],
+                                          parsed[ 'column' ] )
     else:
       raise RuntimeError( 'Can\'t jump to definition.' )
 
