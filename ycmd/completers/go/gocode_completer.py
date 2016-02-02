@@ -27,10 +27,10 @@ from ycmd import utils
 from ycmd.completers.completer import Completer
 
 GO_FILETYPES = set( [ 'go' ] )
-BINARY_NOT_FOUND_MESSAGE = ( ' binary not found. Did you build it? ' +
+BINARY_NOT_FOUND_MESSAGE = ( '{0} binary not found. Did you build it? ' +
                              'You can do so by running ' +
                              '"./install.py --gocode-completer".' )
-COMPLETION_ERROR_MESSAGE = 'Gocode shell call failed.'
+SHELL_ERROR_MESSAGE = '{0} shell call failed.'
 PARSE_ERROR_MESSAGE = 'Gocode returned invalid JSON response.'
 NO_COMPLETIONS_MESSAGE = 'Gocode returned empty JSON response.'
 GOCODE_PANIC_MESSAGE = ( 'Gocode panicked trying to find completions, ' +
@@ -52,18 +52,18 @@ class GoCodeCompleter( Completer ):
   def __init__( self, user_options ):
     super( GoCodeCompleter, self ).__init__( user_options )
     self._popener = utils.SafePopen # Overridden in test.
-    self._binary_gocode = self.FindGoCodeBinary( user_options )
-    self._binary_godef = self.FindGoDefBinary( user_options )
+    self._binary_gocode = self.FindBinary( 'gocode', user_options )
+    self._binary_godef = self.FindBinary( 'godef', user_options )
 
     if not self._binary_gocode:
-      _logger.error( "Gocode" + BINARY_NOT_FOUND_MESSAGE )
-      raise RuntimeError( "Gocode" + BINARY_NOT_FOUND_MESSAGE )
+      _logger.error( BINARY_NOT_FOUND_MESSAGE.format( 'Gocode' ) )
+      raise RuntimeError( BINARY_NOT_FOUND_MESSAGE.format( 'Gocode' ) )
 
     _logger.info( 'Enabling go completion using %s binary', self._binary_gocode )
 
     if not self._binary_godef:
-      _logger.error( "Godef" + BINARY_NOT_FOUND_MESSAGE )
-      raise RuntimeError( "Godef" + BINARY_NOT_FOUND_MESSAGE )
+      _logger.error( BINARY_NOT_FOUND_MESSAGE.format( 'Godef' ) )
+      raise RuntimeError( BINARY_NOT_FOUND_MESSAGE.format( 'Godef' ) )
 
     _logger.info( 'Enabling go definitions using %s binary', self._binary_godef )
 
@@ -83,9 +83,10 @@ class GoCodeCompleter( Completer ):
     offset = _ComputeOffset( contents, request_data[ 'line_num' ],
                              request_data[ 'column_num' ] )
 
-    stdoutdata = self._ExecuteGoCodeBinary( '-f=json', 'autocomplete',
-                                            filename, str(offset),
-                                            contents = contents )
+    stdoutdata = self._ExecuteBinary( self._binary_gocode,
+                                      '-f=json', 'autocomplete',
+                                       filename, str(offset),
+                                       contents = contents )
 
     try:
       resultdata = json.loads( stdoutdata )
@@ -115,52 +116,32 @@ class GoCodeCompleter( Completer ):
     }
 
 
-  def FindGoCodeBinary( self, user_options ):
-    """ Find the path to the gocode binary.
+  def FindBinary( self, binary, user_options ):
+    """ Find the path to the gocode/godef binary.
 
-    If 'gocode_binary_path' in the options is blank,
-    use the version installed with YCM, if it exists,
-    then the one on the path, if not.
+    If 'gocode_binary_path' or 'godef_binary_path'
+    in the options is blank, use the version installed
+    with YCM, if it exists, then the one on the path, if not.
 
-    If the 'gocode_binary_path' is specified, use it
-    as an absolute path.
-
-    If the resolved binary exists, return the path,
-    otherwise return None. """
-    if user_options.get( 'gocode_binary_path' ):
-      # The user has explicitly specified a path.
-      if os.path.isfile( user_options[ 'gocode_binary_path' ] ):
-        return user_options[ 'gocode_binary_path' ]
-      else:
-        return None
-    # Try to use the bundled binary or one on the path.
-    if os.path.isfile( PATH_TO_GOCODE_BINARY ):
-      return PATH_TO_GOCODE_BINARY
-    return utils.PathToFirstExistingExecutable( [ 'gocode' ] )
-
-
-  def FindGoDefBinary( self, user_options ):
-    """ Find the path to the godef binary.
-
-    If 'godef_binary_path' in the options is blank,
-    use the version installed with YCM, if it exists,
-    then the one on the path, if not.
-
-    If the 'godef_binary_path' is specified, use it
-    as an absolute path.
+    If the 'gocode_binary_path' or 'godef_binary_path' is
+    specified, use it as an absolute path.
 
     If the resolved binary exists, return the path,
     otherwise return None. """
-    if user_options.get( 'godef_binary_path' ):
+    if user_options.get( '%s_binary_path' % binary ):
       # The user has explicitly specified a path.
-      if os.path.isfile( user_options[ 'godef_binary_path' ] ):
-        return user_options[ 'godef_binary_path' ]
+      if os.path.isfile( user_options[ '%s_binary_path' % binary] ):
+        return user_options[ '%s_binary_path' % binary]
       else:
         return None
     # Try to use the bundled binary or one on the path.
-    if os.path.isfile( PATH_TO_GODEF_BINARY ):
-      return PATH_TO_GODEF_BINARY
-    return utils.PathToFirstExistingExecutable( [ 'godef' ] )
+    if binary == 'gocode':
+      if os.path.isfile( PATH_TO_GOCODE_BINARY ):
+        return PATH_TO_GOCODE_BINARY
+    elif binary == 'godef':
+      if os.path.isfile( PATH_TO_GODEF_BINARY ):
+        return PATH_TO_GODEF_BINARY
+    return utils.PathToFirstExistingExecutable( [ binary ] )
 
 
   def OnFileReadyToParse( self, request_data ):
@@ -173,42 +154,31 @@ class GoCodeCompleter( Completer ):
 
   def _StartServer( self ):
     """ Start the GoCode server """
-    self._ExecuteGoCodeBinary()
+    self._ExecuteBinary( self._binary_gocode)
 
 
   def _StopServer( self ):
     """ Stop the GoCode server """
     _logger.info( 'Stopping GoCode server' )
-    self._ExecuteGoCodeBinary( 'close' )
+    self._ExecuteBinary( self._binary_gocode, 'close' )
 
 
-  def _ExecuteGoCodeBinary( self, *args, **kwargs ):
-    """ Execute the GoCode binary with given arguments. Use the contents
+  def _ExecuteBinary( self, binary, *args, **kwargs):
+    """ Execute the GoCode/GoDef binary with given arguments. Use the contents
     argument to send data to GoCode. Return the standard output. """
     popen_handle = self._popener(
-      [ self._binary_gocode ] + list(args), stdin = subprocess.PIPE,
+      [ binary ] + list(args), stdin = subprocess.PIPE,
       stdout = subprocess.PIPE, stderr = subprocess.PIPE )
     contents = kwargs[ 'contents' ] if 'contents' in kwargs else None
     stdoutdata, stderrdata = popen_handle.communicate( contents )
     if popen_handle.returncode:
-      _logger.error( COMPLETION_ERROR_MESSAGE + " code %i stderr: %s",
+      binary_str = "Gocode"
+      if binary == self._binary_godef:
+        binary_str = "Godef"
+
+      _logger.error( SHELL_ERROR_MESSAGE.format( binary_str ) + " code %i stderr: %s",
                      proc.returncode, stderrdata)
-      raise RuntimeError( COMPLETION_ERROR_MESSAGE )
-
-    return stdoutdata
-
-
-  def _ExecuteGoDefBinary( self, *args ):
-    """ Execute the GoDef binary with given arguments. Use the contents
-    argument to send data to GoDef. Return the standard output. """
-    popen_handle = self._popener(
-      [ self._binary_godef ] + list(args), stdin = subprocess.PIPE,
-      stdout = subprocess.PIPE, stderr = subprocess.PIPE )
-    stdoutdata, stderrdata = popen_handle.communicate()
-    if popen_handle.returncode:
-      _logger.error( COMPLETION_ERROR_MESSAGE + " code %i stderr: %s",
-                     proc.returncode, stderrdata)
-      raise RuntimeError( COMPLETION_ERROR_MESSAGE )
+      raise RuntimeError( SHELL_ERROR_MESSAGE.format( binary_str )  )
 
     return stdoutdata
 
@@ -223,8 +193,10 @@ class GoCodeCompleter( Completer ):
           request_data[ 'file_data' ][ filename ][ 'contents' ] )
       offset = _ComputeOffset( contents, request_data[ 'line_num' ],
                                request_data[ 'column_num' ] )
-      stdout = self._ExecuteGoDefBinary( "-f=%s" % filename, '-json',
-                                         "-o=%s" % offset )
+      stdout = self._ExecuteBinary( self._binary_godef, 
+                                    "-f=%s" % filename,
+                                    '-json',
+                                    "-o=%s" % offset )
       return self._ConstructGoToFromResponse( stdout )
     except Exception:
       raise RuntimeError( 'Can\'t jump to definition.' )
