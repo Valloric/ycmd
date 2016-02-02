@@ -113,7 +113,7 @@ class Cs_Handlers_test( Handlers_test ):
                                   filetype = 'cs' )
     result = self._app.post_json( '/run_completer_command', request ).json
 
-    port = int ( result[ "message" ] );
+    port = int ( result[ "message" ] )
     return port
 
 
@@ -126,8 +126,8 @@ class Cs_Handlers_test( Handlers_test ):
 
 
   def _WaitUntilOmniSharpServerReady( self, filepath ):
-    retries = 100;
-    success = False;
+    retries = 100
+    success = False
 
     # If running on Travis CI, keep trying forever. Travis will kill the worker
     # after 10 mins if nothing happens.
