@@ -138,6 +138,7 @@ class GoCodeCompleter( Completer ):
       return PATH_TO_GOCODE_BINARY
     return utils.PathToFirstExistingExecutable( [ 'gocode' ] )
 
+
   def FindGoDefBinary( self, user_options ):
     """ Find the path to the godef binary.
 
@@ -160,6 +161,7 @@ class GoCodeCompleter( Completer ):
     if os.path.isfile( PATH_TO_GODEF_BINARY ):
       return PATH_TO_GODEF_BINARY
     return utils.PathToFirstExistingExecutable( [ 'godef' ] )
+
 
   def OnFileReadyToParse( self, request_data ):
     self._StartServer()
@@ -195,7 +197,8 @@ class GoCodeCompleter( Completer ):
 
     return stdoutdata
 
-  def _ExecuteGoDefBinary(self, *args):
+
+  def _ExecuteGoDefBinary( self, *args ):
     """ Execute the GoDef binary with given arguments. Use the contents
     argument to send data to GoDef. Return the standard output. """
     proc = self._popener(
@@ -208,6 +211,7 @@ class GoCodeCompleter( Completer ):
       raise RuntimeError( COMPLETION_ERROR_MESSAGE )
 
     return stdoutdata
+
 
   def _GoToDefinition( self, request_data ):
     try:
@@ -225,6 +229,7 @@ class GoCodeCompleter( Completer ):
     except Exception:
       raise RuntimeError( 'Can\'t jump to definition.' )
 
+
   def _ConstructGoToFromResponse( self, response_str):
     parsed = json.loads( response_str )
     if 'filename' in parsed:
@@ -234,7 +239,7 @@ class GoCodeCompleter( Completer ):
                                             parsed[ 'column' ] )
       else:
         return responses.BuildGoToResponse( parsed[ 'filename' ],
-                                  0, 0 )
+                                            1, 0 )
     else:
       raise RuntimeError( 'Can\'t jump to definition.' )
 
