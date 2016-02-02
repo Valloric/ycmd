@@ -239,7 +239,7 @@ class GoCodeCompleter( Completer ):
                                             parsed[ 'column' ] )
       else:
         return responses.BuildGoToResponse( parsed[ 'filename' ],
-                                            1, 0 )
+                                            1, 1 )
     else:
       raise RuntimeError( 'Can\'t jump to definition.' )
 
