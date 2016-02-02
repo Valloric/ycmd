@@ -38,11 +38,17 @@ fi
 
 # Need rust available, but travis doesn't give it to you without language: rust
 pushd ${HOME}
-git clone --recursive https://github.com/brson/multirust
-cd multirust
-git reset --hard f3974f2b966476ad656afba311b50a9c23fe6d2e
-./build.sh
-./install.sh --prefix=${HOME}
+# Multirust might already exist if cached; see bottom of travis.yml
+if [ ! -f "$HOME/multirust/blastoff.sh" ]; then
+  git clone --recursive https://github.com/brson/multirust
+  cd multirust
+  git reset --hard f3974f2b966476ad656afba311b50a9c23fe6d2e
+  ./build.sh
+  ./install.sh --prefix=${HOME}
+else
+  cd multirust
+  ./install.sh --prefix=${HOME}
+fi
 popd
 
 multirust update stable

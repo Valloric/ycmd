@@ -5,6 +5,7 @@ import subprocess
 import os.path as p
 import sys
 import shlex
+import distutils.dir_util
 
 major, minor = sys.version_info[ 0 : 2 ]
 if major != 2 or minor < 6:
@@ -172,9 +173,10 @@ def GetGenerator( args ):
     if ( not args.arch and platform.architecture()[ 0 ] == '64bit'
          or args.arch == 64 ):
       generator = generator + ' Win64'
-
     return generator
 
+  if PathToFirstExistingExecutable( ['ninja'] ):
+    return 'Ninja'
   return 'Unix Makefiles'
 
 
@@ -298,8 +300,24 @@ def BuildRacerd():
   if not FindExecutable( 'cargo' ):
     sys.exit( 'cargo is required for the rust completer' )
 
-  os.chdir( p.join( DIR_OF_THIRD_PARTY, 'racerd' ) )
+  # Building the dependencies of racerd takes a while, so for Travis, we copy
+  # the racerd source dir to ~/racerd (outside the repo) and build there. Then
+  # copy back. Having the dep build products outside the repo makes it possible
+  # to cache them (see .travis.yml).
+
+  orig_racerd_dir = p.join( DIR_OF_THIRD_PARTY, 'racerd' )
+  build_racerd_dir = orig_racerd_dir
+  if OnTravisOrAppVeyor():
+    cached_racerd_dir = os.path.expanduser( os.path.join( '~', 'racerd' ) )
+    distutils.dir_util.copy_tree( orig_racerd_dir, cached_racerd_dir )
+    build_racerd_dir = cached_racerd_dir
+
+  os.chdir( build_racerd_dir )
+  print( 'Compiling racerd in: ', build_racerd_dir )
   subprocess.check_call( [ 'cargo', 'build', '--release' ] )
+
+  if OnTravisOrAppVeyor():
+    distutils.dir_util.copy_tree( cached_racerd_dir, orig_racerd_dir )
 
 
 def SetUpTern():
