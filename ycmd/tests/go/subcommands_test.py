@@ -41,7 +41,7 @@ class Go_Subcommands_test( Go_Handlers_test ):
                                    goto_data )
 
     eq_( {
-      'line_num': '3', 'column_num': '6', 'filepath': filepath
+      'line_num': 3, 'column_num': 6, 'filepath': filepath
     }, results.json )
 
 
