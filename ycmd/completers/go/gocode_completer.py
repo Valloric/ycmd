@@ -156,7 +156,7 @@ class GoCodeCompleter( Completer ):
 
   def _StartServer( self ):
     """ Start the GoCode server """
-    self._ExecuteBinary( self._binary_gocode)
+    self._ExecuteBinary( self._binary_gocode )
 
 
   def _StopServer( self ):
@@ -206,7 +206,7 @@ class GoCodeCompleter( Completer ):
       raise RuntimeError( 'Can\'t jump to definition.' )
 
 
-  def _ConstructGoToFromResponse( self, response_str, input_filename):
+  def _ConstructGoToFromResponse( self, response_str, input_filename ):
     parsed = json.loads( response_str )
     if 'filename' in parsed and 'column' in parsed:
       if parsed['filename'] == "-":
