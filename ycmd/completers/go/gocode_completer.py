@@ -197,22 +197,25 @@ class GoCodeCompleter( Completer ):
       offset = _ComputeOffset( contents, request_data[ 'line_num' ],
                                request_data[ 'column_num' ] )
       stdout = self._ExecuteBinary( self._binary_godef,
-                                    "-f=%s" % filename,
+                                    "-i",
                                     '-json',
-                                    "-o=%s" % offset )
-      return self._ConstructGoToFromResponse( stdout )
+                                    "-o=%s" % offset,
+                                    contents = contents )
+      return self._ConstructGoToFromResponse( stdout , filename )
     except Exception:
       raise RuntimeError( 'Can\'t jump to definition.' )
 
 
-  def _ConstructGoToFromResponse( self, response_str):
+  def _ConstructGoToFromResponse( self, response_str, input_filename):
     parsed = json.loads( response_str )
     if 'filename' in parsed and 'column' in parsed:
-      return responses.BuildGoToResponse( parsed[ 'filename' ],
-                                          int(parsed[ 'line' ]),
-                                          int(parsed[ 'column' ]) )
-    raise RuntimeError( 'Can\'t jump to definition.' )
+      if parsed['filename'] == "-":
+        parsed['filename'] = input_filename
 
+      return responses.BuildGoToResponse( parsed[ 'filename' ],
+                                          int( parsed[ 'line' ] ),
+                                          int( parsed[ 'column' ] ) )
+    raise RuntimeError( 'Can\'t jump to definition.' )
 
 
 
