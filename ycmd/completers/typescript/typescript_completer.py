@@ -53,9 +53,12 @@ class Response( object ):
     self._event.wait( timeout = RESPONSE_TIMEOUT_SECONDS )
     if not self._event.isSet():
       raise RuntimeError( 'Response Timeout' )
-    if not self._message[ 'success' ]:
-      raise RuntimeError( self._message[ 'message' ] )
-    return self._message
+    message = self._message
+    if not message[ 'success' ]:
+      raise RuntimeError( message[ 'message' ] )
+    if 'body' not in message:
+      return None
+    return self._message[ 'body' ]
 
 class TypeScriptCompleter( Completer ):
   """
@@ -70,13 +73,6 @@ class TypeScriptCompleter( Completer ):
 
   def __init__( self, user_options ):
     super( TypeScriptCompleter, self ).__init__( user_options )
-
-    # Requests pending a response
-    self._pending = {}
-
-    # Used to prevent threads from concurrently reading and writing to
-    # the pending response dictionary
-    self._pending_lock = Lock()
 
     # Used to prevent threads from concurrently writing to
     # the tsserver process' stdin
@@ -114,12 +110,19 @@ class TypeScriptCompleter( Completer ):
                                              env = self._environ,
                                              universal_newlines = True )
 
+    # Requests pending a response
+    self._pending = {}
+
+    # Used to prevent threads from concurrently reading and writing to
+    # the pending response dictionary
+    self._pending_lock = Lock()
+
+    # Start a thread to read response from TSServer.
     self._thread = Thread( target = self._ReaderLoop, args = () )
     self._thread.daemon = True
     self._thread.start()
 
     _logger.info( 'Enabling typescript completion' )
-
 
 
   def _ReaderLoop( self ):
@@ -233,7 +236,7 @@ class TypeScriptCompleter( Completer ):
       'file':   request_data[ 'filepath' ],
       'line':   request_data[ 'line_num' ],
       'offset': request_data[ 'column_num' ]
-    } )[ 'body' ]
+    } )
 
     # A less detailed version of the completion data is returned
     # if there are too many entries. This improves responsiveness.
@@ -252,7 +255,7 @@ class TypeScriptCompleter( Completer ):
       'line':       request_data[ 'line_num' ],
       'offset':     request_data[ 'column_num' ],
       'entryNames': names
-    } )[ 'body' ]
+    } )
     return [ _ConvertDetailedCompletionData( e, namelength )
              for e in detailed_entries ]
 
@@ -288,7 +291,7 @@ class TypeScriptCompleter( Completer ):
       'file':   request_data[ 'filepath' ],
       'line':   request_data[ 'line_num' ],
       'offset': request_data[ 'column_num' ]
-    } )[ 'body' ]
+    } )
     if not filespans:
       raise RuntimeError( 'Could not find definition' )
 
@@ -306,7 +309,7 @@ class TypeScriptCompleter( Completer ):
       'file':   request_data[ 'filepath' ],
       'line':   request_data[ 'line_num' ],
       'offset': request_data[ 'column_num' ]
-    } )[ 'body' ]
+    } )
     return responses.BuildDisplayMessageResponse( info[ 'displayString' ] )
 
 
@@ -316,7 +319,7 @@ class TypeScriptCompleter( Completer ):
       'file':   request_data[ 'filepath' ],
       'line':   request_data[ 'line_num' ],
       'offset': request_data[ 'column_num' ]
-    } )[ 'body' ]
+    } )
 
     message = '{0}\n\n{1}'.format( info[ 'displayString' ],
                                    info[ 'documentation' ] )
