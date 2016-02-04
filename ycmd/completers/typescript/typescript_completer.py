@@ -183,7 +183,6 @@ class TypeScriptCompleter( Completer ):
     with self._write_lock:
       self._tsserver_handle.stdin.write( json.dumps( request ) )
       self._tsserver_handle.stdin.write( "\n" )
-    return seq
 
   def _SendRequest( self, command, arguments = None ):
     """Send a request message to TSServer."""
