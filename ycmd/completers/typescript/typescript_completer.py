@@ -35,7 +35,7 @@ BINARY_NOT_FOUND_MESSAGE = ( 'tsserver not found. '
                              'TypeScript 1.5 or higher is required' )
 
 MAX_DETAILED_COMPLETIONS = 100
-RESPONSE_TIMEOUT_SECONDS = 5
+RESPONSE_TIMEOUT_SECONDS = 10
 
 _logger = logging.getLogger( __name__ )
 
