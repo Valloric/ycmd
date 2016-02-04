@@ -133,7 +133,7 @@ class TypeScriptCompleter( Completer ):
       msgtype = message[ 'type' ]
       if msgtype == 'event':
         # We ignore events for now since we don't have a use for them.
-        eventname = event[ 'event' ]
+        eventname = message[ 'event' ]
         _logger.info( 'Recieved {0} event from tsserver'.format( eventname ) )
         continue
 
@@ -171,40 +171,38 @@ class TypeScriptCompleter( Completer ):
   def _SendCommand( self, command, arguments = None ):
     """Send a request message to TSServer."""
 
-    seq = self._sequenceid
-    self._sequenceid += 1
-    request = {
-      'seq':     seq,
-      'type':    'request',
-      'command': command
-    }
-    if arguments:
-      request[ 'arguments' ] = arguments
     with self._write_lock:
+      seq = self._sequenceid
+      self._sequenceid += 1
+      request = {
+        'seq':     seq,
+        'type':    'request',
+        'command': command
+      }
+      if arguments:
+        request[ 'arguments' ] = arguments
       self._tsserver_handle.stdin.write( json.dumps( request ) )
       self._tsserver_handle.stdin.write( "\n" )
 
   def _SendRequest( self, command, arguments = None ):
     """Send a request message to TSServer."""
 
-    seq = self._sequenceid
-    self._sequenceid += 1
-    request = {
-      'seq':     seq,
-      'type':    'request',
-      'command': command
-    }
-    if arguments:
-      request[ 'arguments' ] = arguments
-
-    deferred = Response()
-    with self._pending_lock:
-      self._pending[seq] = deferred
     with self._write_lock:
+      seq = self._sequenceid
+      self._sequenceid += 1
+      deferred = Response()
+      with self._pending_lock:
+        self._pending[seq] = deferred
+      request = {
+        'seq':     seq,
+        'type':    'request',
+        'command': command
+      }
+      if arguments:
+        request[ 'arguments' ] = arguments
       self._tsserver_handle.stdin.write( json.dumps( request ) )
       self._tsserver_handle.stdin.write( "\n" )
-
-    return deferred.result()
+      return deferred.result()
 
 
   def _Reload( self, request_data ):
