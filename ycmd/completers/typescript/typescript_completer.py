@@ -49,7 +49,9 @@ class Response( object ):
     self._event.set()
 
   def result( self ):
-    self._event.wait()
+    self._event.wait( timeout = 5 )
+    if not self._event.isSet():
+      raise RuntimeError( 'Response Timeout' )
     if not self._message[ 'success' ]:
       raise RuntimeError( self._message[ 'message' ] )
     return self._message
