@@ -22,6 +22,8 @@ import logging
 import os
 import subprocess
 
+from threading import Thread
+from threading import Event
 from threading import Lock
 from tempfile import NamedTemporaryFile
 
@@ -36,6 +38,19 @@ MAX_DETAILED_COMPLETIONS = 100
 
 _logger = logging.getLogger( __name__ )
 
+class Response( object ):
+
+  def __init__( self ):
+    self._event = Event()
+    self._message = None
+
+  def resolve( self, message ):
+    self._message = message
+    self._event.set()
+
+  def result( self ):
+    self._event.wait()
+    return self._message
 
 class TypeScriptCompleter( Completer ):
   """
@@ -54,6 +69,8 @@ class TypeScriptCompleter( Completer ):
     # Used to prevent threads from concurrently reading and writing to
     # the tsserver process' stdout and stdin
     self._lock = Lock()
+
+    self._pending = {}
 
     binarypath = utils.PathToFirstExistingExecutable( [ 'tsserver' ] )
     if not binarypath:
@@ -91,7 +108,7 @@ class TypeScriptCompleter( Completer ):
     _logger.info( 'Enabling typescript completion' )
 
 
-  def _SendRequest( self, command, arguments = None ):
+  def _SendCommand( self, command, arguments = None ):
     """Send a request message to TSServer."""
 
     seq = self._sequenceid
@@ -106,6 +123,22 @@ class TypeScriptCompleter( Completer ):
     self._tsserver_handle.stdin.write( json.dumps( request ) )
     self._tsserver_handle.stdin.write( "\n" )
     return seq
+
+  def _SendRequest( self, command, arguments = None ):
+    """Send a request message to TSServer."""
+
+    seq = self._sequenceid
+    self._sequenceid += 1
+    request = {
+      'seq':     seq,
+      'type':    'request',
+      'command': command
+    }
+    if arguments:
+      request[ 'arguments' ] = arguments
+    self._tsserver_handle.stdin.write( json.dumps( request ) )
+    self._tsserver_handle.stdin.write( "\n" )
+    return self._ReadResponse( seq )
 
 
   def _ReadResponse( self, expected_seq ):
@@ -163,11 +196,10 @@ class TypeScriptCompleter( Completer ):
     tmpfile = NamedTemporaryFile( delete=False )
     tmpfile.write( utils.ToUtf8IfNeeded( contents ) )
     tmpfile.close()
-    seq = self._SendRequest( 'reload', {
+    self._SendRequest( 'reload', {
       'file':    filename,
       'tmpfile': tmpfile.name
     } )
-    self._ReadResponse( seq )
     os.unlink( tmpfile.name )
 
 
@@ -178,12 +210,11 @@ class TypeScriptCompleter( Completer ):
   def ComputeCandidatesInner( self, request_data ):
     with self._lock:
       self._Reload( request_data )
-      seq = self._SendRequest( 'completions', {
+      entries = self._SendRequest( 'completions', {
         'file':   request_data[ 'filepath' ],
         'line':   request_data[ 'line_num' ],
         'offset': request_data[ 'column_num' ]
-      } )
-      entries = self._ReadResponse( seq )[ 'body' ]
+      } )[ 'body' ]
 
       # A less detailed version of the completion data is returned
       # if there are too many entries. This improves responsiveness.
@@ -197,13 +228,12 @@ class TypeScriptCompleter( Completer ):
         namelength = max( namelength, len( name ) )
         names.append( name )
 
-      seq = self._SendRequest( 'completionEntryDetails', {
+      detailed_entries = self._SendRequest( 'completionEntryDetails', {
         'file':       request_data[ 'filepath' ],
         'line':       request_data[ 'line_num' ],
         'offset':     request_data[ 'column_num' ],
         'entryNames': names
-      } )
-      detailed_entries = self._ReadResponse( seq )[ 'body' ]
+      } )[ 'body' ]
       return [ _ConvertDetailedCompletionData( e, namelength )
                for e in detailed_entries ]
 
@@ -222,13 +252,13 @@ class TypeScriptCompleter( Completer ):
   def OnBufferVisit( self, request_data ):
     filename = request_data[ 'filepath' ]
     with self._lock:
-      self._SendRequest( 'open', { 'file': filename } )
+      self._SendCommand( 'open', { 'file': filename } )
 
 
   def OnBufferUnload( self, request_data ):
     filename = request_data[ 'filepath' ]
     with self._lock:
-      self._SendRequest( 'close', { 'file': filename } )
+      self._SendCommand( 'close', { 'file': filename } )
 
 
   def OnFileReadyToParse( self, request_data ):
@@ -239,13 +269,11 @@ class TypeScriptCompleter( Completer ):
   def _GoToDefinition( self, request_data ):
     with self._lock:
       self._Reload( request_data )
-      seq = self._SendRequest( 'definition', {
+      filespan = self._SendRequest( 'definition', {
         'file':   request_data[ 'filepath' ],
         'line':   request_data[ 'line_num' ],
         'offset': request_data[ 'column_num' ]
-      } )
-
-      filespans = self._ReadResponse( seq )[ 'body' ]
+      } )[ 'body' ]
       if not filespans:
         raise RuntimeError( 'Could not find definition' )
 
@@ -260,26 +288,23 @@ class TypeScriptCompleter( Completer ):
   def _GetType( self, request_data ):
     with self._lock:
       self._Reload( request_data )
-      seq = self._SendRequest( 'quickinfo', {
+      info = self._SendRequest( 'quickinfo', {
         'file':   request_data[ 'filepath' ],
         'line':   request_data[ 'line_num' ],
         'offset': request_data[ 'column_num' ]
-      } )
-
-      info = self._ReadResponse( seq )[ 'body' ]
+      } )[ 'body' ]
       return responses.BuildDisplayMessageResponse( info[ 'displayString' ] )
 
 
   def _GetDoc( self, request_data ):
     with self._lock:
       self._Reload( request_data )
-      seq = self._SendRequest( 'quickinfo', {
+      info = self._SendRequest( 'quickinfo', {
         'file':   request_data[ 'filepath' ],
         'line':   request_data[ 'line_num' ],
         'offset': request_data[ 'column_num' ]
-      } )
+      } )[ 'body' ]
 
-      info = self._ReadResponse( seq )[ 'body' ]
       message = '{0}\n\n{1}'.format( info[ 'displayString' ],
                                      info[ 'documentation' ] )
       return responses.BuildDetailedInfoResponse( message )
@@ -287,7 +312,7 @@ class TypeScriptCompleter( Completer ):
 
   def Shutdown( self ):
     with self._lock:
-      self._SendRequest( 'exit' )
+      self._SendCommand( 'exit' )
     if not self.user_options[ 'server_keep_logfiles' ]:
       os.unlink( self._logfile )
       self._logfile = None
