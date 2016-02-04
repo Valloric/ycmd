@@ -68,12 +68,17 @@ class TypeScriptCompleter( Completer ):
   def __init__( self, user_options ):
     super( TypeScriptCompleter, self ).__init__( user_options )
 
-    # Used to prevent threads from concurrently reading and writing to
-    # the tsserver process' stdout and stdin
-    self._lock = Lock()
-
     # Requests pending a response
     self._pending = {}
+
+    # Used to prevent threads from concurrently reading and writing to
+    # the pending response dictionary
+    self._pending_lock = Lock()
+
+    # Used to prevent threads from concurrently writing to
+    # the tsserver process' stdin
+    self._write_lock = Lock()
+
 
     binarypath = utils.PathToFirstExistingExecutable( [ 'tsserver' ] )
     if not binarypath:
@@ -131,7 +136,7 @@ class TypeScriptCompleter( Completer ):
         continue
 
       seq = message[ 'request_seq' ]
-      with self._lock:
+      with self._pending_lock:
         if seq in self._pending:
           self._pending[seq].resolve(message)
           del self._pending[seq]
@@ -178,7 +183,7 @@ class TypeScriptCompleter( Completer ):
     }
     if arguments:
       request[ 'arguments' ] = arguments
-    with self._lock:
+    with self._write_lock:
       self._tsserver_handle.stdin.write( json.dumps( request ) )
       self._tsserver_handle.stdin.write( "\n" )
     return seq
@@ -197,8 +202,9 @@ class TypeScriptCompleter( Completer ):
       request[ 'arguments' ] = arguments
 
     deferred = Response()
-    with self._lock:
+    with self._pending_lock:
       self._pending[seq] = deferred
+    with self._write_lock:
       self._tsserver_handle.stdin.write( json.dumps( request ) )
       self._tsserver_handle.stdin.write( "\n" )
 
@@ -283,22 +289,21 @@ class TypeScriptCompleter( Completer ):
 
 
   def _GoToDefinition( self, request_data ):
-    with self._lock:
-      self._Reload( request_data )
-      filespan = self._SendRequest( 'definition', {
-        'file':   request_data[ 'filepath' ],
-        'line':   request_data[ 'line_num' ],
-        'offset': request_data[ 'column_num' ]
-      } )[ 'body' ]
-      if not filespans:
-        raise RuntimeError( 'Could not find definition' )
+    self._Reload( request_data )
+    filespan = self._SendRequest( 'definition', {
+      'file':   request_data[ 'filepath' ],
+      'line':   request_data[ 'line_num' ],
+      'offset': request_data[ 'column_num' ]
+    } )[ 'body' ]
+    if not filespans:
+      raise RuntimeError( 'Could not find definition' )
 
-      span = filespans[ 0 ]
-      return responses.BuildGoToResponse(
-        filepath   = span[ 'file' ],
-        line_num   = span[ 'start' ][ 'line' ],
-        column_num = span[ 'start' ][ 'offset' ]
-      )
+    span = filespans[ 0 ]
+    return responses.BuildGoToResponse(
+      filepath   = span[ 'file' ],
+      line_num   = span[ 'start' ][ 'line' ],
+      column_num = span[ 'start' ][ 'offset' ]
+    )
 
 
   def _GetType( self, request_data ):
