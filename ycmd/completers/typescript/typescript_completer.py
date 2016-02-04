@@ -187,10 +187,10 @@ class TypeScriptCompleter( Completer ):
   def _SendRequest( self, command, arguments = None ):
     """Send a request message to TSServer."""
 
+    deferred = Response()
     with self._write_lock:
       seq = self._sequenceid
       self._sequenceid += 1
-      deferred = Response()
       with self._pending_lock:
         self._pending[seq] = deferred
       request = {
@@ -202,7 +202,7 @@ class TypeScriptCompleter( Completer ):
         request[ 'arguments' ] = arguments
       self._tsserver_handle.stdin.write( json.dumps( request ) )
       self._tsserver_handle.stdin.write( "\n" )
-      return deferred.result()
+    return deferred.result()
 
 
   def _Reload( self, request_data ):
