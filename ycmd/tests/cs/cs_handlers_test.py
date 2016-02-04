@@ -22,6 +22,7 @@ from ycmd.utils import OnTravis
 import time
 from contextlib import contextmanager
 
+INSTANCE_PER_TEST = False
 
 class Cs_Handlers_test( Handlers_test ):
 
@@ -38,6 +39,9 @@ class Cs_Handlers_test( Handlers_test ):
     self._app.post_json(
       '/ignore_extra_conf_file',
       { 'filepath': self._PathToTestFile( '.ycm_extra_conf.py' ) } )
+
+
+  # See _init_ for teardown_package
 
 
   @contextmanager
@@ -61,15 +65,14 @@ class Cs_Handlers_test( Handlers_test ):
 
 
   def _TeardownOmniSharpServer( self, filepath ):
-    pass
-    #if OnTravis():
-    #  self._StopOmniSharpServer( filepath )
-    #  try:
-    #    solution = self._FindOmniSharpSolutionPath( filepath )
-    #    del Cs_Handlers_test.omnisharp_solution_port[ solution ]
-    #    del Cs_Handlers_test.omnisharp_solution_file[ solution ]
-    #  except KeyError:
-    #    pass
+    if INSTANCE_PER_TEST:
+      self._StopOmniSharpServer( filepath )
+      try:
+        solution = self._FindOmniSharpSolutionPath( filepath )
+        del Cs_Handlers_test.omnisharp_solution_port[ solution ]
+        del Cs_Handlers_test.omnisharp_solution_file[ solution ]
+      except KeyError:
+        pass
 
 
   def _StartOmniSharpServer( self, filepath ):
@@ -156,7 +159,7 @@ def StopAllOmniSharpServers():
     with self.UserOption( 'confirm_extra_conf', False ):
       self.setUp()
       while Cs_Handlers_test.omnisharp_solution_port:
-        (solution, port) = Cs_Handlers_test.omnisharp_solution_port.popitem()
+        ( solution, port ) = Cs_Handlers_test.omnisharp_solution_port.popitem()
         filepath = Cs_Handlers_test.omnisharp_solution_file[ solution ]
         self._SetOmnisharpPort( filepath, port )
         self._StopOmniSharpServer( filepath )
