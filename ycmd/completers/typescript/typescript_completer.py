@@ -286,7 +286,7 @@ class TypeScriptCompleter( Completer ):
 
   def _GoToDefinition( self, request_data ):
     self._Reload( request_data )
-    filespan = self._SendRequest( 'definition', {
+    filespans = self._SendRequest( 'definition', {
       'file':   request_data[ 'filepath' ],
       'line':   request_data[ 'line_num' ],
       'offset': request_data[ 'column_num' ]
