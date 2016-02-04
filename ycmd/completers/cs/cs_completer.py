@@ -540,17 +540,22 @@ class CsharpSolutionCompleter:
     return self._external_omnisharp
 
 
-  def ServerIsRunning( self ):
+  def ServerIsRunning( self, external_check = True ):
     """ Check if our OmniSharp server is running (process is up)."""
     if self.ServerIsExternal():
-      return self._omnisharp_port is not None
+      if self._omnisharp_port is None:
+        return False
+      if external_check:
+        return self.ServerIsHealthy()
+      else:
+        return True
     else:
       return utils.ProcessIsRunning( self._omnisharp_phandle )
 
 
   def ServerIsHealthy( self ):
     """ Check if our OmniSharp server is healthy (up and serving)."""
-    if not self.ServerIsRunning():
+    if not self.ServerIsRunning( False ):
       return False
 
     try:
@@ -561,7 +566,7 @@ class CsharpSolutionCompleter:
 
   def ServerIsReady( self ):
     """ Check if our OmniSharp server is ready (loaded solution file)."""
-    if not self.ServerIsRunning():
+    if not self.ServerIsRunning( False ):
       return False
 
     try:
