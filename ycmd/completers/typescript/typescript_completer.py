@@ -35,6 +35,7 @@ BINARY_NOT_FOUND_MESSAGE = ( 'tsserver not found. '
                              'TypeScript 1.5 or higher is required' )
 
 MAX_DETAILED_COMPLETIONS = 100
+RESPONSE_TIMEOUT_SECONDS = 5
 
 _logger = logging.getLogger( __name__ )
 
@@ -49,7 +50,7 @@ class Response( object ):
     self._event.set()
 
   def result( self ):
-    self._event.wait( timeout = 5 )
+    self._event.wait( timeout = RESPONSE_TIMEOUT_SECONDS )
     if not self._event.isSet():
       raise RuntimeError( 'Response Timeout' )
     if not self._message[ 'success' ]:
@@ -81,7 +82,6 @@ class TypeScriptCompleter( Completer ):
     # the tsserver process' stdin
     self._write_lock = Lock()
 
-
     binarypath = utils.PathToFirstExistingExecutable( [ 'tsserver' ] )
     if not binarypath:
       _logger.error( BINARY_NOT_FOUND_MESSAGE )
@@ -90,7 +90,6 @@ class TypeScriptCompleter( Completer ):
     self._logfile = _LogFileName()
     tsserver_log = '-file {path} -level {level}'.format( path = self._logfile,
                                                          level = _LogLevel() )
-
     # TSServer get the configuration for the log file through the environment
     # variable 'TSS_LOG'. This seems to be undocumented but looking at the
     # source code it seems like this is the way:
@@ -130,7 +129,9 @@ class TypeScriptCompleter( Completer ):
 
       msgtype = message[ 'type' ]
       if msgtype == 'event':
-        self._HandleEvent( message )
+        # We ignore events for now since we don't have a use for them.
+        eventname = event[ 'event' ]
+        _logger.info( 'Recieved {0} event from tsserver'.format( eventname ) )
         continue
 
       if msgtype != 'response':
@@ -163,15 +164,6 @@ class TypeScriptCompleter( Completer ):
       raise RuntimeError( "Missing 'Content-Length' header" )
     contentlength = int( headers[ 'Content-Length' ] )
     return json.loads( self._tsserver_handle.stdout.read( contentlength ) )
-
-
-  def _HandleEvent( self, event ):
-    """Handle event message from TSServer."""
-
-    # We ignore events for now since we don't have a use for them.
-    eventname = event[ 'event' ]
-    _logger.info( 'Recieved {0} event from tsserver'.format( eventname ) )
-
 
   def _SendCommand( self, command, arguments = None ):
     """Send a request message to TSServer."""
