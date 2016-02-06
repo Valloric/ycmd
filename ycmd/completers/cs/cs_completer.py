@@ -555,7 +555,7 @@ class CsharpSolutionCompleter:
 
   def ServerIsHealthy( self ):
     """ Check if our OmniSharp server is healthy (up and serving)."""
-    if not self.ServerIsRunning( False ):
+    if not self.ServerIsRunning( external_check = False ):
       return False
 
     try:
@@ -566,7 +566,7 @@ class CsharpSolutionCompleter:
 
   def ServerIsReady( self ):
     """ Check if our OmniSharp server is ready (loaded solution file)."""
-    if not self.ServerIsRunning( False ):
+    if not self.ServerIsRunning( external_check = False ):
       return False
 
     try:
