@@ -141,8 +141,8 @@ class TypeScript_Subcommands_test( Typescript_Handlers_test ):
                                            filetype = 'typescript',
                                            filepath = filepath )
 
-    expected = contains_inanyorder( has_entries( { 'line_num': 28 } ),
-                                    has_entries( { 'line_num': 29 } ) )
+    expected = contains_inanyorder( has_entries( { 'line_num': 28, 'column_num': 5 } ),
+                                    has_entries( { 'line_num': 29, 'column_num': 1 } ) )
     actual = self._app.post_json( '/run_completer_command', occurrences_data ).json
 
     assert_that( actual, expected )
@@ -167,7 +167,7 @@ class TypeScript_Subcommands_test( Typescript_Handlers_test ):
                                           filepath = filepath )
 
     expected = contains_inanyorder(
-      has_entries( { 'description': 'var bar = new Bar();' } ),
-      has_entries( { 'description': 'bar.testMethod();' } ) )
+      has_entries( { 'description': 'var bar = new Bar();', 'line_num': 28, 'column_num': 5 } ),
+      has_entries( { 'description': 'bar.testMethod();',    'line_num': 29, 'column_num': 1 } ) )
     actual = self._app.post_json( '/run_completer_command', references_data ).json
     assert_that( actual, expected )
