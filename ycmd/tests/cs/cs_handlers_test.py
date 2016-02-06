@@ -22,6 +22,11 @@ from ycmd.utils import OnTravis
 import time
 from contextlib import contextmanager
 
+# If INSTANCE_PER_TEST is set, each test case will start up and shutdown an
+# instance of Omnisharp server.  Otherwise - the default - it will reuse the
+# Omnisharp instances between individual test cases. Non caching (false) is
+# much faster, but test cases are not totally isolated from each other.
+# For test case isolation, set to true.
 INSTANCE_PER_TEST = False
 
 class Cs_Handlers_test( Handlers_test ):
