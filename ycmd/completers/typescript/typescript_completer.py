@@ -284,12 +284,16 @@ class TypeScriptCompleter( Completer ):
 
   def GetSubcommandsMap( self ):
     return {
-      'GoToDefinition': ( lambda self, request_data, args:
-                          self._GoToDefinition( request_data ) ),
-      'GetType'       : ( lambda self, request_data, args:
-                          self._GetType( request_data ) ),
-      'GetDoc'        : ( lambda self, request_data, args:
-                          self._GetDoc( request_data ) )
+      'GoToDefinition' : ( lambda self, request_data, args:
+                           self._GoToDefinition( request_data ) ),
+      'GoToReferrences': ( lambda self, request_data, args:
+                           self._GoToReferrences( request_data ) ),
+      'GoToOccurrences': ( lambda self, request_data, args:
+                           self._GoToOccurrences( request_data ) ),
+      'GetType'        : ( lambda self, request_data, args:
+                           self._GetType( request_data ) ),
+      'GetDoc'         : ( lambda self, request_data, args:
+                           self._GetDoc( request_data ) )
     }
 
 
@@ -323,6 +327,35 @@ class TypeScriptCompleter( Completer ):
       line_num   = span[ 'start' ][ 'line' ],
       column_num = span[ 'start' ][ 'offset' ]
     )
+
+
+  def _GoToOccurrences( self, request_data ):
+    self._Reload( request_data )
+    filespans = self._SendRequest( 'occurrences', {
+      'file':   request_data[ 'filepath' ],
+      'line':   request_data[ 'line_num' ],
+      'offset': request_data[ 'column_num' ]
+    } )
+    return [ responses.BuildGoToResponse(
+               filepath   = span[ 'file' ],
+               line_num   = span[ 'start' ][ 'line' ],
+               column_num = span[ 'start' ][ 'offset' ]
+             ) for span in filespans ]
+
+
+  def _GoToReferrences( self, request_data ):
+    self._Reload( request_data )
+    response = self._SendRequest( 'references', {
+      'file':   request_data[ 'filepath' ],
+      'line':   request_data[ 'line_num' ],
+      'offset': request_data[ 'column_num' ]
+    } )
+    return [ responses.BuildGoToResponse(
+               filepath    = ref[ 'file' ],
+               line_num    = ref[ 'start' ][ 'line' ],
+               column_num  = ref[ 'start' ][ 'offset' ],
+               description = ref[ 'lineText' ]
+             ) for ref in response[ 'refs' ] ]
 
 
   def _GetType( self, request_data ):
