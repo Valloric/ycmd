@@ -286,8 +286,8 @@ class TypeScriptCompleter( Completer ):
     return {
       'GoToDefinition' : ( lambda self, request_data, args:
                            self._GoToDefinition( request_data ) ),
-      'GoToReferrences': ( lambda self, request_data, args:
-                           self._GoToReferrences( request_data ) ),
+      'GoToReferences' : ( lambda self, request_data, args:
+                           self._GoToReferences( request_data ) ),
       'GoToOccurrences': ( lambda self, request_data, args:
                            self._GoToOccurrences( request_data ) ),
       'GetType'        : ( lambda self, request_data, args:
@@ -343,7 +343,7 @@ class TypeScriptCompleter( Completer ):
              ) for span in filespans ]
 
 
-  def _GoToReferrences( self, request_data ):
+  def _GoToReferences( self, request_data ):
     self._Reload( request_data )
     response = self._SendRequest( 'references', {
       'file':   request_data[ 'filepath' ],

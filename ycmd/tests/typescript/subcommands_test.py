@@ -158,16 +158,16 @@ class TypeScript_Subcommands_test( Typescript_Handlers_test ):
 
     self._app.post_json( '/event_notification', event_data )
 
-    referrences_data = self._BuildRequest( completer_target = 'filetype_default',
-                                           command_arguments = [ 'GoToReferrences' ],
-                                           line_num = 28,
-                                           column_num = 6,
-                                           contents = contents,
-                                           filetype = 'typescript',
-                                           filepath = filepath )
+    references_data = self._BuildRequest( completer_target = 'filetype_default',
+                                          command_arguments = [ 'GoToReferences' ],
+                                          line_num = 28,
+                                          column_num = 6,
+                                          contents = contents,
+                                          filetype = 'typescript',
+                                          filepath = filepath )
 
     expected = contains_inanyorder(
       has_entries( { 'description': 'var bar = new Bar();' } ),
       has_entries( { 'description': 'bar.testMethod();' } ) )
-    actual = self._app.post_json( '/run_completer_command', referrences_data ).json
+    actual = self._app.post_json( '/run_completer_command', references_data ).json
     assert_that( actual, expected )
