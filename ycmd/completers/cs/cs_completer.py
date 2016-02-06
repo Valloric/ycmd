@@ -591,11 +591,12 @@ class CsharpSolutionCompleter:
 
 
   def _SetOmnisharpPort( self, port ):
-    if self.ServerIsRunning():
+    with self._server_state_lock:
+      if self.ServerIsRunning():
         self.StopServer()
 
-    self._omnisharp_port = port
-    self._external_omnisharp = True
+      self._omnisharp_port = port
+      self._external_omnisharp = True
 
 
   def _GetResponse( self, handler, parameters = {}, timeout = None ):
