@@ -29,6 +29,7 @@ from contextlib import contextmanager
 # For test case isolation, set to true.
 INSTANCE_PER_TEST = False
 
+
 class Cs_Handlers_test( Handlers_test ):
 
   omnisharp_file_solution = {}
@@ -46,7 +47,7 @@ class Cs_Handlers_test( Handlers_test ):
       { 'filepath': self._PathToTestFile( '.ycm_extra_conf.py' ) } )
 
 
-  # See _init_ for teardown_package
+  # See __init__.py for teardownPackage
 
 
   @contextmanager
@@ -89,18 +90,17 @@ class Cs_Handlers_test( Handlers_test ):
 
 
   def _FindOmniSharpSolutionPath( self, filepath ):
-    solution_path = None
     if filepath in Cs_Handlers_test.omnisharp_file_solution:
-      solution_path = Cs_Handlers_test.omnisharp_file_solution[ filepath ]
-    else:
-      solution_request = self._BuildRequest( completer_target = 'filetype_default',
-                                             filepath = filepath,
-                                             command_arguments = [ "SolutionFile" ],
-                                             filetype = 'cs' )
-      solution_path = self._app.post_json( '/run_completer_command',
-                                    solution_request ).json
-      Cs_Handlers_test.omnisharp_file_solution[ filepath ] = solution_path
-      Cs_Handlers_test.omnisharp_solution_file[ solution_path ] = filepath
+      return Cs_Handlers_test.omnisharp_file_solution[ filepath ]
+
+    solution_request = self._BuildRequest( completer_target = 'filetype_default',
+                                           filepath = filepath,
+                                           command_arguments = [ "SolutionFile" ],
+                                           filetype = 'cs' )
+    solution_path = self._app.post_json( '/run_completer_command',
+                                         solution_request ).json
+    Cs_Handlers_test.omnisharp_file_solution[ filepath ] = solution_path
+    Cs_Handlers_test.omnisharp_solution_file[ solution_path ] = filepath
 
     return solution_path
 
@@ -121,8 +121,7 @@ class Cs_Handlers_test( Handlers_test ):
                                   filetype = 'cs' )
     result = self._app.post_json( '/run_completer_command', request ).json
 
-    port = int ( result[ "message" ] )
-    return port
+    return int( result[ "message" ] )
 
 
   def _StopOmniSharpServer( self, filepath ):

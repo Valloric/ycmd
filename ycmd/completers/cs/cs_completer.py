@@ -187,12 +187,12 @@ class CsharpCompleter( Completer ):
          self._SolutionSubcommand( request_data,
                                    method = 'ServerIsReady',
                                    no_request_data = True ) ),
-      'SetOmnisharpPort'                    : ( lambda self, request_data, args:
+      'SetOmnisharpPort'                 : ( lambda self, request_data, args:
          self._SolutionSubcommand( request_data,
                                    method = '_SetOmnisharpPort',
                                    port = args[ 0 ],
                                    no_request_data = True ) ),
-      'GetOmnisharpPort'                    : ( lambda self, request_data, args:
+      'GetOmnisharpPort'                 : ( lambda self, request_data, args:
          self._SolutionSubcommand( request_data,
                                    method = '_GetOmnisharpPort',
                                    no_request_data = True ) ),
@@ -542,15 +542,16 @@ class CsharpSolutionCompleter:
 
   def ServerIsRunning( self, external_check = True ):
     """ Check if our OmniSharp server is running (process is up)."""
-    if self.ServerIsExternal():
-      if self._omnisharp_port is None:
-        return False
-      if external_check:
-        return self.ServerIsHealthy()
-      else:
-        return True
-    else:
+    if not self.ServerIsExternal():
       return utils.ProcessIsRunning( self._omnisharp_phandle )
+
+    if self._omnisharp_port is None:
+      return False
+
+    if external_check:
+      return self.ServerIsHealthy()
+
+    return True
 
 
   def ServerIsHealthy( self ):

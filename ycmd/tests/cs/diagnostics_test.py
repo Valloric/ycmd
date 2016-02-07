@@ -32,9 +32,9 @@ class Cs_Diagnostics_test( Cs_Handlers_test ):
       results = {}
       for _ in ( 0, 1 ): # First call always returns blank for some reason
         event_data = self._BuildRequest( filepath = filepath,
-                                        event_name = 'FileReadyToParse',
-                                        filetype = 'cs',
-                                        contents = contents )
+                                         event_name = 'FileReadyToParse',
+                                         filetype = 'cs',
+                                         contents = contents )
 
         results = self._app.post_json( '/event_notification', event_data ).json
 
@@ -75,9 +75,9 @@ class Cs_Diagnostics_test( Cs_Handlers_test ):
         results = {}
         for _ in ( 0, 1 ): # First call always returns blank for some reason
           event_data = self._BuildRequest( filepath = filepath,
-                                          event_name = 'FileReadyToParse',
-                                          filetype = 'cs',
-                                          contents = contents )
+                                           event_name = 'FileReadyToParse',
+                                           filetype = 'cs',
+                                           contents = contents )
 
           results = self._app.post_json( '/event_notification', event_data ).json
 
