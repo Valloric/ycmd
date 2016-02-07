@@ -77,7 +77,7 @@ def FindRacerdBinary( user_options ):
     if os.path.isfile( racerd_user_binary ):
       return ToBytes( racerd_user_binary )
     else:
-      _logger.warn( 'user provided racerd_binary_path is not file' )
+      _logger.warning( 'user provided racerd_binary_path is not file' )
 
   if os.path.isfile( RACERD_BINARY ):
     return RACERD_BINARY
@@ -101,8 +101,8 @@ class RustCompleter( Completer ):
     self._rust_source_path = self._GetRustSrcPath()
 
     if not self._rust_source_path:
-      _logger.warn( 'No path provided for the rustc source. Please set the '
-                    'rust_src_path option' )
+      _logger.warning( 'No path provided for the rustc source. Please set the '
+                       'rust_src_path option' )
 
     if not self._racerd:
       _logger.error( BINARY_NOT_FOUND_MESSAGE )
@@ -165,7 +165,7 @@ class RustCompleter( Completer ):
     if response.status_code is http.client.NO_CONTENT:
       return None
 
-    return response.json( encoding = 'utf8' )
+    return response.json()
 
 
   def _ExtraHeaders( self, method, handler, body ):
@@ -209,7 +209,7 @@ class RustCompleter( Completer ):
   def _GetExtraData( self, completion ):
     location = {}
     if completion[ 'file_path' ]:
-      location[ 'filepath' ] = ToBytes( completion[ 'file_path' ] )
+      location[ 'filepath' ] = completion[ 'file_path' ]
     if completion[ 'line' ]:
       location[ 'line_num' ] = completion[ 'line' ]
     if completion[ 'column' ]:
@@ -233,9 +233,9 @@ class RustCompleter( Completer ):
       return []
 
     return [ responses.BuildCompletionData(
-                insertion_text = ToBytes( completion[ 'text' ] ),
-                kind = ToBytes( completion[ 'kind' ] ),
-                extra_menu_info = ToBytes( completion[ 'context' ] ),
+                insertion_text = completion[ 'text' ],
+                kind = completion[ 'kind' ],
+                extra_menu_info = completion[ 'context' ],
                 extra_data = self._GetExtraData( completion ) )
              for completion in completions ]
 

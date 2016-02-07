@@ -88,8 +88,8 @@ def CompleterType( value ):
   if value in COMPLETERS:
     return value
   else:
-    aliases_to_completer = dict( (i,k) for k,v in COMPLETERS.iteritems()
-                                          for i in v[ 'aliases' ] )
+    aliases_to_completer = dict( ( i, k ) for k, v in COMPLETERS.items()
+                                 for i in v[ 'aliases' ] )
     if value in aliases_to_completer:
       return aliases_to_completer[ value ];
     else:
