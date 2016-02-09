@@ -128,20 +128,19 @@ class GoCodeCompleter( Completer ):
 
     If the resolved binary exists, return the path,
     otherwise return None. """
-    if user_options.get( '%s_binary_path' % binary ):
-      # The user has explicitly specified a path.
-      if os.path.isfile( user_options[ '%s_binary_path' % binary] ):
+
+    def _FindPath():
+      if user_options.get( '%s_binary_path' % binary ):
         return user_options[ '%s_binary_path' % binary]
-      else:
-        return None
-    # Try to use the bundled binary or one on the path.
-    if binary == 'gocode':
-      if os.path.isfile( PATH_TO_GOCODE_BINARY ):
+      elif binary == 'gocode':
         return PATH_TO_GOCODE_BINARY
-    elif binary == 'godef':
-      if os.path.isfile( PATH_TO_GODEF_BINARY ):
+      elif binary == 'godef':
         return PATH_TO_GODEF_BINARY
-    return utils.PathToFirstExistingExecutable( [ binary ] )
+
+    binary_path = _FindPath()
+    if os.path.isfile( binary_path ):
+      return binary_path
+    return None
 
 
   def OnFileReadyToParse( self, request_data ):
