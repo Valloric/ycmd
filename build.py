@@ -280,7 +280,7 @@ def RunYcmdTests( build_dir ):
   new_env = os.environ.copy()
 
   if OnWindows():
-    new_env[ 'PATH' ] = DIR_OF_THIS_SCRIPT
+    new_env[ 'PATH' ] = DIR_OF_THIS_SCRIPT + ';' + new_env[ 'PATH' ]
   else:
     new_env[ 'LD_LIBRARY_PATH' ] = DIR_OF_THIS_SCRIPT
 
