@@ -25,15 +25,26 @@ standard_library.install_aliases()
 from builtins import *  # noqa
 
 from webtest import TestApp
+from ycmd import handlers
+from .handlers_test import Handlers_test
 from nose.tools import eq_
 from hamcrest import assert_that, has_items
-from .. import handlers
-from .handlers_test import Handlers_test
 from ycmd.tests.test_utils import DummyCompleter
 from mock import patch
+import bottle
 
 
 class GetCompletions_test( Handlers_test ):
+
+  def __init__( self ):
+    self._app = None
+
+
+  def setUp( self ):
+    bottle.debug( True )
+    handlers.SetServerStateToDefaults()
+    self._app = TestApp( handlers.app )
+
 
   def RequestValidation_NoLineNumException_test( self ):
     response = self._app.post_json( '/semantic_completion_available', {

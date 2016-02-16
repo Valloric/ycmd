@@ -24,22 +24,16 @@ standard_library.install_aliases()
 from builtins import *  # noqa
 
 from ..handlers_test import Handlers_test
-
 import time
 
 
 class Rust_Handlers_test( Handlers_test ):
 
-
-  def __init__( self ):
-    self._file = __file__
-
-
-  def tearDown( self ):
-    self._StopServer()
+  _file = __file__
+  _app = None
 
 
-  def _StopServer( self ):
+  def _StopRacerdServer( self ):
     try:
       self._app.post_json(
         '/run_completer_command',
@@ -51,7 +45,7 @@ class Rust_Handlers_test( Handlers_test ):
       pass
 
 
-  def _WaitUntilServerReady( self ):
+  def _WaitUntilRacerdServerReady( self ):
     retries = 100
 
     while retries > 0:
@@ -62,4 +56,3 @@ class Rust_Handlers_test( Handlers_test ):
       retries = retries - 1
 
     raise RuntimeError( "Timeout waiting for racerd" )
-

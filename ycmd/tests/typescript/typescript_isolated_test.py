@@ -1,4 +1,4 @@
-# Copyright (C) 2015 ycmd contributors
+# Copyright (C) 2016 ycmd contributors
 #
 # This file is part of ycmd.
 #
@@ -15,30 +15,41 @@
 # You should have received a copy of the GNU General Public License
 # along with ycmd.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import absolute_import
 from __future__ import unicode_literals
 from __future__ import print_function
 from __future__ import division
-from __future__ import absolute_import
 from future import standard_library
 standard_library.install_aliases()
 from builtins import *  # noqa
 
 from webtest import TestApp
 from ycmd import handlers
-from ..handlers_test import Handlers_test
+from hamcrest import contains_inanyorder, has_entries
+from .typescript_handlers_test import Typescript_Handlers_test
+from mock import patch
 import bottle
 
 
-class Clang_Handlers_test( Handlers_test ):
+class TypeScript_Persistent_test( Typescript_Handlers_test ):
 
-  _file = __file__
-
-
-  def __init__( self ):
-    self._app = None
-
-
-  def setUp( self ):
+  @classmethod
+  def setUpClass( cls ):
     bottle.debug( True )
     handlers.SetServerStateToDefaults()
-    self._app = TestApp( handlers.app )
+    cls._app = TestApp( handlers.app )
+
+
+  @patch( 'ycmd.completers.typescript.typescript_completer.MAX_DETAILED_COMPLETIONS', 2 )
+  def Completion_MaxDetailedCompletion_test( self ):
+    self._RunCompletionTest( {
+      'expect': {
+        'data': has_entries( {
+          'completions': contains_inanyorder(
+            self.CompletionEntryMatcher( 'methodA' ),
+            self.CompletionEntryMatcher( 'methodB' ),
+            self.CompletionEntryMatcher( 'methodC' )
+          )
+        } )
+      }
+    } )

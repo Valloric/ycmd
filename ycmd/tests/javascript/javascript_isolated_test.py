@@ -1,4 +1,4 @@
-# Copyright (C) 2015 ycmd contributors
+# Copyright (C) 2016 ycmd contributors
 #
 # This file is part of ycmd.
 #
@@ -23,19 +23,42 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import *  # noqa
 
-from ycmd.server_utils import SetUpPythonPath
-from ycmd.utils import ReadFile
-SetUpPythonPath()
+from webtest import TestApp
+from ycmd import handlers
 from nose.tools import eq_
 from hamcrest import assert_that, empty
-
 from .javascript_handlers_test import Javascript_Handlers_test
 from pprint import pformat
+from ycmd.utils import ReadFile
+from mock import patch
+import bottle
 import http.client
 import os
-from mock import patch
 
-class Javascript_EventNotification_test( Javascript_Handlers_test ):
+
+class Javascript_Isolated_test( Javascript_Handlers_test ):
+
+
+  def __init__( self ):
+    self._app = None
+    self._prev_current_dir = None
+
+
+  def setUp( self ):
+    bottle.debug( True )
+    handlers.SetServerStateToDefaults()
+    self._app = TestApp( handlers.app )
+    self._prev_current_dir = os.getcwd()
+    os.chdir( self._PathToTestFile() )
+
+    self._WaitUntilTernServerReady()
+
+
+  def tearDown( self ):
+    self._StopTernServer()
+
+    os.chdir( self._prev_current_dir )
+
 
   def OnFileReadyToParse_ProjectFile_cwd_test( self ):
     contents = ReadFile( self._PathToTestFile( 'simple_test.js' ) )

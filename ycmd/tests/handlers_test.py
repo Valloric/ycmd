@@ -25,27 +25,18 @@ from builtins import *  # noqa
 
 from ..server_utils import SetUpPythonPath
 SetUpPythonPath()
-from webtest import TestApp
 from .. import handlers
 from ycmd import user_options_store
 from hamcrest import has_entries, has_entry, contains_string
 from .test_utils import BuildRequest
 from mock import patch
 import contextlib
-import bottle
 import os
 
 
 class Handlers_test( object ):
 
-  def __init__( self ):
-    self._file = __file__
-
-
-  def setUp( self ):
-    bottle.debug( True )
-    handlers.SetServerStateToDefaults()
-    self._app = TestApp( handlers.app )
+  _file = __file__
 
 
   @contextlib.contextmanager
@@ -111,6 +102,7 @@ class Handlers_test( object ):
     return has_entry( 'message', contains_string( msg ) )
 
 
-  def _PathToTestFile( self, *args ):
-    dir_of_current_script = os.path.dirname( os.path.abspath( self._file ) )
+  @classmethod
+  def _PathToTestFile( cls, *args ):
+    dir_of_current_script = os.path.dirname( os.path.abspath( cls._file ) )
     return os.path.join( dir_of_current_script, 'testdata', *args )

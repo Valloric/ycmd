@@ -1,4 +1,4 @@
-# Copyright (C) 2015 ycmd contributors
+# Copyright (C) 2016 ycmd contributors
 #
 # This file is part of ycmd.
 #
@@ -15,23 +15,25 @@
 # You should have received a copy of the GNU General Public License
 # along with ycmd.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import print_function
 from __future__ import absolute_import
 from __future__ import unicode_literals
+from __future__ import print_function
 from __future__ import division
 from future import standard_library
 standard_library.install_aliases()
 from builtins import *  # noqa
 
+from webtest import TestApp
+from ycmd import handlers
 from nose.tools import eq_
-from hamcrest import ( assert_that,
-                       contains,
-                       contains_inanyorder,
+from hamcrest import ( assert_that, contains, contains_inanyorder, empty,
                        has_entries )
 from .javascript_handlers_test import Javascript_Handlers_test
-from ycmd.utils import ReadFile
 from pprint import pformat
+from ycmd.utils import ReadFile
+import bottle
 import http.client
+import os
 
 
 def LocationMatcher( filepath, column_num, line_num ):
@@ -52,9 +54,296 @@ def ChunkMatcher( replacement_text, start, end ):
   } )
 
 
-class Javascript_Subcommands_test( Javascript_Handlers_test ):
+class Javascript_Persistent_test( Javascript_Handlers_test ):
 
-  def _RunTest( self, test ):
+  _prev_current_dir = None
+
+  @classmethod
+  def setUpClass( cls ):
+    bottle.debug( True )
+    handlers.SetServerStateToDefaults()
+    cls._app = TestApp( handlers.app )
+    cls._prev_current_dir = os.getcwd()
+    os.chdir( cls._PathToTestFile() )
+
+    cls()._WaitUntilTernServerReady()
+
+
+  @classmethod
+  def tearDownClass( cls ):
+    cls()._StopTernServer()
+
+    os.chdir( cls._prev_current_dir )
+
+
+  # The following properties/methods are in Object.prototype, so are present
+  # on all objects:
+  #
+  # toString()
+  # toLocaleString()
+  # valueOf()
+  # hasOwnProperty()
+  # propertyIsEnumerable()
+  # isPrototypeOf()
+
+
+  def _RunCompletionTest( self, test ):
+    """
+    Method to run a simple completion test and verify the result
+
+    test is a dictionary containing:
+      'request': kwargs for BuildRequest
+      'expect': {
+         'response': server response code (e.g. httplib.OK)
+         'data': matcher for the server response json
+      }
+    """
+
+    contents = ReadFile( test[ 'request' ][ 'filepath' ] )
+
+    def CombineRequest( request, data ):
+      kw = request
+      request.update( data )
+      return self._BuildRequest( **kw )
+
+    self._app.post_json( '/event_notification',
+                         CombineRequest( test[ 'request' ], {
+                                         'event_name': 'FileReadyToParse',
+                                         'contents': contents,
+                                         } ),
+                         expect_errors = True )
+
+    # We ignore errors here and we check the response code ourself.
+    # This is to allow testing of requests returning errors.
+    response = self._app.post_json( '/completions',
+                                    CombineRequest( test[ 'request' ], {
+                                      'contents': contents
+                                    } ),
+                                    expect_errors = True )
+
+    print( 'completer response: {0}'.format( pformat( response.json ) ) )
+
+    eq_( response.status_code, test[ 'expect' ][ 'response' ] )
+
+    assert_that( response.json, test[ 'expect' ][ 'data' ] )
+
+
+  def Completion_NoQuery_test( self ):
+    self._RunCompletionTest( {
+      'description': 'semantic completion works for simple object no query',
+      'request': {
+        'filetype'  : 'javascript',
+        'filepath'  : self._PathToTestFile( 'simple_test.js' ),
+        'line_num'  : 13,
+        'column_num': 43,
+      },
+      'expect': {
+        'response': http.client.OK,
+        'data': has_entries( {
+          'completions': contains_inanyorder(
+            self._CompletionEntryMatcher( 'a_simple_function',
+                                          'fn(param: ?) -> string' ),
+            self._CompletionEntryMatcher( 'basic_type', 'number' ),
+            self._CompletionEntryMatcher( 'object', 'object' ),
+            self._CompletionEntryMatcher( 'toString', 'fn() -> string' ),
+            self._CompletionEntryMatcher( 'toLocaleString', 'fn() -> string' ),
+            self._CompletionEntryMatcher( 'valueOf', 'fn() -> number' ),
+            self._CompletionEntryMatcher( 'hasOwnProperty',
+                                          'fn(prop: string) -> bool' ),
+            self._CompletionEntryMatcher( 'isPrototypeOf',
+                                          'fn(obj: ?) -> bool' ),
+            self._CompletionEntryMatcher( 'propertyIsEnumerable',
+                                          'fn(prop: string) -> bool' ),
+          ),
+          'errors': empty(),
+        } )
+      },
+    } )
+
+
+  def Completion_Query_test( self ):
+    self._RunCompletionTest( {
+      'description': 'semantic completion works for simple object with query',
+      'request': {
+        'filetype'  : 'javascript',
+        'filepath'  : self._PathToTestFile( 'simple_test.js' ),
+        'line_num'  : 14,
+        'column_num': 45,
+      },
+      'expect': {
+        'response': http.client.OK,
+        'data': has_entries( {
+          'completions': contains(
+            self._CompletionEntryMatcher( 'basic_type', 'number' ),
+            self._CompletionEntryMatcher( 'isPrototypeOf',
+                                          'fn(obj: ?) -> bool' ),
+          ),
+          'errors': empty(),
+        } )
+      },
+    } )
+
+
+  def Completion_Require_NoQuery_test( self ):
+    self._RunCompletionTest( {
+      'description': 'semantic completion works for simple object no query',
+      'request': {
+        'filetype'  : 'javascript',
+        'filepath'  : self._PathToTestFile( 'requirejs_test.js' ),
+        'line_num'  : 2,
+        'column_num': 15,
+      },
+      'expect': {
+        'response': http.client.OK,
+        'data': has_entries( {
+          'completions': contains_inanyorder(
+            self._CompletionEntryMatcher( 'mine_bitcoin',
+                                          'fn(how_much: ?) -> number' ),
+            self._CompletionEntryMatcher( 'get_number', 'number' ),
+            self._CompletionEntryMatcher( 'get_string', 'string' ),
+            self._CompletionEntryMatcher( 'get_thing',
+                                          'fn(a: ?) -> number|string' ),
+            self._CompletionEntryMatcher( 'toString', 'fn() -> string' ),
+            self._CompletionEntryMatcher( 'toLocaleString', 'fn() -> string' ),
+            self._CompletionEntryMatcher( 'valueOf', 'fn() -> number' ),
+            self._CompletionEntryMatcher( 'hasOwnProperty',
+                                          'fn(prop: string) -> bool' ),
+            self._CompletionEntryMatcher( 'isPrototypeOf',
+                                          'fn(obj: ?) -> bool' ),
+            self._CompletionEntryMatcher( 'propertyIsEnumerable',
+                                          'fn(prop: string) -> bool' ),
+          ),
+          'errors': empty(),
+        } )
+      },
+    } )
+
+
+  def Completion_Require_Query_test( self ):
+    self._RunCompletionTest( {
+      'description': 'semantic completion works for require object with query',
+      'request': {
+        'filetype'  : 'javascript',
+        'filepath'  : self._PathToTestFile( 'requirejs_test.js' ),
+        'line_num'  : 3,
+        'column_num': 17,
+      },
+      'expect': {
+        'response': http.client.OK,
+        'data': has_entries( {
+          'completions': contains(
+            self._CompletionEntryMatcher( 'mine_bitcoin',
+                                          'fn(how_much: ?) -> number' ),
+          ),
+          'errors': empty(),
+        } )
+      },
+    } )
+
+
+  def Completion_Require_Query_LCS_test( self ):
+    self._RunCompletionTest( {
+      'description': ( 'completion works for require object '
+                       'with query not prefix' ),
+      'request': {
+        'filetype'  : 'javascript',
+        'filepath'  : self._PathToTestFile( 'requirejs_test.js' ),
+        'line_num'  : 4,
+        'column_num': 17,
+      },
+      'expect': {
+        'response': http.client.OK,
+        'data': has_entries( {
+          'completions': contains(
+            self._CompletionEntryMatcher( 'get_number', 'number' ),
+            self._CompletionEntryMatcher( 'get_thing',
+                                          'fn(a: ?) -> number|string' ),
+            self._CompletionEntryMatcher( 'get_string', 'string' ),
+          ),
+          'errors': empty(),
+        } )
+      },
+    } )
+
+
+  def Completion_DirtyNamedBuffers_test( self ):
+    # This tests that when we have dirty buffers in our editor, tern actually
+    # uses them correctly
+    self._RunCompletionTest( {
+      'description': ( 'completion works for require object '
+                       'with query not prefix' ),
+      'request': {
+        'filetype'  : 'javascript',
+        'filepath'  : self._PathToTestFile( 'requirejs_test.js' ),
+        'line_num'  : 18,
+        'column_num': 11,
+        'file_data': {
+          self._PathToTestFile( 'no_such_lib', 'no_such_file.js' ): {
+            'contents': (
+              'define( [], function() { return { big_endian_node: 1 } } )' ),
+            'filetypes': [ 'javascript' ]
+          }
+        },
+      },
+      'expect': {
+        'response': http.client.OK,
+        'data': has_entries( {
+          'completions': contains_inanyorder(
+            self._CompletionEntryMatcher( 'big_endian_node', 'number' ),
+            self._CompletionEntryMatcher( 'toString', 'fn() -> string' ),
+            self._CompletionEntryMatcher( 'toLocaleString', 'fn() -> string' ),
+            self._CompletionEntryMatcher( 'valueOf', 'fn() -> number' ),
+            self._CompletionEntryMatcher( 'hasOwnProperty',
+                                          'fn(prop: string) -> bool' ),
+            self._CompletionEntryMatcher( 'isPrototypeOf',
+                                          'fn(obj: ?) -> bool' ),
+            self._CompletionEntryMatcher( 'propertyIsEnumerable',
+                                          'fn(prop: string) -> bool' ),
+          ),
+          'errors': empty(),
+        } )
+      },
+    } )
+
+
+  def Completion_ReturnsDocsInCompletions_test( self ):
+    # This tests that we supply docs for completions
+    self._RunCompletionTest( {
+      'description': 'completions supply docs',
+      'request': {
+        'filetype'  : 'javascript',
+        'filepath'  : self._PathToTestFile( 'requirejs_test.js' ),
+        'line_num'  : 8,
+        'column_num': 15,
+      },
+      'expect': {
+        'response': http.client.OK,
+        'data': has_entries( {
+          'completions': contains_inanyorder(
+            self._CompletionEntryMatcher(
+              'a_function',
+              'fn(bar: ?) -> {a_value: string}', {
+                'detailed_info': ( 'fn(bar: ?) -> {a_value: string}\n'
+                                   'This is a short documentation string'),
+              } ),
+            self._CompletionEntryMatcher( 'options', 'options' ),
+            self._CompletionEntryMatcher( 'toString', 'fn() -> string' ),
+            self._CompletionEntryMatcher( 'toLocaleString', 'fn() -> string' ),
+            self._CompletionEntryMatcher( 'valueOf', 'fn() -> number' ),
+            self._CompletionEntryMatcher( 'hasOwnProperty',
+                                          'fn(prop: string) -> bool' ),
+            self._CompletionEntryMatcher( 'isPrototypeOf',
+                                          'fn(obj: ?) -> bool' ),
+            self._CompletionEntryMatcher( 'propertyIsEnumerable',
+                                          'fn(prop: string) -> bool' ),
+          ),
+          'errors': empty(),
+        } )
+      },
+    } )
+
+
+  def _RunSubcommandTest( self, test ):
     contents = ReadFile( test[ 'request' ][ 'filepath' ] )
 
     def CombineRequest( request, data ):
@@ -94,10 +383,8 @@ class Javascript_Subcommands_test( Javascript_Handlers_test ):
     assert_that( response.json, test[ 'expect' ][ 'data' ] )
 
 
-  def DefinedSubcommands_test( self ):
+  def Subcommand_DefinedSubcommands_test( self ):
     subcommands_data = self._BuildRequest( completer_target = 'javascript' )
-
-    self._WaitUntilTernServerReady()
 
     eq_( sorted( [ 'GoToDefinition',
                    'GoTo',
@@ -111,8 +398,8 @@ class Javascript_Subcommands_test( Javascript_Handlers_test ):
                               subcommands_data ).json )
 
 
-  def GoToDefinition_test( self ):
-    self._RunTest( {
+  def Subcommand_GoToDefinition_test( self ):
+    self._RunSubcommandTest( {
       'description': 'GoToDefinition works within file',
       'request': {
         'command': 'GoToDefinition',
@@ -131,8 +418,8 @@ class Javascript_Subcommands_test( Javascript_Handlers_test ):
     } )
 
 
-  def GoTo_test( self ):
-    self._RunTest( {
+  def Subcommand_GoTo_test( self ):
+    self._RunSubcommandTest( {
       'description': 'GoTo works the same as GoToDefinition within file',
       'request': {
         'command': 'GoTo',
@@ -151,8 +438,8 @@ class Javascript_Subcommands_test( Javascript_Handlers_test ):
     } )
 
 
-  def GetDoc_test( self ):
-    self._RunTest( {
+  def Subcommand_GetDoc_test( self ):
+    self._RunSubcommandTest( {
       'description': 'GetDoc works within file',
       'request': {
         'command': 'GetDoc',
@@ -174,8 +461,8 @@ class Javascript_Subcommands_test( Javascript_Handlers_test ):
     } )
 
 
-  def GetType_test( self ):
-    self._RunTest( {
+  def Subcommand_GetType_test( self ):
+    self._RunSubcommandTest( {
       'description': 'GetType works within file',
       'request': {
         'command': 'GetType',
@@ -192,8 +479,8 @@ class Javascript_Subcommands_test( Javascript_Handlers_test ):
     } )
 
 
-  def GoToReferences_test( self ):
-    self._RunTest( {
+  def Subcommand_GoToReferences_test( self ):
+    self._RunSubcommandTest( {
       'description': 'GoToReferences works within file',
       'request': {
         'command': 'GoToReferences',
@@ -219,8 +506,8 @@ class Javascript_Subcommands_test( Javascript_Handlers_test ):
     } )
 
 
-  def GetDocWithNoItendifier_test( self ):
-    self._RunTest( {
+  def Subcommand_GetDocWithNoItendifier_test( self ):
+    self._RunSubcommandTest( {
       'description': 'GetDoc works when no identifier',
       'request': {
         'command': 'GetDoc',
@@ -236,9 +523,9 @@ class Javascript_Subcommands_test( Javascript_Handlers_test ):
     } )
 
 
-  def RefactorRename_Simple_test( self ):
+  def Subcommand_RefactorRename_Simple_test( self ):
     filepath = self._PathToTestFile( 'simple_test.js' )
-    self._RunTest( {
+    self._RunSubcommandTest( {
       'description': 'RefactorRename works within a single scope/file',
       'request': {
         'command': 'RefactorRename',
@@ -280,12 +567,12 @@ class Javascript_Subcommands_test( Javascript_Handlers_test ):
     } )
 
 
-  def RefactorRename_MultipleFiles_test( self ):
+  def Subcommand_RefactorRename_MultipleFiles_test( self ):
     file1 = self._PathToTestFile( 'file1.js' )
     file2 = self._PathToTestFile( 'file2.js' )
     file3 = self._PathToTestFile( 'file3.js' )
 
-    self._RunTest( {
+    self._RunSubcommandTest( {
       'description': 'RefactorRename works across files',
       'request': {
         'command': 'RefactorRename',
@@ -323,7 +610,7 @@ class Javascript_Subcommands_test( Javascript_Handlers_test ):
     } )
 
 
-  def RefactorRename_MultipleFiles_OnFileReadyToParse_test( self ):
+  def Subcommand_RefactorRename_MultipleFiles_OnFileReadyToParse_test( self ):
     file1 = self._PathToTestFile( 'file1.js' )
     file2 = self._PathToTestFile( 'file2.js' )
     file3 = self._PathToTestFile( 'file3.js' )
@@ -343,7 +630,7 @@ class Javascript_Subcommands_test( Javascript_Handlers_test ):
                          } ),
                          expect_errors = False )
 
-    self._RunTest( {
+    self._RunSubcommandTest( {
       'description': 'FileReadyToParse loads files into tern server',
       'request': {
         'command': 'RefactorRename',
@@ -385,8 +672,8 @@ class Javascript_Subcommands_test( Javascript_Handlers_test ):
     } )
 
 
-  def RefactorRename_Missing_New_Name_test( self ):
-    self._RunTest( {
+  def Subcommand_RefactorRename_Missing_New_Name_test( self ):
+    self._RunSubcommandTest( {
       'description': 'FixItRename raises an error without new name',
       'request': {
         'command': 'FixItRename',

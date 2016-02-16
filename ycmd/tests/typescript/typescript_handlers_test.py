@@ -24,12 +24,14 @@ standard_library.install_aliases()
 from builtins import *  # noqa
 
 from ..handlers_test import Handlers_test
+from hamcrest import assert_that
+from ycmd.utils import ReadFile
 
 
 class Typescript_Handlers_test( Handlers_test ):
 
-  def __init__( self ):
-    self._file = __file__
+  _file = __file__
+  _app = None
 
 
   def CompletionEntryMatcher( self, insertion_text, menu_text = None ):
@@ -39,3 +41,25 @@ class Typescript_Handlers_test( Handlers_test ):
     extra_params = { 'menu_text': menu_text }
     return self._CompletionEntryMatcher( insertion_text,
                                          extra_params = extra_params )
+
+
+  def _RunCompletionTest( self, test ):
+    filepath = self._PathToTestFile( 'test.ts' )
+    contents = ReadFile( filepath )
+
+    event_data = self._BuildRequest( filepath = filepath,
+                                     filetype = 'typescript',
+                                     contents = contents,
+                                     event_name = 'BufferVisit' )
+
+    self._app.post_json( '/event_notification', event_data )
+
+    completion_data = self._BuildRequest( filepath = filepath,
+                                          filetype = 'typescript',
+                                          contents = contents,
+                                          force_semantic = True,
+                                          line_num = 12,
+                                          column_num = 6 )
+
+    response = self._app.post_json( '/completions', completion_data )
+    assert_that( response.json, test[ 'expect' ][ 'data' ] )

@@ -1,4 +1,6 @@
-# Copyright (C) 2015 ycmd contributors
+# coding: utf-8
+#
+# Copyright (C) 2016 ycmd contributors
 #
 # This file is part of ycmd.
 #
@@ -23,39 +25,155 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import *  # noqa
 
-from hamcrest import assert_that
+from webtest import TestApp
+from ycmd import handlers
 from nose.tools import eq_
+from hamcrest import ( assert_that, contains, contains_string, empty,
+                       has_entry, has_entries, has_item, has_items )
 from .python_handlers_test import Python_Handlers_test
 from ycmd.utils import ReadFile
+import bottle
+import http.client
 import os.path
 
 
-class Python_Subcommands_test( Python_Handlers_test ):
+class Python_Persistent_test( Python_Handlers_test ):
 
-  def setUp( self ):
-    super( Python_Subcommands_test, self ).setUp()
-    self.WaitUntilJediHTTPServerReady()
+  @classmethod
+  def setUpClass( cls ):
+    bottle.debug( True )
+    handlers.SetServerStateToDefaults()
+    cls._app = TestApp( handlers.app )
+
+    cls()._WaitUntilJediHTTPServerReady()
 
 
-  def GoTo_Variation_ZeroBasedLineAndColumn_test( self ):
+  @classmethod
+  def tearDownClass( cls ):
+    cls()._StopJediHTTPServer()
+
+
+  def _RunCompletionTest( self, test ):
+    """
+    Method to run a simple completion test and verify the result
+
+    test is a dictionary containing:
+      'request': kwargs for BuildRequest
+      'expect': {
+         'response': server response code (e.g. httplib.OK)
+         'data': matcher for the server response json
+      }
+    """
+    contents = ReadFile( test[ 'request' ][ 'filepath' ] )
+
+    def CombineRequest( request, data ):
+      kw = request
+      request.update( data )
+      return self._BuildRequest( **kw )
+
+    self._app.post_json( '/event_notification',
+                         CombineRequest( test[ 'request' ], {
+                                         'event_name': 'FileReadyToParse',
+                                         'contents': contents,
+                                         } ) )
+
+    # We ignore errors here and we check the response code ourself.
+    # This is to allow testing of requests returning errors.
+    response = self._app.post_json( '/completions',
+                                    CombineRequest( test[ 'request' ], {
+                                      'contents': contents
+                                    } ),
+                                    expect_errors = True )
+
+    eq_( response.status_code, test[ 'expect' ][ 'response' ] )
+
+    assert_that( response.json, test[ 'expect' ][ 'data' ] )
+
+
+  def Completion_Basic_test( self ):
+    filepath = self._PathToTestFile( 'basic.py' )
+    completion_data = self._BuildRequest( filepath = filepath,
+                                          filetype = 'python',
+                                          contents = ReadFile( filepath ),
+                                          line_num = 7,
+                                          column_num = 3)
+
+    results = self._app.post_json( '/completions',
+                                   completion_data ).json[ 'completions' ]
+
+    assert_that( results,
+                 has_items(
+                   self._CompletionEntryMatcher( 'a' ),
+                   self._CompletionEntryMatcher( 'b' ),
+                   self._CompletionLocationMatcher( 'line_num', 3 ),
+                   self._CompletionLocationMatcher( 'line_num', 4 ),
+                   self._CompletionLocationMatcher( 'column_num', 10 ),
+                   self._CompletionLocationMatcher( 'filepath', filepath ) ) )
+
+
+  def Completion_UnicodeDescription_test( self ):
+    filepath = self._PathToTestFile( 'unicode.py' )
+    completion_data = self._BuildRequest( filepath = filepath,
+                                          filetype = 'python',
+                                          contents = ReadFile( filepath ),
+                                          force_semantic = True,
+                                          line_num = 5,
+                                          column_num = 3)
+
+    results = self._app.post_json( '/completions',
+                                   completion_data ).json[ 'completions' ]
+    assert_that( results, has_item(
+      has_entry( 'detailed_info', contains_string( u'aafäö' ) ) ) )
+
+
+  def Completion_NoSuggestions_Fallback_test( self ):
+    # Python completer doesn't raise NO_COMPLETIONS_MESSAGE, so this is a
+    # different code path to the Clang completer cases
+
+    # TESTCASE2 (general_fallback/lang_python.py)
+    self._RunCompletionTest( {
+      'description': 'param jedi does not know about (id). query="a_p"',
+      'request': {
+        'filetype'  : 'python',
+        'filepath'  : self._PathToTestFile( 'general_fallback',
+                                            'lang_python.py' ),
+        'line_num'  : 28,
+        'column_num': 20,
+        'force_semantic': False,
+      },
+      'expect': {
+        'response': http.client.OK,
+        'data': has_entries( {
+          'completions': contains(
+            self._CompletionEntryMatcher( 'a_parameter', '[ID]' ),
+            self._CompletionEntryMatcher( 'another_parameter', '[ID]' ),
+          ),
+          'errors': empty(),
+        } )
+      },
+    } )
+
+
+  def Subcommand_GoTo_Variation_ZeroBasedLineAndColumn_test( self ):
     tests = [
-          {
-            'command_arguments': [ 'GoToDefinition' ],
-            'response': {
-              'filepath': os.path.abspath( '/foo.py' ),
-              'line_num': 2,
-              'column_num': 5
-            }
-          },
-          {
-            'command_arguments': [ 'GoToDeclaration' ],
-            'response': {
-              'filepath': os.path.abspath( '/foo.py' ),
-              'line_num': 7,
-              'column_num': 1
-            }
-          }
-      ]
+      {
+        'command_arguments': [ 'GoToDefinition' ],
+        'response': {
+          'filepath': os.path.abspath( '/foo.py' ),
+          'line_num': 2,
+          'column_num': 5
+        }
+      },
+      {
+        'command_arguments': [ 'GoToDeclaration' ],
+        'response': {
+          'filepath': os.path.abspath( '/foo.py' ),
+          'line_num': 7,
+          'column_num': 1
+        }
+      }
+    ]
+
     for test in tests:
       yield self._Run_GoTo_Variation_ZeroBasedLineAndColumn, test
 
@@ -87,7 +205,7 @@ inception()
          self._app.post_json( '/run_completer_command', goto_data ).json )
 
 
-  def GoToDefinition_NotFound_test( self ):
+  def Subcommand_GoToDefinition_NotFound_test( self ):
     filepath = self._PathToTestFile( 'goto_file5.py' )
     goto_data = self._BuildRequest( command_arguments = [ 'GoToDefinition' ],
                                     line_num = 4,
@@ -99,10 +217,11 @@ inception()
                                     goto_data,
                                     expect_errors = True  ).json
     assert_that( response,
-                 self._ErrorMatcher( RuntimeError, "Can\'t jump to definition." ) )
+                 self._ErrorMatcher( RuntimeError,
+                                     "Can\'t jump to definition." ) )
 
 
-  def GoTo_test( self ):
+  def Subcommand_GoTo_test( self ):
     # Tests taken from https://github.com/Valloric/YouCompleteMe/issues/1236
     tests = [
         {
@@ -123,10 +242,10 @@ inception()
         }
     ]
     for test in tests:
-      yield self._Run_GoTo, test
+      yield self._RunSubcommandGoTo, test
 
 
-  def _Run_GoTo( self, test ):
+  def _RunSubcommandGoTo( self, test ):
     filepath = self._PathToTestFile( test[ 'request' ][ 'filename' ] )
     goto_data = self._BuildRequest( completer_target = 'filetype_default',
                                     command_arguments = [ 'GoTo' ],
@@ -139,8 +258,7 @@ inception()
          self._app.post_json( '/run_completer_command', goto_data ).json )
 
 
-  def GetDoc_Method_test( self ):
-    # Testcase1
+  def Subcommand_GetDoc_Method_test( self ):
     filepath = self._PathToTestFile( 'GetDoc.py' )
     contents = ReadFile( filepath )
 
@@ -161,8 +279,7 @@ inception()
     } )
 
 
-  def GetDoc_Class_test( self ):
-    # Testcase1
+  def Subcommand_GetDoc_Class_test( self ):
     filepath = self._PathToTestFile( 'GetDoc.py' )
     contents = ReadFile( filepath )
 
@@ -181,7 +298,7 @@ inception()
     } )
 
 
-  def GoToReferences_test( self ):
+  def Subcommand_GoToReferences_test( self ):
     filepath = self._PathToTestFile( 'goto_references.py' )
     contents = ReadFile( filepath )
 

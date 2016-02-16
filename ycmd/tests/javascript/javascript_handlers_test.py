@@ -24,29 +24,13 @@ standard_library.install_aliases()
 from builtins import *  # noqa
 
 from ..handlers_test import Handlers_test
-import os
 import time
 
 
 class Javascript_Handlers_test( Handlers_test ):
 
-  def __init__( self ):
-    self._file = __file__
-
-
-  def setUp( self ):
-    super( Javascript_Handlers_test, self ).setUp()
-
-    self._prev_current_dir = os.getcwd()
-    os.chdir( self._PathToTestFile() )
-
-    self._WaitUntilTernServerReady()
-
-
-  def tearDown( self ):
-    self._StopTernServer()
-
-    os.chdir( self._prev_current_dir )
+  _file = __file__
+  _app = None
 
 
   def _StopTernServer( self ):

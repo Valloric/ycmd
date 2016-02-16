@@ -1,4 +1,4 @@
-# Copyright (C) 2015 ycmd contributors
+# Copyright (C) 2016 ycmd contributors
 #
 # This file is part of ycmd.
 #
@@ -23,19 +23,34 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import *  # noqa
 
-from ycmd.utils import ReadFile
-from hamcrest import assert_that, has_entry, has_items, contains_string
+from webtest import TestApp
+from ycmd import handlers
+from nose.tools import eq_
+from hamcrest import assert_that, has_items
 from .rust_handlers_test import Rust_Handlers_test
+from ycmd.utils import ReadFile
+import bottle
 
 
-class Rust_GetCompletions_test( Rust_Handlers_test ):
+class Rust_Persistent_test( Rust_Handlers_test ):
+
+  @classmethod
+  def setUpClass( cls ):
+    bottle.debug( True )
+    handlers.SetServerStateToDefaults()
+    cls._app = TestApp( handlers.app )
+
+    cls()._WaitUntilRacerdServerReady()
 
 
-  def Basic_test( self ):
+  @classmethod
+  def tearDownClass( cls ):
+    cls()._StopRacerdServer()
+
+
+  def Completion_Basic_test( self ):
     filepath = self._PathToTestFile( 'test.rs' )
     contents = ReadFile( filepath )
-
-    self._WaitUntilServerReady()
 
     completion_data = self._BuildRequest( filepath = filepath,
                                           filetype = 'rust',
@@ -52,22 +67,33 @@ class Rust_GetCompletions_test( Rust_Handlers_test ):
                             self._CompletionEntryMatcher( 'build_shuttle' ) ) )
 
 
-  def WhenStandardLibraryCompletionFails_MentionRustSrcPath_test( self ):
-    filepath = self._PathToTestFile( 'std_completions.rs' )
+  def _RunSubcommandGoTo( self, params ):
+    filepath = self._PathToTestFile( 'test.rs' )
     contents = ReadFile( filepath )
 
-    self._WaitUntilServerReady()
+    command = params[ 'command' ]
+    goto_data = self._BuildRequest( completer_target = 'filetype_default',
+                                    command_arguments = [ command ],
+                                    line_num = 7,
+                                    column_num = 12,
+                                    contents = contents,
+                                    filetype = 'rust',
+                                    filepath = filepath )
 
-    completion_data = self._BuildRequest( filepath = filepath,
-                                          filetype = 'rust',
-                                          contents = contents,
-                                          force_semantic = True,
-                                          line_num = 5,
-                                          column_num = 11 )
+    results = self._app.post_json( '/run_completer_command',
+                                   goto_data )
 
-    response = self._app.post_json( '/completions',
-                                    completion_data,
-                                    expect_errors = True ).json
-    assert_that( response,
-                 has_entry( 'message',
-                            contains_string( 'rust_src_path' ) ) )
+    eq_( {
+      'line_num': 1, 'column_num': 8, 'filepath': filepath
+    }, results.json )
+
+
+  def Subcommand_GoTo_all_test( self ):
+    tests = [
+      { 'command': 'GoTo' },
+      { 'command': 'GoToDefinition' },
+      { 'command': 'GoToDeclaration' }
+    ]
+
+    for test in tests:
+      yield self._RunSubcommandGoTo, test

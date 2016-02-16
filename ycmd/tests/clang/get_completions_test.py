@@ -27,8 +27,8 @@ from webtest import TestApp
 from nose.tools import eq_
 from hamcrest import ( assert_that, contains, contains_inanyorder, empty,
                        has_item, has_items, has_entry, has_entries )
-from ...responses import UnknownExtraConf, NoExtraConfDetected
-from ... import handlers
+from ycmd.responses import UnknownExtraConf, NoExtraConfDetected
+from ycmd import handlers
 from ycmd.completers.cpp.clang_completer import NO_COMPLETIONS_MESSAGE
 from .clang_handlers_test import Clang_Handlers_test
 from ycmd.utils import ReadFile

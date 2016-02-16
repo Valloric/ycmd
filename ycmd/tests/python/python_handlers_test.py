@@ -29,15 +29,11 @@ from ..handlers_test import Handlers_test
 
 class Python_Handlers_test( Handlers_test ):
 
-  def __init__( self ):
-    self._file = __file__
+  _file = __file__
+  _app = None
 
 
-  def tearDown( self ):
-    self.StopJediHTTPServer()
-
-
-  def WaitUntilJediHTTPServerReady( self ):
+  def _WaitUntilJediHTTPServerReady( self ):
     retries = 100
 
     while retries > 0:
@@ -51,7 +47,7 @@ class Python_Handlers_test( Handlers_test ):
     raise RuntimeError( "Timeout waiting for JediHTTP" )
 
 
-  def StopJediHTTPServer( self ):
+  def _StopJediHTTPServer( self ):
     request = self._BuildRequest( completer_target = 'filetype_default',
                                   command_arguments = [ 'StopServer' ],
                                   filetype = 'python' )

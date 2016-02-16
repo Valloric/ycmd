@@ -24,12 +24,26 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import *  # noqa
 
-from nose.tools import eq_
+from webtest import TestApp
+from ycmd import handlers
 from .handlers_test import Handlers_test
+from nose.tools import eq_
 from ycmd.tests.test_utils import DummyCompleter
 from mock import patch
+import bottle
+
 
 class Subcommands_test( Handlers_test ):
+
+  def __init__( self ):
+    self._app = None
+
+
+  def setUp( self ):
+    bottle.debug( True )
+    handlers.SetServerStateToDefaults()
+    self._app = TestApp( handlers.app )
+
 
   @patch( 'ycmd.tests.test_utils.DummyCompleter.GetSubcommandsMap',
           return_value = { 'A': lambda x: x, 'B': lambda x: x, 'C': lambda x: x } )
