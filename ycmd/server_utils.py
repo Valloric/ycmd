@@ -31,20 +31,28 @@ CORE_NOT_COMPATIBLE_MESSAGE = (
   'ycmd can\'t run: ycm_core lib too old, PLEASE RECOMPILE'
 )
 
-
-def DirectoryOfThisScript():
-  return os.path.dirname( os.path.abspath( __file__ ) )
+DIR_OF_CURRENT_SCRIPT = os.path.dirname( os.path.abspath( __file__ ) )
 
 
 def SetUpPythonPath():
-  sys.path.insert( 0, os.path.join( DirectoryOfThisScript(), '..' ) )
+  sys.path.insert( 0, os.path.join( DIR_OF_CURRENT_SCRIPT, '..' ) )
+
+  # python-future needs special handling. Not only does it store the modules
+  # under its 'src' folder, but SOME of its modules are only meant to be
+  # accessible under py2, not py3. This is because these modules (like
+  # `queue`) are implementations of modules present in the py3 standard
+  # library. So to work around issues, we place the python-future last on
+  # sys.path so that they can be overriden by the standard library.
+  # Furthermore, it is imported by the utils module so we need to add it here.
+  sys.path.append( os.path.realpath( os.path.join(
+    DIR_OF_CURRENT_SCRIPT, '..', 'third_party', 'python-future', 'src' ) ) )
 
   from ycmd import utils
   utils.AddNearestThirdPartyFoldersToSysPath( __file__ )
 
 
 def ExpectedCoreVersion():
-  filepath = os.path.join( DirectoryOfThisScript(), '..', VERSION_FILENAME )
+  filepath = os.path.join( DIR_OF_CURRENT_SCRIPT, '..', VERSION_FILENAME )
   with io.open( filepath, encoding = 'utf8' ) as f:
     return int( f.read() )
 
