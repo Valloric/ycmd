@@ -26,9 +26,19 @@ from future.utils import iteritems
 standard_library.install_aliases()
 from builtins import *  # noqa
 
+from future.utils import PY2
 from ycmd.completers.completer import Completer
 from ycmd.responses import BuildCompletionData
+from ycmd.utils import OnWindows
 import os.path
+
+try:
+  from unittest2 import skipIf
+except ImportError:
+  from unittest import skipIf
+
+Py2Test = skipIf( not PY2, 'Python 2 test' )
+WindowsTest = skipIf( not OnWindows(), 'Windows test' )
 
 
 def BuildRequest( **kwargs ):
@@ -83,4 +93,3 @@ class DummyCompleter( Completer ):
   # This method is here for testing purpose, so it can be mocked during tests
   def CandidatesList( self ):
     return []
-
