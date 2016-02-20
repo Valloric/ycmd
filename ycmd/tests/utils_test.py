@@ -293,3 +293,13 @@ def AddNearestThirdPartyFoldersToSysPath_Failure_test():
     calling( utils.AddNearestThirdPartyFoldersToSysPath ).with_args(
       os.path.expanduser( '~' ) ),
     raises( RuntimeError, '.*third_party folder.*' ) )
+
+
+def OpenForStdHandle_PrintDoesntThrowException_test():
+  try:
+    temp = PathToTestFile( 'open-for-std-handle' )
+    with utils.OpenForStdHandle( temp ) as f:
+      print( 'foo', file = f )
+  finally:
+    os.remove( temp )
+
