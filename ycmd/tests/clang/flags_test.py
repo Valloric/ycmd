@@ -23,9 +23,11 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import *  # noqa
 
+from future.utils import PY2
 from nose.tools import eq_
 from nose.tools import ok_
 from ycmd.completers.cpp import flags
+from mock import MagicMock
 
 
 def SanitizeFlags_Passthrough_test():
@@ -234,3 +236,18 @@ def ExtraClangFlags_test():
       num_found += 1
 
   eq_( 1, num_found )
+
+
+def FlagsForFile_PassCppCompatibleString_test():
+  module = MagicMock()
+  module.FlagsForFile = MagicMock(
+    side_effect = lambda filename, client_data: filename )
+
+  filename = flags._CallExtraConfFlagsForFile( module, 'some_filename', None )
+
+  if PY2:
+    eq_( filename, 'some_filename' )
+    eq_( type( filename ), type( '' ) )
+  else:
+    eq_( filename, bytes( b'some_filename' ) )
+    ok_( isinstance( filename, bytes ) )
