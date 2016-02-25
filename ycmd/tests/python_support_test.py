@@ -23,12 +23,14 @@ from future import standard_library
 standard_library.install_aliases()
 # Intentionally not importing all builtins!
 
+import os
+
 from nose.tools import eq_
 from future.utils import native
 
 import ycm_core
 from ycmd.tests.test_utils import ClangOnly, Py2Only, Py3Only, PathToTestFile
-from ycmd.utils import ToBytes, ToUnicode
+from ycmd.utils import ToBytes, ToUnicode, OnWindows
 
 
 @Py2Only
@@ -40,64 +42,56 @@ def GetUtf8String_Py2Str_test():
 def GetUtf8String_Py3Bytes_test():
   eq_( 'foo', str( ycm_core.GetUtf8String( b'foo' ) ) )
 
+
 # No test for `bytes` from builtins because it's very difficult to make
 # GetUtf8String work with that and also it should never receive that type in the
 # first place (only py2 str/unicode and py3 bytes/str).
+
 
 def GetUtf8String_Unicode_test():
   eq_( 'foo', str( ycm_core.GetUtf8String( u'foo' ) ) )
 
 
+def _CompilationDatabaseTest( convert ):
+  if OnWindows():
+    testdata_dir = PathToTestFile( 'windows' )
+    cc_dir = 'C:\\dir'
+  else:
+    testdata_dir = PathToTestFile( 'unix' )
+    cc_dir = '/dir'
+
+  cc_filename = os.path.join( cc_dir, 'example.cc' )
+
+  testdata_dir = convert( testdata_dir )
+  cc_filename = convert( cc_filename )
+
+  # Ctor reads ycmd/tests/testdata/[unix|windows]/compile_commands.json
+  db = ycm_core.CompilationDatabase( testdata_dir )
+  info = db.GetCompilationInfoForFile( cc_filename )
+
+  eq_( str( info.compiler_working_dir_ ), cc_dir )
+  eq_( str( info.compiler_flags_[ 0 ] ), '/usr/bin/clang++' )
+  eq_( str( info.compiler_flags_[ 1 ] ), 'example.cc' )
+
+
 @ClangOnly
 @Py2Only
 def CompilationDatabase_Py2Str_test():
-  testdata_dir = native( ToBytes( PathToTestFile() ) )
-
-  # Ctor reads ycmd/tests/testdata/compiled_commands.json
-  db = ycm_core.CompilationDatabase( testdata_dir )
-  info = db.GetCompilationInfoForFile( '/dir/example.cc' )
-
-  eq_( str( info.compiler_working_dir_ ), '/dir' )
-  eq_( str( info.compiler_flags_[ 0 ] ), '/usr/bin/clang++' )
-  eq_( str( info.compiler_flags_[ 1 ] ), 'example.cc' )
+  _CompilationDatabaseTest( lambda x: native( ToBytes( x ) ) )
 
 
 @ClangOnly
 @Py2Only
 def CompilationDatabase_Py2Unicode_test():
-  testdata_dir = native( ToUnicode( PathToTestFile() ) )
-
-  # Ctor reads ycmd/tests/testdata/compiled_commands.json
-  db = ycm_core.CompilationDatabase( testdata_dir )
-  info = db.GetCompilationInfoForFile( u'/dir/example.cc' )
-
-  eq_( str( info.compiler_working_dir_ ), '/dir' )
-  eq_( str( info.compiler_flags_[ 0 ] ), '/usr/bin/clang++' )
-  eq_( str( info.compiler_flags_[ 1 ] ), 'example.cc' )
+  _CompilationDatabaseTest( lambda x: native( ToUnicode( x ) ) )
 
 
 @ClangOnly
 @Py3Only
 def CompilationDatabase_Py3Bytes_test():
-  testdata_dir = native( ToBytes( PathToTestFile() ) )
-
-  # Ctor reads ycmd/tests/testdata/compiled_commands.json
-  db = ycm_core.CompilationDatabase( testdata_dir )
-  info = db.GetCompilationInfoForFile( b'/dir/example.cc' )
-
-  eq_( str( info.compiler_working_dir_ ), '/dir' )
-  eq_( str( info.compiler_flags_[ 0 ] ), '/usr/bin/clang++' )
-  eq_( str( info.compiler_flags_[ 1 ] ), 'example.cc' )
+  _CompilationDatabaseTest( lambda x: native( ToBytes( x ) ) )
 
 
 @ClangOnly
 def CompilationDatabase_NativeString_test():
-  testdata_dir = PathToTestFile()
-
-  # Ctor reads ycmd/tests/testdata/compiled_commands.json
-  db = ycm_core.CompilationDatabase( testdata_dir )
-  info = db.GetCompilationInfoForFile( '/dir/example.cc' )
-
-  eq_( str( info.compiler_working_dir_ ), '/dir' )
-  eq_( str( info.compiler_flags_[ 0 ] ), '/usr/bin/clang++' )
-  eq_( str( info.compiler_flags_[ 1 ] ), 'example.cc' )
+  _CompilationDatabaseTest( lambda x: x )
