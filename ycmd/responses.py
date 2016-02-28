@@ -209,9 +209,11 @@ def BuildDiagnosticData( diagnostic ):
 def BuildTokenData( token ):
   return {
     'kind': token.kind.name,
-    'line_number': token.line_number,
-    'column_number': token.column_number,
-    'offset': token.offset,
+    'type': token.type.name,
+    'start_line': token.start_line,
+    'start_column': token.start_column,
+    'end_line': token.end_line,
+    'end_column': token.end_column,
   }
 
 

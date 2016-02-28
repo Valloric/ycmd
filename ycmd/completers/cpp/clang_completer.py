@@ -366,8 +366,8 @@ class ClangCompleter( Completer ):
     if not filename:
       raise ValueError( INVALID_FILE_MESSAGE )
 
-    filename_utf8 = ToUtf8IfNeeded( filename )
-    if self._completer.UpdatingTranslationUnit( filename_utf8 ):
+    if self._completer.UpdatingTranslationUnit(
+        ToCppStringCompatible( filename ) ):
       raise RuntimeError( "Still parsing file, no tokens yet." )
 
     start_line = request_data[ 'start_line' ]
@@ -375,9 +375,9 @@ class ClangCompleter( Completer ):
     end_line = request_data[ 'end_line' ]
     end_column = request_data[ 'end_column' ]
     semantic_tokens = self._completer.GetSemanticTokens(
-                                                   filename_utf8,
-                                                   start_line, start_column,
-                                                   end_line, end_column )
+        ToCppStringCompatible( filename ),
+        start_line, start_column,
+        end_line, end_column )
     return [ responses.BuildTokenData( token ) for token in semantic_tokens ]
 
 
