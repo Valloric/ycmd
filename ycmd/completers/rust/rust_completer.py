@@ -24,7 +24,7 @@ from future.utils import native, iteritems
 from future import standard_library
 standard_library.install_aliases()
 
-from ycmd.utils import ToBytes, SetEnviron, ProcessIsRunning
+from ycmd.utils import ToBytes, ToUnicode, SetEnviron, ProcessIsRunning
 from ycmd.completers.completer import Completer
 from ycmd import responses, utils, hmac_utils
 
@@ -396,7 +396,7 @@ class RustCompleter( Completer ):
                  '  listening at: {0}\n'
                  '  racerd path: {1}\n'
                  '  stdout log: {2}\n'
-                 '  stderr log: {3}').format( self._racerd_host,
+                 '  stderr log: {3}').format( ToUnicode( self._racerd_host ),
                                               self._racerd,
                                               self._server_stdout,
                                               self._server_stderr )
