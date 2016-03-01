@@ -23,21 +23,16 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import *  # noqa
 
-from webtest import TestApp
-from ycmd import handlers
 from hamcrest import contains_inanyorder, has_entries
 from .typescript_handlers_test import Typescript_Handlers_test
 from mock import patch
-import bottle
 
 
 class TypeScript_Persistent_test( Typescript_Handlers_test ):
 
   @classmethod
   def setUpClass( cls ):
-    bottle.debug( True )
-    handlers.SetServerStateToDefaults()
-    cls._app = TestApp( handlers.app )
+    cls._SetUpApp()
 
 
   @patch( 'ycmd.completers.typescript.typescript_completer.MAX_DETAILED_COMPLETIONS', 2 )

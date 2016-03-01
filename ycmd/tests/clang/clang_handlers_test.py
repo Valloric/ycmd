@@ -23,22 +23,14 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import *  # noqa
 
-from webtest import TestApp
-from ycmd import handlers
 from ..handlers_test import Handlers_test
-import bottle
 
 
 class Clang_Handlers_test( Handlers_test ):
 
   _file = __file__
-
-
-  def __init__( self ):
-    self._app = None
+  _app = None
 
 
   def setUp( self ):
-    bottle.debug( True )
-    handlers.SetServerStateToDefaults()
-    self._app = TestApp( handlers.app )
+    self._SetUpApp()

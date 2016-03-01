@@ -23,15 +23,12 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import *  # noqa
 
-from webtest import TestApp
-from ycmd import handlers
 from nose.tools import eq_
 from hamcrest import ( assert_that, contains, contains_inanyorder, empty,
                        has_entries )
 from .javascript_handlers_test import Javascript_Handlers_test
 from pprint import pformat
 from ycmd.utils import ReadFile
-import bottle
 import http.client
 import os
 
@@ -60,9 +57,7 @@ class Javascript_Persistent_test( Javascript_Handlers_test ):
 
   @classmethod
   def setUpClass( cls ):
-    bottle.debug( True )
-    handlers.SetServerStateToDefaults()
-    cls._app = TestApp( handlers.app )
+    cls._SetUpApp()
     cls._prev_current_dir = os.getcwd()
     os.chdir( cls._PathToTestFile() )
 

@@ -23,20 +23,28 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import *  # noqa
 
-from ..server_utils import SetUpPythonPath
+from ycmd.server_utils import SetUpPythonPath
 SetUpPythonPath()
-from .. import handlers
-from ycmd import user_options_store
+from webtest import TestApp
+from ycmd import handlers, user_options_store
 from hamcrest import has_entries, has_entry, contains_string
 from .test_utils import BuildRequest
 from mock import patch
 import contextlib
 import os
+import bottle
 
 
 class Handlers_test( object ):
 
   _file = __file__
+
+
+  @classmethod
+  def _SetUpApp( cls ):
+    bottle.debug( True )
+    handlers.SetServerStateToDefaults()
+    cls._app = TestApp( handlers.app )
 
 
   @contextlib.contextmanager

@@ -23,25 +23,15 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import *  # noqa
 
-from webtest import TestApp
-from ycmd import handlers
 from hamcrest import assert_that, has_entry, contains_string
 from .rust_handlers_test import Rust_Handlers_test
 from ycmd.utils import ReadFile
-import bottle
 
 
-class Rust_Persistent_test( Rust_Handlers_test ):
-
-  def __init__( self ):
-    self._app = None
-
+class Rust_Isolated_test( Rust_Handlers_test ):
 
   def setUp( self ):
-    bottle.debug( True )
-    handlers.SetServerStateToDefaults()
-    self._app = TestApp( handlers.app )
-
+    self._SetUpApp()
     self._WaitUntilRacerdServerReady()
 
 

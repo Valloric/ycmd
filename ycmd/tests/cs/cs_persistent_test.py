@@ -25,16 +25,14 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import *  # noqa
 
-from webtest import AppError, TestApp
+from webtest import AppError
 from .cs_handlers_test import Cs_Handlers_test
-from ycmd import handlers
 from contextlib import contextmanager
 from nose.tools import eq_
 from hamcrest import ( assert_that, contains, contains_string, empty, equal_to,
                        greater_than, has_entry, has_entries, has_item,
                        has_items )
 from ycmd.utils import ReadFile
-import bottle
 
 
 class Cs_Persistent_test( Cs_Handlers_test ):
@@ -43,9 +41,7 @@ class Cs_Persistent_test( Cs_Handlers_test ):
 
   @classmethod
   def setUpClass( cls ):
-    bottle.debug( True )
-    handlers.SetServerStateToDefaults()
-    cls._app = TestApp( handlers.app )
+    cls._SetUpApp()
     cls._app.post_json(
       '/ignore_extra_conf_file',
       { 'filepath': cls._PathToTestFile( '.ycm_extra_conf.py' ) } )

@@ -23,12 +23,9 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import *  # noqa
 
-from webtest import TestApp
 from .cs_handlers_test import Cs_Handlers_test
-from ycmd import handlers
 from nose.tools import ok_
 from ycmd.utils import ReadFile
-import bottle
 import os.path
 import re
 
@@ -36,9 +33,7 @@ import re
 class Cs_Isolated_test( Cs_Handlers_test ):
 
   def setUp( self ):
-    bottle.debug( True )
-    handlers.SetServerStateToDefaults()
-    self._app = TestApp( handlers.app )
+    self._SetUpApp()
     self._app.post_json(
       '/ignore_extra_conf_file',
       { 'filepath': self._PathToTestFile( '.ycm_extra_conf.py' ) } )
@@ -57,7 +52,6 @@ class Cs_Isolated_test( Cs_Handlers_test ):
 
   def _StopServer_KeepLogFiles( self, keeping_log_files ):
     with self.UserOption( 'server_keep_logfiles', keeping_log_files ):
-      self._app = TestApp( handlers.app )
       self._app.post_json(
         '/ignore_extra_conf_file',
         { 'filepath': self._PathToTestFile( '.ycm_extra_conf.py' ) } )

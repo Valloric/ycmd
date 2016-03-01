@@ -23,23 +23,17 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import *  # noqa
 
-from webtest import TestApp
-from ycmd import handlers
 from nose.tools import eq_
 from hamcrest import assert_that, has_items
 from .rust_handlers_test import Rust_Handlers_test
 from ycmd.utils import ReadFile
-import bottle
 
 
 class Rust_Persistent_test( Rust_Handlers_test ):
 
   @classmethod
   def setUpClass( cls ):
-    bottle.debug( True )
-    handlers.SetServerStateToDefaults()
-    cls._app = TestApp( handlers.app )
-
+    cls._SetUpApp()
     cls()._WaitUntilRacerdServerReady()
 
 

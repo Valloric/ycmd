@@ -23,12 +23,10 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import *  # noqa
 
-from webtest import TestApp
 from nose.tools import eq_
 from hamcrest import ( assert_that, contains, contains_inanyorder, empty,
                        has_item, has_items, has_entry, has_entries )
 from ycmd.responses import UnknownExtraConf, NoExtraConfDetected
-from ycmd import handlers
 from ycmd.completers.cpp.clang_completer import NO_COMPLETIONS_MESSAGE
 from .clang_handlers_test import Clang_Handlers_test
 from ycmd.utils import ReadFile
@@ -303,7 +301,6 @@ int main()
 
   def NoCompletionsWhenAutoTriggerOff_test( self ):
     with self.UserOption( 'auto_trigger', False ):
-      self._app = TestApp( handlers.app )
       self._app.post_json(
         '/ignore_extra_conf_file',
         { 'filepath': self._PathToTestFile( '.ycm_extra_conf.py' ) } )

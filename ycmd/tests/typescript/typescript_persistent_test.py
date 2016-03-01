@@ -24,20 +24,15 @@ standard_library.install_aliases()
 from builtins import *  # noqa
 
 from hamcrest import assert_that, contains_inanyorder, has_items, has_entries
-from webtest import TestApp
-from ycmd import handlers
 from .typescript_handlers_test import Typescript_Handlers_test
 from ycmd.utils import ReadFile
-import bottle
 
 
 class TypeScript_Persistent_test( Typescript_Handlers_test ):
 
   @classmethod
   def setUpClass( cls ):
-    bottle.debug( True )
-    handlers.SetServerStateToDefaults()
-    cls._app = TestApp( handlers.app )
+    cls._SetUpApp()
 
 
   def _RunCompletionTest( self, test ):

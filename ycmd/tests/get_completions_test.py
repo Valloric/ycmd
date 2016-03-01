@@ -24,26 +24,20 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import *  # noqa
 
-from webtest import TestApp
-from ycmd import handlers
 from .handlers_test import Handlers_test
 from nose.tools import eq_
 from hamcrest import assert_that, has_items
 from ycmd.tests.test_utils import DummyCompleter
 from mock import patch
-import bottle
 
 
 class GetCompletions_test( Handlers_test ):
 
-  def __init__( self ):
-    self._app = None
+  _app = None
 
 
   def setUp( self ):
-    bottle.debug( True )
-    handlers.SetServerStateToDefaults()
-    self._app = TestApp( handlers.app )
+    self._SetUpApp()
 
 
   def RequestValidation_NoLineNumException_test( self ):
@@ -168,8 +162,6 @@ class GetCompletions_test( Handlers_test ):
 
   def UltiSnipsCompleter_UnusedWhenOffWithOption_test( self ):
     with self.UserOption( 'use_ultisnips_completer', False ):
-      self._app = TestApp( handlers.app )
-
       event_data = self._BuildRequest(
         event_name = 'BufferVisit',
         ultisnips_snippets = [

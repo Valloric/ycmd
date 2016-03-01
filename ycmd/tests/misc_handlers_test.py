@@ -24,25 +24,19 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import *  # noqa
 
-from webtest import TestApp
-from ycmd import handlers
 from .handlers_test import Handlers_test
 from nose.tools import ok_
 from ycmd.tests.test_utils import DummyCompleter
 from hamcrest import assert_that, contains
-import bottle
 
 
 class MiscHandlers_test( Handlers_test ):
 
-  def __init__( self ):
-    self._app = None
+  _app = None
 
 
   def setUp( self ):
-    bottle.debug( True )
-    handlers.SetServerStateToDefaults()
-    self._app = TestApp( handlers.app )
+    self._SetUpApp()
 
 
   def SemanticCompletionAvailable_test( self ):

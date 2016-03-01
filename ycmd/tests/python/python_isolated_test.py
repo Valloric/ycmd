@@ -23,14 +23,12 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import *  # noqa
 
-from webtest import TestApp
-from ycmd import handlers, utils
+from ycmd import utils
 from .python_handlers_test import Python_Handlers_test
 from mock import patch
 from ycmd.completers.python.jedi_completer import BINARY_NOT_FOUND_MESSAGE
 from hamcrest.core.base_matcher import BaseMatcher
 from hamcrest import assert_that, has_item, contains, equal_to, is_not # noqa
-import bottle
 import sys
 
 
@@ -81,9 +79,7 @@ class Python_Isolated_test( Python_Handlers_test ):
 
 
   def setUp( self ):
-    bottle.debug( True )
-    handlers.SetServerStateToDefaults()
-    self._app = TestApp( handlers.app )
+    self._SetUpApp()
 
 
   @patch( 'ycmd.utils.SafePopen' )

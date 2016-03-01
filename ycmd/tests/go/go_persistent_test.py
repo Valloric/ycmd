@@ -23,22 +23,17 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import *  # noqa
 
-from webtest import TestApp
-from ycmd import handlers
 from nose.tools import eq_
 from hamcrest import assert_that, has_item
 from .go_handlers_test import Go_Handlers_test
 from ycmd.utils import ReadFile
-import bottle
 
 
 class Go_Persistent_test( Go_Handlers_test ):
 
   @classmethod
   def setUpClass( cls ):
-    bottle.debug( True )
-    handlers.SetServerStateToDefaults()
-    cls._app = TestApp( handlers.app )
+    cls._SetUpApp()
 
 
   @classmethod

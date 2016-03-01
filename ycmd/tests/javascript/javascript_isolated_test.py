@@ -23,15 +23,12 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import *  # noqa
 
-from webtest import TestApp
-from ycmd import handlers
 from nose.tools import eq_
 from hamcrest import assert_that, empty
 from .javascript_handlers_test import Javascript_Handlers_test
 from pprint import pformat
 from ycmd.utils import ReadFile
 from mock import patch
-import bottle
 import http.client
 import os
 
@@ -40,14 +37,11 @@ class Javascript_Isolated_test( Javascript_Handlers_test ):
 
 
   def __init__( self ):
-    self._app = None
     self._prev_current_dir = None
 
 
   def setUp( self ):
-    bottle.debug( True )
-    handlers.SetServerStateToDefaults()
-    self._app = TestApp( handlers.app )
+    self._SetUpApp()
     self._prev_current_dir = os.getcwd()
     os.chdir( self._PathToTestFile() )
 

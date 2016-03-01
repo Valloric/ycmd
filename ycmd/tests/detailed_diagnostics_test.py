@@ -23,28 +23,22 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import *  # noqa
 
-from webtest import TestApp
-from ycmd import handlers
 from .handlers_test import Handlers_test
 from nose.tools import eq_
 from hamcrest import assert_that
 from ..responses import NoDiagnosticSupport, BuildDisplayMessageResponse
 from .test_utils import DummyCompleter
 from mock import patch
-import bottle
 import http.client
 
 
 class Diagnostics_test( Handlers_test ):
 
-  def __init__( self ):
-    self._app = None
+  _app = None
 
 
   def setUp( self ):
-    bottle.debug( True )
-    handlers.SetServerStateToDefaults()
-    self._app = TestApp( handlers.app )
+    self._SetUpApp()
 
 
   def DoesntWork_test( self ):
