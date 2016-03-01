@@ -29,7 +29,7 @@ from .go_handlers_test import Go_Handlers_test
 from ycmd.utils import ReadFile
 
 
-class Go_Persistent_test( Go_Handlers_test ):
+class Go_Shared_test( Go_Handlers_test ):
 
   @classmethod
   def setUpClass( cls ):

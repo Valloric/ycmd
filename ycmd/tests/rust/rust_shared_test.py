@@ -29,7 +29,7 @@ from .rust_handlers_test import Rust_Handlers_test
 from ycmd.utils import ReadFile
 
 
-class Rust_Persistent_test( Rust_Handlers_test ):
+class Rust_Shared_test( Rust_Handlers_test ):
 
   @classmethod
   def setUpClass( cls ):

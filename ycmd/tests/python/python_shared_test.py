@@ -34,7 +34,7 @@ import http.client
 import os.path
 
 
-class Python_Persistent_test( Python_Handlers_test ):
+class Python_Shared_test( Python_Handlers_test ):
 
   @classmethod
   def setUpClass( cls ):

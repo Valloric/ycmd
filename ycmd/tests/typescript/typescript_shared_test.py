@@ -28,7 +28,7 @@ from .typescript_handlers_test import Typescript_Handlers_test
 from ycmd.utils import ReadFile
 
 
-class TypeScript_Persistent_test( Typescript_Handlers_test ):
+class TypeScript_Shared_test( Typescript_Handlers_test ):
 
   @classmethod
   def setUpClass( cls ):

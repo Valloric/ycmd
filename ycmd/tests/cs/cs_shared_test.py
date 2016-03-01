@@ -35,7 +35,7 @@ from hamcrest import ( assert_that, contains, contains_string, empty, equal_to,
 from ycmd.utils import ReadFile
 
 
-class Cs_Persistent_test( Cs_Handlers_test ):
+class Cs_Shared_test( Cs_Handlers_test ):
 
   _filepaths = []
 

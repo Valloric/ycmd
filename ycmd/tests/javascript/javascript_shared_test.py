@@ -51,7 +51,7 @@ def ChunkMatcher( replacement_text, start, end ):
   } )
 
 
-class Javascript_Persistent_test( Javascript_Handlers_test ):
+class Javascript_Shared_test( Javascript_Handlers_test ):
 
   _prev_current_dir = None
 
