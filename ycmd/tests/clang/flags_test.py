@@ -248,3 +248,28 @@ def ExtraClangFlags_test():
       num_found += 1
 
   eq_( 1, num_found )
+
+
+@patch( 'ycmd.completers.cpp.flags._GetMacClangVersionList',
+        return_value = [ '1.0.0', '7.0.1', '7.0.2', '___garbage__' ] )
+@patch( 'ycmd.completers.cpp.flags._MacClangIncludeDirExists',
+        side_effect =  [ False, True, True, True ] )
+def Mac_LatestMacClangIncludes_test( *args ):
+  eq_( flags._LatestMacClangIncludes(),
+       [ '/Applications/Xcode.app/Contents/Developer/Toolchains/'
+         'XcodeDefault.xctoolchain/usr/lib/clang/7.0.2/include' ] )
+
+
+def Mac_LatestMacClangIncludes_NoSuchDirectory_test():
+  def RaiseOSError( x ):
+    raise OSError( x )
+
+  with patch( 'os.listdir', side_effect = RaiseOSError ):
+    eq_( flags._LatestMacClangIncludes(), [] )
+
+
+def Mac_PathsForAllMacToolchains_test():
+  eq_( flags._PathsForAllMacToolchains( 'test' ),
+       [ '/Applications/Xcode.app/Contents/Developer/Toolchains/'
+         'XcodeDefault.xctoolchain/test',
+         '/Library/Developer/CommandLineTools/test' ] )
