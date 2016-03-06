@@ -184,7 +184,7 @@ BOOST_PYTHON_MODULE(ycm_core)
   class_< std::vector< Diagnostic > >( "DiagnosticVector" )
     .def( vector_indexing_suite< std::vector< Diagnostic > >() );
 
-  enum_< Token::Kind >( "TokenKind" )
+  enum_< Token::TokenKind >( "TokenKind" )
     .value( "Punctuation", Token::PUNCTUATION )
     .value( "Keyword", Token::KEYWORD )
     .value( "Identifier", Token::IDENTIFIER )
@@ -192,7 +192,7 @@ BOOST_PYTHON_MODULE(ycm_core)
     .value( "Comment", Token::COMMENT )
     .export_values();
 
-  enum_< Token::Type >( "TokenType" )
+  enum_< Token::TokenType >( "TokenType" )
     .value( "None", Token::NONE )
     .value( "Integer", Token::INTEGER )
     .value( "Floating", Token::FLOATING )
@@ -217,10 +217,7 @@ BOOST_PYTHON_MODULE(ycm_core)
   class_< Token >( "Token" )
     .def_readonly( "kind", &Token::kind_ )
     .def_readonly( "type", &Token::type_ )
-    .def_readonly( "start_line", &Token::start_line_ )
-    .def_readonly( "start_column", &Token::start_column_ )
-    .def_readonly( "end_line", &Token::end_line_ )
-    .def_readonly( "end_column", &Token::end_column_ );
+    .def_readonly( "range", &Token::range_ );
 
   class_< std::vector< Token > >( "TokenVector" )
     .def( vector_indexing_suite< std::vector< Token > >() );

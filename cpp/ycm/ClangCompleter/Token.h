@@ -18,6 +18,8 @@
 #ifndef SYNTAX_H_IC9ZDM5T
 #define SYNTAX_H_IC9ZDM5T
 
+#include "Range.h"
+
 #include <string>
 
 #include <clang-c/Index.h>
@@ -27,7 +29,7 @@ namespace YouCompleteMe {
 /// Represents single semantic token.
 struct Token {
 
-  enum Kind {
+  enum TokenKind {
     PUNCTUATION = 0,
     KEYWORD,
     IDENTIFIER,
@@ -35,7 +37,7 @@ struct Token {
     COMMENT
   };
 
-  enum Type {
+  enum TokenType {
     // Punctutation and Comment
     NONE = 0,
 
@@ -70,17 +72,11 @@ struct Token {
 
   bool operator== ( const Token& other ) const;
 
-  Kind kind_;
+  TokenKind kind_;
 
-  Type type_;
+  TokenType type_;
 
-  int start_line_;
-
-  int start_column_;
-
-  int end_line_;
-
-  int end_column_;
+  Range range_;
 
 private:
 

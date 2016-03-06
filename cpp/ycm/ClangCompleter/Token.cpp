@@ -16,9 +16,7 @@
 // along with YouCompleteMe.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "Token.h"
-
 #include "standard.h"
-#include "Range.h"
 
 namespace YouCompleteMe {
 
@@ -27,7 +25,7 @@ namespace {
 // This is a recursive function.
 // Recursive call is made for a reference cursors, to find out what kind of
 // cursors they are referencing, therefore recursion level should not exceed 2.
-Token::Type CXCursorToTokenType( const CXCursor& cursor ) {
+Token::TokenType CXCursorToTokenType( const CXCursor& cursor ) {
   CXCursorKind kind = clang_getCursorKind( cursor );
   switch (kind) {
     case CXCursor_IntegerLiteral:
@@ -83,6 +81,8 @@ Token::Type CXCursorToTokenType( const CXCursor& cursor ) {
 
     case CXCursor_FunctionDecl:
     case CXCursor_CXXMethod:
+    case CXCursor_Constructor:
+    case CXCursor_Destructor:
       return Token::FUNCTION;
 
     case CXCursor_ParmDecl:
@@ -115,44 +115,21 @@ Token::Type CXCursorToTokenType( const CXCursor& cursor ) {
 Token::Token()
   : kind_( Token::IDENTIFIER )
   , type_( Token::UNSUPPORTED )
-  , start_line_( 0 )
-  , start_column_( 0 )
-  , end_line_( 0 )
-  , end_column_( 0 )
+  , range_()
 {
 }
 
 Token::Token( const CXTokenKind kind, const CXSourceRange& tokenRange,
-              const CXCursor& cursor ) {
-
+              const CXCursor& cursor )
+  : range_( tokenRange )
+{
   MapKindAndType( kind, cursor );
-
-  uint line, column;
-  clang_getExpansionLocation( clang_getRangeStart( tokenRange ),
-                              NULL,
-                              &line,
-                              &column,
-                              NULL );
-
-  start_line_ = static_cast< int >( line );
-  start_column_ = static_cast< int >( column );
-
-  clang_getExpansionLocation( clang_getRangeEnd( tokenRange ),
-                              NULL,
-                              &line,
-                              &column,
-                              NULL );
-
-  end_line_ = static_cast< int >( line );
-  end_column_ = static_cast< int >( column );
 }
 
 bool Token::operator== ( const Token& other ) const {
   return kind_ == other.kind_ &&
-         start_line_ == other.start_line_ &&
-         start_column_ == other.start_column_ &&
-         end_line_ == other.end_line_ &&
-         end_column_ == other.end_column_;
+         type_ == other.type_ &&
+         range_ == other.range_;
 }
 
 void Token::MapKindAndType( const CXTokenKind kind, const CXCursor& cursor ) {
