@@ -18,6 +18,8 @@
 #ifndef SYNTAX_H_IC9ZDM5T
 #define SYNTAX_H_IC9ZDM5T
 
+#include "Range.h"
+
 #include <string>
 
 #include <clang-c/Index.h>
@@ -68,19 +70,13 @@ struct Token {
   Token( const CXTokenKind kind, const CXSourceRange& tokenRange,
          const CXCursor& cursor );
 
-  bool operator== ( const Token& other ) const;
+  bool operator==( const Token& other ) const;
 
   Kind kind_;
 
   Type type_;
 
-  int start_line_;
-
-  int start_column_;
-
-  int end_line_;
-
-  int end_column_;
+  Range range_;
 
 private:
 
