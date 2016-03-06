@@ -39,13 +39,39 @@ sys.path.insert( 1, p.abspath( p.join( DIR_OF_THIRD_PARTY, 'argparse' ) ) )
 
 import argparse
 
+FLAKE8_EXCLUDE = [
+  'E111',
+  'E114',
+  'E121',
+  'E125',
+  'E126',
+  'E127',
+  'E128',
+  'E129',
+  'E131',
+  'E133',
+  'E201',
+  'E202',
+  'E203',
+  'E211',
+  'E221',
+  'E222',
+  'E241',
+  'E251',
+  'E261',
+  'E303',
+  'E402',
+  'W503',
+]
+
 
 def RunFlake8():
   print( 'Running flake8' )
   subprocess.check_call( [
     'flake8',
-    '--select=F,C9',
+    '--ignore=' + ','.join( FLAKE8_EXCLUDE ),
     '--max-complexity=10',
+    '--max-line-length=80',
     '--exclude=testdata',
     p.join( DIR_OF_THIS_SCRIPT, 'ycmd' )
   ] )
@@ -98,7 +124,7 @@ def CompleterType( value ):
     aliases_to_completer = dict( ( i, k ) for k, v in COMPLETERS.items()
                                  for i in v[ 'aliases' ] )
     if value in aliases_to_completer:
-      return aliases_to_completer[ value ];
+      return aliases_to_completer[ value ]
     else:
       raise argparse.ArgumentTypeError(
         '{0} is not a valid completer - should be one of {1}'.format(
