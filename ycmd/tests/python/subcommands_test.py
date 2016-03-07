@@ -23,13 +23,16 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import *  # noqa
 
-from hamcrest import assert_that
+from hamcrest import assert_that, contains, has_entries
 from nose.tools import eq_
+from pprint import pformat
 import os.path
+import http.client
 
 from ycmd.utils import ReadFile
 from ycmd.tests.python import PathToTestFile, SharedYcmd
-from ycmd.tests.test_utils import BuildRequest, ErrorMatcher
+from ycmd.tests.test_utils import ( BuildRequest, ChunkMatcher, ErrorMatcher,
+                                    LocationMatcher )
 
 
 @SharedYcmd
@@ -224,3 +227,166 @@ def Subcommands_GoToReferences_test( app ):
       'description': 'c = f()',
       'line_num': 6
     } ] )
+
+
+def RunTest( app, test ):
+  contents = ReadFile( test[ 'request' ][ 'filepath' ] )
+
+  def CombineRequest( request, data ):
+    kw = request
+    request.update( data )
+    return BuildRequest( **kw )
+
+  # Because we aren't testing this command, we *always* ignore errors. This
+  # is mainly because we (may) want to test scenarios where the completer
+  # throws an exception and the easiest way to do that is to throw from
+  # within the FlagsForFile function.
+  app.post_json( '/event_notification',
+                 CombineRequest( test[ 'request' ], {
+                                 'event_name': 'FileReadyToParse',
+                                 'contents': contents,
+                                 } ),
+                 expect_errors = True )
+
+  # We also ignore errors here, but then we check the response code
+  # ourself. This is to allow testing of requests returning errors.
+  response = app.post_json(
+    '/run_completer_command',
+    CombineRequest( test[ 'request' ], {
+      'completer_target': 'filetype_default',
+      'contents': contents,
+      'filetype': 'python',
+      'command_arguments': ( [ test[ 'request' ][ 'command' ] ]
+                             + test[ 'request' ].get( 'arguments', [] ) )
+    } ),
+    expect_errors = True
+  )
+
+  print( 'completer response: {0}'.format( pformat( response.json ) ) )
+
+  eq_( response.status_code, test[ 'expect' ][ 'response' ] )
+
+  assert_that( response.json, test[ 'expect' ][ 'data' ] )
+
+
+@SharedYcmd
+def Subcommands_RefactorRename_MissingNewName_test( app ):
+  filepath = PathToTestFile( 'refactor_rename1.py' )
+  RunTest( app, {
+    'description': 'RefactorRename raises an error without new name',
+    'request': {
+      'command': 'RefactorRename',
+      'arguments': [],
+      'filepath': filepath,
+      'line_num': 7,
+      'column_num': 14,
+    },
+    'expect': {
+      'response': http.client.INTERNAL_SERVER_ERROR,
+      'data': ErrorMatcher( ValueError,
+                            'Please specify a new name to rename it to.\n'
+                            'Usage: RefactorRename <new name>' ),
+    }
+  } )
+
+
+@SharedYcmd
+def Subcommands_RefactorRename_NotPossible_test( app ):
+  filepath = PathToTestFile( 'refactor_rename1.py' )
+  RunTest( app, {
+    'description': 'RefactorRename raises an error '
+                   'when there is no reference',
+    'request': {
+      'command': 'RefactorRename',
+      'arguments': [ 'whatever' ],
+      'filepath': filepath,
+      'line_num': 1,
+      'column_num': 17,
+    },
+    'expect': {
+      'response': http.client.INTERNAL_SERVER_ERROR,
+      'data': ErrorMatcher( RuntimeError, 'Can\'t find references.' ),
+    }
+  } )
+
+
+@SharedYcmd
+def Subcommands_RefactorRename_SingleFile_test( app ):
+  filepath = PathToTestFile( 'refactor_rename1.py' )
+  RunTest( app, {
+    'description': 'RefactorRename works within a single file',
+    'request': {
+      'command': 'RefactorRename',
+      'arguments': [ 'a_new_variable_name' ],
+      'filepath': filepath,
+      'line_num': 7,
+      'column_num': 14,
+    },
+    'expect': {
+      'response': http.client.OK,
+      'data': has_entries( {
+        'fixits': contains( has_entries( {
+          'chunks': contains(
+              ChunkMatcher( 'a_new_variable_name',
+                            LocationMatcher( filepath, 1, 1 ),
+                            LocationMatcher( filepath, 14, 1 ) ),
+              ChunkMatcher( 'a_new_variable_name',
+                            LocationMatcher( filepath, 10, 5 ),
+                            LocationMatcher( filepath, 23, 5 ) ),
+              ChunkMatcher( 'a_new_variable_name',
+                            LocationMatcher( filepath, 10, 7 ),
+                            LocationMatcher( filepath, 23, 7 ) ),
+              # On the same line, ensuring offsets are as expected (as
+              # unmodified source, similar to clang)
+              ChunkMatcher( 'a_new_variable_name',
+                            LocationMatcher( filepath, 26, 7 ),
+                            LocationMatcher( filepath, 39, 7 ) ),
+          ),
+          'location': LocationMatcher( filepath, 14, 7 )
+        } ) )
+      } )
+    }
+  } )
+
+
+@SharedYcmd
+def Subcommands_RefactorRename_MultipleFiles_test( app ):
+  current_filepath = PathToTestFile( 'refactor_rename1.py' )
+  filepath2 = PathToTestFile( 'refactor_rename2.py' )
+  filepath3 = PathToTestFile( 'refactor_rename3.py' )
+  RunTest( app, {
+    'description': 'RefactorRename works across files',
+    'request': {
+      'command': 'RefactorRename',
+      'arguments': [ 'a_new_function_name' ],
+      'filepath': current_filepath,
+      'line_num': 4,
+      'column_num': 5,
+    },
+    'expect': {
+      'response': http.client.OK,
+      'data': has_entries( {
+        'fixits': contains( has_entries( {
+          'chunks': contains(
+            ChunkMatcher(
+              'a_new_function_name',
+              LocationMatcher( current_filepath, 5, 4 ),
+              LocationMatcher( current_filepath, 18, 4 ) ),
+            ChunkMatcher(
+              'a_new_function_name',
+              LocationMatcher( filepath2, 30, 1 ),
+              LocationMatcher( filepath2, 43, 1 ) ),
+            ChunkMatcher(
+              'a_new_function_name',
+              LocationMatcher( filepath2, 1, 3 ),
+              LocationMatcher( filepath2, 14, 3 ) ),
+            ChunkMatcher(
+              'a_new_function_name',
+              LocationMatcher( filepath3, 20, 5 ),
+              LocationMatcher( filepath3, 33, 5 ) ),
+          ),
+          'location': LocationMatcher( current_filepath, 5, 4 )
+        } ) )
+      } )
+    }
+  } )

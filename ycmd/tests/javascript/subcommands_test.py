@@ -29,26 +29,9 @@ from pprint import pformat
 import http.client
 
 from ycmd.tests.javascript import PathToTestFile, SharedYcmd
-from ycmd.tests.test_utils import BuildRequest, ErrorMatcher
+from ycmd.tests.test_utils import ( BuildRequest, ChunkMatcher, ErrorMatcher,
+                                    LocationMatcher )
 from ycmd.utils import ReadFile
-
-
-def LocationMatcher( filepath, column_num, line_num ):
-  return has_entries( {
-    'line_num': line_num,
-    'column_num': column_num,
-    'filepath': filepath
-  } )
-
-
-def ChunkMatcher( replacement_text, start, end ):
-  return has_entries( {
-    'replacement_text': replacement_text,
-    'range': has_entries( {
-      'start': start,
-      'end': end
-    } )
-  } )
 
 
 @SharedYcmd
