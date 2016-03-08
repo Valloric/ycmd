@@ -25,7 +25,7 @@ namespace {
 // This is a recursive function.
 // Recursive call is made for a reference cursors, to find out what kind of
 // cursors they are referencing, therefore recursion level should not exceed 2.
-Token::TokenType CXCursorToTokenType( const CXCursor& cursor ) {
+Token::Type CXCursorToTokenType( const CXCursor& cursor ) {
   CXCursorKind kind = clang_getCursorKind( cursor );
   switch (kind) {
     case CXCursor_IntegerLiteral:
@@ -38,7 +38,7 @@ Token::TokenType CXCursorToTokenType( const CXCursor& cursor ) {
       return Token::IMAGINARY;
 
     case CXCursor_StringLiteral:
-      return Token::STRING;
+      return Token::STRING_;
 
     case CXCursor_CharacterLiteral:
       return Token::CHARACTER;

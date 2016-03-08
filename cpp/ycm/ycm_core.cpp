@@ -184,7 +184,7 @@ BOOST_PYTHON_MODULE(ycm_core)
   class_< std::vector< Diagnostic > >( "DiagnosticVector" )
     .def( vector_indexing_suite< std::vector< Diagnostic > >() );
 
-  enum_< Token::TokenKind >( "TokenKind" )
+  enum_< Token::Kind >( "TokenKind" )
     .value( "Punctuation", Token::PUNCTUATION )
     .value( "Keyword", Token::KEYWORD )
     .value( "Identifier", Token::IDENTIFIER )
@@ -192,12 +192,12 @@ BOOST_PYTHON_MODULE(ycm_core)
     .value( "Comment", Token::COMMENT )
     .export_values();
 
-  enum_< Token::TokenType >( "TokenType" )
+  enum_< Token::Type >( "TokenType" )
     .value( "None", Token::NONE )
     .value( "Integer", Token::INTEGER )
     .value( "Floating", Token::FLOATING )
     .value( "Imaginary", Token::IMAGINARY )
-    .value( "String", Token::STRING )
+    .value( "String", Token::STRING_ )
     .value( "Character", Token::CHARACTER )
     .value( "Namespace", Token::NAMESPACE )
     .value( "Class", Token::CLASS )

@@ -29,7 +29,7 @@ namespace YouCompleteMe {
 /// Represents single semantic token.
 struct Token {
 
-  enum TokenKind {
+  enum Kind {
     PUNCTUATION = 0,
     KEYWORD,
     IDENTIFIER,
@@ -37,7 +37,7 @@ struct Token {
     COMMENT
   };
 
-  enum TokenType {
+  enum Type {
     // Punctutation and Comment
     NONE = 0,
 
@@ -46,7 +46,7 @@ struct Token {
     INTEGER,
     FLOATING,
     IMAGINARY,
-    STRING,
+    STRING_, // MSVS compiler conflicts with STRING.
     CHARACTER,
 
     // Identifier types
@@ -70,11 +70,11 @@ struct Token {
   Token( const CXTokenKind kind, const CXSourceRange& tokenRange,
          const CXCursor& cursor );
 
-  bool operator== ( const Token& other ) const;
+  bool operator==( const Token& other ) const;
 
-  TokenKind kind_;
+  Kind kind_;
 
-  TokenType type_;
+  Type type_;
 
   Range range_;
 
