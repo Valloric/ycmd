@@ -23,8 +23,9 @@ namespace YouCompleteMe {
 namespace {
 
 // This is a recursive function.
-// Recursive call is made for a reference cursors, to find out what kind of
-// cursors they are referencing, therefore recursion level should not exceed 2.
+// Recursive call is made for the reference cursor kind,
+// with the referenced cursor as an argument,
+// therefore recursion level should not exceed 2.
 Token::Type CXCursorToTokenType( const CXCursor& cursor ) {
   CXCursorKind kind = clang_getCursorKind( cursor );
   switch (kind) {
@@ -38,7 +39,7 @@ Token::Type CXCursorToTokenType( const CXCursor& cursor ) {
       return Token::IMAGINARY;
 
     case CXCursor_StringLiteral:
-      return Token::STRING_;
+      return Token::STRING;
 
     case CXCursor_CharacterLiteral:
       return Token::CHARACTER;
@@ -126,7 +127,7 @@ Token::Token( const CXTokenKind kind, const CXSourceRange& tokenRange,
   MapKindAndType( kind, cursor );
 }
 
-bool Token::operator== ( const Token& other ) const {
+bool Token::operator==( const Token& other ) const {
   return kind_ == other.kind_ &&
          type_ == other.type_ &&
          range_ == other.range_;

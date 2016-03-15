@@ -24,6 +24,11 @@
 
 #include <clang-c/Index.h>
 
+// MSVC compiler defines STRING macro
+#ifdef STRING
+#undef STRING
+#endif
+
 namespace YouCompleteMe {
 
 /// Represents single semantic token.
@@ -46,7 +51,7 @@ struct Token {
     INTEGER,
     FLOATING,
     IMAGINARY,
-    STRING_, // MSVS compiler conflicts with STRING.
+    STRING,
     CHARACTER,
 
     // Identifier types
