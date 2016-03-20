@@ -75,7 +75,10 @@ Token::Type CXCursorToTokenType( const CXCursor& cursor ) {
     case CXCursor_EnumConstantDecl:
       return Token::ENUM_CONSTANT;
 
-    //case CXCursor_MacroDefinition: // Can be recognized by regexp.
+    case CXCursor_PreprocessingDirective:
+      return Token::PREPROCESSING_DIRECTIVE;
+
+    case CXCursor_MacroDefinition:
     //case CXCursor_MacroExpansion: // Same as CXCursor_MacroInstantiation
     case CXCursor_MacroInstantiation:
       return Token::MACRO;

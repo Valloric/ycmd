@@ -59,9 +59,11 @@ struct Token {
     TEMPLATE_TYPE,
     ENUM,
     ENUM_CONSTANT,
+    PREPROCESSING_DIRECTIVE,
     MACRO,
     FUNCTION,
     FUNCTION_PARAM,
+
     UNSUPPORTED
   };
 
