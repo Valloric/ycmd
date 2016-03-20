@@ -182,7 +182,10 @@ class RustCompleter( Completer ):
     if not body:
       body = bytes()
 
-    hmac = hmac_utils.CreateRequestHmac( method, handler, body, self._hmac_secret )
+    hmac = hmac_utils.CreateRequestHmac( method,
+                                         handler,
+                                         body,
+                                         self._hmac_secret )
     final_hmac_value = native( ToBytes( binascii.hexlify( hmac ) ) )
 
     extra_headers = { 'content-type': 'application/json' }
@@ -282,8 +285,8 @@ class RustCompleter( Completer ):
       self._server_stderr = filename_format.format( port = port,
                                                     std = 'stderr' )
 
-      with open( self._server_stderr, 'w' ) as fstderr:
-        with open( self._server_stdout, 'w' ) as fstdout:
+      with utils.OpenForStdHandle( self._server_stderr ) as fstderr:
+        with utils.OpenForStdHandle( self._server_stdout ) as fstdout:
           self._racerd_phandle = utils.SafePopen( args,
                                                   stdout = fstdout,
                                                   stderr = fstderr,

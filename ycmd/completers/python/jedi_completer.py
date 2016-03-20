@@ -156,7 +156,8 @@ class JediCompleter( Completer ):
 
       # JediHTTP will delete the secret_file after it's done reading it
       with NamedTemporaryFile( delete = False, mode = 'w+' ) as hmac_file:
-        json.dump( { 'hmac_secret': str( b64encode( self._hmac_secret ), 'utf8' ) },
+        json.dump( { 'hmac_secret': str( b64encode( self._hmac_secret ),
+                                         'utf8' ) },
                    hmac_file )
         command = [ self._python_binary_path,
                     PATH_TO_JEDIHTTP,
@@ -168,8 +169,8 @@ class JediCompleter( Completer ):
       self._logfile_stderr = LOG_FILENAME_FORMAT.format(
           port = self._jedihttp_port, std = 'stderr' )
 
-      with open( self._logfile_stderr, 'w' ) as logerr:
-        with open( self._logfile_stdout, 'w' ) as logout:
+      with utils.OpenForStdHandle( self._logfile_stderr ) as logerr:
+        with utils.OpenForStdHandle( self._logfile_stdout ) as logout:
           self._jedihttp_phandle = utils.SafePopen( command,
                                                     stdout = logout,
                                                     stderr = logerr )
@@ -394,4 +395,3 @@ class JediCompleter( Completer ):
                                                 self._logfile_stderr )
 
        return 'JediHTTP is not running'
-

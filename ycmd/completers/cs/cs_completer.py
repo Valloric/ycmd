@@ -127,7 +127,7 @@ class CsharpCompleter( Completer ):
   def FilterAndSortCandidates( self, candidates, query ):
     result = super( CsharpCompleter, self ).FilterAndSortCandidates( candidates,
                                                                      query )
-    result.sort( key = _CompleteIsFromImport );
+    result.sort( key = _CompleteIsFromImport )
     return result
 
 
@@ -194,15 +194,6 @@ class CsharpCompleter( Completer ):
       'ServerIsReady'                    : ( lambda self, request_data, args:
          self._SolutionSubcommand( request_data,
                                    method = 'ServerIsReady',
-                                   no_request_data = True ) ),
-      'SetOmnisharpPort'                 : ( lambda self, request_data, args:
-         self._SolutionSubcommand( request_data,
-                                   method = '_SetOmnisharpPort',
-                                   port = args[ 0 ],
-                                   no_request_data = True ) ),
-      'GetOmnisharpPort'                 : ( lambda self, request_data, args:
-         self._SolutionSubcommand( request_data,
-                                   method = '_GetOmnisharpPort',
                                    no_request_data = True ) ),
     }
 
@@ -309,7 +300,7 @@ class CsharpCompleter( Completer ):
 
 
   def _GetSolutionFile( self, filepath ):
-    if not filepath in self._solution_for_file:
+    if filepath not in self._solution_for_file:
       # NOTE: detection could throw an exception if an extra_conf_store needs
       # to be confirmed
       path_to_solutionfile = solutiondetection.FindSolutionPath( filepath )
@@ -331,7 +322,6 @@ class CsharpSolutionCompleter( object ):
     self._omnisharp_phandle = None
     self._desired_omnisharp_port = desired_omnisharp_port
     self._server_state_lock = threading.RLock()
-    self._external_omnisharp = False
 
 
   def CodeCheck( self, request_data ):
@@ -379,11 +369,10 @@ class CsharpSolutionCompleter( object ):
       self._filename_stderr = filename_format.format(
           port = self._omnisharp_port, sln = solutionfile, std = 'stderr' )
 
-      with open( self._filename_stderr, 'w' ) as fstderr:
-        with open( self._filename_stdout, 'w' ) as fstdout:
+      with utils.OpenForStdHandle( self._filename_stderr ) as fstderr:
+        with utils.OpenForStdHandle( self._filename_stdout ) as fstdout:
           self._omnisharp_phandle = utils.SafePopen(
               command, stdout = fstdout, stderr = fstderr )
-          self._external_omnisharp = False
 
       self._solution_path = path_to_solutionfile
 
@@ -399,7 +388,7 @@ class CsharpSolutionCompleter( object ):
       self._TryToStopServer()
 
       # Kill it if it's still up
-      if self.ServerIsRunning() and not self.ServerIsExternal():
+      if self.ServerIsRunning():
         self._logger.info( 'Killing OmniSharp server' )
         self._omnisharp_phandle.kill()
 
@@ -454,14 +443,14 @@ class CsharpSolutionCompleter( object ):
     parameters[ 'ForceSemanticCompletion' ] = completion_type
     parameters[ 'WantDocumentationForEveryCompletionResult' ] = True
     completions = self._GetResponse( '/autocomplete', parameters )
-    return completions if completions != None else []
+    return completions if completions is not None else []
 
 
   def _GoToDefinition( self, request_data ):
     """ Jump to definition of identifier under cursor """
     definition = self._GetResponse( '/gotodefinition',
                                     self._DefaultParameters( request_data ) )
-    if definition[ 'FileName' ] != None:
+    if definition[ 'FileName' ] is not None:
       return responses.BuildGoToResponse( definition[ 'FileName' ],
                                           definition[ 'Line' ],
                                           definition[ 'Column' ] )
@@ -489,7 +478,7 @@ class CsharpSolutionCompleter( object ):
     else:
       if ( fallback_to_declaration ):
         return self._GoToDefinition( request_data )
-      elif implementation[ 'QuickFixes' ] == None:
+      elif implementation[ 'QuickFixes' ] is None:
         raise RuntimeError( 'Can\'t jump to implementation' )
       else:
         raise RuntimeError( 'No implementations found' )
@@ -544,27 +533,14 @@ class CsharpSolutionCompleter( object ):
     return parameters
 
 
-  def ServerIsExternal( self ):
-    return self._external_omnisharp
-
-
-  def ServerIsRunning( self, external_check = True ):
+  def ServerIsRunning( self ):
     """ Check if our OmniSharp server is running (process is up)."""
-    if not self.ServerIsExternal():
-      return utils.ProcessIsRunning( self._omnisharp_phandle )
-
-    if self._omnisharp_port is None:
-      return False
-
-    if external_check:
-      return self.ServerIsHealthy()
-
-    return True
+    return utils.ProcessIsRunning( self._omnisharp_phandle )
 
 
   def ServerIsHealthy( self ):
     """ Check if our OmniSharp server is healthy (up and serving)."""
-    if not self.ServerIsRunning( external_check = False ):
+    if not self.ServerIsRunning():
       return False
 
     try:
@@ -575,7 +551,7 @@ class CsharpSolutionCompleter( object ):
 
   def ServerIsReady( self ):
     """ Check if our OmniSharp server is ready (loaded solution file)."""
-    if not self.ServerIsRunning( external_check = False ):
+    if not self.ServerIsRunning():
       return False
 
     try:
@@ -593,19 +569,6 @@ class CsharpSolutionCompleter( object ):
     # We cannot use 127.0.0.1 like we do in other places because OmniSharp
     # server only listens on localhost.
     return 'http://localhost:' + str( self._omnisharp_port )
-
-
-  def _GetOmnisharpPort( self ):
-    return responses.BuildDisplayMessageResponse( self._omnisharp_port )
-
-
-  def _SetOmnisharpPort( self, port ):
-    with self._server_state_lock:
-      if self.ServerIsRunning():
-        self.StopServer()
-
-      self._omnisharp_port = port
-      self._external_omnisharp = True
 
 
   def _GetResponse( self, handler, parameters = {}, timeout = None ):
@@ -626,7 +589,7 @@ class CsharpSolutionCompleter( object ):
 
 def _CompleteIsFromImport( candidate ):
   try:
-    return candidate[ "extra_data" ][ "required_namespace_import" ] != None
+    return candidate[ "extra_data" ][ "required_namespace_import" ] is not None
   except ( KeyError, TypeError ):
     return False
 
@@ -652,13 +615,13 @@ def _BuildChunks( request_data, new_buffer ):
   start_index = 0
   end_index = min_length
   for i in range( 0, min_length - 1 ):
-      if new_buffer[ i ] != old_buffer[ i ]:
-          start_index = i
-          break
+    if new_buffer[ i ] != old_buffer[ i ]:
+      start_index = i
+      break
   for i in range( 1, min_length ):
-      if new_buffer[ new_length - i ] != old_buffer[ old_length - i ]:
-          end_index = i - 1
-          break
+    if new_buffer[ new_length - i ] != old_buffer[ old_length - i ]:
+      end_index = i - 1
+      break
   # To handle duplicates, i.e aba => a
   if ( start_index + end_index > min_length ):
     start_index -= start_index + end_index - min_length

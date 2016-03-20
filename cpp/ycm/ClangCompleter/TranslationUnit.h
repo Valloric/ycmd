@@ -55,8 +55,6 @@ public:
 
   void Destroy();
 
-  std::vector< Diagnostic > LatestDiagnostics();
-
   bool IsCurrentlyUpdating() const;
 
   std::vector< Diagnostic > Reparse(
