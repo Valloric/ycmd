@@ -43,6 +43,20 @@ def StopGoCodeServer( app ):
                                filetype = 'go' ) )
 
 
+def WaitUntilGoCodeServerReady( app ):
+  retries = 100
+
+  while retries > 0:
+    result = app.get( '/ready', { 'subserver': 'go' } ).json
+    if result:
+      return
+
+    time.sleep( 0.2 )
+    retries = retries - 1
+
+  raise RuntimeError( 'Timeout waiting for GoCode' )
+
+
 def setUpPackage():
   """Initializes the ycmd server as a WebTest application that will be shared
   by all tests using the SharedYcmd decorator in this package. Additional
@@ -51,6 +65,7 @@ def setUpPackage():
   global shared_app
 
   shared_app = SetUpApp()
+  WaitUntilGoCodeServerReady( shared_app )
 
 
 def tearDownPackage():
