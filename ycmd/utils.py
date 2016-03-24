@@ -90,6 +90,12 @@ def ToUnicode( value ):
   return str( value )
 
 
+# Returns a unicode type containing the hexadecimal representation of the
+# value which must be of type bytes
+def ToHex( value ):
+  return ":".join("{:02x}".format( ord( c ) ) for c in value )
+
+
 # Consistently returns the new bytes() type from python-future. Assumes incoming
 # strings are either UTF-8 or unicode (which is converted to UTF-8).
 def ToBytes( value ):

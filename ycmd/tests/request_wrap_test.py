@@ -101,6 +101,13 @@ def StartColumn_DotWithUnicode_test():
                                  contents = 'fäö.bär') )[ 'start_column' ] )
 
 
+def StartColumn_ThreeByteUnicode_test():
+  contents = "var x = '†'."
+  eq_( 15,
+       RequestWrap( PrepareJson( column_num = 15,
+                                 contents = contents ) )[ 'start_column' ] )
+
+
 def StartColumn_Paren_test():
   eq_( 5,
        RequestWrap( PrepareJson( column_num = 8,
