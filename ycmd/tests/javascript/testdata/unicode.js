@@ -1,3 +1,9 @@
-var x = 't'.chA
-var y = '†'.chA
-var x = 't'.chA
+var x = 't'.cha
+var y = '†'.cha
+var x = 't'.cha
+
+var øbject = {
+  'ålpha': '∫eta'
+};
+
+øbject.a

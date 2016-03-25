@@ -428,7 +428,7 @@ def GetCompletions_Unicode_AfterLine_test( app ):
           CompletionEntryMatcher( 'charAt', 'fn(i: number) -> string' ),
           CompletionEntryMatcher( 'charCodeAt', 'fn(i: number) -> number' ),
         ),
-        'completion_start_column': 13,
+        'completion_start_column': 15,
         'errors': empty(),
       } )
     },
@@ -443,7 +443,7 @@ def GetCompletions_Unicode_InLine_test( app ):
       'filetype'  : 'javascript',
       'filepath'  : PathToTestFile( 'unicode.js' ),
       'line_num'  : 2,
-      'column_num': 16,
+      'column_num': 18,
     },
     'expect': {
       'response': http.client.OK,
