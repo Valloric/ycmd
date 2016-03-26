@@ -417,13 +417,13 @@ def Subcommands_RefactorRename_unicode_test( app ):
           'chunks': contains(
               ChunkMatcher( '†es†',
                             LocationMatcher( filepath, 5, 5 ),
-                            LocationMatcher( filepath, 5, 11 ) ),
+                            LocationMatcher( filepath, 5, 13 ) ),
               ChunkMatcher( '†es†',
                             LocationMatcher( filepath, 9, 1 ),
-                            LocationMatcher( filepath, 9, 7 ) ),
+                            LocationMatcher( filepath, 9, 9 ) ),
               ChunkMatcher( '†es†',
                             LocationMatcher( filepath, 11, 1 ),
-                            LocationMatcher( filepath, 11, 7 ) )
+                            LocationMatcher( filepath, 11, 9 ) )
           ),
           'location': LocationMatcher( filepath, 11, 3 )
         } ) )
