@@ -2,8 +2,10 @@ var x = 't'.cha
 var y = '†'.cha
 var x = 't'.cha
 
-var øbject = {
+var øbjec† = {
   'ålpha': '∫eta'
 };
 
-øbject.a
+øbjec†.a
+
+øbjec†.ålpha
