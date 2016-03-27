@@ -456,6 +456,8 @@ class CsharpSolutionCompleter( object ):
                                     self._DefaultParameters( request_data ) )
     if definition[ 'FileName' ] is not None:
       # TODO(Ben): check if Column is a byte offset or codepoint offset
+      #
+      # In manual tests - it looks like it is codepoint. Sigh.
       return responses.BuildGoToResponse( definition[ 'FileName' ],
                                           definition[ 'Line' ],
                                           definition[ 'Column' ] )
