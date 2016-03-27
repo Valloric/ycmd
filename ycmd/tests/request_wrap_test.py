@@ -103,7 +103,7 @@ def StartColumn_DotWithUnicode_test():
                                  contents = 'fäö.bär') )[ 'start_column' ] )
 
 
-def StartColumn_Unicode_Not_Identifier_teset():
+def StartColumn_Unicode_Not_Identifier_test():
   contents = "var x = '†es†ing'."
 
   print( ToHex( ToBytes( contents ) ) )
