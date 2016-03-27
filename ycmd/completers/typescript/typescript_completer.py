@@ -196,7 +196,8 @@ class TypeScriptCompleter( Completer ):
     if 'Content-Length' not in headers:
       raise RuntimeError( "Missing 'Content-Length' header" )
     contentlength = int( headers[ 'Content-Length' ] )
-    return json.loads( self._tsserver_handle.stdout.read( contentlength ) )
+    content = self._tsserver_handle.stdout.readline( contentlength )
+    return json.loads( utils.ToUnicode( content ) )
 
 
   def _BuildRequest( self, command, arguments = None ):
@@ -221,10 +222,9 @@ class TypeScriptCompleter( Completer ):
     to the message that is sent.
     """
 
-    request = self._BuildRequest( command, arguments )
+    request = json.dumps( self._BuildRequest( command, arguments ) ) + '\n'
     with self._writelock:
-      self._tsserver_handle.stdin.write( json.dumps( request ) )
-      self._tsserver_handle.stdin.write( "\n" )
+      self._tsserver_handle.stdin.write( request )
       self._tsserver_handle.stdin.flush()
 
 
@@ -235,13 +235,13 @@ class TypeScriptCompleter( Completer ):
     """
 
     request = self._BuildRequest( command, arguments )
+    json_request = json.dumps( request ) + '\n'
     deferred = DeferredResponse()
     with self._pendinglock:
       seq = request[ 'seq' ]
       self._pending[ seq ] = deferred
     with self._writelock:
-      self._tsserver_handle.stdin.write( json.dumps( request ) )
-      self._tsserver_handle.stdin.write( "\n" )
+      self._tsserver_handle.stdin.write( json_request )
       self._tsserver_handle.stdin.flush()
     return deferred.result()
 
