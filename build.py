@@ -131,6 +131,8 @@ def CustomPythonCmakeArgs():
     '--prefix'
   ] ).strip().decode( 'utf8' )
 
+  print( 'Python prefix is: {0}'.format( python_prefix ) )
+
   if p.isfile( p.join( python_prefix, '/Python' ) ):
     python_library = p.join( python_prefix, '/Python' )
     python_include = p.join( python_prefix, '/Headers' )
@@ -180,10 +182,9 @@ def CustomPythonCmakeArgs():
       # not in the python prefix location
       python_library = '/usr/lib/lib{0}.dylib'.format( which_python )
     elif p.isfile( '{0}.a'.format( lib_python ) ):
-      if OnMac():
-        sys.exit( 'ERROR: You must use a python compiled with '
-                  '--enable-shared or --enable-framework (and thus a {0}.dylib '
-                  'library) on OS X'.format( lib_python ) )
+      sys.exit( 'ERROR: You must use a python compiled with '
+                '--enable-shared or --enable-framework (and thus a {0}.dylib '
+                'library) on OS X'.format( lib_python ) )
 
       python_library = '{0}.a'.format( lib_python )
     # This check is for CYGWIN
@@ -250,6 +251,10 @@ def ParseArguments():
                        action = 'store_true',
                        help   = 'Enable all supported completers',
                        dest   = 'all_completers' )
+  parser.add_argument( '--enable-debug',
+                       action = 'store_true',
+                       help   = 'For developers: build ycm_core.so with debug '
+                                'symbols' )
 
   args = parser.parse_args()
 
@@ -271,6 +276,9 @@ def GetCmakeArgs( parsed_args ):
 
   if parsed_args.system_boost:
     cmake_args.append( '-DUSE_SYSTEM_BOOST=ON' )
+
+  if parsed_args.enable_debug:
+    cmake_args.append( '-DCMAKE_BUILD_TYPE=Debug' )
 
   use_python2 = 'ON' if PY_MAJOR == 2 else 'OFF'
   cmake_args.append( '-DUSE_PYTHON2=' + use_python2 )
@@ -335,7 +343,8 @@ def BuildYcmdLib( args ):
 
     build_command = [ 'cmake', '--build', '.', '--target', build_target ]
     if OnWindows():
-      build_command.extend( [ '--config', 'Release' ] )
+      config = 'Debug' if args.enable_debug else 'Release'
+      build_command.extend( [ '--config', config ] )
     else:
       build_command.extend( [ '--', '-j', str( NumCores() ) ] )
 
