@@ -170,9 +170,32 @@ def FiletypeCompleterExistsForFiletype( filetype ):
 
 def FilterAndSortCandidatesWrap( candidates, sort_property, query ):
   from ycm_core import FilterAndSortCandidates
-  return FilterAndSortCandidates( candidates,
-                                  ToCppStringCompatible( sort_property ),
-                                  ToCppStringCompatible( query ) )
+  return FilterAndSortCandidates(
+    _ConvertCandidatesToCppCompatible( candidates, sort_property ),
+    ToCppStringCompatible( sort_property ),
+    ToCppStringCompatible( query ) )
+
+
+def _ConvertCandidatesToCppCompatible( candidates, sort_property ):
+  """The c++ interface we use only understands the 'str' type. That is if we
+  pass it a 'unicode' or 'bytes' instance then various things blow up, such
+  as converting to std::string. Therefore all strings passed into the c++ API
+  must pass through ToCppStringCompatible"""
+
+  # TODO(Ben): Need to test all the variations:
+  #   - omnifunc completer
+  #   - TODO(Ben): when is it 'words' vs just an array vs 'insertion_text' ?
+  if sort_property:
+    for candidate in candidates:
+      # TODO(Ben): Should we convert any other strings?
+      # TODO(Ben): Are there other places where we pass dicts into cpp which
+      #            it expects to be strings?
+      candidate[ sort_property ] = ToCppStringCompatible(
+        candidate[ sort_property ] )
+    return candidates
+
+  return [ ToCppStringCompatible( c ) for c in candidates ]
+
 
 TRIGGER_REGEX_PREFIX = 're!'
 
