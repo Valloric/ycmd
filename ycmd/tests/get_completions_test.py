@@ -134,8 +134,7 @@ def GetCompletions_IdentifierCompleter_Unicode_InLine_test( app ):
 @ExpectedFailure( "The identifier completer - like FilterAndSortCandidates "
                   "can't handle unicode: "
                   "https://github.com/Valloric/YouCompleteMe/issues/278",
-                  contains_string( 'IndexError: bitset set argument out of '
-                                   'range' ) )
+                  contains_string( 'bitset' ) )
 @SharedYcmd
 def GetCompletions_IdentifierCompleter_UnicodeQuery_InLine_test( app ):
   contents = """

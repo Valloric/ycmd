@@ -19,7 +19,7 @@
 from ycmd.tests.test_utils import DummyCompleter, ExpectedFailure
 from ycmd.user_options_store import DefaultOptions
 from nose.tools import eq_
-from hamcrest import equal_to
+from hamcrest import contains_string
 
 
 def _FilterAndSortCandidates_Match( candidates, query, expected_matches ):
@@ -53,7 +53,7 @@ def FilterAndSortCandidates_ServerCompleter_test():
 
 
 @ExpectedFailure( 'Filtering uses a bitset which only works for ASCII',
-                  equal_to( 'bitset set argument out of range' ) )
+                  contains_string( 'bitset' ) )
 def FilterAndSortCandidates_Unicode_test():
   _FilterAndSortCandidates_Match( [ { 'insertion_text': 'ø' } ],
                                   'ø',
