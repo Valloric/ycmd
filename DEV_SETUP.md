@@ -24,4 +24,117 @@ global 3.3.0`.
 If you ever feel like you've screwed up the VM, just kill it with
 `vagrant destroy` and then run `vagrant up` again to get to a clean state.
 
+# Debugging the python
+
+There are a number of python debuggers. Here I present a couple of options.
+Personally, I use [pyclewn][] and attach to the process. Others prefer to use
+[`ipdb`][ipdb] (which I found did not work on OS X, so YMMV).
+
+## Using `ipdb`
+
+1. If you're not using vagrant, install `ipdb` (`pip install ipdb`).
+2. At the point in the code you want to break, add the following lines:
+
+```python
+import ipdb; ipdb.set_trace()
+```
+
+3. Run the tests without `flake8`, e.g.
+
+```
+./run_tests --skip-build --no-flake8 ycmd/tests/get_completions_test.py
+```
+
+4. The test breaks at your code breakpoint and offers a command interface to
+   debug.
+
+See the `ipdb` docs for more info.
+
+## Using `pyclewn` in Vim
+
+The procedure is similar to using `ipdb` but you attach to the suspended process
+and use Vim as a graphical debugger:
+
+1. Install [pyclewna][pyclewn-install]
+
+2. At the point you want to break, add the following lines:
+
+```python
+import clewn.vim as clewn; clewn.pdb()
+```
+
+3. Run the tests without `flake8`, e.g.
+
+```
+./run_tests --skip-build --no-flake8 ycmd/tests/get_completions_test.py
+```
+
+4. The tests will pause at the breakpoint. Now within Vim attach the debugger
+   with `:Pyclewn pdb`. Hope that it works. It can be a bit flaky.
+
+See the pyclewn docs for more info.
+
+# Debugging the c++ python library
+
+If you want to debug the c++ code using gdb (or your favourite graphical
+debugger - I use [pyclewn][] in Vim), there are a few things you need to do:
+
+1. Ensure your python is built with debug enabled. In the vagrant system that's
+   as simple as:
+
+```
+    vagrant up
+    vagrant ssh
+    export OPT=“-g” # Ensure python binary has debugging info
+    export PYTHON_CONFIGURE_OPTS=‘—enable-shared —-with-pydebug’
+    pyenv install 2.7.11 # or whatever version
+```
+
+   On OS X, you need a working debugger. You can either use `lldb`
+   which comes with XCode or `brew install gdb`. Note: If you use `gdb` from
+   homebrew, the you need to sign the binary otherwise you can't debug anything.
+   See later steps for a link.
+
+2. Build ycm_core.so with debugging information (and link against debug python):
+
+```
+    export EXTRA_CMAKE_ARGS=‘-DPYTHON_LIBRARY=$HOME/.pyenv/versions/2.7.11/lib/libpython2.7.so -DPYTHON_INCLUDE_DIR=$HOME/.pyenv/versions/2.7.11/include/python2.7’ -DCMAKE_BUILD_TYPE=Debug
+   pyenv shell 2.7.11
+   ./build.sh —all
+```
+
+3. Enable debugging in the OS. On Linux (Ubuntu at least, which is what all of
+   our tests are run on), you must set the following sysctl parameter (you can
+   make it permanent if you like):
+
+```
+     sudo sysctl kernel.yama.ptrace_scope=0
+```
+
+   On OS X it is more fiddly:
+     - The binary must be signed. See
+       https://sourceware.org/gdb/wiki/BuildingOnDarwin
+     - You *can not* debug system Python. Again: you *must* use a python that is
+       *not* the one provided by Apple. Use pyenv. That is the rule.
+       Don't argue.
+
+  Don't ask why. It's for security.
+
+3. Here you have choices, either use a python debugger to break the tests, or
+   manually use Vim to simulate the scenario you want to debug. In any case, you
+   will need the PID of the running python process hosting ycmd to attach to.
+   Getting this is left as an exercise, but in my case it was easier to just
+   install vim with `apt-get install vim` and to get a copy of YouCompleteMe
+   into `$HOME/.vim/bundle` and symlink `/vargant` as
+   `$HOME/.vim/bundle/third_party/ycmd`. Anyway, once you have the PID you can
+   simply attach to the python process, for example:
+
+   - `:YcmDebugInfo` to get the pid
+   - `gdb: attach <PID>`
+   - `break YouCompleteMe::FilterAndSortCandidates`
+
+
 [vagrant]: https://www.vagrantup.com/
+[pyclewn]: http://pyclewn.sourceforge.net
+[pyclewn-install]: http://pyclewn.sourceforge.net/install.html
+[ipdb]: https://pypi.python.org/pypi/ipdb
