@@ -195,10 +195,12 @@ def FilterAndSortCandidatesWrap( candidates, sort_property, query ):
 
 
 def _ConvertCandidatesToCppCompatible( candidates, sort_property ):
+  """Convert the candidates to the format expected by the C++ layer"""
   return _ConvertCandidates( candidates, sort_property, ToCppStringCompatible )
 
 
 def _ConvertCandidatesToPythonCompatible( candidates, sort_property ):
+  """Convert the candidates to the format expected by the python layer"""
   return _ConvertCandidates( candidates, sort_property, ToUnicode )
 
 
@@ -207,17 +209,15 @@ def _ConvertCandidates( candidates, sort_property, converter ):
   field within the candidates in the candidate list |candidates|. The
   |sort_property| is required to determine the format of |candidates|.
 
-  Typically this is not used directly, rather used via
+  The conversion function should take a single argument (the string) and return
+  the converted string. It should be one of ycmd.utils.ToUnicode or
+  ycmd.utils.ToCppStringCompatible.
+
+  Typically this method is not called directly, rather it is used via
   _ConvertCandidatesToCppCompatible and _ConvertCandidatesToPythonCompatible"""
 
-  # TODO(Ben): Need to test all the variations:
-  #   - omnifunc completer
-  #   - TODO(Ben): when is it 'words' vs just an array vs 'insertion_text' ?
   if sort_property:
     for candidate in candidates:
-      # TODO(Ben): Should we convert any other strings?
-      # TODO(Ben): Are there other places where we pass dicts into cpp which
-      #            it expects to be strings?
       candidate[ sort_property ] = converter( candidate[ sort_property ] )
     return candidates
 
