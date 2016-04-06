@@ -22,10 +22,11 @@ from __future__ import absolute_import
 from future import standard_library
 standard_library.install_aliases()
 from builtins import *  # noqa
+from future.utils import native
 
-from base64 import b64encode, b64decode
+from base64 import b64decode, b64encode
 from hamcrest import assert_that, equal_to, has_length, is_in
-import collections
+from tempfile import NamedTemporaryFile
 import functools
 import http.client
 import json
@@ -34,16 +35,18 @@ import psutil
 import requests
 import subprocess
 import sys
-import tempfile
 import time
-import urlparse
+import urllib.parse
 
-from ycmd.hmac_utils import CreateHmac, CreateRequestHmac, SecureStringsEqual
+from ycmd.hmac_utils import CreateHmac, CreateRequestHmac, SecureBytesEqual
 from ycmd.tests.test_utils import BuildRequest
-from ycmd.utils import ( GetUnusedLocalhostPort, PathToTempDir,
-                         RemoveIfExists, SafePopen, ToUtf8Json )
+from ycmd.user_options_store import DefaultOptions
+from ycmd.utils import ( GetUnusedLocalhostPort, OpenForStdHandle,
+                         PathToCreatedTempDir, ReadFile, RemoveIfExists,
+                         SafePopen, SetEnviron, ToBytes, ToUnicode )
 
-HMAC_HEADER = 'X-Ycm-Hmac'
+HEADERS = { 'content-type': 'application/json' }
+HMAC_HEADER = 'x-ycm-hmac'
 HMAC_SECRET_LENGTH = 16
 DIR_OF_THIS_SCRIPT = os.path.dirname( os.path.abspath( __file__ ) )
 PATH_TO_YCMD = os.path.join( DIR_OF_THIS_SCRIPT, '..' )
@@ -56,32 +59,33 @@ class Client_test( object ):
     self._port = None
     self._hmac_secret = None
     self._stdout = None
-    self._server = None
-    self._subservers = []
-    self._settings = self._DefaultSettings()
+    self.server = None
+    self.subservers = []
+    self._options_dict = DefaultOptions()
 
 
   def setUp( self ):
     self._hmac_secret = os.urandom( HMAC_SECRET_LENGTH )
-    self._settings[ 'hmac_secret' ] = b64encode( self._hmac_secret )
+    self._options_dict[ 'hmac_secret' ] = ToUnicode(
+      b64encode( self._hmac_secret ) )
 
 
   def tearDown( self ):
-    if self._server.is_running():
-      self._server.terminate()
+    if self.server.is_running():
+      self.server.terminate()
     if self._stdout:
       RemoveIfExists( self._stdout )
-    if self._subservers:
-      for subserver in self._subservers:
+    if self.subservers:
+      for subserver in self.subservers:
         if subserver.is_running():
           subserver.terminate()
 
 
-  def _Start( self, idle_suicide_seconds = 60,
-              check_interval_seconds = 60 * 10 ):
+  def Start( self, idle_suicide_seconds = 60,
+             check_interval_seconds = 60 * 10 ):
     # The temp options file is deleted by ycmd during startup
-    with tempfile.NamedTemporaryFile( delete = False ) as options_file:
-      json.dump( self._settings, options_file )
+    with NamedTemporaryFile( mode = 'w+', delete = False ) as options_file:
+      json.dump( self._options_dict, options_file )
       options_file.flush()
       self._port = GetUnusedLocalhostPort()
       self._location = 'http://127.0.0.1:' + str( self._port )
@@ -89,7 +93,7 @@ class Client_test( object ):
       # Define environment variable to enable subprocesses coverage. See:
       # http://coverage.readthedocs.org/en/coverage-4.0.3/subprocess.html
       env = os.environ.copy()
-      env[ 'COVERAGE_PROCESS_START' ] = '.coveragerc'
+      SetEnviron( env, 'COVERAGE_PROCESS_START', '.coveragerc' )
 
       ycmd_args = [
         sys.executable,
@@ -101,30 +105,21 @@ class Client_test( object ):
         '--check_interval_seconds={0}'.format( check_interval_seconds ),
       ]
 
-      self._stdout = os.path.join( PathToTempDir(), 'test.log' )
-      with open( self._stdout, 'w' ) as stdout:
+      self._stdout = os.path.join( PathToCreatedTempDir(), 'test.log' )
+      with OpenForStdHandle( self._stdout ) as stdout:
         _popen_handle = SafePopen( ycmd_args,
                                    stdin_windows = subprocess.PIPE,
                                    stdout = stdout,
                                    stderr = subprocess.STDOUT,
                                    env = env )
-        self._server = psutil.Process( _popen_handle.pid )
+        self.server = psutil.Process( _popen_handle.pid )
 
 
-  def _DefaultSettings( self ):
-    default_settings_path = os.path.join( DIR_OF_THIS_SCRIPT,
-                                          '..',
-                                          'default_settings.json' )
-
-    with open( default_settings_path ) as f:
-      return json.loads( f.read() )
+  def GetSubservers( self ):
+    return self.server.children()
 
 
-  def _GetSubservers( self ):
-    return self._server.children()
-
-
-  def _WaitUntilReady( self, timeout = 5 ):
+  def WaitUntilReady( self, timeout = 5 ):
     total_slept = 0
     while True:
       try:
@@ -142,7 +137,7 @@ class Client_test( object ):
         total_slept += 0.1
 
 
-  def _StartSubserverForFiletype( self, filetype ):
+  def StartSubserverForFiletype( self, filetype ):
     # TODO: uniformize the way subservers are started in completers. Current
     # status for each completer is:
     #  - Clang: no subserver;
@@ -161,23 +156,23 @@ class Client_test( object ):
     # requires a solution to start.
     # NOTE: due to the way Go subserver is started, it will not be a child of
     # ycmd server. This is why it is not used in the tests.
-    response = self._PostRequest(
+    response = self.PostRequest(
       'run_completer_command',
       BuildRequest( command_arguments = [ 'StartServer' ],
                     filetype = filetype )
     )
-    if response.status_code is httplib.OK:
+    if response.status_code is http.client.OK:
       return response
 
-    response = self._PostRequest(
+    response = self.PostRequest(
       'run_completer_command',
       BuildRequest( command_arguments = [ 'RestartServer' ],
                     filetype = filetype )
     )
-    if response.status_code is httplib.OK:
+    if response.status_code is http.client.OK:
       return response
 
-    response = self._PostRequest(
+    response = self.PostRequest(
       'event_notification',
       BuildRequest( event_name = 'BufferVisit',
                     filetype = filetype )
@@ -185,70 +180,78 @@ class Client_test( object ):
     return response
 
 
-  def _AssertServerAndSubserversShutDown( self, timeout = 5 ):
-    _, alive = psutil.wait_procs( [ self._server ] + self._subservers,
+  def AssertServerAndSubserversShutDown( self, timeout = 5 ):
+    _, alive = psutil.wait_procs( [ self.server ] + self.subservers,
                                   timeout = timeout )
     assert_that( alive, has_length( equal_to( 0 ) ) )
 
 
   def _IsReady( self ):
-    if not self._server.is_running():
+    if not self.server.is_running():
       return False
-    response = self._GetRequest( 'ready' )
+    response = self.GetRequest( 'ready' )
     response.raise_for_status()
     return response.json()
 
 
-  def _GetRequest( self, handler, params = None ):
+  def GetRequest( self, handler, params = None ):
     return self._Request( 'GET', handler, params = params )
 
 
-  def _PostRequest( self, handler, data = None ):
+  def PostRequest( self, handler, data = None ):
     return self._Request( 'POST', handler, data = data )
 
 
+  def _ToUtf8Json( self, data ):
+    return ToBytes( json.dumps( data ) if data else None )
+
+
   def _Request( self, method, handler, data = None, params = None ):
-    url = self._BuildURL( handler )
-    if isinstance( data, collections.Mapping ):
-      data = ToUtf8Json( data )
-    headers = self._Headers( method,
-                             urlparse.urlparse( url ).path,
-                             data )
+    request_uri = self._BuildUri( handler )
+    data = self._ToUtf8Json( data )
+    headers = self._ExtraHeaders( method,
+                                  request_uri,
+                                  data )
     response = requests.request( method,
-                                 url,
+                                 request_uri,
                                  headers = headers,
                                  data = data,
                                  params = params )
     return response
 
 
-  def _BuildURL( self, handler ):
-    return urlparse.urljoin( self._location, handler )
+  def _BuildUri( self, handler ):
+    import pprint
+    pprint.pprint( handler )
+    pprint.pprint( self._location )
+    return native( ToBytes( urllib.parse.urljoin( self._location, handler ) ) )
 
 
-  def _Headers( self, method, path, data ):
-      return { 'content-type': 'application/json',
-               HMAC_HEADER: self._HmacForRequest( method, path, data ) }
+  def _ExtraHeaders( self, method, request_uri, request_body = None ):
+    if not request_body:
+      request_body = bytes( b'' )
+    headers = dict( HEADERS )
+    headers[ HMAC_HEADER ] = b64encode(
+        CreateRequestHmac( ToBytes( method ),
+                           ToBytes( urllib.parse.urlparse( request_uri ).path ),
+                           request_body,
+                           self._hmac_secret ) )
+    return headers
 
 
-  def _HmacForRequest( self, method, path, body ):
-    return b64encode( CreateRequestHmac( method,
-                                         path,
-                                         body,
-                                         self._hmac_secret ) )
-
-  def _AssertResponse( self, response ):
+  def AssertResponse( self, response ):
     assert_that( response.status_code, equal_to( http.client.OK ) )
     assert_that( HMAC_HEADER, is_in( response.headers ) )
     assert_that(
-      self._ContentHmacValid( response.content,
-                              b64decode( response.headers[ HMAC_HEADER ] ) ),
+      self._ContentHmacValid( response ),
       equal_to( True )
     )
 
 
-  def _ContentHmacValid( self, content, hmac ):
-    return SecureStringsEqual( CreateHmac( content, self._hmac_secret ), hmac )
+  def _ContentHmacValid( self, response ):
+    our_hmac = CreateHmac( response.content, self._hmac_secret )
+    their_hmac = ToBytes( b64decode( response.headers[ HMAC_HEADER ] ) )
+    return SecureBytesEqual( our_hmac, their_hmac )
 
 
   @staticmethod
@@ -258,6 +261,7 @@ class Client_test( object ):
       try:
         test( self, *args )
       finally:
-        sys.stdout.write( open( self._stdout ).read() )
+        if self._stdout:
+          sys.stdout.write( ReadFile( self._stdout ) )
 
     return Wrapper
