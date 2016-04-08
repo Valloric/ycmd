@@ -67,7 +67,10 @@ std::string GetWordBoundaryChars( const std::string &text ) {
 Bitset LetterBitsetFromString( const std::string &text ) {
   Bitset letter_bitset;
   foreach ( char letter, text ) {
-    letter_bitset.set( IndexForChar( letter ) );
+    int letter_index = IndexForChar( letter );
+    if ( letter_index >= 0 && letter_index < NUM_LETTERS ) {
+      letter_bitset.set( letter_index );
+    }
   }
 
   return letter_bitset;
