@@ -26,6 +26,11 @@ bool IsUppercase( char letter ) {
 }
 
 
+bool IsInAsciiRange( int index ) {
+  return 0 <= index && index < NUM_LETTERS;
+}
+
+
 int IndexForChar( char letter ) {
   if ( IsUppercase( letter ) )
     return letter + ( 'a' - 'A' );
@@ -50,6 +55,10 @@ LetterNodeListMap::~LetterNodeListMap() {
 
 bool LetterNodeListMap::HasLetter( char letter ) {
   int letter_index = IndexForChar( letter );
+
+  if ( !IsInAsciiRange( letter_index ) )
+    return false;
+
   std::list< LetterNode * > *list = letters_[ letter_index ];
   return list;
 }
@@ -57,6 +66,10 @@ bool LetterNodeListMap::HasLetter( char letter ) {
 
 std::list< LetterNode * > &LetterNodeListMap::operator[] ( char letter ) {
   int letter_index = IndexForChar( letter );
+
+  if ( !IsInAsciiRange( letter_index ) )
+    return *( new std::list< LetterNode *>() );
+
   std::list< LetterNode * > *list = letters_[ letter_index ];
 
   if ( list )
@@ -68,12 +81,22 @@ std::list< LetterNode * > &LetterNodeListMap::operator[] ( char letter ) {
 
 
 std::list< LetterNode * > *LetterNodeListMap::ListPointerAt( char letter ) {
-  return letters_[ IndexForChar( letter ) ];
+  int letter_index = IndexForChar( letter );
+
+  if ( !IsInAsciiRange( letter_index ) )
+    return NULL;
+
+  return letters_[ letter_index ];
 }
 
 
 bool LetterNodeListMap::HasLetter( char letter ) const {
-  return letters_[ IndexForChar( letter ) ] != NULL;
+  int letter_index = IndexForChar( letter );
+
+  if ( !IsInAsciiRange( letter_index ) )
+    return false;
+
+  return letters_[ letter_index ] != NULL;
 }
 
 } // namespace YouCompleteMe

@@ -43,7 +43,8 @@ public:
   }
 
 
-  inline const std::list< LetterNode * > *NodeListForLetter( char letter ) {
+  inline const std::list< LetterNode * > *NodeListForLetter(
+    char letter ) {
     return letters_.ListPointerAt( letter );
   }
 
