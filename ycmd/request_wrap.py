@@ -99,9 +99,6 @@ class RequestWrap( object ):
     current_file = self._request[ 'filepath' ]
     contents = self._request[ 'file_data' ][ current_file ][ 'contents' ]
 
-    # Handling ''.splitlines() returning [] instead of ['']
-    if contents is not None and len( contents ) == 0:
-      return ''
     return contents.split( '\n' )[ self._request[ 'line_num' ] - 1 ]
 
 
