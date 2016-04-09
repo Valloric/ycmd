@@ -32,7 +32,6 @@ import signal
 import socket
 import stat
 import subprocess
-import codecs
 
 
 # Creation flag to disable creating a console window on Windows. See
@@ -90,12 +89,6 @@ def ToUnicode( value ):
     # All incoming text should be utf8
     return str( value, 'utf8' )
   return str( value )
-
-
-# Returns a unicode type containing the hexadecimal representation of the
-# value which must be of type bytes
-def ToHex( value ):
-  return codecs.getencoder( 'hex_codec' )( ToBytes( value ) )[ 0 ]
 
 
 # Consistently returns the new bytes() type from python-future. Assumes incoming

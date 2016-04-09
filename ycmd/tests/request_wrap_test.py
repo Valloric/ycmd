@@ -25,7 +25,7 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import *  # noqa
 
-from ycmd.utils import ToBytes, ToHex
+from ycmd.utils import ToBytes
 
 from nose.tools import eq_
 from ..request_wrap import RequestWrap
@@ -105,8 +105,6 @@ def StartColumn_DotWithUnicode_test():
 
 def StartColumn_Unicode_Not_Identifier_test():
   contents = "var x = '†es†ing'."
-
-  print( ToHex( ToBytes( contents ) ) )
 
   # † not considered an identifier character
 
