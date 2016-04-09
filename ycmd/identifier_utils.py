@@ -94,10 +94,6 @@ FILETYPE_TO_IDENTIFIER_REGEX = {
 
     # Spec: http://doc.perl6.org/language/syntax
     'perl6': re.compile( r"[_a-zA-Z](?:\w|[-'](?=[_a-zA-Z]))*", re.UNICODE ),
-
-    # Spec: http://www.ecma-international.org/ecma-262/5.1/#sec-7.6
-    #  And referenced chapter 5 of unicode standard v3.0 (Section 5.16):
-    #    - http://www.unicode.org/versions/Unicode3.0.0/ch05.pdf
 }
 
 FILETYPE_TO_IDENTIFIER_REGEX[ 'scss' ] = FILETYPE_TO_IDENTIFIER_REGEX[ 'css' ]
