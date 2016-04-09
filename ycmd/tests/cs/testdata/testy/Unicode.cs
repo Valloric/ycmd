@@ -40,9 +40,13 @@ namespace testy {
                     tc.DoATest();
 
                     Unicøde øø;
-                    øø.an_int;
+                    øø.
 
                     DoSomething( a_unicøde );
                 }
+
+                interface Bøøm { void Båm(); }
+                public class BøømBøøm : Bøøm { public void Båm() { } }
+                public class BåmBåm : Bøøm { public void Båm() { } }
 	}
 }
