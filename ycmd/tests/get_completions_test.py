@@ -408,3 +408,53 @@ def GetCompletions_CacheIsNotValid_DifferentCompletionType_test(
     # We ask for candidates twice because of cache invalidation:
     # completion types are different between requests.
     assert_that( candidates_list.call_count, equal_to( 2 ) )
+
+
+@SharedYcmd
+@patch( 'ycmd.tests.test_utils.DummyCompleter.ShouldUseNowInner',
+        return_value = True )
+@patch( 'ycmd.tests.test_utils.DummyCompleter.CandidatesList',
+        return_value = [ 'aba', 'cbc' ] )
+def GetCompletions_Filter_Then_Return_From_Cache_test( app,
+                                                       candidates_list,
+                                                       *args ):
+
+  with PatchCompleter( DummyCompleter, 'dummy_filetype' ):
+    # First, fill the cache with an empty query
+    completion_data = BuildRequest( filetype = 'dummy_filetype',
+                                    contents = 'objectA.',
+                                    line_num = 1,
+                                    column_num = 9 )
+
+    results = app.post_json( '/completions',
+                             completion_data ).json[ 'completions' ]
+    assert_that( results,
+                 has_items( CompletionEntryMatcher( 'aba' ),
+                            CompletionEntryMatcher( 'cbc' ) ) )
+
+    # Now, filter them. This causes them to be converted to bytes and back
+    completion_data = BuildRequest( filetype = 'dummy_filetype',
+                                    contents = 'objectA.c',
+                                    line_num = 1,
+                                    column_num = 10 )
+
+    results = app.post_json( '/completions',
+                             completion_data ).json[ 'completions' ]
+    assert_that( results,
+                 has_items( CompletionEntryMatcher( 'cbc' ) ) )
+
+    # Finally, request the original (unfiltered) set again. Ensure that we get
+    # proper results (not some bytes objects)
+    # First, fill the cache with an empty query
+    completion_data = BuildRequest( filetype = 'dummy_filetype',
+                                    contents = 'objectA.',
+                                    line_num = 1,
+                                    column_num = 9 )
+
+    results = app.post_json( '/completions',
+                             completion_data ).json[ 'completions' ]
+    assert_that( results,
+                 has_items( CompletionEntryMatcher( 'aba' ),
+                            CompletionEntryMatcher( 'cbc' ) ) )
+
+    assert_that( candidates_list.call_count, equal_to( 1 ) )

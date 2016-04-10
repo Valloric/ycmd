@@ -179,8 +179,19 @@ def FilterAndSortCandidatesWrap( candidates, sort_property, query ):
   # ToCppStringCompatible (or more strictly all strings which the C++ code
   # needs to use and convert. In this case, just the insertion text property)
 
-  # Note: we must deepcopy candidates because we do not want to clobber the data
-  # that is used elsewhere (such as in the cache) by converting it to bytes
+  # FIXME: This is actually quite inefficient in an area which is used
+  # constantly and the key performance critical part of the system. There is
+  # code in the C++ layer (see PythonSupport.cpp:GetUtf8String) which attempts
+  # to work around this limitation. Unfortunately it hass issues which cause the
+  # above problems, and we work around it by converting here in the python
+  # layer until we can come up with a better solution in the C++ layer.
+
+  # Note: we must deep copy candidates because we do not want to clobber the
+  # data that is passed in. It is actually used directly by the cache, so if
+  # we change the data pointed to by the elements of candidates, then this will
+  # be reflected in a subsequent response from the cache. This is particularly
+  # important for those candidates which are *not* returned after the filter, as
+  # they are not converted back to unicode.
   cpp_compatible_candidates = _ConvertCandidatesToCppCompatible(
     copy.deepcopy( candidates ),
     sort_property )
