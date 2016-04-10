@@ -503,8 +503,8 @@ class TernCompleter( Completer ):
                                   request_data )
 
     return responses.BuildGoToResponseFromLocation(
-      _BuildLocation( GetFileContents( request_data,
-                                       response[ 'file' ] ).split( '\n' ),
+      _BuildLocation( utils.SplitLines( GetFileContents( request_data,
+                                                         response[ 'file' ] ) ),
                       response[ 'file' ],
                       response[ 'start' ][ 'line' ],
                       response[ 'start' ][ 'ch' ] ) )
@@ -521,8 +521,8 @@ class TernCompleter( Completer ):
 
     return [
       responses.BuildGoToResponseFromLocation(
-        _BuildLocation( GetFileContents( request_data,
-                                         ref[ 'file' ] ).split( '\n' ),
+        _BuildLocation( utils.SplitLines( GetFileContents( request_data,
+                                                           ref[ 'file' ] ) ),
                         ref[ 'file' ],
                         ref[ 'start' ][ 'line' ],
                         ref[ 'start' ][ 'ch' ] ) )
@@ -605,7 +605,8 @@ class TernCompleter( Completer ):
 
     def BuildFixItChunk( change ):
       filename = os.path.abspath( change[ 'file' ] )
-      file_contents = GetFileContents( request_data, filename ).split( '\n' )
+      file_contents = utils.SplitLines( GetFileContents( request_data,
+                                                         filename ) )
       return responses.FixItChunk(
         change[ 'text' ],
         BuildRange( file_contents,

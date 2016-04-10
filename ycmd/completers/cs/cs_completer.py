@@ -680,7 +680,7 @@ def _IndexToLineColumn( text, index ):
 
 
 def _BuildLocation( request_data, filename, line_num, column_num ):
-  contents = GetFileContents( request_data, filename ).split( '\n' )
+  contents = utils.SplitLines( GetFileContents( request_data, filename ) )
   line_value = contents[ line_num - 1 ]
   return responses.Location(
       line_num,

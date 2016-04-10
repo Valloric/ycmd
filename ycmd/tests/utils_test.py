@@ -447,3 +447,28 @@ def ByteOffsetToCodepointOffset_test():
   for test in tests:
     yield lambda: eq_( utils.ByteOffsetToCodepointOffset( *test[ 0 ] ),
                        test[ 1 ] )
+
+
+def SplitLines_All_test():
+  # tuples of ( input, expected_output ) for utils.SplitLines
+  tests = [
+    ( '', [ '' ] ),
+    ( ' ', [ ' ' ] ),
+    ( '\n', [ '', '' ] ),
+    ( ' \n', [ ' ', '' ] ),
+    ( ' \n ', [ ' ', ' ' ] ),
+    ( 'test\n', [ 'test', '' ] ),
+    ( '\r', [ '', '' ] ),
+    ( '\r ', [ '', ' ' ] ),
+    ( 'test\r', [ 'test', '' ] ),
+    ( '\n\r', [ '', '', '' ] ),
+    ( '\r\n', [ '', '' ] ),
+    ( '\r\n\n', [ '', '', '' ] ),
+    # other behaviours are just the behaviour of splitlines, so just a couple of
+    # tests to prove that we don't mangle it
+    ( 'test\ntesting', [ 'test', 'testing' ] ),
+    ( '\ntesting', [ '', 'testing' ] ),
+  ]
+
+  for test in tests:
+    yield lambda: eq_( utils.SplitLines( test[ 0 ] ), test[ 1 ] )

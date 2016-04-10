@@ -27,7 +27,8 @@ from builtins import *  # noqa
 from ycmd.utils import ( ByteOffsetToCodepointOffset,
                          CodepointOffsetToByteOffset,
                          ToUnicode,
-                         ToBytes )
+                         ToBytes,
+                         SplitLines )
 from ycmd.identifier_utils import StartOfLongestIdentifierEndingAtIndex
 from ycmd.request_validation import EnsureRequestValid
 
@@ -99,7 +100,7 @@ class RequestWrap( object ):
     current_file = self._request[ 'filepath' ]
     contents = self._request[ 'file_data' ][ current_file ][ 'contents' ]
 
-    return contents.split( '\n' )[ self._request[ 'line_num' ] - 1 ]
+    return SplitLines( contents )[ self._request[ 'line_num' ] - 1 ]
 
 
   def CompletionStartColumn( self ):

@@ -338,8 +338,8 @@ class TypeScriptCompleter( Completer ):
 
       span = filespans[ 0 ]
       return responses.BuildGoToResponseFromLocation(
-        _BuildLocation( GetFileContents( request_data,
-                                         span[ 'file' ] ).split( '\n' ),
+        _BuildLocation( utils.SplitLines( GetFileContents( request_data,
+                                                           span[ 'file' ] ) ),
                         span[ 'file' ],
                         span[ 'start' ][ 'line' ],
                         span[ 'start' ][ 'offset' ] ) )
@@ -356,8 +356,8 @@ class TypeScriptCompleter( Completer ):
     } )
     return [
       responses.BuildGoToResponseFromLocation(
-        _BuildLocation( GetFileContents( request_data,
-                                         ref[ 'file' ] ).split( '\n' ),
+        _BuildLocation( utils.SplitLines( GetFileContents( request_data,
+                                                           ref[ 'file' ] ) ),
                         ref[ 'file' ],
                         ref[ 'start' ][ 'line' ],
                         ref[ 'start' ][ 'offset' ] ),
@@ -522,7 +522,7 @@ def _BuildFixItChunksForFile( request_data, new_name, file_replacement ):
   # whereas all other paths in Python are of the C:\\blah\\blah form. We use
   # normpath to have python do the conversion for us.
   file_path = os.path.normpath( file_replacement[ 'file' ] )
-  file_contents = GetFileContents( request_data, file_path ).split( '\n' )
+  file_contents = utils.SplitLines( GetFileContents( request_data, file_path ) )
   return [ _BuildFixItChunkForRange( new_name, file_contents, file_path, r )
            for r in file_replacement[ 'locs' ] ]
 
