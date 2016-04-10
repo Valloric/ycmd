@@ -66,7 +66,7 @@ def BuildGoToResponse( filepath, line_num, column_num, description = None ):
   return BuildGoToResponseFromLocation(
     Location( line = line_num,
               column = column_num,
-              filename = os.path.realpath( filepath ) ),
+              filename = filepath ),
     description )
 
 
@@ -199,7 +199,7 @@ class Location( object ):
     absolute path of the file"""
     self.line_number_ = line
     self.column_number_ = column
-    self.filename_ = filename
+    self.filename_ = os.path.realpath( filename )
 
 
 def BuildDiagnosticData( diagnostic ):
