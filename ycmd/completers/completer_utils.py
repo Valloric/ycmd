@@ -28,6 +28,7 @@ from future.utils import iteritems
 # We don't want ycm_core inside Vim.
 import os
 import re
+import copy
 from collections import defaultdict
 from ycmd.utils import ToCppStringCompatible, ToUnicode, ReadFile
 
@@ -118,7 +119,7 @@ def _RegexTriggerMatches( trigger,
 
 
 # start_codepoint and column_codepoint are 0-based and are codepiont offsets
-# into # the unicode string line_value
+# into the unicode string line_value
 def _MatchingSemanticTrigger( line_value, start_codepoint, column_codepoint,
                               trigger_list ):
   if start_codepoint < 0 or column_codepoint < 0:
@@ -172,17 +173,20 @@ def FilterAndSortCandidatesWrap( candidates, sort_property, query ):
   from ycm_core import FilterAndSortCandidates
 
   # The c++ interface we use only understands the (*native*) 'str' type (i.e.
-  # not the 'str' type from future. So if we pass in a pass it a 'unicode' or
+  # not the 'str' type from python-future. If we pass it a 'unicode' or
   # 'bytes' instance then various things blow up, such as converting to
   # std::string. Therefore all strings passed into the c++ API must pass through
   # ToCppStringCompatible (or more strictly all strings which the C++ code
   # needs to use and convert. In this case, just the insertion text property)
+
+  # Note: we must deepcopy candidates because we do not want to clobber the data
+  # that is used elsewhere (such as in the cache) by converting it to bytes
   cpp_compatible_candidates = _ConvertCandidatesToCppCompatible(
-    candidates,
+    copy.deepcopy( candidates ),
     sort_property )
 
   # However, the reset of the python layer expects all the candidates properties
-  # to be some form of unicode string - a future str instance.
+  # to be some form of unicode string - a python-future str() instance.
   # So we need to convert the insertion text property back to a unicode string
   # before returning it.
   filtered_candidates = FilterAndSortCandidates(
@@ -285,7 +289,10 @@ def GetIncludeStatementValue( line, check_closing = True ):
 
 def GetFileContents( request_data, filename ):
   """Returns the contents of the absolute path |filename| as a unicode
-  string"""
+  string. If the file contents exist in |request_data| (i.e. it is open and
+  potentially modified/dirty in the user's editor), then it is returned,
+  otherwise the file is read from disk (assuming a UTF-8 encoding) and its
+  contents returned."""
   file_data = request_data[ 'file_data' ]
   if filename in file_data:
     return ToUnicode( file_data[ filename ][ 'contents' ] )

@@ -123,8 +123,9 @@ class RequestWrap( object ):
 
 
   def _Query( self ):
-    query = ToUnicode( self[ 'line_bytes' ][
-             self[ 'start_column' ] - 1 : self[ 'column_num' ] - 1 ] )
+    query = self[ 'line_value' ][
+        self[ 'start_codepoint' ] - 1 : self[ 'column_codepoint' ] - 1
+    ]
 
     _logger.debug( 'Query for line /{0}/ is /{1}/'.format( self[ 'line_value' ],
                                                            query ) )
@@ -147,7 +148,7 @@ def CompletionStartColumn( line_value, column_num, filetype ):
   NOTE: if the line contains multi-byte characters, then the result is not
   the 'character' index (see CompletionStartCodepoint for that), and therfore
   is is not safe to perform any character-relevant arithmetic on the result
-  of this method"""
+  of this method."""
   return CodepointOffsetToByteOffset(
       ToUnicode( line_value ),
       CompletionStartCodepoint( line_value, column_num, filetype ) )

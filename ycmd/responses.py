@@ -134,7 +134,6 @@ def BuildCompletionResponse( completion_datas,
 
 # location.column_number_ is a byte offset
 def BuildLocationData( location ):
-  # TODO(Ben): Check all cases that location is a byte offset
   return {
     'line_num': location.line_number_,
     'column_num': location.column_number_,

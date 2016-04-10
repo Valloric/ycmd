@@ -131,10 +131,10 @@ def ToBytes( value ):
 
 
 def ByteOffsetToCodepointOffset( line_value, column_num ):
-  """The API calls for byte offsets, into the UTF-8 encoded version of the
-  buffer. However, internally, ycmd uses unicode strings. This means that
+  """The API calls for byte offsets into the UTF-8 encoded version of the
+  buffer. However, ycmd internally uses unicode strings. This means that
   when we need to walk 'characters' within the buffer, such as when checking
-  for semantic triggers, etc., we must use codepoint offets, rather than
+  for semantic triggers and similar, we must use codepoint offets, rather than
   byte offsets.
 
   This method converts the |column_num| which is a utf-8 byte offset into
@@ -148,10 +148,10 @@ def ByteOffsetToCodepointOffset( line_value, column_num ):
 
 
 def CodepointOffsetToByteOffset( unicode_line_value, codepoint_offset ):
-  """The API calls for byte offsets, into the UTF-8 encoded version of the
-  buffer. However, internally, ycmd uses unicode strings. This means that
+  """The API calls for byte offsets into the UTF-8 encoded version of the
+  buffer. However, ycmd internally uses unicode strings. This means that
   when we need to walk 'characters' within the buffer, such as when checking
-  for semantic triggers, etc., we must use codepoint offets, rather than
+  for semantic triggers and similar, we must use codepoint offets, rather than
   byte offsets.
 
   This method converts the |codepoint_offset| which is a unicode codepoint
@@ -161,8 +161,7 @@ def CodepointOffsetToByteOffset( unicode_line_value, codepoint_offset ):
   # Should be a no-op, but in case someone passes a bytes instance
   unicode_line_value = ToUnicode( unicode_line_value )
 
-  return len(
-      unicode_line_value[ : codepoint_offset - 1 ].encode( 'utf8' ) ) + 1
+  return len( ToBytes( unicode_line_value[ : codepoint_offset - 1 ] ) ) + 1
 
 
 def PathToCreatedTempDir( tempdir = RAW_PATH_TO_TEMP_DIR ):

@@ -42,6 +42,8 @@ class Completer( with_metaclass( abc.ABCMeta, object ) ):
 
   *Important note about unicode and byte offsets*
 
+    Useful background: http://utf8everywhere.org
+
     Internally, all Python strings are unicode string objects, unless otherwise
     converted to 'bytes' using ToBytes. In particular, the line_value and
     file_data.contents entries in the request_data are unicode strings.

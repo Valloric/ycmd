@@ -217,3 +217,15 @@ def Query_InWhiteSpace_test():
   eq_( '',
        RequestWrap( PrepareJson( column_num = 8,
                                  contents = 'foo       ') )[ 'query' ] )
+
+
+def Query_Unicode_Singlechar_Inclusive_test():
+  eq_( 'ø',
+       RequestWrap( PrepareJson( column_num = 7,
+                                 contents = 'abc.ø' ) )[ 'query' ] )
+
+
+def Query_Unicode_Singlechar_Exclusive_test():
+  eq_( '',
+       RequestWrap( PrepareJson( column_num = 5,
+                                 contents = 'abc.ø' ) )[ 'query' ] )
