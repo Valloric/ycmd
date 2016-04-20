@@ -268,6 +268,22 @@ TEST( IdentifierCompleterTest, NonAlnumStartChar ) {
 }
 
 
+TEST( IdentifierCompleterTest, EmptyCandidatesForUnicode ) {
+  EXPECT_THAT( IdentifierCompleter(
+                 StringVector(
+                   "uni¢𐍈d€" ) ).CandidatesForQuery( "¢" ),
+               ElementsAre() );
+}
+
+
+TEST( IdentifierCompleterTest, EmptyCandidatesForNonPrintable ) {
+  EXPECT_THAT( IdentifierCompleter(
+                 StringVector(
+                   "\x01\x1f\x7f" ) ).CandidatesForQuery( "\x1f" ),
+               ElementsAre() );
+}
+
+
 TEST( IdentifierCompleterTest, TagsEndToEndWorks ) {
   IdentifierCompleter completer;
   std::vector< std::string > tag_files;

@@ -133,7 +133,7 @@ CandidateRepository::~CandidateRepository() {
 const std::string &CandidateRepository::ValidatedCandidateText(
   const std::string &candidate_text ) {
   if ( candidate_text.size() <= MAX_CANDIDATE_SIZE &&
-       all( candidate_text, is_print( std::locale::classic() ) ) )
+       IsPrintable( candidate_text ) )
     return candidate_text;
 
   return empty_;
