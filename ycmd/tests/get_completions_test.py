@@ -132,10 +132,9 @@ def GetCompletions_IdentifierCompleter_Unicode_InLine_test( app ):
   )
 
 
-@ExpectedFailure( "The identifier completer - like FilterAndSortCandidates "
-                  "can't handle unicode: "
-                  "https://github.com/Valloric/YouCompleteMe/issues/278",
-                  contains_string( 'bitset' ) )
+@ExpectedFailure( 'The identifier completer does not support '
+                  'unicode characters',
+                  contains_string( '[]' ) )
 @SharedYcmd
 def GetCompletions_IdentifierCompleter_UnicodeQuery_InLine_test( app ):
   contents = """
