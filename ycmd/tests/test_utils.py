@@ -162,6 +162,22 @@ def SetUpApp():
   return TestApp( handlers.app )
 
 
+def ClearCompletionsCache():
+  """Invalidates cached completions for completers stored in the server state:
+  filetype completers and general completers (identifier, filename, and
+  ultisnips completers).
+
+  This function is used when sharing the application between tests so that
+  no completions are cached by previous tests."""
+  server_state = handlers._server_state
+  filetype_completers = server_state._filetype_completers
+  for filetype in filetype_completers:
+    filetype_completers[ filetype ]._completions_cache.Invalidate()
+  general_completer = server_state.GetGeneralCompleter()
+  for completer in general_completer._all_completers:
+    completer._completions_cache.Invalidate()
+
+
 class DummyCompleter( Completer ):
   def __init__( self, user_options ):
     super( DummyCompleter, self ).__init__( user_options )
