@@ -24,13 +24,14 @@ standard_library.install_aliases()
 from builtins import *  # noqa
 
 from hamcrest import ( assert_that, calling, contains, contains_inanyorder,
-                       raises )
+                       equal_to, empty, raises )
 from mock import patch
 from nose.tools import ok_
 import os.path
 import sys
 
 from ycmd.server_utils import ( AddNearestThirdPartyFoldersToSysPath,
+                                CompatibleWithCurrentCore,
                                 PathToNearestThirdPartyFolder )
 
 DIR_OF_THIRD_PARTY = os.path.abspath(
@@ -48,6 +49,113 @@ THIRD_PARTY_FOLDERS = (
   os.path.join( DIR_OF_THIRD_PARTY, 'tern_runtime' ),
   os.path.join( DIR_OF_THIRD_PARTY, 'waitress' )
 )
+
+
+@patch( 'ycmd.server_utils._logger' )
+def RunCompatibleWithCurrentCore( test, logger ):
+  if 'import_error' in test:
+    with patch( 'ycmd.server_utils.ImportCore',
+                side_effect = ImportError( test[ 'import_error' ] ) ):
+      code = CompatibleWithCurrentCore()
+  else:
+    code = CompatibleWithCurrentCore()
+
+  assert_that( code, equal_to( test[ 'return_code' ] ) )
+
+  if 'message' in test:
+    assert_that( logger.method_calls[ 0 ][ 1 ][ 0 ],
+                 equal_to( test[ 'message' ] ) )
+  else:
+    assert_that( logger.method_calls, empty() )
+
+
+def CompatibleWithCurrentCore_Compatible_test():
+  RunCompatibleWithCurrentCore( {
+    'return_code': 0
+  } )
+
+
+def CompatibleWithCurrentCore_Unexpected_test():
+  RunCompatibleWithCurrentCore( {
+    'import_error': 'unexpected import error',
+    'return_code': 3,
+    'message': 'unexpected import error'
+  } )
+
+
+def CompatibleWithCurrentCore_Missing_test():
+  import_errors = [
+    # Raised by Python 2.
+    'No module named ycm_core',
+    # Raised by Python 3.
+    "No module named 'ycm_core'"
+  ]
+
+  for error in import_errors:
+    yield RunCompatibleWithCurrentCore, {
+      'import_error': error,
+      'return_code': 4,
+      'message': 'ycm_core library not detected; you need to compile it by '
+                 'running the build.py script. See the documentation for more '
+                 'details.'
+    }
+
+
+def CompatibleWithCurrentCore_Python2_test():
+  import_errors = [
+    # Raised on Linux and OS X with Python 3.3 and 3.4.
+    'dynamic module does not define init function (PyInit_ycm_core).',
+    # Raised on Linux and OS X with Python 3.5.
+    'dynamic module does not define module export function (PyInit_ycm_core).',
+    # Raised on Windows.
+    'Module use of python26.dll conflicts with this version of Python.',
+    'Module use of python27.dll conflicts with this version of Python.'
+  ]
+
+  for error in import_errors:
+    yield RunCompatibleWithCurrentCore, {
+      'import_error': error,
+      'return_code': 5,
+      'message': 'ycm_core library compiled for Python 2 '
+                 'but loaded in Python 3.'
+    }
+
+
+def CompatibleWithCurrentCore_Python3_test():
+  import_errors = [
+    # Raised on Linux and OS X.
+    'dynamic module does not define init function (initycm_core).',
+    # Raised on Windows.
+    'Module use of python34.dll conflicts with this version of Python.',
+    'Module use of python35.dll conflicts with this version of Python.'
+  ]
+
+  for error in import_errors:
+    yield RunCompatibleWithCurrentCore, {
+      'import_error': error,
+      'return_code': 6,
+      'message': 'ycm_core library compiled for Python 3 '
+                 'but loaded in Python 2.'
+    }
+
+
+@patch( 'ycm_core.YcmCoreVersion', side_effect = AttributeError() )
+def CompatibleWithCurrentCore_Outdated_NoYcmCoreVersionMethod_test( *args ):
+  RunCompatibleWithCurrentCore( {
+    'return_code': 7,
+    'message': 'ycm_core library too old; PLEASE RECOMPILE by running the '
+               'build.py script. See the documentation for more details.'
+  } )
+
+
+@patch( 'ycm_core.YcmCoreVersion', return_value = 10 )
+@patch( 'ycmd.server_utils.ExpectedCoreVersion', return_value = 11 )
+def CompatibleWithCurrentCore_Outdated_NoVersionMatch_test( *args ):
+  RunCompatibleWithCurrentCore( {
+    'return_code': 7,
+    'message': 'ycm_core library too old; PLEASE RECOMPILE by running the '
+               'build.py script. See the documentation for more details.'
+  } )
 
 
 def PathToNearestThirdPartyFolder_Success_test():
