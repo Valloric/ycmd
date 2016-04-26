@@ -40,6 +40,9 @@ import argparse
 import multiprocessing
 
 
+DIR_OF_THIS_SCRIPT = os.path.dirname( os.path.abspath( __file__ ) )
+
+
 def OnMac():
   return platform.system() == 'Darwin'
 
@@ -427,6 +430,12 @@ def SetUpTern():
   subprocess.check_call( [ paths[ 'npm' ], 'install', '--production' ] )
 
 
+def WritePythonUsedDuringBuild():
+  path = p.join( DIR_OF_THIS_SCRIPT, 'PYTHON_USED_DURING_BUILDING' )
+  with open( path, 'w' ) as f:
+    f.write( sys.executable )
+
+
 def Main():
   CheckDeps()
   args = ParseArguments()
@@ -440,6 +449,8 @@ def Main():
     SetUpTern()
   if args.racer_completer or args.all_completers:
     BuildRacerd()
+  WritePythonUsedDuringBuild()
+
 
 if __name__ == '__main__':
   Main()
