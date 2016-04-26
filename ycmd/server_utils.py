@@ -22,24 +22,34 @@ from __future__ import absolute_import
 # No other imports from `future` because this module is loaded before we have
 # put our submodules in sys.path
 
-import sys
-import os
 import io
+import logging
+import os
 import re
+import sys
+
+CORE_MISSING_ERROR_REGEX = re.compile( "No module named '?ycm_core'?" )
+CORE_PYTHON2_ERROR_REGEX = re.compile(
+  'dynamic module does not define (?:init|module export) '
+  'function \(PyInit_ycm_core\)|'
+  'Module use of python2[0-9].dll conflicts with this version of Python\.$' )
+CORE_PYTHON3_ERROR_REGEX = re.compile(
+  'dynamic module does not define init function \(initycm_core\)|'
+  'Module use of python3[0-9].dll conflicts with this version of Python\.$' )
+
+CORE_MISSING_MESSAGE = 'ycm_core library not detected; you need to compile it.'
+CORE_PYTHON2_MESSAGE = ( 'ycm_core library compiled with Python 2 '
+                         'but loaded with Python 3.' )
+CORE_PYTHON3_MESSAGE = ( 'ycm_core library compiled with Python 3 '
+                         'but loaded with Python 2.' )
+CORE_OUTDATED_MESSAGE = 'ycm_core library too old, PLEASE RECOMPILE.'
 
 VERSION_FILENAME = 'CORE_VERSION'
-CORE_NOT_COMPATIBLE_MESSAGE = (
-  'ycmd can\'t run: ycm_core lib too old, PLEASE RECOMPILE'
-)
 
 DIR_OF_CURRENT_SCRIPT = os.path.dirname( os.path.abspath( __file__ ) )
 DIR_PACKAGES_REGEX = re.compile( '(site|dist)-packages$' )
 
-
-def SetUpPythonPath():
-  sys.path.insert( 0, os.path.join( DIR_OF_CURRENT_SCRIPT, '..' ) )
-
-  AddNearestThirdPartyFoldersToSysPath( __file__ )
+_logger = logging.getLogger( __name__ )
 
 
 def ExpectedCoreVersion():
@@ -48,13 +58,58 @@ def ExpectedCoreVersion():
     return int( f.read() )
 
 
-def CompatibleWithCurrentCoreVersion():
-  import ycm_core
+def ImportCore():
+  """Imports and returns the ycm_core module. This function exists for easily
+  mocking this import in tests."""
+  import ycm_core as ycm_core
+  return ycm_core
+
+
+def CompatibleWithCurrentCore():
+  """Checks if ycm_core library is compatible and returns with one of the
+  following status codes:
+     0: ycm_core is compatible;
+     1: unexpected error;
+     3: ycm_core is missing;
+     4: ycm_core is compiled with Python 2 but loaded with Python 3;
+     5: ycm_core is compiled with Python 3 but loaded with Python 2;
+     6: ycm_core version is outdated.
+
+  2 is not used as a status code because it has often a special meaning for Unix
+  programs. See https://docs.python.org/2/library/sys.html#sys.exit"""
+  try:
+    ycm_core = ImportCore()
+  except ImportError as error:
+    message = str( error )
+    if CORE_MISSING_ERROR_REGEX.match( message ):
+      _logger.exception( CORE_MISSING_MESSAGE )
+      return 3
+    if CORE_PYTHON2_ERROR_REGEX.match( message ):
+      _logger.exception( CORE_PYTHON2_MESSAGE )
+      return 4
+    if CORE_PYTHON3_ERROR_REGEX.match( message ):
+      _logger.exception( CORE_PYTHON3_MESSAGE )
+      return 5
+    _logger.exception( message )
+    return 1
+
   try:
     current_core_version = ycm_core.YcmCoreVersion()
   except AttributeError:
-    return False
-  return ExpectedCoreVersion() == current_core_version
+    _logger.exception( CORE_OUTDATED_MESSAGE )
+    return 6
+
+  if ExpectedCoreVersion() != current_core_version:
+    _logger.error( CORE_OUTDATED_MESSAGE )
+    return 6
+
+  return 0
+
+
+def SetUpPythonPath():
+  sys.path.insert( 0, os.path.join( DIR_OF_CURRENT_SCRIPT, '..' ) )
+
+  AddNearestThirdPartyFoldersToSysPath( __file__ )
 
 
 def AncestorFolders( path ):
