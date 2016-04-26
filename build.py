@@ -8,6 +8,7 @@ from __future__ import division
 from __future__ import absolute_import
 
 import os
+import io
 import subprocess
 import os.path as p
 import sys
@@ -38,6 +39,9 @@ from shutil import rmtree
 import platform
 import argparse
 import multiprocessing
+
+
+DIR_OF_THIS_SCRIPT = os.path.dirname( os.path.abspath( __file__ ) )
 
 
 def OnMac():
@@ -427,6 +431,12 @@ def SetUpTern():
   subprocess.check_call( [ paths[ 'npm' ], 'install', '--production' ] )
 
 
+def WritePythonUsedDuringBuild():
+  path = p.join( DIR_OF_THIS_SCRIPT, 'PYTHON_USED_DURING_BUILDING' )
+  with io.open( path, 'wb' ) as f:
+    f.write( sys.executable )
+
+
 def Main():
   CheckDeps()
   args = ParseArguments()
@@ -440,6 +450,8 @@ def Main():
     SetUpTern()
   if args.racer_completer or args.all_completers:
     BuildRacerd()
+  WritePythonUsedDuringBuild()
+
 
 if __name__ == '__main__':
   Main()
