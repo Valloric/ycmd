@@ -221,6 +221,7 @@ def DebugInfo():
 
 
 # The type of the param is Bottle.HTTPError
+@app.error( http.client.REQUEST_ENTITY_TOO_LARGE )
 @app.error( http.client.INTERNAL_SERVER_ERROR )
 def ErrorHandler( httperror ):
   body = _JsonResponse( BuildExceptionResponse( httperror.exception,
