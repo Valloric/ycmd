@@ -209,8 +209,8 @@ class TernCompleter( Completer ):
 
   def GetSubcommandsMap( self ):
     return {
-      'StartServer':    ( lambda self, request_data, args:
-                                         self._StartServer() ),
+      'RestartServer':  ( lambda self, request_data, args:
+                                         self._RestartServer() ),
       'StopServer':     ( lambda self, request_data, args:
                                          self._StopServer() ),
       'GoToDefinition': ( lambda self, request_data, args:
@@ -432,6 +432,11 @@ class TernCompleter( Completer ):
       self._do_tern_project_check = True
     else:
       _logger.warning( 'Tern.js server did not start successfully' )
+
+
+  def _RestartServer( self ):
+    self._StopServer()
+    self._StartServer()
 
 
   def _StopServer( self ):

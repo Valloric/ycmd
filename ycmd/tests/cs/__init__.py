@@ -30,6 +30,7 @@ import time
 
 from ycmd import handlers
 from ycmd.tests.test_utils import BuildRequest, ClearCompletionsCache, SetUpApp
+from ycmd.utils import ReadFile
 
 shared_app = None
 shared_filepaths = []
@@ -43,7 +44,7 @@ def PathToTestFile( *args ):
 def StartOmniSharpServer( app, filepath ):
   app.post_json( '/run_completer_command',
                  BuildRequest( completer_target = 'filetype_default',
-                               command_arguments = [ "StartServer" ],
+                               command_arguments = [ "RestartServer" ],
                                filepath = filepath,
                                filetype = 'cs' ) )
 
