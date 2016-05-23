@@ -272,7 +272,7 @@ class TypeScriptCompleter( Completer ):
       'file':    filename,
       'tmpfile': tmpfile.name
     } )
-    os.unlink( tmpfile.name )
+    utils.RemoveIfExists( tmpfile.name )
 
 
   def SupportedFiletypes( self ):
@@ -504,7 +504,7 @@ class TypeScriptCompleter( Completer ):
       self._tsserver_handle.wait()
 
       if not self.user_options[ 'server_keep_logfiles' ]:
-        os.unlink( self._logfile )
+        utils.RemoveIfExists( self._logfile )
         self._logfile = None
 
 
