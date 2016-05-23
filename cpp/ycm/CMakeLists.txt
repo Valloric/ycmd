@@ -58,11 +58,11 @@ if ( USE_CLANG_COMPLETER AND
            "3120c3055ea78bbbb6848510a2af70c68538b990cb0545bac8dad01df8ff69d7" )
       set( CLANG_FILENAME "${CLANG_DIRNAME}.tar.xz" )
     else()
-      # Clang 3.3 is the last version with pre-built x86 binaries upstream.
-      # That's too old now.
-      message( FATAL_ERROR "No pre-built Clang ${CLANG_VERSION} binaries for 32 bit linux. "
-        "You'll have to compile Clang ${CLANG_VERSION} from source. "
-        "See the YCM docs for details on how to use a user-compiled libclang." )
+      # Use the prebuilt x86 binaries for Fedora 23.
+      set( CLANG_DIRNAME "clang+llvm-${CLANG_VERSION}-i686-fedora23" )
+      set( CLANG_SHA256
+           "063a5430b1895a1565831ab0b840cdb14f22ee9fad38e82b9bb8be76e49f1a8b" )
+      set( CLANG_FILENAME "${CLANG_DIRNAME}.tar.xz" )
     endif()
   endif()
 
@@ -276,10 +276,15 @@ if ( EXTERNAL_LIBCLANG_PATH OR USE_SYSTEM_LIBCLANG )
   else()
     # For Macs, we do things differently; look further in this file.
     if ( NOT APPLE )
-      # Setting this to true makes sure that libraries we build will have our rpath
-      # set even without having to do "make install"
+      # Setting this to true makes sure that libraries we build will have our
+      # rpath set even without having to do "make install"
       set( CMAKE_BUILD_WITH_INSTALL_RPATH TRUE )
       set( CMAKE_INSTALL_RPATH "\$ORIGIN" )
+      # Add directories from all libraries outside the build tree to the rpath.
+      # This makes the dynamic linker able to find non system libraries that
+      # our libraries require, in particular the Python one (from pyenv for
+      # instance).
+      set( CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE )
     endif()
   endif()
 

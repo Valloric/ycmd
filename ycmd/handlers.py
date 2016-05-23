@@ -23,30 +23,16 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import *  # noqa
 
-from os import path
-
-try:
-  import ycm_core
-except ImportError as e:
-  raise RuntimeError(
-    'Error importing ycm_core. Are you sure you have placed a '
-    'version 3.2+ libclang.[so|dll|dylib] in folder "{0}"? '
-    'See the Installation Guide in the docs. Full error: {1}'.format(
-      path.realpath( path.join( path.abspath( __file__ ), '..', '..' ) ),
-      str( e ) ) )
-
 import atexit
-import logging
-import json
 import bottle
-import http.client
+import json
+import logging
 import traceback
 from bottle import request
-from . import server_state
-from ycmd import user_options_store
+
+import ycm_core
+from ycmd import extra_conf_store, hmac_plugin, server_state, user_options_store
 from ycmd.responses import BuildExceptionResponse, BuildCompletionResponse
-from ycmd import hmac_plugin
-from ycmd import extra_conf_store
 from ycmd.request_wrap import RequestWrap
 from ycmd.bottle_utils import SetResponseHeader
 from ycmd.completers.completer_utils import FilterAndSortCandidatesWrap
@@ -99,7 +85,7 @@ def GetCompletions():
   _logger.info( 'Received completion request' )
   request_data = RequestWrap( request.json )
   ( do_filetype_completion, forced_filetype_completion ) = (
-                    _server_state.ShouldUseFiletypeCompleter(request_data ) )
+                    _server_state.ShouldUseFiletypeCompleter( request_data ) )
   _logger.debug( 'Using filetype completion: %s', do_filetype_completion )
 
   errors = None
@@ -243,12 +229,14 @@ def DebugInfo():
 
 
 # The type of the param is Bottle.HTTPError
-@app.error( http.client.INTERNAL_SERVER_ERROR )
 def ErrorHandler( httperror ):
   body = _JsonResponse( BuildExceptionResponse( httperror.exception,
                                                 httperror.traceback ) )
   hmac_plugin.SetHmacHeader( body, _hmac_secret )
   return body
+
+# For every error Bottle encounters it will use this as the default handler
+app.default_error_handler = ErrorHandler
 
 
 def _JsonResponse( data ):

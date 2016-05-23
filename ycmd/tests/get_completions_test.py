@@ -1,3 +1,5 @@
+# encoding: utf-8
+#
 # Copyright (C) 2013 Google Inc.
 #               2015 ycmd contributors
 #
@@ -24,14 +26,14 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import *  # noqa
 
-from hamcrest import assert_that, has_items
+from hamcrest import assert_that, equal_to, has_items, contains_string
 from mock import patch
 from nose.tools import eq_
 
 from ycmd.tests import SharedYcmd
 from ycmd.tests.test_utils import ( BuildRequest, CompletionEntryMatcher,
                                     DummyCompleter, PatchCompleter,
-                                    UserOption )
+                                    UserOption, ExpectedFailure )
 
 
 @SharedYcmd
@@ -102,6 +104,60 @@ def GetCompletions_IdentifierCompleter_WorksForSpecialIdentifierChars_test(
     results,
     has_items( CompletionEntryMatcher( 'font-size', '[ID]' ),
                CompletionEntryMatcher( 'font-family', '[ID]' ) )
+  )
+
+
+@SharedYcmd
+def GetCompletions_IdentifierCompleter_Unicode_InLine_test( app ):
+  contents = """
+    This is some text cøntaining unicøde
+  """
+
+  event_data = BuildRequest( contents = contents,
+                             filetype = 'css',
+                             event_name = 'FileReadyToParse' )
+
+  app.post_json( '/event_notification', event_data )
+
+  # query is 'tx'
+  completion_data = BuildRequest( contents = 'tx ' + contents,
+                                  filetype = 'css',
+                                  column_num = 3 )
+  results = app.post_json( '/completions',
+                           completion_data ).json[ 'completions' ]
+
+  assert_that(
+    results,
+    has_items( CompletionEntryMatcher( 'text', '[ID]' ) )
+  )
+
+
+@ExpectedFailure( 'The identifier completer does not support '
+                  'unicode characters',
+                  contains_string( '[]' ) )
+@SharedYcmd
+def GetCompletions_IdentifierCompleter_UnicodeQuery_InLine_test( app ):
+  contents = """
+    This is some text cøntaining unicøde
+  """
+
+  event_data = BuildRequest( contents = contents,
+                             filetype = 'css',
+                             event_name = 'FileReadyToParse' )
+
+  app.post_json( '/event_notification', event_data )
+
+  # query is 'cø'
+  completion_data = BuildRequest( contents = 'cø ' + contents,
+                                  filetype = 'css',
+                                  column_num = 4 )
+  results = app.post_json( '/completions',
+                           completion_data ).json[ 'completions' ]
+
+  assert_that(
+    results,
+    has_items( CompletionEntryMatcher( 'cøntaining', '[ID]' ),
+               CompletionEntryMatcher( 'unicøde', '[ID]' ) )
   )
 
 
@@ -199,3 +255,206 @@ def GetCompletions_SemanticCompleter_WorksWhenTriggerIsIdentifier_test(
         results,
         has_items( CompletionEntryMatcher( 'some_candidate' ) )
       )
+
+
+@SharedYcmd
+@patch( 'ycmd.tests.test_utils.DummyCompleter.ShouldUseNowInner',
+        return_value = True )
+@patch( 'ycmd.tests.test_utils.DummyCompleter.CandidatesList',
+        return_value = [ 'attribute' ] )
+def GetCompletions_CacheIsValid_test(
+  app, candidates_list, *args ):
+  with PatchCompleter( DummyCompleter, 'dummy_filetype' ):
+    completion_data = BuildRequest( filetype = 'dummy_filetype',
+                                    contents = 'object.attr',
+                                    line_num = 1,
+                                    column_num = 12 )
+
+    results = app.post_json( '/completions',
+                             completion_data ).json[ 'completions' ]
+    assert_that(
+      results,
+      has_items( CompletionEntryMatcher( 'attribute' ) )
+    )
+
+    completion_data = BuildRequest( filetype = 'dummy_filetype',
+                                    contents = 'object.attri',
+                                    line_num = 1,
+                                    column_num = 13 )
+
+    results = app.post_json( '/completions',
+                             completion_data ).json[ 'completions' ]
+    assert_that(
+      results,
+      has_items( CompletionEntryMatcher( 'attribute' ) )
+    )
+
+    # We ask for candidates only once because of cache.
+    assert_that( candidates_list.call_count, equal_to( 1 ) )
+
+
+@SharedYcmd
+@patch( 'ycmd.tests.test_utils.DummyCompleter.ShouldUseNowInner',
+        return_value = True )
+@patch( 'ycmd.tests.test_utils.DummyCompleter.CandidatesList',
+        side_effect = [ [ 'attributeA' ], [ 'attributeB' ] ] )
+def GetCompletions_CacheIsNotValid_DifferentLineNumber_test(
+  app, candidates_list, *args ):
+  with PatchCompleter( DummyCompleter, 'dummy_filetype' ):
+    completion_data = BuildRequest( filetype = 'dummy_filetype',
+                                    contents = 'objectA.attr\n'
+                                               'objectB.attr',
+                                    line_num = 1,
+                                    column_num = 12 )
+
+    results = app.post_json( '/completions',
+                             completion_data ).json[ 'completions' ]
+    assert_that(
+      results,
+      has_items( CompletionEntryMatcher( 'attributeA' ) )
+    )
+
+    completion_data = BuildRequest( filetype = 'dummy_filetype',
+                                    contents = 'objectA.\n'
+                                               'objectB.',
+                                    line_num = 2,
+                                    column_num = 12 )
+
+    results = app.post_json( '/completions',
+                             completion_data ).json[ 'completions' ]
+    assert_that(
+      results,
+      has_items( CompletionEntryMatcher( 'attributeB' ) )
+    )
+
+    # We ask for candidates twice because of cache invalidation:
+    # line numbers are different between requests.
+    assert_that( candidates_list.call_count, equal_to( 2 ) )
+
+
+@SharedYcmd
+@patch( 'ycmd.tests.test_utils.DummyCompleter.ShouldUseNowInner',
+        return_value = True )
+@patch( 'ycmd.tests.test_utils.DummyCompleter.CandidatesList',
+        side_effect = [ [ 'attributeA' ], [ 'attributeB' ] ] )
+def GetCompletions_CacheIsNotValid_DifferentStartColumn_test(
+  app, candidates_list, *args ):
+  with PatchCompleter( DummyCompleter, 'dummy_filetype' ):
+    # Start column is 9
+    completion_data = BuildRequest( filetype = 'dummy_filetype',
+                                    contents = 'objectA.attr',
+                                    line_num = 1,
+                                    column_num = 12 )
+
+    results = app.post_json( '/completions',
+                             completion_data ).json[ 'completions' ]
+    assert_that(
+      results,
+      has_items( CompletionEntryMatcher( 'attributeA' ) )
+    )
+
+    # Start column is 8
+    completion_data = BuildRequest( filetype = 'dummy_filetype',
+                                    contents = 'object.attri',
+                                    line_num = 1,
+                                    column_num = 12 )
+
+    results = app.post_json( '/completions',
+                             completion_data ).json[ 'completions' ]
+    assert_that(
+      results,
+      has_items( CompletionEntryMatcher( 'attributeB' ) )
+    )
+
+    # We ask for candidates twice because of cache invalidation:
+    # start columns are different between requests.
+    assert_that( candidates_list.call_count, equal_to( 2 ) )
+
+
+@SharedYcmd
+@patch( 'ycmd.tests.test_utils.DummyCompleter.ShouldUseNowInner',
+        return_value = True )
+@patch( 'ycmd.tests.test_utils.DummyCompleter.CompletionType',
+        side_effect = [ 0, 0, 0, 0, 1, 1, 1, 1 ] )
+@patch( 'ycmd.tests.test_utils.DummyCompleter.CandidatesList',
+        side_effect = [ [ 'attributeA' ], [ 'attributeB' ] ] )
+def GetCompletions_CacheIsNotValid_DifferentCompletionType_test(
+  app, candidates_list, *args ):
+  with PatchCompleter( DummyCompleter, 'dummy_filetype' ):
+    completion_data = BuildRequest( filetype = 'dummy_filetype',
+                                    contents = 'objectA.attr',
+                                    line_num = 1,
+                                    column_num = 12 )
+
+    results = app.post_json( '/completions',
+                             completion_data ).json[ 'completions' ]
+    assert_that(
+      results,
+      has_items( CompletionEntryMatcher( 'attributeA' ) )
+    )
+
+    completion_data = BuildRequest( filetype = 'dummy_filetype',
+                                    contents = 'objectA.attr',
+                                    line_num = 1,
+                                    column_num = 12 )
+
+    results = app.post_json( '/completions',
+                             completion_data ).json[ 'completions' ]
+    assert_that(
+      results,
+      has_items( CompletionEntryMatcher( 'attributeB' ) )
+    )
+
+    # We ask for candidates twice because of cache invalidation:
+    # completion types are different between requests.
+    assert_that( candidates_list.call_count, equal_to( 2 ) )
+
+
+@SharedYcmd
+@patch( 'ycmd.tests.test_utils.DummyCompleter.ShouldUseNowInner',
+        return_value = True )
+@patch( 'ycmd.tests.test_utils.DummyCompleter.CandidatesList',
+        return_value = [ 'aba', 'cbc' ] )
+def GetCompletions_FilterThenReturnFromCache_test( app,
+                                                   candidates_list,
+                                                   *args ):
+
+  with PatchCompleter( DummyCompleter, 'dummy_filetype' ):
+    # First, fill the cache with an empty query
+    completion_data = BuildRequest( filetype = 'dummy_filetype',
+                                    contents = 'objectA.',
+                                    line_num = 1,
+                                    column_num = 9 )
+
+    results = app.post_json( '/completions',
+                             completion_data ).json[ 'completions' ]
+    assert_that( results,
+                 has_items( CompletionEntryMatcher( 'aba' ),
+                            CompletionEntryMatcher( 'cbc' ) ) )
+
+    # Now, filter them. This causes them to be converted to bytes and back
+    completion_data = BuildRequest( filetype = 'dummy_filetype',
+                                    contents = 'objectA.c',
+                                    line_num = 1,
+                                    column_num = 10 )
+
+    results = app.post_json( '/completions',
+                             completion_data ).json[ 'completions' ]
+    assert_that( results,
+                 has_items( CompletionEntryMatcher( 'cbc' ) ) )
+
+    # Finally, request the original (unfiltered) set again. Ensure that we get
+    # proper results (not some bytes objects)
+    # First, fill the cache with an empty query
+    completion_data = BuildRequest( filetype = 'dummy_filetype',
+                                    contents = 'objectA.',
+                                    line_num = 1,
+                                    column_num = 9 )
+
+    results = app.post_json( '/completions',
+                             completion_data ).json[ 'completions' ]
+    assert_that( results,
+                 has_items( CompletionEntryMatcher( 'aba' ),
+                            CompletionEntryMatcher( 'cbc' ) ) )
+
+    assert_that( candidates_list.call_count, equal_to( 1 ) )

@@ -33,13 +33,6 @@ if %python% == 27 (
   set PYTHONHOME=%python_path%
 )
 
-:: When using Python 3 on AppVeyor, CMake will always pick the 64 bits
-:: libraries. We specifically tell CMake the right path to the libraries
-:: according to the architecture.
-if %python% == 35 (
-  set EXTRA_CMAKE_ARGS="-DPYTHON_LIBRARY=%python_path%\libs\python%python%.lib"
-)
-
 appveyor DownloadFile https://bootstrap.pypa.io/get-pip.py
 python get-pip.py
 pip install -r test_requirements.txt
@@ -58,8 +51,8 @@ if %errorlevel% neq 0 exit /b %errorlevel%
 :: Rust configuration
 ::
 
-appveyor DownloadFile https://static.rust-lang.org/dist/rust-1.6.0-x86_64-pc-windows-msvc.exe
-rust-1.6.0-x86_64-pc-windows-msvc.exe /VERYSILENT /NORESTART /DIR="C:\Program Files\Rust"
+appveyor DownloadFile https://static.rust-lang.org/dist/rust-1.8.0-x86_64-pc-windows-msvc.exe
+rust-1.8.0-x86_64-pc-windows-msvc.exe /VERYSILENT /NORESTART /DIR="C:\Program Files\Rust"
 set PATH=C:\Program Files\Rust\bin;%PATH%
 
 rustc -Vv

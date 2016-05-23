@@ -1,3 +1,5 @@
+# encoding: utf-8
+#
 # Copyright (C) 2014 Google Inc.
 #
 # This file is part of ycmd.
@@ -50,7 +52,17 @@ COMMENT_AND_STRING_REGEX = re.compile(
   #  3. the escaped double quote inside the string
   r'(?<!\\)"(?:\\\\|\\"|.)*?"', re.MULTILINE )
 
-DEFAULT_IDENTIFIER_REGEX = re.compile( r"[_a-zA-Z]\w*", re.UNICODE )
+# At least c++ and javascript support unicode identifiers, and identifiers may
+# start with unicode character, e.g. ålpha. So we need to accept any identifier
+# starting with an 'alpha' character or underscore. i.e. not starting with a
+# 'digit'. The following regex will match:
+#   - A character which is alpha or _. That is a character which is NOT:
+#     - a digit (\d)
+#     - non-alphanumeric
+#     - not an underscore
+#       (The latter two come from \W which is the negation of \w)
+#   - Followed by any alphanumeric or _ characters
+DEFAULT_IDENTIFIER_REGEX = re.compile( r"[^\W\d]\w*", re.UNICODE )
 
 FILETYPE_TO_IDENTIFIER_REGEX = {
     # Spec: http://www.w3.org/TR/CSS2/syndata.html#characters
@@ -60,7 +72,8 @@ FILETYPE_TO_IDENTIFIER_REGEX = {
     # Spec: http://www.w3.org/TR/html5/syntax.html#tag-name-state
     # But not quite since not everything we want to pull out is a tag name. We
     # also want attribute names (and probably unquoted attribute values).
-    'html': re.compile( r"[a-zA-Z][^\s/>='\"]*", re.UNICODE ),
+    # And we also want to ignore common template chars like `}` and `{`.
+    'html': re.compile( r"[a-zA-Z][^\s/>='\"}{\.]*", re.UNICODE ),
 
     # Spec: http://cran.r-project.org/doc/manuals/r-release/R-lang.pdf
     # Section 10.3.2.
@@ -78,7 +91,11 @@ FILETYPE_TO_IDENTIFIER_REGEX = {
 
     # Spec: http://www.haskell.org/onlinereport/lexemes.html
     # Section 2.4
-    'haskell': re.compile( r"[_a-zA-Z][\w']*", re.UNICODE ),
+    'haskell': re.compile( r"[_a-zA-Z][\w']+", re.UNICODE ),
+
+    # Spec: ?
+    # Labels like \label{fig:foobar} are very common
+    'tex': re.compile( r"[_a-zA-Z:-]+", re.UNICODE ),
 
     # Spec: http://doc.perl6.org/language/syntax
     'perl6': re.compile( r"[_a-zA-Z](?:\w|[-'](?=[_a-zA-Z]))*", re.UNICODE ),

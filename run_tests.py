@@ -120,13 +120,13 @@ def ParseArguments():
   parser.add_argument( '--msvc', type = int, choices = [ 11, 12, 14 ],
                        help = 'Choose the Microsoft Visual '
                        'Studio version. (default: 14).' )
-  parser.add_argument( '--arch', type = int, choices = [ 32, 64 ],
-                       help = 'Force architecture to 32 or 64 bits on '
-                       'Windows (default: python interpreter architecture).' )
   parser.add_argument( '--coverage', action = 'store_true',
                        help = 'Enable coverage report (requires coverage pkg)' )
   parser.add_argument( '--no-flake8', action = 'store_true',
                        help = 'Disable flake8 run.' )
+  parser.add_argument( '--dump-path', action = 'store_true',
+                       help = 'Dump the PYTHONPATH required to run tests '
+                              'manually, then exit.' )
 
   parsed_args, nosetests_args = parser.parse_known_args()
 
@@ -179,9 +179,6 @@ def BuildYcmdLibs( args ):
     if args.msvc:
       build_cmd.extend( [ '--msvc', str( args.msvc ) ] )
 
-    if args.arch:
-      build_cmd.extend( [ '--arch', str( args.arch ) ] )
-
     subprocess.check_call( build_cmd )
 
 
@@ -208,6 +205,9 @@ def NoseTests( parsed_args, extra_nosetests_args ):
 
 def Main():
   parsed_args, nosetests_args = ParseArguments()
+  if parsed_args.dump_path:
+    print( os.environ[ 'PYTHONPATH' ] )
+    sys.exit()
   print( 'Running tests on Python', platform.python_version() )
   if not parsed_args.no_flake8:
     RunFlake8()
