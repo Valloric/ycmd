@@ -275,6 +275,11 @@ class TypeScriptCompleter( Completer ):
     utils.RemoveIfExists( tmpfile.name )
 
 
+  def ServerIsRunning( self ):
+    with self._server_lock:
+      return utils.ProcessIsRunning( self._tsserver_handle )
+
+
   def SupportedFiletypes( self ):
     return [ 'typescript' ]
 
