@@ -151,6 +151,9 @@ class TypeScriptCompleter( Completer ):
 
   def _StartServer( self ):
     with self._server_lock:
+      if self._ServerIsRunning()
+        return
+
       self._logfile = _LogFileName()
       tsserver_log = '-file {path} -level {level}'.format( path = self._logfile,
                                                            level = _LogLevel() )
@@ -293,7 +296,7 @@ class TypeScriptCompleter( Completer ):
     utils.RemoveIfExists( tmpfile.name )
 
 
-  def ServerIsRunning( self ):
+  def _ServerIsRunning( self ):
     with self._server_lock:
       return utils.ProcessIsRunning( self._tsserver_handle )
 
@@ -532,7 +535,8 @@ class TypeScriptCompleter( Completer ):
 
 
   def Shutdown( self ):
-    self._StopServer()
+    if self._ServerIsRunning()
+      self._StopServer()
 
 
   def DebugInfo( self, request_data ):
