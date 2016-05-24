@@ -95,7 +95,7 @@ class JediCompleter( Completer ):
 
 
   def Shutdown( self ):
-    if self.ServerIsRunning():
+    if self._ServerIsRunning():
       self._StopServer()
 
 
@@ -103,7 +103,7 @@ class JediCompleter( Completer ):
     """
     Check if JediHTTP is alive AND ready to serve requests.
     """
-    if not self.ServerIsRunning():
+    if not self._ServerIsRunning():
       self._logger.debug( 'JediHTTP not running.' )
       return False
     try:
@@ -113,7 +113,7 @@ class JediCompleter( Completer ):
       return False
 
 
-  def ServerIsRunning( self ):
+  def _ServerIsRunning( self ):
     """
     Check if JediHTTP is alive. That doesn't necessarily mean it's ready to
     serve requests; that's checked by ServerIsReady.
@@ -372,7 +372,7 @@ class JediCompleter( Completer ):
 
   def DebugInfo( self, request_data ):
      with self._server_lock:
-       if self.ServerIsRunning():
+       if self._ServerIsRunning():
          return ( 'JediHTTP running at 127.0.0.1:{0}\n'
                   '  python binary: {1}\n'
                   '  stdout log: {2}\n'
