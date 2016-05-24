@@ -345,6 +345,10 @@ class Completer( with_metaclass( abc.ABCMeta, object ) ):
     return []
 
 
+  def GetSkippedRanges( self, request_data ):
+    return []
+
+
   def _CurrentFiletype( self, filetypes ):
     supported = self.SupportedFiletypes()
 

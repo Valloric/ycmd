@@ -142,6 +142,15 @@ def GetSemanticTokens():
   return _JsonResponse( completer.GetSemanticTokens( request_data ) )
 
 
+@app.post( '/skipped_ranges' )
+def GetSkippedRanges():
+  _logger.info( 'Received skipped ranges request' )
+  request_data = request.json
+  completer = _server_state.GetFiletypeCompleter( request_data[ 'filetypes' ] )
+
+  return _JsonResponse( completer.GetSkippedRanges( request_data ) )
+
+
 @app.get( '/healthy' )
 def GetHealthy():
   _logger.info( 'Received health request' )
