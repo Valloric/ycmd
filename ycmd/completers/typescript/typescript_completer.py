@@ -133,7 +133,7 @@ class TypeScriptCompleter( Completer ):
 
   def _StartServer( self ):
     with self._server_lock:
-      if self._ServerIsRunning()
+      if self._ServerIsRunning():
         return
 
       self._logfile = _LogFileName()
@@ -508,6 +508,9 @@ class TypeScriptCompleter( Completer ):
 
   def _StopServer( self ):
     with self._server_lock:
+      if self._ServerIsRunning():
+        return
+
       self._SendCommand( 'exit' )
       self._tsserver_handle.wait()
 
@@ -517,8 +520,7 @@ class TypeScriptCompleter( Completer ):
 
 
   def Shutdown( self ):
-    if self._ServerIsRunning()
-      self._StopServer()
+    self._StopServer()
 
 
   def DebugInfo( self, request_data ):
