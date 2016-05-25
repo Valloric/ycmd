@@ -526,7 +526,7 @@ class TypeScriptCompleter( Completer ):
 
   def _StopServer( self ):
     with self._server_lock:
-      if self._ServerIsRunning():
+      if not self._ServerIsRunning():
         return
 
       self._SendCommand( 'exit' )
