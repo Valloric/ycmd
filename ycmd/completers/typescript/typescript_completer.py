@@ -542,7 +542,8 @@ class TypeScriptCompleter( Completer ):
 
 
   def DebugInfo( self, request_data ):
-    return ( 'TSServer logfile:\n  {0}' ).format( self._logfile )
+    with self._server_lock:
+      return ( 'TSServer logfile:\n  {0}' ).format( self._logfile )
 
 
 def _LogFileName():
