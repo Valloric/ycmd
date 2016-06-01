@@ -159,9 +159,12 @@ class JediCompleter( Completer ):
         json.dump( { 'hmac_secret': ToUnicode(
                         b64encode( self._hmac_secret ) ) },
                    hmac_file )
+        log_level = logging.getLevelName(
+          self._logger.getEffectiveLevel() ).lower()
         command = [ self._python_binary_path,
                     PATH_TO_JEDIHTTP,
                     '--port', str( self._jedihttp_port ),
+                    '--log', log_level,
                     '--hmac-file-secret', hmac_file.name ]
 
       self._logfile_stdout = LOG_FILENAME_FORMAT.format(
