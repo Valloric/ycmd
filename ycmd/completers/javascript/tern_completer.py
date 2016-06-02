@@ -263,7 +263,7 @@ class TernCompleter( Completer ):
     self._StopServer()
 
 
-  def ServerIsReady( self, request_data = {} ):
+  def ServerIsHealthy( self, request_data = {} ):
     if not self._ServerIsRunning():
       return False
 
