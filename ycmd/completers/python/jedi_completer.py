@@ -99,7 +99,7 @@ class JediCompleter( Completer ):
       self._StopServer()
 
 
-  def ServerIsReady( self ):
+  def ServerIsHealthy( self ):
     """
     Check if JediHTTP is alive AND ready to serve requests.
     """
@@ -116,7 +116,7 @@ class JediCompleter( Completer ):
   def _ServerIsRunning( self ):
     """
     Check if JediHTTP is alive. That doesn't necessarily mean it's ready to
-    serve requests; that's checked by ServerIsReady.
+    serve requests; that's checked by ServerIsHealthy.
     """
     with self._server_lock:
       return ( bool( self._jedihttp_port ) and
