@@ -27,6 +27,7 @@ from builtins import *  # noqa
 
 import os
 import subprocess
+import tempfile
 from shutil import rmtree
 import ycm_core
 from future.utils import native
@@ -34,7 +35,9 @@ from mock import patch, call
 from nose.tools import eq_, ok_
 from ycmd import utils
 from ycmd.tests.test_utils import ( Py2Only, Py3Only, WindowsOnly,
-                                    CurrentWorkingDirectory )
+                                    CurrentWorkingDirectory,
+                                    TemporaryEnvironVariables,
+                                    TemporaryExecutable )
 from ycmd.tests import PathToTestFile
 
 # NOTE: isinstance() vs type() is carefully used in this test file. Before
@@ -470,13 +473,43 @@ def SplitLines_test():
     yield lambda: eq_( utils.SplitLines( test[ 0 ] ), test[ 1 ] )
 
 
-def FindExecutable_ReturnSameRelativePath_IfFileIsExecutable_test():
-  with CurrentWorkingDirectory( ROOT_PATH ):
-    executable = os.path.join( '.', 'build.py' )
-    eq_( executable, utils.FindExecutable( executable ) )
+def FindExecutable_AbsolutePath_test():
+  with TemporaryExecutable() as executable:
+    eq_( executable.name, utils.FindExecutable( executable.name ) )
+
+
+def FindExecutable_RelativePath_test():
+  with TemporaryExecutable() as executable:
+    dirname, exename = os.path.split( executable.name )
+    relative_executable = os.path.join( '.', exename )
+    with CurrentWorkingDirectory( dirname ):
+      eq_( relative_executable, utils.FindExecutable( relative_executable ) )
+
+
+def FindExecutable_ExecutableNameInPath_test():
+  with TemporaryExecutable() as executable:
+    dirname, exename = os.path.split( executable.name )
+    with TemporaryEnvironVariables( PATH = dirname ):
+      eq_( executable.name, utils.FindExecutable( exename ) )
 
 
 def FindExecutable_ReturnNone_IfFileIsNotExecutable_test():
-  with CurrentWorkingDirectory( ROOT_PATH ):
-    executable = os.path.join( '.', 'README.md' )
-    eq_( None, utils.FindExecutable( executable ) )
+  with tempfile.NamedTemporaryFile() as non_executable:
+    eq_( None, utils.FindExecutable( non_executable.name ) )
+
+
+@WindowsOnly
+def FindExecutable_CurrentDirectory_test():
+  with TemporaryExecutable() as executable:
+    dirname, exename = os.path.split( executable.name )
+    with CurrentWorkingDirectory( dirname ):
+      eq_( executable.name, utils.FindExecutable( exename ) )
+
+
+@WindowsOnly
+def FindExecutable_AdditionalPathExt_test():
+  with TemporaryEnvironVariables( PATHEXT = 'xyz' ):
+    with TemporaryExecutable( extension = 'xyz' ) as executable:
+      print( os.environ.get( 'PATHEXT' ) )
+      print( utils._GetAllPossibleWindowsExecutable( executable.name ) )
+      eq_( executable.name, utils.FindExecutable( executable.name ) )
