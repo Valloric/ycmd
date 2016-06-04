@@ -35,8 +35,10 @@ import contextlib
 import nose
 import functools
 import os
+import tempfile
+import stat
 
-from ycmd import handlers, user_options_store
+from ycmd import handlers, user_options_store, utils
 from ycmd.completers.completer import Completer
 from ycmd.responses import BuildCompletionData
 from ycmd.utils import OnMac, OnWindows, ToUnicode
@@ -165,6 +167,27 @@ def CurrentWorkingDirectory( path ):
     yield
   finally:
     os.chdir( old_cwd )
+
+
+# The "exe" suffix is needed on Windows and not harmful on other platforms.
+@contextlib.contextmanager
+def TemporaryExecutable( extension = '.exe' ):
+  with tempfile.NamedTemporaryFile( prefix = 'Temp',
+                                    suffix = extension ) as executable:
+    os.chmod( executable.name, stat.S_IXUSR )
+    yield executable
+
+
+@contextlib.contextmanager
+def TemporaryEnvironVariables( **environ ):
+  old_environ = os.environ.copy()
+  for key, value in iteritems( environ ):
+    utils.SetEnviron( os.environ, key, value )
+  try:
+    yield
+  finally:
+    os.environ.clear()
+    os.environ.update( old_environ )
 
 
 def SetUpApp():
