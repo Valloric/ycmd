@@ -99,6 +99,7 @@ class TypeScriptCompleter( Completer ):
     if not binarypath:
       _logger.error( BINARY_NOT_FOUND_MESSAGE )
       raise RuntimeError( BINARY_NOT_FOUND_MESSAGE )
+    _logger.info( 'found tsserver at {0}'.format( binarypath ) )
 
     self._logfile = _LogFileName()
     tsserver_log = '-file {path} -level {level}'.format( path = self._logfile,
