@@ -33,18 +33,6 @@ from ycmd.tests.test_utils import BuildRequest, ErrorMatcher
 from ycmd.utils import ReadFile
 
 
-@SharedYcmd
-def Subcommands_DefinedSubcommands_test( app ):
-  subcommands_data = BuildRequest( completer_target = 'go' )
-
-  eq_( sorted( [ 'RestartServer',
-                 'GoTo',
-                 'GoToDefinition',
-                 'GoToDeclaration' ] ),
-       app.post_json( '/defined_subcommands',
-                      subcommands_data ).json )
-
-
 def RunTest( app, test ):
   contents = ReadFile( test[ 'request' ][ 'filepath' ] )
 
