@@ -555,7 +555,7 @@ class TypeScriptCompleter( Completer ):
       if self._logfile:
         return ( 'Typescript completer debug informations:\n'
                  '  TSServer is not running\n'
-                 '  TSServer logfile:\n  {0}' ).format( self._logfile )
+                 '  TSServer logfile: {0}' ).format( self._logfile )
 
       return ( 'Typescript completer debug informations:\n'
                 '  TSServer is not running' )
