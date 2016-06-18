@@ -1,6 +1,4 @@
-#!/usr/bin/env python
-#
-# Copyright (C) 2015 ycmd contributors
+# Copyright (C) 2016 ycmd contributors
 #
 # This file is part of ycmd.
 #
@@ -25,8 +23,6 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import *  # noqa
 
-from hamcrest import assert_that, equal_to, has_length
-
 from ycmd.tests.client_test import Client_test
 
 
@@ -36,10 +32,10 @@ class Shutdown_test( Client_test ):
   def FromHandlerWithoutSubserver_test( self ):
     self.Start()
     self.WaitUntilReady()
+    self.AssertServerAndSubserversAreRunning()
 
     response = self.PostRequest( 'shutdown' )
     self.AssertResponse( response )
-
     self.AssertServerAndSubserversShutDown()
 
 
@@ -48,21 +44,13 @@ class Shutdown_test( Client_test ):
     self.Start()
     self.WaitUntilReady()
 
-    filetypes = [ 'javascript',
-                  'python',
-                  'rust',
-                  'typescript' ]
-
+    filetypes = [ 'go' ]
     for filetype in filetypes:
-      response = self.StartSubserverForFiletype( filetype )
-      self.AssertResponse( response )
-
-    self.subservers = self.GetSubservers()
-    assert_that( self.subservers, has_length( equal_to( len( filetypes ) ) ) )
+      self.StartSubserverForFiletype( filetype )
+    self.AssertServerAndSubserversAreRunning()
 
     response = self.PostRequest( 'shutdown' )
     self.AssertResponse( response )
-
     self.AssertServerAndSubserversShutDown()
 
 
@@ -70,6 +58,7 @@ class Shutdown_test( Client_test ):
   def FromWatchdogWithoutSubserver_test( self ):
     self.Start( idle_suicide_seconds = 2, check_interval_seconds = 1 )
     self.WaitUntilReady()
+    self.AssertServerAndSubserversAreRunning()
 
     self.AssertServerAndSubserversShutDown()
 
@@ -79,16 +68,9 @@ class Shutdown_test( Client_test ):
     self.Start( idle_suicide_seconds = 2, check_interval_seconds = 1 )
     self.WaitUntilReady()
 
-    filetypes = [ 'javascript',
-                  'python',
-                  'rust',
-                  'typescript' ]
-
+    filetypes = [ 'go' ]
     for filetype in filetypes:
-      response = self.StartSubserverForFiletype( filetype )
-      self.AssertResponse( response )
-
-    self.subservers = self.GetSubservers()
-    assert_that( self.subservers, has_length( equal_to( len( filetypes ) ) ) )
+      self.StartSubserverForFiletype( filetype )
+    self.AssertServerAndSubserversAreRunning()
 
     self.AssertServerAndSubserversShutDown()
