@@ -54,7 +54,7 @@ test ${python_version} == ${YCMD_PYTHON_VERSION}
 ############
 
 pip install -U pip wheel setuptools
-pip install -r test_requirements.txt
+pip install -vvv -r test_requirements.txt
 npm install -g typescript
 
 # Enable coverage for Python subprocesses. See:

@@ -32,6 +32,7 @@ import http.client
 import json
 import os
 import psutil
+import re
 import requests
 import subprocess
 import sys
@@ -115,17 +116,13 @@ class Client_test( object ):
         self.server = psutil.Process( _popen_handle.pid )
 
 
-  def GetSubservers( self ):
-    return self.server.children()
-
-
   def WaitUntilReady( self, timeout = 5 ):
     total_slept = 0
     while True:
       try:
         if total_slept > timeout:
-          raise RuntimeError( 'waited for the server to be ready '
-                              'for {0} seconds, aborting'.format(
+          raise RuntimeError( 'Waited for the server to be ready '
+                              'for {0} seconds, aborting.'.format(
                                 timeout ) )
 
         if self._IsReady():
@@ -138,46 +135,28 @@ class Client_test( object ):
 
 
   def StartSubserverForFiletype( self, filetype ):
-    # TODO: uniformize the way subservers are started in completers. Current
-    # status for each completer is:
-    #  - Clang: no subserver;
-    #  - C#: StartServer/RestartServer commands and FileReadyToParse event;
-    #  - Go: StartServer command and FileReadyToParse event;
-    #  - Javascript: StartServer command and completer initialization;
-    #  - Python: RestartServer command and completer initialization;
-    #  - Rust: RestartServer command and completer initialization;
-    #  - Typescript: completer initialization.
-
-    # Completers have different ways to start their subservers. We first
-    # attempt to start the subserver by using StartServer and RestartServer
-    # commands. If both commands fail, we send a BufferVisit notification
-    # as a last resort.
-    # This is working for all completers with a subserver except C# which
-    # requires a solution to start.
-    # NOTE: due to the way Go subserver is started, it will not be a child of
-    # ycmd server. This is why it is not used in the tests.
-    response = self.PostRequest(
-      'run_completer_command',
-      BuildRequest( command_arguments = [ 'StartServer' ],
-                    filetype = filetype )
-    )
-    if response.status_code is http.client.OK:
-      return response
-
     response = self.PostRequest(
       'run_completer_command',
       BuildRequest( command_arguments = [ 'RestartServer' ],
                     filetype = filetype )
     )
-    if response.status_code is http.client.OK:
-      return response
+    self.AssertResponse( response )
 
     response = self.PostRequest(
-      'event_notification',
-      BuildRequest( event_name = 'BufferVisit',
-                    filetype = filetype )
+      'debug_info',
+      BuildRequest( filetype = filetype )
     )
-    return response
+    pid_match = re.search( 'process ID: (\d+)', response.json() )
+    if not pid_match:
+      raise RuntimeError( 'Cannot find PID in debug informations for {0} '
+                          'filetype.'.format( filetype ) )
+    subserver_pid = int( pid_match.group( 1 ) )
+    self.subservers.append( psutil.Process( subserver_pid ) )
+
+
+  def AssertServerAndSubserversAreRunning( self ):
+    for server in [ self.server ] + self.subservers:
+      assert_that( server.is_running(), equal_to( True ) )
 
 
   def AssertServerAndSubserversShutDown( self, timeout = 5 ):
@@ -221,9 +200,6 @@ class Client_test( object ):
 
 
   def _BuildUri( self, handler ):
-    import pprint
-    pprint.pprint( handler )
-    pprint.pprint( self._location )
     return native( ToBytes( urllib.parse.urljoin( self._location, handler ) ) )
 
 
