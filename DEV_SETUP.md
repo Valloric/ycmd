@@ -89,21 +89,20 @@ debugger, e.g. [pyclewn][] in Vim), there are a few things you need to do:
 ```sh
     vagrant up
     vagrant ssh
-    export OPT=“-g” # Ensure Python binary has debugging info
-    export PYTHON_CONFIGURE_OPTS=‘—enable-shared —-with-pydebug’
+    export OPT='-g' # Ensure Python binary has debugging info
+    export PYTHON_CONFIGURE_OPTS='--enable-shared --with-pydebug'
     pyenv install 2.7.11 # or whatever version
 ```
 
    On OS X, you need a working debugger. You can either use `lldb`
    which comes with XCode or `brew install gdb`. Note: If you use `gdb` from
-   homebrew, the you need to sign the binary otherwise you can't debug anything.
-   See later steps for a link.
+   homebrew, then you need to sign the binary otherwise you can't debug
+   anything. See later steps for a link.
 
 2. Build ycm_core library with debugging information (and link against debug
    Python):
 
 ```sh
-    export EXTRA_CMAKE_ARGS=‘-DPYTHON_LIBRARY=$HOME/.pyenv/versions/2.7.11/lib/libpython2.7.so -DPYTHON_INCLUDE_DIR=$HOME/.pyenv/versions/2.7.11/include/python2.7’
     pyenv shell 2.7.11
     ./build.py —all --enable-debug
 ```
