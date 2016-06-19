@@ -394,21 +394,23 @@ class RustCompleter( Completer ):
   def DebugInfo( self, request_data ):
     with self._server_state_lock:
       if self._ServerIsRunning():
-        return ( 'racerd\n'
-                 '  listening at: {0}\n'
-                 '  racerd path: {1}\n'
-                 '  stdout log: {2}\n'
-                 '  stderr log: {3}').format( self._racerd_host,
-                                              self._racerd,
-                                              self._server_stdout,
-                                              self._server_stderr )
+        return ( 'Rust completer debug information:\n'
+                 '  racerd running at: {0}\n'
+                 '  racerd binary: {1}\n'
+                 '  racerd stdout log: {2}\n'
+                 '  racerd stderr log: {3}').format( self._racerd_host,
+                                                     self._racerd,
+                                                     self._server_stdout,
+                                                     self._server_stderr )
 
       if self._server_stdout and self._server_stderr:
-        return ( 'racerd is no longer running\n',
-                 '  racerd path: {0}\n'
-                 '  stdout log: {1}\n'
-                 '  stderr log: {2}').format( self._racerd,
-                                              self._server_stdout,
-                                              self._server_stderr )
+      return ( 'Rust completer debug information:\n'
+               '  racerd is no longer running\n'
+               '  racerd binary: {0}\n'
+               '  racerd stdout log: {1}\n'
+               '  racerd stderr log: {2}').format( self._racerd,
+                                                  self._server_stdout,
+                                                  self._server_stderr )
 
-      return 'racerd is not running'
+      return ( 'Rust completer debug information:\n'
+               '  racerd is not running' )

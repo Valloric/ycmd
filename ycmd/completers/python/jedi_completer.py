@@ -377,18 +377,24 @@ class JediCompleter( Completer ):
   def DebugInfo( self, request_data ):
      with self._server_lock:
        if self._ServerIsRunning():
-         return ( 'JediHTTP running at 127.0.0.1:{0}\n'
-                  '  python binary: {1}\n'
-                  '  stdout log: {2}\n'
-                  '  stderr log: {3}' ).format( self._jedihttp_port,
-                                                self._python_binary_path,
-                                                self._logfile_stdout,
-                                                self._logfile_stderr )
+         return ( 'Python completer debug information:\n'
+                  '  JediHTTP running at 127.0.0.1:{0}\n'
+                  '  JediHTTP process ID: {1}\n'
+                  '  JediHTTP python binary: {2}\n'
+                  '  JediHTTP stdout log: {3}\n'
+                  '  JediHTTP stderr log: {4}' )
+           .format( self._jedihttp_port,
+                    self._jedihttp_phandle.pid,
+                    self._python_binary_path,
+                    self._logfile_stdout,
+                    self._logfile_stderr )
 
        if self._logfile_stdout and self._logfile_stderr:
-         return ( 'JediHTTP is no longer running\n'
-                  '  stdout log: {1}\n'
-                  '  stderr log: {2}' ).format( self._logfile_stdout,
-                                                self._logfile_stderr )
+         return ( 'Python completer debug information:\n'
+                  '  JediHTTP is no longer running\n'
+                  '  JediHTTP stdout log: {1}\n'
+                  '  sJediHTTP tderr log: {2}' ).format( self._logfile_stdout,
+                                                         self._logfile_stderr )
 
-       return 'JediHTTP is not running'
+       return ( 'Python completer debug information:\n'
+                '  JediHTTP is not running' )
