@@ -135,7 +135,7 @@ def FilterAndSortCandidates():
 
 @app.post( '/semantic_tokens' )
 def GetSemanticTokens():
-  _logger.info( 'Received semantic tokens request' )
+  _logger.debug( 'Received semantic tokens request' )
   request_data = request.json
   completer = _server_state.GetFiletypeCompleter( request_data[ 'filetypes' ] )
 
@@ -144,7 +144,7 @@ def GetSemanticTokens():
 
 @app.post( '/skipped_ranges' )
 def GetSkippedRanges():
-  _logger.info( 'Received skipped ranges request' )
+  _logger.debug( 'Received skipped ranges request' )
   request_data = request.json
   completer = _server_state.GetFiletypeCompleter( request_data[ 'filetypes' ] )
 

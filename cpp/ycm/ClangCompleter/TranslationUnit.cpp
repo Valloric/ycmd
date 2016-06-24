@@ -526,14 +526,18 @@ std::vector< Range > TranslationUnit::GetSkippedRanges() {
   CXSourceRangeList* source_ranges =
           clang_getSkippedRanges( clang_translation_unit_, file );
 
+  if ( source_ranges == NULL ) {
+    return std::vector< Range >();
+  }
+
   std::vector< Range > skipped_ranges;
   skipped_ranges.reserve( source_ranges->count );
   for ( uint i = 0; i < source_ranges->count; ++i ) {
-          const CXSourceRange& range = source_ranges->ranges[i];
-          skipped_ranges.push_back( Range( range ) );
+    const CXSourceRange& range = source_ranges->ranges[ i ];
+    skipped_ranges.push_back( Range( range ) );
   }
 
-  clang_disposeSourceRangeList(source_ranges);
+  clang_disposeSourceRangeList( source_ranges );
   return skipped_ranges;
 }
 

@@ -143,6 +143,9 @@ class Completer( with_metaclass( abc.ABCMeta, object ) ):
   and the methods of your completer. See the documentation of this method for
   more informations on how to implement it.
 
+  Override the GetSemanticTokens if your completer has support of semantic
+  highlighting and GetSkippedRanges for the skipped ranges (#if/#ifdef).
+
   Override the Shutdown() member function if your Completer subclass needs to do
   custom cleanup logic on server shutdown.
 

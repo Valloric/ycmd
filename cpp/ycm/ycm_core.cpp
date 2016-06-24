@@ -217,9 +217,9 @@ BOOST_PYTHON_MODULE(ycm_core)
     .export_values();
 
   class_< Token >( "Token" )
-    .def_readonly( "kind", &Token::kind_ )
-    .def_readonly( "type", &Token::type_ )
-    .def_readonly( "range", &Token::range_ );
+    .def_readonly( "kind", &Token::kind )
+    .def_readonly( "type", &Token::type )
+    .def_readonly( "range", &Token::range );
 
   class_< std::vector< Token > >( "TokenVector" )
     .def( vector_indexing_suite< std::vector< Token > >() );
