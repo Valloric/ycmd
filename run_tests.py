@@ -180,7 +180,7 @@ def BuildYcmdLibs( args ):
       build_cmd.extend( [ '--msvc', str( args.msvc ) ] )
 
     if args.coverage:
-      build_cmd.extend( [ '--coverage' ] )
+      build_cmd.extend( [ '--enable-coverage' ] )
 
     subprocess.check_call( build_cmd )
 
