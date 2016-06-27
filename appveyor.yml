@@ -29,7 +29,7 @@ install:
 build_script:
   - python run_tests.py --msvc %MSVC%
 after_build:
-  - codecov
+  - codecov --gcov-glob */tests/* */BoostParts/*
 # Disable automatic tests
 test: off
 cache:
