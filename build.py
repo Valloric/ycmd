@@ -355,7 +355,7 @@ def ExitIfYcmdLibInUseOnWindows():
 
 def BuildYcmdLib( args ):
   if args.build_dir:
-    build_dir = args.build_dir
+    build_dir = os.path.abspath( args.build_dir )
 
     if os.path.exists( build_dir ):
       print( 'The supplied build directory (' + build_dir + ' exists, '
