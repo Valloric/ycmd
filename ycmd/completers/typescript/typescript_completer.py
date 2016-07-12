@@ -361,7 +361,7 @@ class TypeScriptCompleter( Completer ):
 
 
   def OnBufferUnload( self, request_data ):
-    filename = request_data[ 'filepath' ]
+    filename = request_data[ 'unloaded_buffer' ]
     self._SendCommand( 'close', { 'file': filename } )
 
 
