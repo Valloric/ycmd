@@ -162,6 +162,25 @@ def RemoveUnusedFlags_RemoveFlagWithoutPrecedingDashFlag_test():
                                  filename ) )
 
 
+def EnableTypoCorrection_Empty_test():
+  eq_( flags._EnableTypoCorrection( [] ), [ '-fspell-checking' ] )
+
+
+def EnableTypoCorrection_Trivial_test():
+  eq_( flags._EnableTypoCorrection( [ '-x', 'c++' ] ),
+                                    [ '-x', 'c++', '-fspell-checking' ] )
+
+
+def EnableTypoCorrection_Reciprocal_test():
+  eq_( flags._EnableTypoCorrection( [ '-fno-spell-checking' ] ),
+                                    [ '-fno-spell-checking' ] )
+
+
+def EnableTypoCorrection_ReciprocalOthers_test():
+  eq_( flags._EnableTypoCorrection( [ '-x', 'c++', '-fno-spell-checking' ] ),
+                                    [ '-x', 'c++', '-fno-spell-checking' ] )
+
+
 def RemoveUnusedFlags_RemoveFilenameWithoutPrecedingInclude_test():
   def tester( flag ):
     expected = [ 'clang', flag, '/foo/bar', '-isystem/zoo/goo' ]
