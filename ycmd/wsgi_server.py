@@ -23,9 +23,9 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import *  # noqa
 
-import logging
-import select
+from future.utils import listvalues
 from waitress.server import TcpWSGIServer
+import select
 
 
 class StoppableWSGIServer( TcpWSGIServer ):
@@ -48,11 +48,10 @@ class StoppableWSGIServer( TcpWSGIServer ):
   def Shutdown( self ):
     """Properly shutdown the server."""
     self.is_shutdown = True
-    # Suppress "unhandled close event" warning from asyncore.
-    self.logger.setLevel( logging.FATAL )
+    # Shutdown waitress threads.
     self.task_dispatcher.shutdown()
-    while self._map:
-        channels = list( self._map.values() )
-        for channel in channels:
-            channel.handle_close()
-    return True
+    # Close asyncore channels.
+    # We don't use itervalues here because _map is modified while looping
+    # through it.
+    for channel in listvalues( self._map ):
+      channel.close()
