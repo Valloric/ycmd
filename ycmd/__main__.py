@@ -176,11 +176,11 @@ def Main():
                                         args.check_interval_seconds ) )
   handlers.app.install( HmacPlugin( hmac_secret ) )
   CloseStdin()
-  handlers._wsgi_server = StoppableWSGIServer( handlers.app,
+  handlers.wsgi_server = StoppableWSGIServer( handlers.app,
                                                host = args.host,
                                                port = args.port,
                                                threads = 30 )
-  handlers._wsgi_server.Run()
+  handlers.wsgi_server.Run()
 
 
 if __name__ == "__main__":
