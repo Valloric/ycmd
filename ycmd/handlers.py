@@ -270,6 +270,8 @@ def ServerShutdown():
     if _wsgi_server:
       _wsgi_server.Shutdown()
 
+  # Use a separate thread to let the server send the response before shutting
+  # down.
   terminator = Thread( target = Terminator )
   terminator.daemon = True
   terminator.start()
