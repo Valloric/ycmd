@@ -43,11 +43,11 @@ from ycmd.completers.completer_utils import FilterAndSortCandidatesWrap
 # size is less than this
 bottle.Request.MEMFILE_MAX = 1000 * 1024
 
-_wsgi_server = None
 _server_state = None
 _hmac_secret = bytes()
 _logger = logging.getLogger( __name__ )
 app = bottle.Bottle()
+wsgi_server = None
 
 
 @app.post( '/event_notification' )
@@ -267,8 +267,8 @@ def _GetCompleterForRequestData( request_data ):
 
 def ServerShutdown():
   def Terminator():
-    if _wsgi_server:
-      _wsgi_server.Shutdown()
+    if wsgi_server:
+      wsgi_server.Shutdown()
 
   # Use a separate thread to let the server send the response before shutting
   # down.

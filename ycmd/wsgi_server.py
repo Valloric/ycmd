@@ -33,7 +33,7 @@ class StoppableWSGIServer( TcpWSGIServer ):
   with a shutdown method. It is based on StopableWSGIServer class from webtest:
   https://github.com/Pylons/webtest/blob/master/webtest/http.py"""
 
-  is_shutdown = False
+  shutdown_requested = False
 
   def Run( self ):
     """Wrapper of TcpWSGIServer run method. It prevents a traceback from
@@ -41,13 +41,13 @@ class StoppableWSGIServer( TcpWSGIServer ):
     try:
       self.run()
     except select.error:
-      if not self.is_shutdown:
+      if not self.shutdown_requested:
         raise
 
 
   def Shutdown( self ):
     """Properly shutdown the server."""
-    self.is_shutdown = True
+    self.shutdown_requested = True
     # Shutdown waitress threads.
     self.task_dispatcher.shutdown()
     # Close asyncore channels.
