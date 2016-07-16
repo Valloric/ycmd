@@ -97,7 +97,7 @@ class WatchdogPlugin( object ):
       # wait interval to contact us before we die.
       if (self._TimeSinceLastRequest() > self._idle_suicide_seconds and
           self._TimeSinceLastWakeup() < 2 * self._check_interval_seconds):
-        _logger.info( 'Shutting down server for inactivity' )
+        _logger.info( 'Shutting down server due to inactivity' )
         ServerShutdown()
 
       self._UpdateLastWakeupTime()
