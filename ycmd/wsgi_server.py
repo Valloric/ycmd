@@ -53,5 +53,8 @@ class StoppableWSGIServer( TcpWSGIServer ):
     # Close asyncore channels.
     # We don't use itervalues here because _map is modified while looping
     # through it.
+    # NOTE: _map is an attribute from the asyncore.dispatcher class, which is a
+    # base class of TcpWSGIServer. This may change in future versions of
+    # waitress so extra care should be taken when updating waitress.
     for channel in listvalues( self._map ):
       channel.close()
