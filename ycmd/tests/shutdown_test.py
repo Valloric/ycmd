@@ -39,7 +39,7 @@ class Shutdown_test( Client_test ):
     response = self.PostRequest( 'shutdown' )
     self.AssertResponse( response )
     assert_that( response.json(), equal_to( True ) )
-    self.AssertServerAndSubserversShutDown()
+    self.AssertServerAndSubserversShutDown( 5 )
 
 
   @Client_test.CaptureOutputFromServer
@@ -61,7 +61,7 @@ class Shutdown_test( Client_test ):
     response = self.PostRequest( 'shutdown' )
     self.AssertResponse( response )
     assert_that( response.json(), equal_to( True ) )
-    self.AssertServerAndSubserversShutDown()
+    self.AssertServerAndSubserversShutDown( 5 )
 
 
   @Client_test.CaptureOutputFromServer
@@ -70,7 +70,7 @@ class Shutdown_test( Client_test ):
     self.WaitUntilReady()
     self.AssertServerAndSubserversAreRunning()
 
-    self.AssertServerAndSubserversShutDown()
+    self.AssertServerAndSubserversShutDown( 5 )
 
 
   @Client_test.CaptureOutputFromServer
@@ -89,4 +89,4 @@ class Shutdown_test( Client_test ):
       self.StartSubserverForFiletype( filetype )
     self.AssertServerAndSubserversAreRunning()
 
-    self.AssertServerAndSubserversShutDown()
+    self.AssertServerAndSubserversShutDown( 5 )
