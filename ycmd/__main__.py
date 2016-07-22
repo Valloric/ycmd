@@ -177,9 +177,9 @@ def Main():
   handlers.app.install( HmacPlugin( hmac_secret ) )
   CloseStdin()
   handlers.wsgi_server = StoppableWSGIServer( handlers.app,
-                                               host = args.host,
-                                               port = args.port,
-                                               threads = 30 )
+                                              host = args.host,
+                                              port = args.port,
+                                              threads = 30 )
   handlers.wsgi_server.Run()
 
 
