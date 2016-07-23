@@ -180,6 +180,13 @@ def Main():
                                               host = args.host,
                                               port = args.port,
                                               threads = 30 )
+
+  # Message for compatibility with clients who expect the output from
+  # waitress.serve here
+  print( 'serving on http://{0}:{1}'.format(
+    handlers.wsgi_server.effective_host,
+    handlers.wsgi_server.effective_port ) )
+
   handlers.wsgi_server.Run()
 
 
