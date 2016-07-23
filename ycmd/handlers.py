@@ -23,7 +23,6 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import *  # noqa
 
-import atexit
 import bottle
 import json
 import logging
@@ -281,7 +280,6 @@ def ServerShutdown():
   terminator.start()
 
 
-@atexit.register
 def ServerCleanup():
   if _server_state:
     _server_state.Shutdown()
