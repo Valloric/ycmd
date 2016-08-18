@@ -23,15 +23,16 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import *  # noqa
 
-from hamcrest import ( all_of, any_of, assert_that, calling,
+from hamcrest import ( all_of, any_of, assert_that, calling, contains,
                        contains_inanyorder, has_entries, has_item, is_not,
                        raises )
 from mock import patch
 from webtest import AppError
 
 from ycmd.tests.typescript import IsolatedYcmd, PathToTestFile, SharedYcmd
-from ycmd.tests.test_utils import ( BuildRequest, CompletionEntryMatcher,
-                                    StopCompleterServer )
+from ycmd.tests.test_utils import ( BuildRequest, ClearCompletionsCache,
+                                    CompletionEntryMatcher,
+                                    StopCompleterServer, UserOption )
 from ycmd.utils import ReadFile
 
 
@@ -170,3 +171,77 @@ def GetCompletions_ServerIsNotRunning_test( app ):
   assert_that(
     calling( app.post_json ).with_args( '/completions', completion_data ),
     raises( AppError, 'TSServer is not running.' ) )
+
+
+@IsolatedYcmd
+def GetCompletions_UnloadedBuffer_test( app ):
+  with UserOption( 'server_keep_logfiles', True ):
+    # Open main.ts file in a buffer.
+    main_filepath = PathToTestFile( 'unloaded_buffer', 'main.ts' )
+    main_contents = ReadFile( main_filepath )
+
+    event_data = BuildRequest( filepath = main_filepath,
+                               filetype = 'typescript',
+                               contents = main_contents,
+                               event_name = 'BufferVisit' )
+    app.post_json( '/event_notification', event_data )
+
+    # Complete "imported." line in main.ts buffer. "imported" is an object of
+    # class "Imported" defined in imported.ts.
+    completion_data = BuildRequest( filepath = main_filepath,
+                                    filetype = 'typescript',
+                                    contents = main_contents,
+                                    force_semantic = True,
+                                    line_num = 3,
+                                    column_num = 10 )
+    response = app.post_json( '/completions', completion_data )
+    assert_that( response.json, has_entries( {
+      'completions': contains( CompletionEntryMatcher( 'method' ) ) } ) )
+    # In practice, the cache will be cleared when modifying the other buffer.
+    ClearCompletionsCache()
+
+    # Open imported.ts file in another buffer.
+    imported_filepath = PathToTestFile( 'unloaded_buffer', 'imported.ts' )
+    imported_contents = ReadFile( imported_filepath )
+
+    event_data = BuildRequest( filepath = imported_filepath,
+                               filetype = 'typescript',
+                               contents = imported_contents,
+                               event_name = 'BufferVisit' )
+    app.post_json( '/event_notification', event_data )
+
+    # Modify imported.ts buffer without writing the changes to disk.
+    modified_imported_contents = imported_contents.replace( 'method',
+                                                            'modified_method' )
+
+    event_data = BuildRequest( filepath = imported_filepath,
+                               filetype = 'typescript',
+                               contents = modified_imported_contents,
+                               event_name = 'FileReadyToParse' )
+    app.post_json( '/event_notification', event_data )
+
+    event_data = BuildRequest( filepath = main_filepath,
+                               filetype = 'typescript',
+                               contents = main_contents,
+                               event_name = 'BufferVisit' )
+    app.post_json( '/event_notification', event_data )
+
+    # Complete at same location in main.ts buffer.
+    response = app.post_json( '/completions', completion_data )
+    assert_that( response.json, has_entries( {
+      'completions': contains( CompletionEntryMatcher( 'modified_method' ) ) } )
+    )
+    ClearCompletionsCache()
+
+    # Unload imported.ts buffer while editing main.ts buffer.
+    event_data = BuildRequest( filepath = main_filepath,
+                               filetype = 'typescript',
+                               contents = main_contents,
+                               event_name = 'BufferUnload',
+                               unloaded_buffer = imported_filepath )
+    app.post_json( '/event_notification', event_data )
+
+    # Complete at same location in main.ts buffer.
+    response = app.post_json( '/completions', completion_data )
+    assert_that( response.json, has_entries( {
+      'completions': contains( CompletionEntryMatcher( 'method' ) ) } ) )
