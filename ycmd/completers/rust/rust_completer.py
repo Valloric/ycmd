@@ -357,7 +357,6 @@ class RustCompleter( Completer ):
         self._server_stderr = None
 
 
-
   def _RestartServer( self ):
     _logger.debug( 'RustCompleter restarting racerd' )
 
