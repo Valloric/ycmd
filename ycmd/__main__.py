@@ -63,7 +63,7 @@ def SetUpSignalHandler():
     signal.signal( sig, SignalHandler )
 
 
-def LogfilesCleanup( stdout, stderr, keep_logfiles ):
+def CleanUpLogfiles( stdout, stderr, keep_logfiles ):
   # We reset stderr & stdout, just in case something tries to use them
   if stderr:
     tmp = sys.stderr
@@ -178,7 +178,7 @@ def Main():
   SetUpSignalHandler()
   # Functions registered by the atexit module are called at program termination
   # in last in, first out order.
-  atexit.register( LogfilesCleanup, args.stdout,
+  atexit.register( CleanUpLogfiles, args.stdout,
                                     args.stderr,
                                     args.keep_logfiles )
   atexit.register( handlers.ServerCleanup )
