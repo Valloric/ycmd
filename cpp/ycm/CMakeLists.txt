@@ -30,38 +30,40 @@ if ( USE_CLANG_COMPLETER AND
      NOT PATH_TO_LLVM_ROOT AND
      NOT EXTERNAL_LIBCLANG_PATH )
 
-  set( CLANG_VERSION "3.8.0" )
+  set( CLANG_VERSION "3.9.0" )
 
   if ( APPLE )
-    set( CLANG_DIRNAME "clang+llvm-${CLANG_VERSION}-x86_64-apple-darwin" )
+    set( CLANG_DIRNAME "clang+llvm-${CLANG_VERSION}-rc2-x86_64-apple-darwin" )
     set( CLANG_SHA256
-         "e5a961e04b0e1738bbb5b824886a34932dc13b0af699d1fe16519d814d7b776f" )
+         "171aca363226c445d6ea2c57a53e82bd25f6e7f352c5052c8d8b505e667ef963" )
     set( CLANG_FILENAME "${CLANG_DIRNAME}.tar.xz" )
   elseif ( WIN32 )
     if( 64_BIT_PLATFORM )
-      set( CLANG_DIRNAME "LLVM-${CLANG_VERSION}-win64" )
+      set( CLANG_DIRNAME "LLVM-${CLANG_VERSION}-rc2-win64" )
       set( CLANG_SHA256
-           "f9c3147157db32beab025314db9b82c600e182d82994880c1d844c70e29d76ef" )
+           "28c5da87449e343c7bf3cb7aea6c624c0da35c05a913760343d64583b253d19d" )
     else()
-      set( CLANG_DIRNAME "LLVM-${CLANG_VERSION}-win32" )
+      set( CLANG_DIRNAME "LLVM-${CLANG_VERSION}-rc2-win32" )
       set( CLANG_SHA256
-           "ebdb056ebc6efd57c0643733a099920d1d5760a4d570580243e6c63f4b52920f" )
+           "f04ee303a2371205953b5ec22b12e67ac4acc5c35900a588bca6b1ad790d28c5" )
     endif()
     set( CLANG_FILENAME "${CLANG_DIRNAME}.exe" )
   else()
+    # Among the prebuilt binaries available upstream, only the Debian 8 and
+    # openSUSE 13.2 ones are working on Ubuntu 14.04 (and 12.04 which is
+    # required for Travis builds). We choose openSUSE above Debian 8 because
+    # it does not have the terminfo library (libtinfo) dependency, which is
+    # not needed for our use case, and is available for 32-bit and 64-bit
+    # architectures.
     if ( 64_BIT_PLATFORM )
-      # We MUST support the latest Ubuntu LTS release!
-      # At the time of writing, that's 14.04. Switch to next LTS ~6 months after
-      # it comes out.
-      set( CLANG_DIRNAME "clang+llvm-${CLANG_VERSION}-x86_64-linux-gnu-ubuntu-14.04" )
+      set( CLANG_DIRNAME "clang+llvm-${CLANG_VERSION}-rc2-x86_64-opensuse13.2" )
       set( CLANG_SHA256
-           "3120c3055ea78bbbb6848510a2af70c68538b990cb0545bac8dad01df8ff69d7" )
+           "28f4b2666962af2cec3fdad160598fed9d23a1ea1fea8abfa8d3819e913573e9" )
       set( CLANG_FILENAME "${CLANG_DIRNAME}.tar.xz" )
     else()
-      # Use the prebuilt x86 binaries for Fedora 23.
-      set( CLANG_DIRNAME "clang+llvm-${CLANG_VERSION}-i686-fedora23" )
+      set( CLANG_DIRNAME "clang+llvm-${CLANG_VERSION}-rc2-i586-opensuse13.2" )
       set( CLANG_SHA256
-           "063a5430b1895a1565831ab0b840cdb14f22ee9fad38e82b9bb8be76e49f1a8b" )
+           "76a2a9e35eedfba2d01b3915d3a00bd624fe1ea38e8f48e56f477bd1b6dda922" )
       set( CLANG_FILENAME "${CLANG_DIRNAME}.tar.xz" )
     endif()
   endif()
@@ -85,7 +87,7 @@ if ( USE_CLANG_COMPLETER AND
   if( CLANG_DOWNLOAD )
     message( "Downloading Clang ${CLANG_VERSION}" )
 
-    set( CLANG_URL "http://llvm.org/releases/${CLANG_VERSION}" )
+    set( CLANG_URL "http://llvm.org/pre-releases/${CLANG_VERSION}/rc2" )
     file(
       DOWNLOAD "${CLANG_URL}/${CLANG_FILENAME}" "${CLANG_LOCAL_FILE}"
       SHOW_PROGRESS EXPECTED_HASH SHA256=${CLANG_SHA256}
