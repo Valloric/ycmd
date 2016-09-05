@@ -16,7 +16,9 @@ compiler:
 script:
   - ci/travis/travis_script.sh
 after_success:
-  - codecov --gcov-glob '*/tests/* */BoostParts/*'
+  # BoostParts.dir because that's how it appears to the compiler after CMake has
+  # done its thing.
+  - codecov --gcov-glob */tests/* */BoostParts/* */BoostParts.dir/*
 env:
   global:
     - MONO_THREADS_PER_CPU=2000
