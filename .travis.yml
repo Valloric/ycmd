@@ -16,7 +16,7 @@ compiler:
 script:
   - ci/travis/travis_script.sh
 after_success:
-  - codecov --gcov-glob */tests/* */BoostParts/*
+  - codecov --gcov-glob '*/tests/* */BoostParts/*'
 env:
   global:
     - MONO_THREADS_PER_CPU=2000
