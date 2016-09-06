@@ -18,7 +18,7 @@ script:
 after_success:
   # BoostParts.dir because that's how it appears to the compiler after CMake has
   # done its thing.
-  - codecov --gcov-glob */tests/* */BoostParts/* */BoostParts.dir/*
+  - codecov --gcov-glob '*/tests/*' '*/BoostParts/*'
 env:
   global:
     - MONO_THREADS_PER_CPU=2000
