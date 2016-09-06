@@ -563,24 +563,13 @@ class TypeScriptCompleter( Completer ):
 
   def DebugInfo( self, request_data ):
     with self._server_lock:
-      if self._ServerIsRunning():
-        return ( 'TypeScript completer debug information:\n'
-                 '  TSServer running\n'
-                 '  TSServer process ID: {0}\n'
-                 '  TSServer executable: {1}\n'
-                 '  TSServer logfile: {2}'.format( self._tsserver_handle.pid,
-                                                   PATH_TO_TSSERVER,
-                                                   self._logfile ) )
-      if self._logfile:
-        return ( 'TypeScript completer debug information:\n'
-                 '  TSServer no longer running\n'
-                 '  TSServer executable: {0}\n'
-                 '  TSServer logfile: {1}'.format( PATH_TO_TSSERVER,
-                                                   self._logfile ) )
+      tsserver = responses.DebugInfoServer( name = 'TSServer',
+                                            handle = self._tsserver_handle,
+                                            executable = PATH_TO_TSSERVER,
+                                            logfiles = [ self._logfile ] )
 
-      return ( 'TypeScript completer debug information:\n'
-               '  TSServer is not running\n'
-               '  TSServer executable: {0}'.format( PATH_TO_TSSERVER ) )
+      return responses.BuildDebugInfoResponse( name = 'TypeScript',
+                                               servers = [ tsserver ] )
 
 
 def _LogFileName():

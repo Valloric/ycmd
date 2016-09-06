@@ -24,6 +24,8 @@ standard_library.install_aliases()
 from builtins import *  # noqa
 
 import os
+from ycmd.utils import ProcessIsRunning
+
 
 YCM_EXTRA_CONF_FILENAME = '.ycm_extra_conf.py'
 
@@ -246,4 +248,78 @@ def BuildExceptionResponse( exception, traceback ):
     'exception': exception,
     'message': str( exception ),
     'traceback': traceback
+  }
+
+
+class DebugInfoServer( object ):
+  """Store debugging information on a server:
+  - name: the server name;
+  - is_running: True if the server process is alive, False otherwise;
+  - executable: path of the executable used to start the server;
+  - address: if applicable, the address on which the server is listening. None
+    otherwise;
+  - port: if applicable, the port on which the server is listening. None
+    otherwise;
+  - pid: the process identifier of the server. None if the server is not
+    running;
+  - logfiles: a list of logging files used by the server;
+  - extras: a list of DebugInfoItem objects for additional information on the
+    server."""
+
+  def __init__( self,
+                name,
+                handle,
+                executable,
+                address = None,
+                port = None,
+                logfiles = [],
+                extras = [] ):
+    self.name = name
+    self.is_running = ProcessIsRunning( handle )
+    self.executable = executable
+    self.address = address
+    self.port = port
+    self.pid = handle.pid if self.is_running else None
+    # Remove undefined logfiles from the list.
+    self.logfiles = [ logfile for logfile in logfiles if logfile ]
+    self.extras = extras
+
+
+class DebugInfoItem( object ):
+
+  def __init__( self, description, value ):
+    self.description = description
+    self.value = value
+
+
+def BuildDebugInfoResponse( name, servers = [], items = [] ):
+  """Build a response containing debugging information on a semantic completer:
+  - name: the completer name;
+  - servers: a list of servers used by the completer;
+  - items: a list of items for additional information on the completer."""
+
+  def BuildItemData( item ):
+    return {
+      'description': item.description,
+      'value': item.value
+    }
+
+
+  def BuildServerData( server ):
+    return {
+      'name': server.name,
+      'is_running': server.is_running,
+      'executable': server.executable,
+      'address': server.address,
+      'port': server.port,
+      'pid': server.pid,
+      'logfiles': server.logfiles,
+      'extras': [ BuildItemData( item ) for item in server.extras ]
+    }
+
+
+  return {
+    'name': name,
+    'servers': [ BuildServerData( server ) for server in servers ],
+    'items': [ BuildItemData( item ) for item in items ]
   }
