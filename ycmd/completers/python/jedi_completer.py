@@ -387,37 +387,19 @@ class JediCompleter( Completer ):
 
   def DebugInfo( self, request_data ):
     with self._server_lock:
-      if self._ServerIsRunning():
-        return ( 'Python completer debug information:\n'
-                 '  JediHTTP running at: http://127.0.0.1:{0}\n'
-                 '  JediHTTP process ID: {1}\n'
-                 '  JediHTTP executable: {2}\n'
-                 '  JediHTTP logfiles:\n'
-                 '    {3}\n'
-                 '    {4}\n'
-                 '  Python interpreter: {5}'.format(
-                   self._jedihttp_port,
-                   self._jedihttp_phandle.pid,
-                   PATH_TO_JEDIHTTP,
-                   self._logfile_stdout,
-                   self._logfile_stderr,
-                   self._python_binary_path ) )
+      jedihttp_server = responses.DebugInfoServer(
+        name = 'JediHTTP',
+        handle = self._jedihttp_phandle,
+        executable = PATH_TO_JEDIHTTP,
+        address = '127.0.0.1',
+        port = self._jedihttp_port,
+        logfiles = [ self._logfile_stdout, self._logfile_stderr ] )
 
-      if self._logfile_stdout and self._logfile_stderr:
-        return ( 'Python completer debug information:\n'
-                 '  JediHTTP no longer running\n'
-                 '  JediHTTP executable: {0}\n'
-                 '  JediHTTP logfiles:\n'
-                 '    {1}\n'
-                 '    {2}\n'
-                 '  Python interpreter: {3}'.format(
-                   PATH_TO_JEDIHTTP,
-                   self._logfile_stdout,
-                   self._logfile_stderr,
-                   self._python_binary_path ) )
+      python_interpreter_item = responses.DebugInfoItem(
+        description = 'Python interpreter',
+        value = self._python_binary_path )
 
-      return ( 'Python completer debug information:\n'
-               '  JediHTTP is not running\n'
-               '  JediHTTP executable: {0}\n'
-               '  Python interpreter: {1}'.format( PATH_TO_JEDIHTTP,
-                                                   self._python_binary_path ) )
+      return responses.BuildDebugInfoResponse(
+        name = 'Python',
+        servers = [ jedihttp_server ],
+        items = [ python_interpreter_item ] )
