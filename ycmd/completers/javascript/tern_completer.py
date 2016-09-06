@@ -253,32 +253,16 @@ class TernCompleter( Completer ):
 
   def DebugInfo( self, request_data ):
     with self._server_state_mutex:
-      if self._ServerIsRunning():
-        return ( 'JavaScript completer debug information:\n'
-                 '  Tern running at: {0}\n'
-                 '  Tern process ID: {1}\n'
-                 '  Tern executable: {2}\n'
-                 '  Tern logfiles:\n'
-                 '    {3}\n'
-                 '    {4}'.format( self._GetServerAddress(),
-                                   self._server_handle.pid,
-                                   PATH_TO_TERN_BINARY,
-                                   self._server_stdout,
-                                   self._server_stderr ) )
+      tern_server = responses.DebugInfoServer(
+        name = 'Tern',
+        handle = self._server_handle,
+        executable = PATH_TO_TERN_BINARY,
+        address = SERVER_HOST,
+        port = self._server_port,
+        logfiles = [ self._server_stdout, self._server_stderr ] )
 
-      if self._server_stdout and self._server_stderr:
-        return ( 'JavaScript completer debug information:\n'
-                 '  Tern no longer running\n'
-                 '  Tern executable: {0}\n'
-                 '  Tern logfiles:\n'
-                 '    {1}\n'
-                 '    {2}\n'.format( PATH_TO_TERN_BINARY,
-                                     self._server_stdout,
-                                     self._server_stderr ) )
-
-      return ( 'JavaScript completer debug information:\n'
-               '  Tern is not running\n'
-               '  Tern executable: {0}'.format( PATH_TO_TERN_BINARY ) )
+      return responses.BuildDebugInfoResponse( name = 'JavaScript',
+                                               servers = [ tern_server ] )
 
 
   def Shutdown( self ):
@@ -309,7 +293,7 @@ class TernCompleter( Completer ):
           self._server_stderr = None
 
       self._server_handle = None
-      self._server_port   = 0
+      self._server_port = None
 
 
   def _PostRequest( self, request, request_data ):
@@ -446,7 +430,7 @@ class TernCompleter( Completer ):
                         + traceback.format_exc() )
         self._Reset()
 
-      if self._server_port > 0 and self._ServerIsRunning():
+      if self._server_port and self._ServerIsRunning():
         _logger.info( 'Tern Server started with pid: ' +
                       str( self._server_handle.pid ) +
                       ' listening on port ' +
