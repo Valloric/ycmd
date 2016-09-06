@@ -23,48 +23,73 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import *  # noqa
 
-from hamcrest import assert_that, contains_string, matches_regexp
+from hamcrest import ( assert_that, contains, empty, has_entries, has_entry,
+                       matches_regexp )
 
 from ycmd.tests.clang import IsolatedYcmd, PathToTestFile, SharedYcmd
 from ycmd.tests.test_utils import BuildRequest
 
 
 @SharedYcmd
-def DebugInfo_ExtraConfLoaded_test( app ):
+def DebugInfo_FlagsWhenExtraConfLoaded_test( app ):
   app.post_json( '/load_extra_conf_file',
                  { 'filepath': PathToTestFile( '.ycm_extra_conf.py' ) } )
   request_data = BuildRequest( filepath = PathToTestFile( 'basic.cpp' ),
                                filetype = 'cpp' )
   assert_that(
     app.post_json( '/debug_info', request_data ).json,
-    matches_regexp( 'C-family completer debug information:\n'
-                    '  Configuration file found and loaded\n'
-                    '  Configuration path: .+\n'
-                    '  Flags: .+' ) )
+    has_entry( 'completer', has_entries( {
+      'name': 'C-family',
+      'servers': empty(),
+      'items': contains( has_entries( {
+        'key': 'flags',
+        'value': matches_regexp( "\['-x', 'c\+\+', .*\]" )
+      } ) )
+    } ) )
+  )
 
 
 @SharedYcmd
-def DebugInfo_NoExtraConfFound_test( app ):
+def DebugInfo_FlagsWhenNoExtraConfFound_test( app ):
   request_data = BuildRequest( filetype = 'cpp' )
-  # First time, an exception is raised when no .ycm_extra_conf.py file is found.
+  # First request, FlagsForFile raises a NoExtraConfDetected exception.
   assert_that(
     app.post_json( '/debug_info', request_data ).json,
-    contains_string( 'C-family completer debug information:\n'
-                     '  No configuration file found' ) )
-  # Second time, None is returned as the .ycm_extra_conf.py path.
+    has_entry( 'completer', has_entries( {
+      'name': 'C-family',
+      'servers': empty(),
+      'items': contains( has_entries( {
+        'key': 'flags',
+        'value': '[]'
+      } ) )
+    } ) )
+  )
+  # Second request, FlagsForFile returns None.
   assert_that(
     app.post_json( '/debug_info', request_data ).json,
-    contains_string( 'C-family completer debug information:\n'
-                     '  No configuration file found' ) )
+    has_entry( 'completer', has_entries( {
+      'name': 'C-family',
+      'servers': empty(),
+      'items': contains( has_entries( {
+        'key': 'flags',
+        'value': '[]'
+      } ) )
+    } ) )
+  )
 
 
 @IsolatedYcmd
-def DebugInfo_ExtraConfFoundButNotLoaded_test( app ):
+def DebugInfo_FlagsWhenExtraConfFoundButNotLoaded_test( app ):
   request_data = BuildRequest( filepath = PathToTestFile( 'basic.cpp' ),
                                filetype = 'cpp' )
   assert_that(
     app.post_json( '/debug_info', request_data ).json,
-    matches_regexp(
-      'C-family completer debug information:\n'
-      '  Configuration file found but not loaded\n'
-      '  Configuration path: .+' ) )
+    has_entry( 'completer', has_entries( {
+      'name': 'C-family',
+      'servers': empty(),
+      'items': contains( has_entries( {
+        'key': 'flags',
+        'value': '[]'
+      } ) )
+    } ) )
+  )
