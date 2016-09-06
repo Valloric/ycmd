@@ -23,7 +23,8 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import *  # noqa
 
-from hamcrest import assert_that, contains_string, matches_regexp
+from hamcrest import ( assert_that, contains, empty, has_entries, has_entry,
+                       instance_of )
 
 from ycmd.tests.clang import IsolatedYcmd, PathToTestFile, SharedYcmd
 from ycmd.tests.test_utils import BuildRequest
@@ -37,10 +38,15 @@ def DebugInfo_ExtraConfLoaded_test( app ):
                                filetype = 'cpp' )
   assert_that(
     app.post_json( '/debug_info', request_data ).json,
-    matches_regexp( 'C-family completer debug information:\n'
-                    '  Configuration file found and loaded\n'
-                    '  Configuration path: .+\n'
-                    '  Flags: .+' ) )
+    has_entry( 'completer', has_entries( {
+      'name': 'C-family',
+      'servers': empty(),
+      'items': contains( has_entries( {
+        'description': 'flags',
+        'value': instance_of( str )
+      } ) )
+    } ) )
+  )
 
 
 @SharedYcmd
@@ -49,13 +55,27 @@ def DebugInfo_NoExtraConfFound_test( app ):
   # First time, an exception is raised when no .ycm_extra_conf.py file is found.
   assert_that(
     app.post_json( '/debug_info', request_data ).json,
-    contains_string( 'C-family completer debug information:\n'
-                     '  No configuration file found' ) )
-  # Second time, None is returned as the .ycm_extra_conf.py path.
+    has_entry( 'completer', has_entries( {
+      'name': 'C-family',
+      'servers': empty(),
+      'items': contains( has_entries( {
+        'description': 'flags',
+        'value': '[]'
+      } ) )
+    } ) )
+  )
+  # Second time, an empty list of flags is returned.
   assert_that(
     app.post_json( '/debug_info', request_data ).json,
-    contains_string( 'C-family completer debug information:\n'
-                     '  No configuration file found' ) )
+    has_entry( 'completer', has_entries( {
+      'name': 'C-family',
+      'servers': empty(),
+      'items': contains( has_entries( {
+        'description': 'flags',
+        'value': '[]'
+      } ) )
+    } ) )
+  )
 
 
 @IsolatedYcmd
@@ -64,7 +84,12 @@ def DebugInfo_ExtraConfFoundButNotLoaded_test( app ):
                                filetype = 'cpp' )
   assert_that(
     app.post_json( '/debug_info', request_data ).json,
-    matches_regexp(
-      'C-family completer debug information:\n'
-      '  Configuration file found but not loaded\n'
-      '  Configuration path: .+' ) )
+    has_entry( 'completer', has_entries( {
+      'name': 'C-family',
+      'servers': empty(),
+      'items': contains( has_entries( {
+        'description': 'flags',
+        'value': '[]'
+      } ) )
+    } ) )
+  )
