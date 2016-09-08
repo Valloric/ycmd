@@ -16,8 +16,8 @@ coverage:
   # We don't want statistics for the tests themselves and certainly not for the
   # boost libraries
   ignore:
-  - */cpp/*/tests/*
-  - */cpp/*/BoostParts/*
+  - .*/tests/.*
+  - .*/BoostParts/.*
 
 comment:
   layout: "header, diff, changes, uncovered"
