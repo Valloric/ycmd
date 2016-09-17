@@ -295,7 +295,9 @@ def _RemoveUnusedFlags( flags, filename ):
       skip_next = True
       continue
 
-    if flag == filename or os.path.realpath( flag ) == filename:
+    is_file = (os.path.realpath( flag ) == filename)
+
+    if flag == filename or is_file:
       continue
 
     # We want to make sure that we don't have any stray filenames in our flags;
@@ -306,7 +308,8 @@ def _RemoveUnusedFlags( flags, filename ):
     # remove that.
     if ( not current_flag_starts_with_dash and
           ( not previous_flag_starts_with_dash or
-            ( not previous_flag_is_include and '/' in flag ) ) ):
+            ( not previous_flag_is_include and '/' in flag ) ) 
+          and is_file):
       continue
 
     new_flags.append( flag )
