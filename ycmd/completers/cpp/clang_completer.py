@@ -382,7 +382,7 @@ class ClangCompleter( Completer ):
         ToCppStringCompatible( filename ),
         start_line, start_column,
         end_line, end_column )
-    return [ responses.BuildTokenData( token ) for token in semantic_tokens ]
+    return responses.BuildSemanticTokensResponse( semantic_tokens )
 
 
   def GetSkippedRanges( self, request_data ):
@@ -396,7 +396,7 @@ class ClangCompleter( Completer ):
 
     skipped_ranges = self._completer.GetSkippedRanges(
         ToCppStringCompatible( filename ) )
-    return [ responses.BuildRangeData( sr ) for sr in skipped_ranges ]
+    return responses.BuildSkippedRangesResponse( skipped_ranges )
 
 
   def DebugInfo( self, request_data ):
