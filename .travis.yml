@@ -16,10 +16,7 @@ compiler:
 script:
   - ci/travis/travis_script.sh
 after_success:
-  # We exclude tests and BoostParts from the gcov data upload, as we are not
-  # interested in the coverage of them. Note that we also tell codecov to ignore
-  # these areas as the gcov data for our files still include references to them.
-  - codecov --gcov-glob '*/tests/*' '*/BoostParts/*'
+  - codecov
 env:
   global:
     - MONO_THREADS_PER_CPU=2000
