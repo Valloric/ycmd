@@ -305,7 +305,8 @@ def GetCmakeArgs( parsed_args ):
   if parsed_args.enable_debug:
     cmake_args.append( '-DCMAKE_BUILD_TYPE=Debug' )
 
-  if parsed_args.enable_coverage:
+  # coverage is not suported for c++ on MSVC
+  if not OnWindows() and parsed_args.enable_coverage:
     cmake_args.append( '-DCMAKE_CXX_FLAGS=-coverage' )
 
   use_python2 = 'ON' if PY_MAJOR == 2 else 'OFF'
