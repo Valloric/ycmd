@@ -16,8 +16,9 @@ compiler:
 script:
   - ci/travis/travis_script.sh
 after_success:
-  # BoostParts.dir because that's how it appears to the compiler after CMake has
-  # done its thing.
+  # We exclude tests and BoostParts from the gcov data upload, as we are not
+  # interested in the coverage of them. Note that we also tell codecov to ignore
+  # these areas as the gcov data for our files still include references to them.
   - codecov --gcov-glob '*/tests/*' '*/BoostParts/*'
 env:
   global:
