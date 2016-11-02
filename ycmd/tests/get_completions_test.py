@@ -26,6 +26,7 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import *  # noqa
 
+import os
 from hamcrest import assert_that, equal_to, has_items, contains_string
 from mock import patch
 from nose.tools import eq_
@@ -34,6 +35,13 @@ from ycmd.tests import SharedYcmd
 from ycmd.tests.test_utils import ( BuildRequest, CompletionEntryMatcher,
                                     DummyCompleter, PatchCompleter,
                                     UserOption, ExpectedFailure )
+
+TEST_DIR = os.path.dirname( os.path.abspath( __file__ ) )
+DATA_DIR = os.path.join( TEST_DIR,
+                         '..', '..',
+                         'cpp', 'ycm',
+                         'tests',
+                         'testdata' )
 
 
 @SharedYcmd
@@ -191,6 +199,23 @@ def GetCompletions_IdentifierCompleter_SyntaxKeywordsAdded_test( app ):
   assert_that( results,
                has_items( CompletionEntryMatcher( 'foo' ),
                           CompletionEntryMatcher( 'zoo' ) ) )
+
+
+@SharedYcmd
+def GetCompletions_IdentifierCompleter_TagsAdded_test( app ):
+  event_data = BuildRequest( event_name = 'FileReadyToParse',
+                             tag_files = [ os.path.join( DATA_DIR,
+                                                         'basic.tags' ) ] )
+  app.post_json( '/event_notification', event_data )
+
+  completion_data = BuildRequest( contents = 'oo',
+                                  column_num = 3,
+                                  filetype = 'cpp' )
+  results = app.post_json( '/completions',
+                           completion_data ).json[ 'completions' ]
+  assert_that( results,
+               has_items( CompletionEntryMatcher( 'foosy' ),
+                          CompletionEntryMatcher( 'fooaaa' ) ) )
 
 
 @SharedYcmd
