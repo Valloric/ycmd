@@ -215,7 +215,7 @@ def GetCompletions_NonForcedReturnsNoResults_test( app ):
     # completer in this case.
     assert_that( results, has_entries( {
       'completions': has_item( has_entries( {
-        'insertion_text' : 'String',
+        'typed_text' : 'String',
         'extra_menu_info': '[ID]',
       } ) ),
       'errors': empty(),
@@ -259,7 +259,7 @@ def GetCompletions_ForcedDividesCache_test( app ):
     # completer in this case.
     assert_that( results, has_entries( {
       'completions': has_item( has_entries( {
-        'insertion_text' : 'String',
+        'typed_text' : 'String',
         'extra_menu_info': '[ID]',
       } ) ),
       'errors': empty(),
