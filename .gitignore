@@ -63,3 +63,7 @@ third_party/tern_runtime/package-lock.json
 *.gcov
 # And python coverage output, when running manually
 coverage.xml
+
+# The JDT java completer requires a workspace (for no explicable reason other
+# than "eclipse")
+third_party/eclipse.jdt.ls-workspace
