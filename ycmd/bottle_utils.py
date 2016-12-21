@@ -24,7 +24,7 @@ standard_library.install_aliases()
 from builtins import *  # noqa
 
 from future.utils import PY2
-from ycmd.utils import ToBytes, ToUnicode
+from ycmd.utils import ToUnicode
 import bottle
 
 
@@ -39,5 +39,6 @@ import bottle
 # making life easier for codebases that work across versions, thus preventing
 # tracebacks in the depths of WSGI server frameworks.
 def SetResponseHeader( name, value ):
-  name = ToBytes( name ) if PY2 else ToUnicode( name )
-  bottle.response.set_header( name, ToUnicode( value ) )
+  name = name.encode( 'utf8' ) if PY2 else ToUnicode( name )
+  value = value.encode( 'utf8' ) if PY2 else ToUnicode( value )
+  bottle.response.set_header( name, value )
