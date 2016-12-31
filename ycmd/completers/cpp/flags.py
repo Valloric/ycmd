@@ -26,12 +26,22 @@ from builtins import *  # noqa
 import ycm_core
 import os
 import inspect
+import logging
 import re
 from future.utils import PY2, native
 from ycmd import extra_conf_store
 from ycmd.utils import ( ToCppStringCompatible, OnMac, OnWindows, ToUnicode,
-                         ToBytes )
+                         ToBytes, PathsToAllParentFolders )
 from ycmd.responses import NoExtraConfDetected
+
+
+class NoCompilationDatabase( Exception ):
+  def __init__( self ):
+    super( NoCompilationDatabase, self ).__init__(
+      "No compilation database found" )
+
+
+_logger = logging.getLogger( __file__ )
 
 INCLUDE_FLAGS = [ '-isystem', '-I', '-iquote', '-isysroot', '--sysroot',
                   '-gcc-toolchain', '-include', '-include-pch', '-iframework',
@@ -76,37 +86,41 @@ class Flags( object ):
                     filename,
                     add_extra_clang_flags = True,
                     client_data = None ):
-    try:
+
+    if filename in self.flags_for_file:
       return self.flags_for_file[ filename ]
-    except KeyError:
-      module = extra_conf_store.ModuleForSourceFile( filename )
-      if not module:
+
+    module = extra_conf_store.ModuleForSourceFile( filename )
+    if module:
+      results = _CallExtraConfFlagsForFile( module,
+                                            filename,
+                                            client_data )
+    else:
+      try:
+        results = _GetFlagsFromCompilationDatabase( filename )
+      except NoCompilationDatabase:
         if not self.no_extra_conf_file_warning_posted:
           self.no_extra_conf_file_warning_posted = True
           raise NoExtraConfDetected
         return None
 
-      results = _CallExtraConfFlagsForFile( module,
+    if not results or not results.get( 'flags_ready', True ):
+      return None
+
+    flags = _ExtractFlagsList( results )
+    if not flags:
+      return None
+
+    if add_extra_clang_flags:
+      flags += self.extra_clang_flags
+
+    sanitized_flags = PrepareFlagsForClang( flags,
                                             filename,
-                                            client_data )
+                                            add_extra_clang_flags )
 
-      if not results or not results.get( 'flags_ready', True ):
-        return None
-
-      flags = _ExtractFlagsList( results )
-      if not flags:
-        return None
-
-      if add_extra_clang_flags:
-        flags += self.extra_clang_flags
-
-      sanitized_flags = PrepareFlagsForClang( flags,
-                                              filename,
-                                              add_extra_clang_flags )
-
-      if results.get( 'do_cache', True ):
-        self.flags_for_file[ filename ] = sanitized_flags
-      return sanitized_flags
+    if results.get( 'do_cache', True ):
+      self.flags_for_file[ filename ] = sanitized_flags
+    return sanitized_flags
 
 
   def UserIncludePaths( self, filename, client_data ):
@@ -417,3 +431,152 @@ def _SpecialClangIncludes():
   libclang_dir = os.path.dirname( ycm_core.__file__ )
   path_to_includes = os.path.join( libclang_dir, 'clang_includes' )
   return [ '-resource-dir=' + path_to_includes ]
+
+
+# We cache the database for any given source directory
+compilation_database_dir_map = dict()
+
+# Return a compilation database object for the supplied path or None if none
+# could be found.
+#
+# We search up the directory hierarchy, to first see if we have a compilation
+# database already for that path, or if a compile_commands.json file exists in
+# that directory.
+def FindCompilationDatabase( wd ):
+  # Find all the ancestor directories of the supplied directory
+  for folder in PathsToAllParentFolders( wd ):
+    # Did we already cache a database for this path?
+    if folder in compilation_database_dir_map:
+      # Yep. Return that.
+      return compilation_database_dir_map[ folder ]
+
+    # Guess not. Let's see if a compile_commands.json file already exists...
+    compile_commands = os.path.join( folder, 'compile_commands.json' )
+    if os.path.exists( compile_commands ):
+      # Yes, it exists. Create a database and cache it in our map.
+      database = ycm_core.CompilationDatabase( folder )
+      if not database.DatabaseSuccessfullyLoaded():
+        _logger.debug( 'Compilation database was corrupt for {0}'.format(
+          folder ) )
+        # Ignore invalid database
+      else:
+        compilation_database_dir_map[ folder ] = database
+        return database
+
+    # Doesn't exist. Check the next ancestor
+
+  # Nothing was found. No compilation flags are available.
+  #
+  # Note: we cache the fact that none was found for this folder to speed up
+  # subsequent searches..
+  compilation_database_dir_map[ wd ] = None
+  return None
+
+
+def _MakeRelativePathsInFlagsAbsolute( flags, working_directory ):
+  if not working_directory:
+    return list( flags )
+  new_flags = []
+  make_next_absolute = False
+  path_flags = [ '-isystem', '-I', '-iquote', '--sysroot=' ]
+  for flag in flags:
+    new_flag = flag
+
+    if make_next_absolute:
+      make_next_absolute = False
+      if not flag.startswith( '/' ):
+        new_flag = os.path.join( working_directory, flag )
+
+    for path_flag in path_flags:
+      if flag == path_flag:
+        make_next_absolute = True
+        break
+
+      if flag.startswith( path_flag ):
+        path = flag[ len( path_flag ): ]
+        new_flag = path_flag + os.path.join( working_directory, path )
+        break
+
+    if new_flag:
+      new_flags.append( new_flag )
+  return new_flags
+
+
+# List of file extensions to be considered "header" files and thus not present
+# in the compilation database. The logic will try and find an associated
+# "source" file (see SOURCE_EXTENSIONS below) and use the flags for that.
+HEADER_EXTENSIONS = [ '.h', '.hxx', '.hpp', '.hh' ]
+
+# List of file extensions which are considered "source" files for the purposes
+# of heuristically locating the flags for a header file.
+SOURCE_EXTENSIONS = [ '.cpp', '.cxx', '.cc', '.c', '.m', '.mm' ]
+
+
+# Find the compilation info structure from the supplied database for the
+# supplied file. If the source file is a header, try and find an appropriate
+# source file and return the compilation_info for that.
+def _GetCompilationInfoForFile( database,
+                                file_name,
+                                file_root,
+                                file_extension ):
+  # The compilation database does not include header files (it only includes
+  # translation units themselves), so we do our best by asking the db for flags
+  # for a "corresponding" source file. If one exists, the flags for that file
+  # should be good enough. "Corresponding" means with the exact same basename.
+  if file_extension in HEADER_EXTENSIONS:
+    # It's a header file
+    for extension in SOURCE_EXTENSIONS:
+      replacement_file =  file_root + extension
+      if os.path.exists( replacement_file ):
+        # We found a corresponding source file with the same file_root. Try
+        # and get the flags for that file.
+        compilation_info = database.GetCompilationInfoForFile(
+          replacement_file )
+        if compilation_info.compiler_flags_:
+          return compilation_info
+
+    # No corresponding source file was found, so we can't generate any flags for
+    # this header file.
+    return None
+
+  # It's a source file. Just ask the database for the flags.
+  compilation_info = database.GetCompilationInfoForFile( file_name )
+  if compilation_info.compiler_flags_:
+    return compilation_info
+
+  return None
+
+
+def _GetFlagsFromCompilationDatabase( file_name ):
+  _logger.debug( 'Looking for flags in compilation database' )
+  file_dir = os.path.dirname( file_name )
+  ( file_root, file_extension ) = os.path.splitext( file_name )
+
+  # Create or retrieve the cached compilation database object
+  database = FindCompilationDatabase( file_dir )
+  if database is None:
+    _logger.debug( 'No compilation database found for {0}'.format( file_dir ) )
+    raise NoCompilationDatabase()
+    raise NoCompilationDatabase()
+
+
+  compilation_info = _GetCompilationInfoForFile( database,
+                                                 file_name,
+                                                 file_root,
+                                                 file_extension )
+
+
+  if compilation_info is None:
+    _logger.debug( 'No compilation info found for {0}'.format( file_name ) )
+    return None
+
+  flags = _MakeRelativePathsInFlagsAbsolute(
+      compilation_info.compiler_flags_,
+      compilation_info.compiler_working_dir_ )
+
+  _logger.debug( 'Flags from database: {0}'.format( flags ) )
+
+  return {
+    # We pass the compiler flags from the database unmodified.
+    'flags': flags
+  }

@@ -34,7 +34,8 @@ from ycmd import extra_conf_store
 from ycmd.utils import ToCppStringCompatible, ToUnicode
 from ycmd.completers.completer import Completer
 from ycmd.completers.completer_utils import GetIncludeStatementValue
-from ycmd.completers.cpp.flags import Flags, PrepareFlagsForClang
+from ycmd.completers.cpp.flags import ( Flags, PrepareFlagsForClang,
+                                        FindCompilationDatabase )
 from ycmd.completers.cpp.ephemeral_values_set import EphemeralValuesSet
 from ycmd.responses import NoExtraConfDetected, UnknownExtraConf
 
@@ -375,16 +376,34 @@ class ClangCompleter( Completer ):
       extra_conf = extra_conf_store.ModuleFileForSourceFile( filename )
       flags = self._FlagsForRequest( request_data ) or []
     except NoExtraConfDetected:
-      return ( 'C-family completer debug information:\n'
-               '  No configuration file found' )
+      database = FindCompilationDatabase( os.path.dirname( filename ) )
+      if database is None:
+        return ( 'C-family completer debug information:\n'
+                 '  No configuration file found\n'
+                 '  No compilation database file found\n' ) 
+      else:
+        return ( 'C-family completer debug information:\n'
+                 '  No configuration file found\n'
+                 '  Using compilation database from: {0}'.format(
+                   database.database_directory ) )
     except UnknownExtraConf as error:
       return ( 'C-family completer debug information:\n'
                '  Configuration file found but not loaded\n'
                '  Configuration path: {0}'.format(
                  error.extra_conf_file ) )
+
     if not extra_conf:
-      return ( 'C-family completer debug information:\n'
-               '  No configuration file found' )
+      database = FindCompilationDatabase( os.path.dirname( filename ) )
+      if database is None:
+        return ( 'C-family completer debug information:\n'
+                 '  No configuration file found\n'
+                 '  No compilation database file found\n' ) 
+      else:
+        return ( 'C-family completer debug information:\n'
+                 '  No configuration file found\n'
+                 '  Using compilation database from: {0}'.format(
+                   database.database_directory ) )
+
     return ( 'C-family completer debug information:\n'
              '  Configuration file found and loaded\n'
              '  Configuration path: {0}\n'

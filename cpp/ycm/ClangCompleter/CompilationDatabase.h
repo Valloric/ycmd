@@ -54,9 +54,15 @@ public:
   CompilationInfoForFile GetCompilationInfoForFile(
     const boost::python::object &path_to_file );
 
+  const char * GetDatabaseDirectory()
+  {
+    return path_to_directory_.c_str();
+  }
+
 private:
 
   bool is_loaded_;
+  std::string path_to_directory_;
   CXCompilationDatabase compilation_database_;
   boost::mutex compilation_database_mutex_;
 };
