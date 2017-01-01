@@ -54,9 +54,9 @@ public:
   CompilationInfoForFile GetCompilationInfoForFile(
     const boost::python::object &path_to_file );
 
-  const char * GetDatabaseDirectory()
+  std::string GetDatabaseDirectory()
   {
-    return path_to_directory_.c_str();
+    return path_to_directory_;
   }
 
 private:

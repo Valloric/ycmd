@@ -420,7 +420,7 @@ def CompilationDatabase_UseFlagsFromDatabase_test():
     compile_commands = [
       {
         'directory': tmp_dir,
-        'command': 'clang++ -x c++ -I. -I/abosolute/path -Wall',
+        'command': 'clang++ -x c++ -I. -I/absolute/path -Wall',
         'file': os.path.join( tmp_dir, 'test.cc' ),
       },
     ]
@@ -434,9 +434,8 @@ def CompilationDatabase_UseFlagsFromDatabase_test():
                   'c++',
                   '-x',
                   'c++',
-                  # Relative path made absolute
                   '-I' + os.path.join( os.path.abspath( tmp_dir ), '.' ),
-                  '-I/abosolute/path',
+                  '-I/absolute/path',
                   '-Wall' ) )
 
 
@@ -445,7 +444,7 @@ def CompilationDatabase_UseFlagsFromSameDir_test():
     compile_commands = [
       {
         'directory': tmp_dir,
-        'command': 'clang++ -x c++ -I. -Wall',
+        'command': 'clang++ -x c++ -Wall',
         'file': os.path.join( tmp_dir, 'test.cc' ),
       },
     ]
@@ -471,8 +470,6 @@ def CompilationDatabase_UseFlagsFromSameDir_test():
                   'c++',
                   '-x',
                   'c++',
-                  # Relative path made absolute
-                  '-I' + os.path.join( os.path.abspath( tmp_dir ), '.' ),
                   '-Wall' ) )
 
       # If we now ask for a file _not_ in the DB, but in the same dir, we should
@@ -486,8 +483,6 @@ def CompilationDatabase_UseFlagsFromSameDir_test():
                   'c++',
                   '-x',
                   'c++',
-                  # Relative path made absolute
-                  '-I' + os.path.join( os.path.abspath( tmp_dir ), '.' ),
                   '-Wall' ) )
 
 
@@ -496,7 +491,7 @@ def CompilationDatabase_HeaderFileHeuristic_test():
     compile_commands = [
       {
         'directory': tmp_dir,
-        'command': 'clang++ -x c++ -I. -Wall',
+        'command': 'clang++ -x c++ -Wall',
         'file': os.path.join( tmp_dir, 'test.cc' ),
       },
     ]
@@ -512,13 +507,11 @@ def CompilationDatabase_HeaderFileHeuristic_test():
                   'c++',
                   '-x',
                   'c++',
-                  # Relative path made absolute
-                  '-I' + os.path.join( os.path.abspath( tmp_dir ), '.' ),
                   '-Wall' ) )
 
 
 def _MakeRelativePathsInFlagsAvsoluteTest( test ):
-  wd = test[ 'wd' ] if 'wd' in test else tempfile.gettempdir()
+  wd = test[ 'wd' ] if 'wd' in test else '/not_test'
   assert_that(
     flags._MakeRelativePathsInFlagsAbsolute( test[ 'flags' ], wd ),
     contains( *test[ 'expect' ] ) )
