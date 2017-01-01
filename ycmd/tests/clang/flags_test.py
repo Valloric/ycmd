@@ -434,8 +434,8 @@ def CompilationDatabase_UseFlagsFromDatabase_test():
                   'c++',
                   '-x',
                   'c++',
-                  '-I' + os.path.abspath( tmp_dir ),
-                  '-I' + os.path.abspath( '/absolute/path' ),
+                  '-I' + os.path.normpath( tmp_dir ),
+                  '-I' + os.path.normpath( '/absolute/path' ),
                   '-Wall' ) )
 
 
@@ -522,37 +522,37 @@ def CompilationDatabase_MakeRelativePathsInFlagsAbsolute_test():
     # Already absolute, positional arguments
     {
       'flags':  [ '-isystem', '/test' ],
-      'expect': [ '-isystem', os.path.abspath( '/test' ) ],
+      'expect': [ '-isystem', os.path.normpath( '/test' ) ],
     },
     {
       'flags':  [ '-I', '/test' ],
-      'expect': [ '-I', os.path.abspath( '/test' ) ],
+      'expect': [ '-I', os.path.normpath( '/test' ) ],
     },
     {
       'flags':  [ '-iquote', '/test' ],
-      'expect': [ '-iquote', os.path.abspath( '/test' ) ],
+      'expect': [ '-iquote', os.path.normpath( '/test' ) ],
     },
     {
       'flags':  [ '-isysroot', '/test' ],
-      'expect': [ '-isysroot', os.path.abspath( '/test' ) ],
+      'expect': [ '-isysroot', os.path.normpath( '/test' ) ],
     },
 
     # Already absolute, single arguments
     {
       'flags':  [ '-isystem/test' ],
-      'expect': [ '-isystem' + os.path.abspath( '/test' ) ],
+      'expect': [ '-isystem' + os.path.normpath( '/test' ) ],
     },
     {
       'flags':  [ '-I/test' ],
-      'expect': [ '-I' + os.path.abspath( '/test' ) ],
+      'expect': [ '-I' + os.path.normpath( '/test' ) ],
     },
     {
       'flags':  [ '-iquote/test' ],
-      'expect': [ '-iquote' + os.path.abspath( '/test' ) ],
+      'expect': [ '-iquote' + os.path.normpath( '/test' ) ],
     },
     {
       'flags':  [ '-isysroot/test' ],
-      'expect': [ '-isysroot' +  os.path.abspath( '/test' ) ],
+      'expect': [ '-isysroot' +  os.path.normpath( '/test' ) ],
     },
 
     # Already absolute, double-dash arguments
@@ -570,50 +570,50 @@ def CompilationDatabase_MakeRelativePathsInFlagsAbsolute_test():
     },
     {
       'flags':  [ '--sysroot=/test' ],
-      'expect': [ '--sysroot=' + os.path.abspath( '/test' ) ],
+      'expect': [ '--sysroot=' + os.path.normpath( '/test' ) ],
     },
 
     # Relative, positional arguments
     {
       'flags':  [ '-isystem', 'test' ],
-      'expect': [ '-isystem', os.path.abspath( '/test/test' ) ],
+      'expect': [ '-isystem', os.path.normpath( '/test/test' ) ],
       'wd':     '/test',
     },
     {
       'flags':  [ '-I', 'test' ],
-      'expect': [ '-I', os.path.abspath( '/test/test' ) ],
+      'expect': [ '-I', os.path.normpath( '/test/test' ) ],
       'wd':     '/test',
     },
     {
       'flags':  [ '-iquote', 'test' ],
-      'expect': [ '-iquote', os.path.abspath( '/test/test' ) ],
+      'expect': [ '-iquote', os.path.normpath( '/test/test' ) ],
       'wd':     '/test',
     },
     {
       'flags':  [ '-isysroot', 'test' ],
-      'expect': [ '-isysroot', os.path.abspath( '/test/test' ) ],
+      'expect': [ '-isysroot', os.path.normpath( '/test/test' ) ],
       'wd':     '/test',
     },
 
     # Relative, single arguments
     {
       'flags':  [ '-isystemtest' ],
-      'expect': [ '-isystem' + os.path.abspath( '/test/test' ) ],
+      'expect': [ '-isystem' + os.path.normpath( '/test/test' ) ],
       'wd':     '/test',
     },
     {
       'flags':  [ '-Itest' ],
-      'expect': [ '-I' + os.path.abspath( '/test/test' ) ],
+      'expect': [ '-I' + os.path.normpath( '/test/test' ) ],
       'wd':     '/test',
     },
     {
       'flags':  [ '-iquotetest' ],
-      'expect': [ '-iquote' + os.path.abspath( '/test/test' ) ],
+      'expect': [ '-iquote' + os.path.normpath( '/test/test' ) ],
       'wd':     '/test',
     },
     {
       'flags':  [ '-isysroottest' ],
-      'expect': [ '-isysroot' + os.path.abspath( '/test/test' ) ],
+      'expect': [ '-isysroot' + os.path.normpath( '/test/test' ) ],
       'wd':     '/test',
     },
 
@@ -635,7 +635,7 @@ def CompilationDatabase_MakeRelativePathsInFlagsAbsolute_test():
     },
     {
       'flags':  [ '--sysroot=test' ],
-      'expect': [ '--sysroot=' + os.path.abspath( '/test/test' ) ],
+      'expect': [ '--sysroot=' + os.path.normpath( '/test/test' ) ],
       'wd':     '/test',
     },
   ]
@@ -658,9 +658,9 @@ def CompilationDatabase_MakeRelativePathsInFlagsAbsolute_IgnoreUnknown_test():
       ],
       'expect': [
         'ignored',
-        '-isystem', os.path.abspath( '/test' ),
+        '-isystem', os.path.normpath( '/test' ),
         '-ignored',
-        '-I', os.path.abspath( '/test' ),
+        '-I', os.path.normpath( '/test' ),
         '--ignored=ignored'
       ]
     },
@@ -674,9 +674,9 @@ def CompilationDatabase_MakeRelativePathsInFlagsAbsolute_IgnoreUnknown_test():
       ],
       'expect': [
         'ignored',
-        '-isystem' + os.path.abspath( '/test' ),
+        '-isystem' + os.path.normpath( '/test' ),
         '-ignored',
-        '-I' + os.path.abspath( '/test/' ),
+        '-I' + os.path.normpath( '/test/' ),
         '--ignored=ignored'
       ]
     },
@@ -706,9 +706,9 @@ def CompilationDatabase_MakeRelativePathsInFlagsAbsolute_IgnoreUnknown_test():
       ],
       'expect': [
         'ignored',
-        '-isystem', os.path.abspath( '/test/test' ),
+        '-isystem', os.path.normpath( '/test/test' ),
         '-ignored',
-        '-I', os.path.abspath( '/test/test' ),
+        '-I', os.path.normpath( '/test/test' ),
         '--ignored=ignored'
       ],
       'wd': '/test',
@@ -723,9 +723,9 @@ def CompilationDatabase_MakeRelativePathsInFlagsAbsolute_IgnoreUnknown_test():
       ],
       'expect': [
         'ignored',
-        '-isystem' + os.path.abspath( '/test/test' ),
+        '-isystem' + os.path.normpath( '/test/test' ),
         '-ignored',
-        '-I' + os.path.abspath( '/test/test' ),
+        '-I' + os.path.normpath( '/test/test' ),
         '--ignored=ignored'
       ],
       'wd': '/test',
@@ -745,7 +745,7 @@ def CompilationDatabase_MakeRelativePathsInFlagsAbsolute_IgnoreUnknown_test():
         '-ignored',
         '--I=test',
         '--ignored=ignored',
-        '--sysroot=' + os.path.abspath( '/test/test' ),
+        '--sysroot=' + os.path.normpath( '/test/test' ),
       ],
       'wd': '/test',
     },

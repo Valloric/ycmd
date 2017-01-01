@@ -525,8 +525,9 @@ def _MakeRelativePathsInFlagsAbsolute( flags, working_directory ):
 
     if make_next_absolute:
       make_next_absolute = False
-      # os.path.join returns its last argument if it is already absolute
-      new_flag = os.path.abspath( os.path.join( working_directory, flag ) )
+      if not os.path.isabs( new_flag ):
+        new_flag = os.path.join( working_directory, flag )
+      new_flag = os.path.normpath( new_flag )
     else:
       for path_flag in PATH_FLAGS:
         # Single dash argument alone, e.g. -isysroot <path>
@@ -538,10 +539,11 @@ def _MakeRelativePathsInFlagsAbsolute( flags, working_directory ):
         # or double-dash argument, e.g. --isysroot=<path>
         if flag.startswith( path_flag ):
           path = flag[ len( path_flag ): ]
-          # os.path.join returns its last argument if it is already absolute
-          new_flag = '{0}{1}'.format(
-            path_flag,
-            os.path.abspath( os.path.join( working_directory, path ) ) )
+          if not os.path.isabs( path ):
+            path = os.path.join( working_directory, path )
+          path = os.path.normpath( path )
+
+          new_flag = '{0}{1}'.format( path_flag, path )
           break
 
     if new_flag:
