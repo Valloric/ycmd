@@ -34,8 +34,7 @@ from ycmd import extra_conf_store
 from ycmd.utils import ToCppStringCompatible, ToUnicode
 from ycmd.completers.completer import Completer
 from ycmd.completers.completer_utils import GetIncludeStatementValue
-from ycmd.completers.cpp.flags import ( Flags, PrepareFlagsForClang,
-                                        FindCompilationDatabase )
+from ycmd.completers.cpp.flags import ( Flags, PrepareFlagsForClang )
 from ycmd.completers.cpp.ephemeral_values_set import EphemeralValuesSet
 from ycmd.responses import NoExtraConfDetected, UnknownExtraConf
 
@@ -376,11 +375,12 @@ class ClangCompleter( Completer ):
       extra_conf = extra_conf_store.ModuleFileForSourceFile( filename )
       flags = self._FlagsForRequest( request_data ) or []
     except NoExtraConfDetected:
-      database = FindCompilationDatabase( os.path.dirname( filename ) )
+      database = self._flags.FindCompilationDatabase(
+          os.path.dirname( filename ) )
       if database is None:
         return ( 'C-family completer debug information:\n'
                  '  No configuration file found\n'
-                 '  No compilation database file found\n' ) 
+                 '  No compilation database file found\n' )
       else:
         return ( 'C-family completer debug information:\n'
                  '  No configuration file found\n'
@@ -393,11 +393,12 @@ class ClangCompleter( Completer ):
                  error.extra_conf_file ) )
 
     if not extra_conf:
-      database = FindCompilationDatabase( os.path.dirname( filename ) )
+      database = self._flags.FindCompilationDatabase(
+          os.path.dirname( filename ) )
       if database is None:
         return ( 'C-family completer debug information:\n'
                  '  No configuration file found\n'
-                 '  No compilation database file found\n' ) 
+                 '  No compilation database file found\n' )
       else:
         return ( 'C-family completer debug information:\n'
                  '  No configuration file found\n'
