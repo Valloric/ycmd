@@ -435,7 +435,7 @@ def CompilationDatabase_UseFlagsFromDatabase_test():
                   '-x',
                   'c++',
                   '-I' + os.path.abspath( tmp_dir ),
-                  '-I/absolute/path',
+                  '-I' + os.path.abspath( '/absolute/path' ),
                   '-Wall' ) )
 
 
@@ -690,9 +690,9 @@ def CompilationDatabase_MakeRelativePathsInFlagsAbsolute_IgnoreUnknown_test():
       ],
       'expect': [
         'ignored',
-        '--isystem=' + os.path.abspath( '/test' ),
+        '--isystem=/test',
         '-ignored',
-        '--I=' + os.path.abspath( '/test' ),
+        '--I=/test',
         '--ignored=ignored'
       ]
     },
