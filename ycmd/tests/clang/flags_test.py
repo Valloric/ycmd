@@ -24,18 +24,13 @@ standard_library.install_aliases()
 from builtins import *  # noqa
 
 import os
-import tempfile
-import contextlib
-import json
-import shutil
-
 
 from nose.tools import eq_, ok_
 from ycmd.completers.cpp import flags
 from mock import patch, Mock
 from ycmd.tests.test_utils import MacOnly
 from ycmd.responses import NoExtraConfDetected
-from ycmd.utils import ToUnicode
+from ycmd.tests.clang import TemporaryProject, TemporaryProjectDir
 
 from hamcrest import assert_that, calling, contains, raises, none
 
@@ -367,28 +362,6 @@ def Mac_PathsForAllMacToolchains_test():
          '/Library/Developer/CommandLineTools/test' ] )
 
 
-@contextlib.contextmanager
-def TemporaryProjectDir():
-  tmp_dir = tempfile.mkdtemp()
-  try:
-    yield tmp_dir
-  finally:
-    shutil.rmtree( tmp_dir )
-
-
-@contextlib.contextmanager
-def TemporaryProject( tmp_dir, compile_commands ):
-  path = os.path.join( tmp_dir, 'compile_commands.json' )
-
-  with open( path, 'w' ) as f:
-    f.write( ToUnicode( json.dumps( compile_commands, indent=2 ) ) )
-
-  try:
-    yield
-  finally:
-    os.unlink( path )
-
-
 def CompilationDatabase_NoDatabase_test():
   with TemporaryProjectDir() as tmp_dir:
     assert_that(
@@ -508,6 +481,26 @@ def CompilationDatabase_HeaderFileHeuristic_test():
                   '-x',
                   'c++',
                   '-Wall' ) )
+
+
+def CompilationDatabase_HeaderFileHeuristicNotFound_test():
+  with TemporaryProjectDir() as tmp_dir:
+    compile_commands = [
+      {
+        'directory': tmp_dir,
+        'command': 'clang++ -x c++ -Wall',
+        'file': os.path.join( tmp_dir, 'test.cc' ),
+      },
+    ]
+
+    with TemporaryProject( tmp_dir, compile_commands ):
+      # If we ask for a header file, it returns the equivalent cc file (if and
+      # only if there are flags for that file)
+      assert_that(
+        flags.Flags().FlagsForFile(
+          os.path.join( tmp_dir, 'not_in_the_db.h' ),
+          add_extra_clang_flags = False ),
+        none() )
 
 
 def _MakeRelativePathsInFlagsAvsoluteTest( test ):
@@ -753,3 +746,11 @@ def CompilationDatabase_MakeRelativePathsInFlagsAbsolute_IgnoreUnknown_test():
 
   for test in tests:
     yield _MakeRelativePathsInFlagsAvsoluteTest, test
+
+
+def CompilationDatabase_MakeRelativePathsInFlagsAbsolute_NoWorkingDir_test():
+  yield _MakeRelativePathsInFlagsAvsoluteTest, {
+    'flags': [ 'list', 'of', 'flags', 'not', 'changed', '-Itest' ],
+    'expect': [ 'list', 'of', 'flags', 'not', 'changed', '-Itest' ],
+    'wd': ''
+  }

@@ -375,17 +375,7 @@ class ClangCompleter( Completer ):
       extra_conf = extra_conf_store.ModuleFileForSourceFile( filename )
       flags = self._FlagsForRequest( request_data ) or []
     except NoExtraConfDetected:
-      database = self._flags.FindCompilationDatabase(
-          os.path.dirname( filename ) )
-      if database is None:
-        return ( 'C-family completer debug information:\n'
-                 '  No configuration file found\n'
-                 '  No compilation database file found\n' )
-      else:
-        return ( 'C-family completer debug information:\n'
-                 '  No configuration file found\n'
-                 '  Using compilation database from: {0}'.format(
-                   database.database_directory ) )
+      extra_conf = None
     except UnknownExtraConf as error:
       return ( 'C-family completer debug information:\n'
                '  Configuration file found but not loaded\n'
@@ -395,10 +385,10 @@ class ClangCompleter( Completer ):
     if not extra_conf:
       database = self._flags.FindCompilationDatabase(
           os.path.dirname( filename ) )
-      if database is None:
+      if database is None or not database.DatabaseSuccessfullyLoaded():
         return ( 'C-family completer debug information:\n'
                  '  No configuration file found\n'
-                 '  No compilation database file found\n' )
+                 '  No compilation database found\n' )
       else:
         return ( 'C-family completer debug information:\n'
                  '  No configuration file found\n'
