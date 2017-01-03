@@ -198,9 +198,14 @@ class TernCompleter( Completer ):
       'omitObjectPrototype': False
     }
 
-    completions = self._GetResponse( query,
-                                     request_data[ 'start_codepoint' ],
-                                     request_data ).get( 'completions', [] )
+    response = self._GetResponse( query,
+                                  request_data[ 'start_codepoint' ],
+                                  request_data )
+
+    completions = response.get( 'completions', [] )
+    start_codepoint = response[ 'start' ][ 'ch' ] + 1
+
+    request_data.SetCompletionStartCodepoint( start_codepoint )
 
     def BuildDoc( completion ):
       doc = completion.get( 'type', 'Unknown type' )

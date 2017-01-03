@@ -109,10 +109,24 @@ class RequestWrap( object ):
                                   self[ 'first_filetype' ] )
 
 
+  def SetCompletionStartColumn( self, column_num ):
+    self._cached_computed[ 'start_column' ] = column_num
+    self._cached_computed[ 'start_codepoint' ] = ByteOffsetToCodepointOffset(
+      self[ 'line_value' ],
+      column_num )
+
+
   def CompletionStartCodepoint( self ):
     return CompletionStartCodepoint( self[ 'line_value' ],
                                      self[ 'column_num' ],
                                      self[ 'first_filetype' ] )
+
+
+  def SetCompletionStartCodepoint( self, codepoint_offset ):
+    self._cached_computed[ 'start_codepoint' ] = codepoint_offset
+    self._cached_computed[ 'start_column' ] = CodepointOffsetToByteOffset(
+      self[ 'line_value' ],
+      codepoint_offset )
 
 
   def _Query( self ):
