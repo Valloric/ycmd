@@ -203,9 +203,29 @@ class TernCompleter( Completer ):
                                   request_data )
 
     completions = response.get( 'completions', [] )
-    start_codepoint = response[ 'start' ][ 'ch' ] + 1
+    tern_start_codepoint = response[ 'start' ][ 'ch' ]
 
-    request_data.SetCompletionStartCodepoint( start_codepoint )
+    # Tern returns the range of the word in the file which it is replacing. This
+    # may not be the same rainge that our "completion start column" calculation
+    # decided (i.e. it might not strictly be an identifier according to our
+    # rules). For example, when completing:
+    #
+    # require( '|
+    #
+    # with the cursor on |, tern returns something like 'test' (i.e. including
+    # the single-quotes. Single-quotes are not a JavaScript identifier, so
+    # should not normally be considered an identifier character, but by using
+    # our aown start_codepoint calculation, the inserted string would be:
+    #
+    # require( ''test'
+    #
+    # which is clearly incorrect. It should be:
+    #
+    # require( 'test'
+    #
+    # So, we use the start position that tern tells us to use.
+    # We add 1 because tern offsets are 0-based and ycmd offsets are 1-based
+    request_data[ 'start_codepoint' ] = tern_start_codepoint + 1
 
     def BuildDoc( completion ):
       doc = completion.get( 'type', 'Unknown type' )
