@@ -21,10 +21,6 @@ export PYENV_ROOT="${HOME}/.pyenv"
 if [ ! -d "${PYENV_ROOT}/.git" ]; then
   git clone https://github.com/yyuu/pyenv.git ${PYENV_ROOT}
 fi
-pushd ${PYENV_ROOT}
-git fetch --tags
-git checkout v20160202
-popd
 
 export PATH="${PYENV_ROOT}/bin:${PATH}"
 
@@ -37,7 +33,7 @@ elif [ "${YCMD_PYTHON_VERSION}" == "2.7" ]; then
   # when installing the psutil dependency for our tests.
   PYENV_VERSION="2.7.8"
 else
-  PYENV_VERSION="3.3.6"
+  PYENV_VERSION="3.6.0"
 fi
 
 pyenv install --skip-existing ${PYENV_VERSION}
