@@ -112,19 +112,8 @@ endif()
 
 #############################################################################
 
-# Determining the presence of C++11 support in the compiler
-set( CPP11_AVAILABLE false )
-if ( CMAKE_COMPILER_IS_GNUCXX )
-  execute_process(
-    COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
-  if ( GCC_VERSION VERSION_GREATER 4.6 OR GCC_VERSION VERSION_EQUAL 4.6 )
-    set( CPP11_AVAILABLE true )
-  endif()
-elseif( COMPILER_IS_CLANG )
-  set( CPP11_AVAILABLE true )
-  set( CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "c++11" )
-  set( CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++" )
-endif()
+set( CXX_STANDARD 11 )
+set( CXX_STANDARD_REQUIRED ON )
 
 #############################################################################
 
@@ -162,30 +151,6 @@ if( WIN32 OR CYGWIN )
     add_definitions( -DMS_WIN64 )
   endif()
 endif()
-
-#############################################################################
-
-# When used with Clang, adding the -std=c++0x flag to CMAKE_CXX_FLAGS will cause
-# the compiler to output a warning during linking:
-#  clang: warning: argument unused during compilation: '-std=c++0x'
-# This is caused by cmake passing this flag to the linking stage which it
-# shouldn't do. It's ignored so it does no harm, but the warning is annoying.
-#
-# Putting the flag in add_definitions() works around the issue, even though it
-# shouldn't in theory go there.
-if ( CPP11_AVAILABLE )
-
-  # Cygwin needs its hand held a bit; see issue #473
-  if ( CYGWIN AND CMAKE_COMPILER_IS_GNUCXX )
-    add_definitions( -std=gnu++0x )
-  else()
-    add_definitions( -std=c++0x )
-  endif()
-else()
-  message( FATAL_ERROR
-    "Your C++ compiler does NOT support C++11." )
-endif()
-
 
 #############################################################################
 
