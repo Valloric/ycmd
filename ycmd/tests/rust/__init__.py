@@ -26,7 +26,7 @@ from builtins import *  # noqa
 import functools
 import os
 
-from ycmd import handlers
+from ycmd import handlers, user_options_store
 from ycmd.tests.test_utils import ( ClearCompletionsCache, SetUpApp,
                                     StopCompleterServer,
                                     WaitUntilCompleterServerReady )
@@ -72,21 +72,40 @@ def SharedYcmd( test ):
   return Wrapper
 
 
-def IsolatedYcmd( test ):
+def _UpdateUserOptions( custom_options ):
+  user_options = dict( user_options_store.DefaultOptions() )
+  user_options.update( custom_options )
+  handlers.UpdateUserOptions( user_options )
+
+
+def IsolatedYcmd( custom_options = {} ):
   """Defines a decorator to be attached to tests of this package. This decorator
   passes a unique ycmd application as a parameter. It should be used on tests
   that change the server state in a irreversible way (ex: a semantic subserver
   is stopped or restarted) or expect a clean state (ex: no semantic subserver
-  started, no .ycm_extra_conf.py loaded, etc).
+  started, no .ycm_extra_conf.py loaded, etc). Use the optional parameter
+  |custom_options| to give additional options and/or override the default ones.
 
-  Do NOT attach it to test generators but directly to the yielded tests."""
-  @functools.wraps( test )
-  def Wrapper( *args, **kwargs ):
-    old_server_state = handlers._server_state
-    app = SetUpApp()
-    try:
-      test( app, *args, **kwargs )
-    finally:
-      StopCompleterServer( app, 'rust' )
-      handlers._server_state = old_server_state
-  return Wrapper
+  Do NOT attach it to test generators but directly to the yielded tests.
+
+  Example usage:
+
+    from ycmd.tests.rust import IsolatedYcmd
+
+    @IsolatedYcmd( { 'rust_src_path': '/some/path' } )
+    def CustomRustSrcPath_test( app ):
+        ...
+  """
+  def Decorator( test ):
+    @functools.wraps( test )
+    def Wrapper( *args, **kwargs ):
+      old_server_state = handlers._server_state
+      app = SetUpApp()
+      _UpdateUserOptions( custom_options )
+      try:
+        test( app, *args, **kwargs )
+      finally:
+        StopCompleterServer( app, 'rust' )
+        handlers._server_state = old_server_state
+    return Wrapper
+  return Decorator
