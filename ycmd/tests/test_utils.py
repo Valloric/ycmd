@@ -159,13 +159,15 @@ def PatchCompleter( completer, filetype ):
 @contextlib.contextmanager
 def UserOption( key, value ):
   try:
-    current_options = dict( user_options_store.GetAll() )
-    user_options = current_options.copy()
+    current_options = user_options_store.GetAll()
+    user_options = dict( current_options ).copy()
     user_options.update( { key: value } )
-    handlers.UpdateUserOptions( user_options )
+    user_options_store.SetAll( user_options )
+    handlers._server_state.__init__( user_options )
     yield user_options
   finally:
-    handlers.UpdateUserOptions( current_options )
+    user_options_store.SetAll( current_options )
+    handlers._server_state.__init__( current_options )
 
 
 @contextlib.contextmanager

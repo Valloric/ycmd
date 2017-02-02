@@ -23,7 +23,7 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import *  # noqa
 
-from hamcrest import assert_that, has_items
+from hamcrest import assert_that, empty, has_entry, has_items
 from mock import patch
 
 from ycmd.completers.rust.rust_completer import (
@@ -58,8 +58,6 @@ def GetCompletions_Basic_test( app ):
 @SharedYcmd
 def GetCompletions_WhenStandardLibraryCompletionFails_MentionRustSrcPath_test(
   app ):
-  WaitUntilCompleterServerReady( app, 'rust' )
-
   filepath = PathToTestFile( 'std_completions.rs' )
   contents = ReadFile( filepath )
 
@@ -94,6 +92,27 @@ def GetCompletions_WhenNoCompletionsFound_MentionRustSrcPath_test( app ):
                             expect_errors = True ).json
   assert_that( response,
                ErrorMatcher( RuntimeError, ERROR_FROM_RACERD_MESSAGE ) )
+
+
+@IsolatedYcmd
+def GetCompletions_NoCompletionsFound_ExistingRustSrcPath_test( app ):
+  # Set the rust_src_path option to a dummy folder.
+  with UserOption( 'rust_src_path', PathToTestFile() ):
+    WaitUntilCompleterServerReady( app, 'rust' )
+
+    filepath = PathToTestFile( 'test.rs' )
+    contents = ReadFile( filepath )
+
+    # Try to complete the pub keyword.
+    completion_data = BuildRequest( filepath = filepath,
+                                    filetype = 'rust',
+                                    contents = contents,
+                                    force_semantic = True,
+                                    line_num = 1,
+                                    column_num = 2 )
+
+    response = app.post_json( '/completions', completion_data )
+    assert_that( response.json, has_entry( 'completions', empty() ) )
 
 
 @IsolatedYcmd
