@@ -91,6 +91,7 @@ class LanguageServerConnection( object ):
     self._responses = {}
     self._responseMutex = threading.Lock()
     self._notifications = queue.Queue()
+    self._diagnostics = queue.Queue()
 
     self._connection_event = threading.Event()
     self._stop_event = threading.Event()
@@ -240,6 +241,10 @@ class LanguageServerConnection( object ):
       with self._responseMutex:
         assert str( message[ 'id' ] ) in self._responses
         self._responses[ str( message[ 'id' ] ) ].ResponseReceived( message )
+    elif message[ 'method' ] == 'textDocument/publishDiagnostics':
+      # HACK: We use different mechanisms to publish diagnostics and other
+      # async. events (for now)
+      self._diagnostics.put( message )
     else:
       self._notifications.put( message )
 
@@ -318,6 +323,7 @@ class LanguageServerCompleter( Completer ):
 
     self._serverFileState = {}
     self._fileStateMutex = threading.Lock()
+    self._server = LanguageServerConnection()
 
 
   def GetServer( sefl ):
@@ -451,27 +457,71 @@ class LanguageServerCompleter( Completer ):
           # The server isn't running or something. Don't re-poll.
           return False
 
-        notification = self._server._notifications.get_nowait()
-        _logger.debug( 'notification {0}: {1}'.format(
-          notification[ 'method' ],
-          json.dumps( notification[ 'params' ], indent = 2 ) ) )
-
+        notification = self.GetServer()._diagnostics.get_nowait()
         if notification[ 'method' ] == 'textDocument/publishDiagnostics':
-          _logger.debug( 'latest_diagnostics updated' )
           latest_diagnostics = notification
     except queue.Empty:
       pass
 
     if latest_diagnostics is not None:
-      _logger.debug( 'new diagnostics, updating latest received' )
       self._latest_diagnostics = latest_diagnostics[ 'params' ]
-    else:
-      _logger.debug( 'No new diagnostics, using latest received' )
 
     diags = [ BuildDiagnostic( self._latest_diagnostics[ 'uri' ], x )
               for x in self._latest_diagnostics[ 'diagnostics' ] ]
-    _logger.debug( 'Diagnostics: {0}'.format( diags ) )
     return diags
+
+
+  def PollForMessagesInner( self, request_data ):
+    messages = list()
+
+    # scoop up any pending messages into one big list
+    try:
+      while True:
+        if not self.GetServer():
+          # The server isn't running or something. Don't re-poll.
+          return False
+
+        notification = self.GetServer()._notifications.get_nowait( )
+        message = self._ConvertNotificationToMessage( request_data,
+                                                      notification )
+        if message:
+          messages.append( message )
+    except queue.Empty:
+      # We drained the queue
+      pass
+
+    # If we found some messages, return them immediately
+    if messages:
+      return messages
+
+    # otherwise, block until we get one
+    try:
+      # TODO/FIXME: We should reduce the timeout if we loop
+      while True:
+        if not self.GetServer():
+          # The server isn't running or something. Don't re-poll.
+          return False
+
+        notification = self.GetServer()._notifications.get( timeout=10 )
+        message = self._ConvertNotificationToMessage( request_data,
+                                                      notification )
+        if message:
+          return [ message ]
+    except queue.Empty:
+      return True
+
+
+
+  def _ConvertNotificationToMessage( self, request_data, notification ):
+    if notification[ 'method' ] == 'window/showMessage':
+      return responses.BuildDisplayMessageResponse(
+        notification[ 'params' ][ 'message' ] )
+    elif notification[ 'method' ] == 'language/status':
+      return responses.BuildDisplayMessageResponse(
+        'Language server status: {0}'.format(
+          notification[ 'params' ][ 'message' ] ) )
+
+    return None
 
 
   def _RefreshFiles( self, request_data ):
@@ -488,7 +538,7 @@ class LanguageServerCompleter( Completer ):
                                            file_data[ 'filetypes' ],
                                            file_data[ 'contents' ] )
         else:
-          # FIXME: DidChangeTextDocument doesn't actally do anything different
+          # FIXME: DidChangeTextDocument doesn't actually do anything different
           # from DidOpenTextDocument because we don't actually have a mechanism
           # for generating the diffs (which would just be a waste of time)
           #
