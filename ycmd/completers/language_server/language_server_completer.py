@@ -28,8 +28,10 @@ import threading
 import os
 import queue
 import json
+import re
 
 from ycmd.completers.completer import Completer
+# from ycmd.completers.completer_utils import GetFileContents
 from ycmd import utils
 from ycmd import responses
 
@@ -383,22 +385,14 @@ class LanguageServerCompleter( Completer ):
         'Reference',
       ]
 
-      if 'textEdit' in item and item[ 'textEdit' ]:
-        # TODO: This is a very annoying way to supply completions, but YCM could
-        # technically support it via FixIt
-        insertion_text = item[ 'textEdit' ][ 'newText' ]
-      elif 'insertText' in item and item[ 'insertText' ]:
-        insertion_text = item[ 'insertText' ]
-      else:
-        insertion_text = item[ 'label' ]
-
+      ( insertion_text, fixits ) = self._GetInsertionText( request_data, item )
       return responses.BuildCompletionData(
         insertion_text,
         None,
         None,
         item[ 'label' ],
         ITEM_KIND[ item.get( 'kind', 0 ) ],
-        None )
+        fixits )
 
     if isinstance( response[ 'result' ], list ):
       items = response[ 'result' ]
@@ -410,18 +404,6 @@ class LanguageServerCompleter( Completer ):
   def OnFileReadyToParse( self, request_data ):
     if self.ServerIsReady():
       self._RefreshFiles( request_data )
-
-    def BuildLocation( filename, loc ):
-      # TODO: Look at tern complete, requires file contents to convert codepoint
-      # offset to byte offset
-      return responses.Location( line = loc[ 'line' ] + 1,
-                                 column = loc[ 'character' ] + 1,
-                                 filename = os.path.realpath( filename ) )
-
-    def BuildRange( filename, r ):
-      return responses.Range( BuildLocation( filename, r[ 'start' ] ),
-                              BuildLocation( filename, r[ 'end' ] ) )
-
 
     def BuildDiagnostic( filename, diag ):
       filename = lsapi.UriToFilePath( filename )
@@ -486,6 +468,8 @@ class LanguageServerCompleter( Completer ):
         if file_name in self._serverFileState:
           file_state = self._serverFileState[ file_name ]
 
+        _logger.debug( 'Refreshing file {0}: State is {1}'.format(
+          file_name, file_state ) )
         if file_state == 'New' or self._syncType == 'Full':
           msg = lsapi.DidOpenTextDocument( file_name,
                                            file_data[ 'filetypes' ],
@@ -532,3 +516,73 @@ class LanguageServerCompleter( Completer ):
         response[ 'result' ][ 'capabilities' ][ 'textDocumentSync' ] ]
       _logger.info( 'Language Server requires sync type of {0}'.format(
         self._syncType ) )
+
+
+  def _GetInsertionText( self, request_data, item ):
+    # TODO: We probably need to implement this and (at least) strip out the
+    # snippet parts?
+    INSERT_TEXT_FORMAT = [
+      None, # 1-based
+      'PlainText',
+      'Snippet'
+    ]
+
+    fixits = None
+
+    # Per the protocol, textEdit takes precedence over insertText, and must be
+    # on the same line (and containing) the originally requested position
+    if 'textEdit' in item and item[ 'textEdit' ]:
+      new_range = item[ 'textEdit' ][ 'range' ]
+      if ( new_range[ 'start' ][ 'line' ] != new_range[ 'end' ][ 'line' ] or
+           new_range[ 'start' ][ 'line' ] + 1 != request_data[ 'line_num' ] ):
+        # We can't support completions that span lines. The protocol forbids it
+        raise RuntimeError( 'Invalid textEdit supplied. Must be on a single '
+                            'line' )
+      else:
+        request_data[ 'start_codepoint' ] = (
+          new_range[ 'start' ][ 'character' ] + 1 )
+        insertion_text = item[ 'textEdit' ][ 'newText' ]
+
+      additionalTextEdits = item.get( 'additionalTextEdits', None )
+
+      if additionalTextEdits:
+        chunks = [ responses.FixItChunk( e[ 'newText' ],
+                                         BuildRange( request_data[ 'filepath' ],
+                                                     e[ 'range' ] ) )
+                   for e in additionalTextEdits ]
+
+        fixits = responses.BuildFixItResponse(
+          [ responses.FixIt( chunks[ 0].range.start_, chunks ) ] )
+
+    elif 'insertText' in item and item[ 'insertText' ]:
+      insertion_text = item[ 'insertText' ]
+    else:
+      insertion_text = item[ 'label' ]
+
+    if 'insertTextFormat' in item and item[ 'insertTextFormat' ]:
+      text_format = INSERT_TEXT_FORMAT[ item[ 'insertTextFormat' ] ]
+    else:
+      text_format = 'PlainText'
+
+    if text_format == 'Snippet':
+      # TODO: This is not the snippet format! This is the format that was
+      # secretly supported in vscode, but has been superseded by a real format
+      # which is more like SnipMate
+      #
+      # FIXME!
+      insertion_text = re.sub( '{{[^}]*}}', '', insertion_text )
+
+    return ( insertion_text, fixits )
+
+
+def BuildLocation( filename, loc ):
+  # TODO: Look at tern completer, requires file contents to convert
+  # codepoint offset to byte offset
+  return responses.Location( line = loc[ 'line' ] + 1,
+                             column = loc[ 'character' ] + 1,
+                             filename = os.path.realpath( filename ) )
+
+
+def BuildRange( filename, r ):
+  return responses.Range( BuildLocation( filename, r[ 'start' ] ),
+                          BuildLocation( filename, r[ 'end' ] ) )
