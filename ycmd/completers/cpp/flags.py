@@ -301,6 +301,9 @@ def PrepareFlagsForClang( flags, filename, add_extra_clang_flags = True ):
   flags = _RemoveXclangFlags( flags )
   flags = _RemoveUnusedFlags( flags, filename )
   if add_extra_clang_flags:
+    if OnMac() and '-isysroot' not in flags:
+      for path in MAC_INCLUDE_PATHS:
+        flags.extend( [ '-isystem', path ] )
     flags = _EnableTypoCorrection( flags )
 
   vector = ycm_core.StringVector()
@@ -499,9 +502,6 @@ if OnMac():
 
 def _ExtraClangFlags():
   flags = _SpecialClangIncludes()
-  if OnMac():
-    for path in MAC_INCLUDE_PATHS:
-      flags.extend( [ '-isystem', path ] )
   # On Windows, parsing of templates is delayed until instantiation time.
   # This makes GetType and GetParent commands fail to return the expected
   # result when the cursor is in a template.
