@@ -94,7 +94,7 @@ def FindTsserverBinary():
     'tsserver' ) )
 
 
-def ShouldEnableTypescriptCompleter():
+def ShouldEnableTypeScriptCompleter():
   if not PATH_TO_NODE:
     _logger.warning( 'Not using TypeScript completer: unable to find node' )
     return False
