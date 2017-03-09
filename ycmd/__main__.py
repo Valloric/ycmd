@@ -28,8 +28,6 @@ sys.path.insert( 0, os.path.dirname( os.path.abspath( __file__ ) ) )
 from server_utils import SetUpPythonPath, CompatibleWithCurrentCore
 SetUpPythonPath()
 
-from future import standard_library
-standard_library.install_aliases()
 from builtins import *  # noqa
 
 import atexit

@@ -20,16 +20,14 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 from builtins import *  # noqa
-from future.utils import native, iteritems
-from future import standard_library
-standard_library.install_aliases()
 
 from ycmd.utils import ToBytes, SetEnviron, ProcessIsRunning
 from ycmd.completers.completer import Completer
 from ycmd import responses, utils, hmac_utils
 
+from future.moves.urllib.parse import urljoin
+from future.utils import native, iteritems
 import logging
-import urllib.parse
 import requests
 import json
 import tempfile
@@ -160,7 +158,7 @@ class RustCompleter( Completer ):
     _logger.info( 'RustCompleter._GetResponse' )
     handler = ToBytes( handler )
     method = ToBytes( method )
-    url = urllib.parse.urljoin( ToBytes( self._racerd_host ), handler )
+    url = urljoin( ToBytes( self._racerd_host ), handler )
     parameters = self._ConvertToRacerdRequest( request_data )
     body = ToBytes( json.dumps( parameters ) ) if parameters else bytes()
     extra_headers = self._ExtraHeaders( method, handler, body )

@@ -19,10 +19,7 @@ from __future__ import unicode_literals
 from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
-from future import standard_library
-standard_library.install_aliases()
 from builtins import *  # noqa
-from future.utils import iteritems
 
 # Must not import ycm_core here! Vim imports completer, which imports this file.
 # We don't want ycm_core inside Vim.
@@ -30,6 +27,7 @@ import os
 import re
 import copy
 from collections import defaultdict
+from future.utils import iteritems
 from ycmd.utils import ToCppStringCompatible, ToUnicode, ReadFile
 
 
