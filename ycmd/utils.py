@@ -23,14 +23,20 @@ from __future__ import division
 from __future__ import absolute_import
 # Not installing aliases from python-future; it's unreliable and slow.
 from builtins import *  # noqa
-from future.utils import PY2, native
 
+from future.utils import PY2, native
 import os
 import socket
 import subprocess
 import sys
 import tempfile
 import time
+
+
+if PY2:
+  from urlparse import urljoin, urlparse
+else:
+  from urllib.parse import urljoin, urlparse  # noqa
 
 
 # Creation flag to disable creating a console window on Windows. See
