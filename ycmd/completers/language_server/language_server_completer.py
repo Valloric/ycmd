@@ -598,21 +598,31 @@ class LanguageServerCompleter( Completer ):
                                                                request_data ) )
 
     if isinstance( response[ 'result' ], list ):
-      positions = response[ 'result' ]
-      return [
-        responses.BuildGoToResponseFromLocation(
+      if len( response[ 'result' ] ) > 1:
+        positions = response[ 'result' ]
+        return [
+          responses.BuildGoToResponseFromLocation(
+            # TODO: Codepoint to byte offset
+            responses.Location(
+              position[ 'range' ][ 'start' ][ 'line' ] + 1,
+              position[ 'range' ][ 'start' ][ 'character' ] + 1,
+              lsapi.UriToFilePath( position[ 'uri' ] ) )
+          ) for position in positions
+        ]
+      else:
+        position = response[ 'result' ][ 0 ]
+        return responses.BuildGoToResponseFromLocation(
           # TODO: Codepoint to byte offset
-          responses.Location( position[ 'range' ][ 'start' ][ 'line' ],
-                              position[ 'range' ][ 'start' ][ 'character' ],
+          responses.Location( position[ 'range' ][ 'start' ][ 'line' ] + 1,
+                              position[ 'range' ][ 'start' ][ 'character' ] + 1,
                               lsapi.UriToFilePath( position[ 'uri' ] ) )
-        ) for position in positions
-      ]
+        )
     else:
       position = response[ 'result' ]
       return responses.BuildGoToResponseFromLocation(
         # TODO: Codepoint to byte offset
-        responses.Location( position[ 'range' ][ 'start' ][ 'line' ],
-                            position[ 'range' ][ 'start' ][ 'character' ],
+        responses.Location( position[ 'range' ][ 'start' ][ 'line' ] + 1,
+                            position[ 'range' ][ 'start' ][ 'character' ] + 1,
                             lsapi.UriToFilePath( position[ 'uri' ] ) )
       )
 
