@@ -87,12 +87,17 @@ class IdentifierCompleter( GeneralCompleter ):
     self._AddIdentifier(
       _PreviousIdentifier(
         self.user_options[ 'min_num_of_chars_for_completion' ],
+        self.user_options[ 'collect_identifiers_from_comments_and_strings' ],
         request_data ),
       request_data )
 
 
   def _AddIdentifierUnderCursor( self, request_data ):
-    self._AddIdentifier( _GetCursorIdentifier( request_data ), request_data )
+    self._AddIdentifier(
+      _GetCursorIdentifier(
+        self.user_options[ 'collect_identifiers_from_comments_and_strings' ],
+        request_data ),
+      request_data )
 
 
   def _AddBufferIdentifiers( self, request_data ):
@@ -174,7 +179,9 @@ class IdentifierCompleter( GeneralCompleter ):
 
 # This looks for the previous identifier and returns it; this might mean looking
 # at last identifier on the previous line if a new line has just been created.
-def _PreviousIdentifier( min_num_candidate_size_chars, request_data ):
+def _PreviousIdentifier( min_num_candidate_size_chars,
+                         collect_from_comments_and_strings,
+                         request_data ):
   def PreviousIdentifierOnLine( line, column, filetype ):
     nearest_ident = ''
     for match in identifier_utils.IdentifierRegexForFiletype(
@@ -187,8 +194,10 @@ def _PreviousIdentifier( min_num_candidate_size_chars, request_data ):
   column_num = request_data[ 'column_codepoint' ] - 1
   filepath = request_data[ 'filepath' ]
 
-  contents_per_line = (
-    SplitLines( request_data[ 'file_data' ][ filepath ][ 'contents' ] ) )
+  contents = request_data[ 'file_data' ][ filepath ][ 'contents' ]
+  if not collect_from_comments_and_strings:
+    contents = identifier_utils.RemoveIdentifierFreeText( contents )
+  contents_per_line = SplitLines( contents )
 
   filetype = request_data[ 'first_filetype' ]
   ident = PreviousIdentifierOnLine( contents_per_line[ line_num ],
@@ -218,9 +227,13 @@ def _RemoveSmallCandidates( candidates, min_num_candidate_size_chars ):
   return [ x for x in candidates if len( x ) >= min_num_candidate_size_chars ]
 
 
-def _GetCursorIdentifier( request_data ):
+def _GetCursorIdentifier( collect_from_comments_and_strings,
+                          request_data ):
+  line_value = request_data[ 'line_value' ]
+  if not collect_from_comments_and_strings:
+    line_value = identifier_utils.RemoveIdentifierFreeText( line_value )
   return identifier_utils.IdentifierAtIndex(
-      request_data[ 'line_value' ],
+      line_value,
       request_data[ 'column_codepoint' ] - 1,
       request_data[ 'first_filetype' ] )
 
