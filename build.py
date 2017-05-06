@@ -241,6 +241,8 @@ def ParseArguments():
                        'from llvm.org. NOT RECOMMENDED OR SUPPORTED!' )
   parser.add_argument( '--omnisharp-completer', action = 'store_true',
                        help = 'Build C# semantic completion engine.' )
+  parser.add_argument( '--swift-completer', action = 'store_true',
+                       help = 'Build swift semantic completion engine.' )
   parser.add_argument( '--gocode-completer', action = 'store_true',
                        help = 'Build Go semantic completion engine.' )
   parser.add_argument( '--racer-completer', action = 'store_true',
@@ -424,6 +426,9 @@ def BuildGoCode():
   os.chdir( p.join( DIR_OF_THIS_SCRIPT, 'third_party', 'godef' ) )
   CheckCall( [ 'go', 'build' ] )
 
+def BuildSwiftySwiftVim():
+  os.chdir( p.join( DIR_OF_THIS_SCRIPT, 'third_party', 'swiftyswiftvim' ) )
+  CheckCall( [ 'bash', 'bootstrap' ] )
 
 def BuildRacerd():
   """
@@ -491,6 +496,8 @@ def Main():
     SetUpTern()
   if args.racer_completer or args.all_completers:
     BuildRacerd()
+  if args.swift_completer or args.all_completers:
+    BuildSwiftySwiftVim()
   WritePythonUsedDuringBuild()
 
 
