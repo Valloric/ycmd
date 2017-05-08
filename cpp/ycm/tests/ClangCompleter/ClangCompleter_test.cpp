@@ -184,4 +184,59 @@ TEST( ClangCompleterTest, GetDocString ) {
   }
 }
 
+
+TEST( ClangCompleterTest, NoTranslationUnit ) {
+  ClangCompleter completer;
+
+  const std::string filename;
+  const std::vector< UnsavedFile > unsaved_files;
+  const std::vector< std::string > flags;
+
+  EXPECT_EQ( std::vector< Diagnostic >(),
+             completer.UpdateTranslationUnit( filename, unsaved_files, flags) );
+
+  EXPECT_EQ( std::vector< CompletionData >(),
+             completer.CandidatesForLocationInFile( filename,
+                                                    1,
+                                                    1,
+                                                    unsaved_files,
+                                                    flags ) );
+
+  EXPECT_EQ( Location(), completer.GetDeclarationLocation( filename,
+                                                           1,
+                                                           1,
+                                                           unsaved_files,
+                                                           flags ) );
+  EXPECT_EQ( Location(), completer.GetDefinitionLocation( filename,
+                                                          1,
+                                                          1,
+                                                          unsaved_files,
+                                                          flags ) );
+  EXPECT_EQ( std::string( "no unit" ),
+             completer.GetTypeAtLocation( filename,
+                                          1,
+                                          1,
+                                          unsaved_files,
+                                          flags ) );
+  EXPECT_EQ( std::string( "no unit" ),
+             completer.GetEnclosingFunctionAtLocation( filename,
+                                                       1,
+                                                       1,
+                                                       unsaved_files,
+                                                       flags ) );
+  EXPECT_EQ( std::vector< FixIt >(),
+             completer.GetFixItsForLocationInFile( filename,
+                                                   1,
+                                                   1,
+                                                   unsaved_files,
+                                                   flags ) );
+
+  EXPECT_EQ( DocumentationData(),
+             completer.GetDocsForLocationInFile( filename,
+                                                 1,
+                                                 1,
+                                                 unsaved_files,
+                                                 flags ) );
+}
+
 } // namespace YouCompleteMe
