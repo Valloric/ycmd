@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with ycmd.  If not, see <http://www.gnu.org/licenses/>.
 
-#include "TranslationUnit.h"
+#include "TranslationUnitStore.h"
 #include "exceptions.h"
 #include "Utils.h"
 #include <gtest/gtest.h>
@@ -132,6 +132,20 @@ TEST_F( TranslationUnitTest, GoToDeclarationWorksOnDefinition ) {
   EXPECT_EQ( 14, location.line_number_ );
   EXPECT_EQ( 6, location.column_number_ );
   EXPECT_TRUE( !location.filename_.empty() );
+}
+
+
+TEST_F( TranslationUnitTest, InvalidTranslationUnit ) {
+  std::string filename( "invalid_file_name" );
+  std::vector< UnsavedFile > unsaved_files;
+  std::vector< std::string > flags;
+
+  TranslationUnitStore transaltion_unit_store{ clang_index_ };
+  std::shared_ptr< TranslationUnit > unit = transaltion_unit_store.GetOrCreate( filename,
+                                                                                unsaved_files,
+                                                                                flags );
+
+  EXPECT_EQ( std::shared_ptr< TranslationUnit >(), unit );
 }
 
 } // namespace YouCompleteMe
