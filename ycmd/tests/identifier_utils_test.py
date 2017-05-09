@@ -31,86 +31,77 @@ from hamcrest import assert_that, has_item
 
 def RemoveIdentifierFreeText_CppComments_test():
   eq_( "foo \nbar \nqux",
-       iu.RemoveIdentifierFreeText(
-          "foo \nbar //foo \nqux" ) )
+       iu.RemoveIdentifierFreeText( "foo \nbar //foo \nqux" ) )
 
 
 def RemoveIdentifierFreeText_PythonComments_test():
   eq_( "foo \nbar \nqux",
-       iu.RemoveIdentifierFreeText(
-          "foo \nbar #foo \nqux" ) )
+       iu.RemoveIdentifierFreeText( "foo \nbar #foo \nqux" ) )
 
 
 def RemoveIdentifierFreeText_CstyleComments_test():
   eq_( "foo \nbar \nqux",
-       iu.RemoveIdentifierFreeText(
-          "foo \nbar /* foo */\nqux" ) )
+       iu.RemoveIdentifierFreeText( "foo \nbar /* foo */\nqux" ) )
 
   eq_( "foo \nbar \nqux",
-       iu.RemoveIdentifierFreeText(
-          "foo \nbar /* foo \n foo2 */\nqux" ) )
+       iu.RemoveIdentifierFreeText( "foo \nbar /* foo \n foo2 */\nqux" ) )
 
 
 def RemoveIdentifierFreeText_SimpleSingleQuoteString_test():
   eq_( "foo \nbar \nqux",
-       iu.RemoveIdentifierFreeText(
-          "foo \nbar 'foo'\nqux" ) )
+       iu.RemoveIdentifierFreeText( "foo \nbar 'foo'\nqux" ) )
 
 
 def RemoveIdentifierFreeText_SimpleDoubleQuoteString_test():
   eq_( "foo \nbar \nqux",
-       iu.RemoveIdentifierFreeText(
-          'foo \nbar "foo"\nqux' ) )
+       iu.RemoveIdentifierFreeText( 'foo \nbar "foo"\nqux' ) )
 
 
 def RemoveIdentifierFreeText_EscapedQuotes_test():
   eq_( "foo \nbar \nqux",
-       iu.RemoveIdentifierFreeText(
-          "foo \nbar 'fo\\'oz\\nfoo'\nqux" ) )
+       iu.RemoveIdentifierFreeText( "foo \nbar 'fo\\'oz\\nfoo'\nqux" ) )
 
   eq_( "foo \nbar \nqux",
-       iu.RemoveIdentifierFreeText(
-          'foo \nbar "fo\\"oz\\nfoo"\nqux' ) )
+       iu.RemoveIdentifierFreeText( 'foo \nbar "fo\\"oz\\nfoo"\nqux' ) )
 
 
 def RemoveIdentifierFreeText_SlashesInStrings_test():
   eq_( "foo \nbar baz\nqux ",
-       iu.RemoveIdentifierFreeText(
-           'foo \nbar "fo\\\\"baz\nqux "qwe"' ) )
+       iu.RemoveIdentifierFreeText( 'foo \nbar "fo\\\\"baz\nqux "qwe"' ) )
 
   eq_( "foo \nbar \nqux ",
-       iu.RemoveIdentifierFreeText(
-           "foo '\\\\'\nbar '\\\\'\nqux '\\\\'" ) )
+       iu.RemoveIdentifierFreeText( "foo '\\\\'\nbar '\\\\'\nqux '\\\\'" ) )
 
 
 def RemoveIdentifierFreeText_EscapedQuotesStartStrings_test():
   eq_( "\\\"foo\\\" zoo",
-       iu.RemoveIdentifierFreeText(
-           "\\\"foo\\\"'\"''bar' zoo'test'" ) )
+       iu.RemoveIdentifierFreeText( "\\\"foo\\\"'\"''bar' zoo'test'" ) )
 
   eq_( "\\'foo\\' zoo",
-       iu.RemoveIdentifierFreeText(
-           "\\'foo\\'\"'\"\"bar\" zoo\"test\"" ) )
+       iu.RemoveIdentifierFreeText( "\\'foo\\'\"'\"\"bar\" zoo\"test\"" ) )
 
 
 def RemoveIdentifierFreeText_NoMultilineString_test():
   eq_( "'\nlet x = \nlet y = ",
-       iu.RemoveIdentifierFreeText(
-           "'\nlet x = 'foo'\nlet y = 'bar'" ) )
+       iu.RemoveIdentifierFreeText( "'\nlet x = 'foo'\nlet y = 'bar'" ) )
 
   eq_( "\"\nlet x = \nlet y = ",
-       iu.RemoveIdentifierFreeText(
-           "\"\nlet x = \"foo\"\nlet y = \"bar\"" ) )
+       iu.RemoveIdentifierFreeText( "\"\nlet x = \"foo\"\nlet y = \"bar\"" ) )
 
 
 def RemoveIdentifierFreeText_PythonMultilineString_test():
   eq_( "\nzoo",
-       iu.RemoveIdentifierFreeText(
-           "\"\"\"\nfoobar\n\"\"\"\nzoo" ) )
+       iu.RemoveIdentifierFreeText( "\"\"\"\nfoobar\n\"\"\"\nzoo" ) )
 
   eq_( "\nzoo",
-       iu.RemoveIdentifierFreeText(
-           "'''\nfoobar\n'''\nzoo" ) )
+       iu.RemoveIdentifierFreeText( "'''\nfoobar\n'''\nzoo" ) )
+
+
+def RemoveIdentifierFreeText_GoBackQuoteString_test():
+  eq_( "foo \nbar `foo`\nqux",
+       iu.RemoveIdentifierFreeText( "foo \nbar `foo`\nqux" ) )
+  eq_( "foo \nbar \nqux",
+       iu.RemoveIdentifierFreeText( "foo \nbar `foo`\nqux", filetype = 'go' ) )
 
 
 def ExtractIdentifiersFromText_test():
@@ -186,6 +177,7 @@ def IsIdentifier_TypeScript_test():
 
 def IsIdentifier_Css_test():
   ok_( iu.IsIdentifier( 'foo'      , 'css' ) )
+  ok_( iu.IsIdentifier( 'a'        , 'css' ) )
   ok_( iu.IsIdentifier( 'a1'       , 'css' ) )
   ok_( iu.IsIdentifier( 'a-'       , 'css' ) )
   ok_( iu.IsIdentifier( 'a-b'      , 'css' ) )
@@ -193,12 +185,14 @@ def IsIdentifier_Css_test():
   ok_( iu.IsIdentifier( '-ms-foo'  , 'css' ) )
   ok_( iu.IsIdentifier( '-_o'      , 'css' ) )
   ok_( iu.IsIdentifier( 'font-face', 'css' ) )
+  ok_( iu.IsIdentifier( 'αβγ'      , 'css' ) )
 
   ok_( not iu.IsIdentifier( '-3b', 'css' ) )
   ok_( not iu.IsIdentifier( '-3' , 'css' ) )
+  ok_( not iu.IsIdentifier( '--', 'css' ) )
   ok_( not iu.IsIdentifier( '3'  , 'css' ) )
-  ok_( not iu.IsIdentifier( 'a'  , 'css' ) )
   ok_( not iu.IsIdentifier( '' , 'css' ) )
+  ok_( not iu.IsIdentifier( '€', 'css' ) )
 
 
 def IsIdentifier_R_test():
