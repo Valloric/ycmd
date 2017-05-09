@@ -150,16 +150,36 @@ TEST_F( TranslationUnitTest, InvalidTranslationUnitStore ) {
   EXPECT_EQ( std::shared_ptr< TranslationUnit >(), unit );
 }
 
+
 TEST_F( TranslationUnitTest, InvalidTranslationUnit ) {
   TranslationUnit unit;
 
   EXPECT_TRUE( unit.IsCurrentlyUpdating() );
-  EXPECT_EQ( std::vector< CompletionData >(), unit.CandidatesForLocation( 1, 1, std::vector< UnsavedFile >() ) );
-  EXPECT_EQ( Location(), unit.GetDeclarationLocation( 1, 1, std::vector< UnsavedFile >() ) );
-  EXPECT_EQ( Location(), unit.GetDefinitionLocation( 1, 1, std::vector< UnsavedFile >() ) );
-  EXPECT_EQ( std::string( "Internal error: no translation unit" ), unit.GetTypeAtLocation( 1, 1, std::vector< UnsavedFile >() ) );
-  EXPECT_EQ( std::string( "Internal error: no translation unit" ), unit.GetEnclosingFunctionAtLocation( 1, 1, std::vector< UnsavedFile >() ) );
-  EXPECT_EQ( DocumentationData(), unit.GetDocsForLocationInFile( 1, 1, std::vector< UnsavedFile >(), false ) );
+
+  EXPECT_EQ( std::vector< CompletionData >(),
+             unit.CandidatesForLocation( 1, 1, std::vector< UnsavedFile >() ) );
+
+  EXPECT_EQ( Location(),
+             unit.GetDeclarationLocation( 1,
+                                          1,
+                                          std::vector< UnsavedFile >() ) );
+
+  EXPECT_EQ( Location(),
+             unit.GetDefinitionLocation( 1, 1, std::vector< UnsavedFile >() ) );
+
+  EXPECT_EQ( std::string( "Internal error: no translation unit" ),
+             unit.GetTypeAtLocation( 1, 1, std::vector< UnsavedFile >() ) );
+
+  EXPECT_EQ( std::string( "Internal error: no translation unit" ),
+             unit.GetEnclosingFunctionAtLocation( 1,
+                                                  1,
+                                                  std::vector< UnsavedFile >()
+                                                ) );
+  EXPECT_EQ( DocumentationData(),
+             unit.GetDocsForLocationInFile( 1,
+                                            1,
+                                            std::vector< UnsavedFile >(),
+                                            false ) );
 }
 
 } // namespace YouCompleteMe
