@@ -21,8 +21,8 @@ import argparse
 def ParseArguments():
   parser = argparse.ArgumentParser()
   parser.add_argument( '--msvc', type = int, choices = [ 12, 14, 15 ],
-                       help = 'Choose the Microsoft Visual '
-                       'Studio version. (default: 15).' )
+                       default = 15, help = 'Choose the Microsoft Visual '
+                       'Studio version (default: %(default)s).' )
 
   return parser.parse_args()
 
