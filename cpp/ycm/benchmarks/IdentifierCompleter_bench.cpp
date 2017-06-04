@@ -18,8 +18,6 @@
 #include "benchmark/benchmark_api.h"
 #include "CandidateRepository.h"
 #include "IdentifierCompleter.h"
-#include <iomanip>
-#include <sstream>
 
 namespace YouCompleteMe {
 
@@ -35,13 +33,13 @@ BENCHMARK_DEFINE_F( IdentifierCompleterFixture, CandidatesWithCommonPrefix )(
     benchmark::State& state ) {
   // Generate a list of candidates of the form a_A_a_[a-z]{5}.
   std::vector< std::string > candidates;
-  for ( int i = 0; i < state.range( 0 ); i++ ) {
-    std::string candidate = "a_A_a_";
-    std::ostringstream number;
-    number << std::setfill( '0' ) << std::setw( 5 ) << i;
-    for ( auto character : number.str() ) {
-      candidate += character - '0' + 'a';
+  for ( int i = 0; i < state.range( 0 ); ++i ) {
+    std::string candidate = "";
+    int letter = i;
+    for ( int pos = 0; pos < 5; letter /= 26, ++pos ) {
+      candidate = std::string( 1, letter % 26 + 'a' ) + candidate;
     }
+    candidate = "a_A_a_" + candidate;
     candidates.push_back( candidate );
   }
 
