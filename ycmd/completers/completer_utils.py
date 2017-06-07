@@ -26,7 +26,6 @@ from builtins import *  # noqa
 # We don't want ycm_core inside Vim.
 import os
 import re
-import copy
 from collections import defaultdict
 from future.utils import iteritems
 from ycmd.utils import ToCppStringCompatible, ToUnicode, ReadFile
@@ -177,35 +176,11 @@ def FilterAndSortCandidatesWrap( candidates, sort_property, query ):
   # std::string. Therefore all strings passed into the c++ API must pass through
   # ToCppStringCompatible (or more strictly all strings which the C++ code
   # needs to use and convert. In this case, just the insertion text property)
-
-  # FIXME: This is actually quite inefficient in an area which is used
-  # constantly and the key performance critical part of the system. There is
-  # code in the C++ layer (see PythonSupport.cpp:GetUtf8String) which attempts
-  # to work around this limitation. Unfortunately it has issues which cause the
-  # above problems, and we work around it by converting here in the python
-  # layer until we can come up with a better solution in the C++ layer.
-
-  # Note: we must deep copy candidates because we do not want to clobber the
-  # data that is passed in. It is actually used directly by the cache, so if
-  # we change the data pointed to by the elements of candidates, then this will
-  # be reflected in a subsequent response from the cache. This is particularly
-  # important for those candidates which are *not* returned after the filter, as
-  # they are not converted back to unicode.
-  cpp_compatible_candidates = _ConvertCandidatesToCppCompatible(
-    copy.deepcopy( candidates ),
-    sort_property )
-
-  # However, the reset of the python layer expects all the candidates properties
-  # to be some form of unicode string - a python-future str() instance.
-  # So we need to convert the insertion text property back to a unicode string
-  # before returning it.
-  filtered_candidates = FilterAndSortCandidates(
-    cpp_compatible_candidates,
-    ToCppStringCompatible( sort_property ),
-    ToCppStringCompatible( query ) )
-
-  return _ConvertCandidatesToPythonCompatible( filtered_candidates,
-                                               sort_property )
+  # For efficiency, the conversion of the insertion text property is done in the
+  # C++ layer.
+  return FilterAndSortCandidates( candidates,
+                                  ToCppStringCompatible( sort_property ),
+                                  ToCppStringCompatible( query ) )
 
 
 def _ConvertCandidatesToCppCompatible( candidates, sort_property ):
