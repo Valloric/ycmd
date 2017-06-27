@@ -24,6 +24,7 @@ from builtins import *  # noqa
 
 from hamcrest import assert_that, empty, has_entry, has_items
 from mock import patch
+from os.path import abspath
 
 from ycmd.completers.rust.rust_completer import (
   ERROR_FROM_RACERD_MESSAGE, NON_EXISTING_RUST_SOURCES_PATH_MESSAGE )
@@ -132,3 +133,38 @@ def GetCompletions_NonExistingRustSrcPathFromEnvironmentVariable_test( app ):
   assert_that( response,
                ErrorMatcher( RuntimeError,
                              NON_EXISTING_RUST_SOURCES_PATH_MESSAGE ) )
+
+
+@IsolatedYcmd()
+@patch( 'ycmd.utils.FindExecutable', return_value = None )
+def GetCompletions_NonExistingRustc_test( app ):
+  response = app.get( '/ready',
+                      { 'subserver': 'rust' },
+                      expect_errors = True ).json
+  assert_that( response,
+               ErrorMatcher( RuntimeError,
+                             NON_EXISTING_RUST_SOURCES_PATH_MESSAGE ) )
+
+
+@IsolatedYcmd()
+@patch( 'ycmd.completers.rust.rust_completer._GetRustSysroot',
+        return_value = '/non/existing/file/path' )
+def GetCompletions_NonExistingPathFromRustup_test( app ):
+  response = app.get( '/ready',
+                      { 'subserver': 'rust' },
+                      expect_errors = True ).json
+  assert_that( response,
+               ErrorMatcher( RuntimeError,
+                             NON_EXISTING_RUST_SOURCES_PATH_MESSAGE ) )
+
+
+@IsolatedYcmd()
+@patch( 'ycmd.completers.rust.rust_completer._GetRustSysroot',
+        return_value = abspath( 'ycmd/tests/rust/testdata/rustup-toolchain' ) )
+def GetCompletions_RustupPathHeuristics_test( app ):
+  response = app.get( '/ready', { 'subserver': 'rust' } )
+  response = app.get( '/debug_info', { 'subserver': 'rust' } )
+  entry = { 'rust_src_path':
+            abspath( 'ycmd/tests/rust/testdata/rustup-toolchain/lib/' +
+                     'rustlib/src/rust/src' ) }
+  assert_that( response, has_entry( entry ) )
