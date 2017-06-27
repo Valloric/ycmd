@@ -55,8 +55,10 @@ def GetCompletions_Basic_test( app ):
 
 
 @SharedYcmd
+@patch( 'ycmd.completers.rust.rust_completer._GetRustSysroot',
+        return_value = PathToTestFile( '/non/existing/rust/src/path' ) )
 def GetCompletions_WhenStandardLibraryCompletionFails_MentionRustSrcPath_test(
-  app ):
+  app, *args ):
   filepath = PathToTestFile( 'std_completions.rs' )
   contents = ReadFile( filepath )
 
@@ -75,6 +77,8 @@ def GetCompletions_WhenStandardLibraryCompletionFails_MentionRustSrcPath_test(
 
 
 @SharedYcmd
+@patch( 'ycmd.completers.rust.rust_completer._GetRustSysroot',
+        return_value = PathToTestFile( '/non/existing/rust/src/path' ) )
 def GetCompletions_WhenNoCompletionsFound_MentionRustSrcPath_test( app ):
   filepath = PathToTestFile( 'test.rs' )
   contents = ReadFile( filepath )
@@ -132,3 +136,40 @@ def GetCompletions_NonExistingRustSrcPathFromEnvironmentVariable_test( app ):
   assert_that( response,
                ErrorMatcher( RuntimeError,
                              NON_EXISTING_RUST_SOURCES_PATH_MESSAGE ) )
+
+
+@IsolatedYcmd()
+@patch( 'ycmd.completers.rust.rust_completer.FindExecutable',
+        return_value = None )
+def GetCompletions_WhenRustcNotFound_MentionRustSrcPath_test( app, *args ):
+  filepath = PathToTestFile( 'test.rs' )
+  contents = ReadFile( filepath )
+
+  completion_data = BuildRequest( filepath = filepath,
+                                  filetype = 'rust',
+                                  contents = contents,
+                                  force_semantic = True,
+                                  line_num = 1,
+                                  column_num = 1 )
+
+  response = app.post_json( '/completions',
+                            completion_data,
+                            expect_errors = True ).json
+  assert_that( response,
+               ErrorMatcher( RuntimeError, ERROR_FROM_RACERD_MESSAGE ) )
+
+
+@IsolatedYcmd()
+@patch( 'ycmd.completers.rust.rust_completer._GetRustSysroot',
+        return_value = PathToTestFile( 'rustup-toolchain' ) )
+def GetCompletions_RustupPathHeuristics_test( app, *args ):
+  request_data = BuildRequest( filetype = 'rust' )
+
+  assert_that( app.post_json( '/debug_info', request_data ).json,
+               has_entry( 'completer', has_entry( 'items', has_items(
+                 has_entry( 'value', PathToTestFile( 'rustup-toolchain',
+                                                     'lib',
+                                                     'rustlib',
+                                                     'src',
+                                                     'rust',
+                                                     'src' ) ) ) ) ) )
