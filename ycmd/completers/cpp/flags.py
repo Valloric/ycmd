@@ -391,6 +391,8 @@ def _RemoveUnusedFlags( flags, filename ):
   previous_flag_is_include = False
   previous_flag_starts_with_dash = False
   current_flag_starts_with_dash = False
+  enable_windows_style_flags = False
+  flags_without_preceeding_dash = []
 
   for flag in flags:
     previous_flag_starts_with_dash = current_flag_starts_with_dash
@@ -399,6 +401,9 @@ def _RemoveUnusedFlags( flags, filename ):
     if skip_next:
       skip_next = False
       continue
+
+    if flag == '--driver-mode=cl':
+      enable_windows_style_flags = True
 
     if flag in STATE_FLAGS_TO_SKIP:
       continue
@@ -417,13 +422,25 @@ def _RemoveUnusedFlags( flags, filename ):
     # flags for headers. The returned flags include "foo.cpp" and we need to
     # remove that.
     if ( not current_flag_starts_with_dash and
-          ( not previous_flag_starts_with_dash or
-            ( not previous_flag_is_include and '/' in flag ) ) ):
-      continue
+         ( not previous_flag_starts_with_dash or
+           ( not previous_flag_is_include and '/' in flag ) ) ):
+      flags_without_preceeding_dash.append( flag )
+    else:
+      new_flags.append( flag )
+      previous_flag_is_include = flag in INCLUDE_FLAGS
 
-    new_flags.append( flag )
-    previous_flag_is_include = flag in INCLUDE_FLAGS
+  if enable_windows_style_flags:
+    new_flags += _FilterWindowsFlags( flags_without_preceeding_dash )
+
   return new_flags
+
+
+def _FilterWindowsFlags( flags ):
+  valid_flags = []
+  for flag in flags:
+    if not os.path.exists( os.path.abspath( flag ) ):
+      valid_flags.append( flag )
+  return valid_flags
 
 
 # There are 2 ways to get a development enviornment (as standard) on OS X:
