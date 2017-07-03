@@ -391,6 +391,11 @@ def _RemoveUnusedFlags( flags, filename ):
   previous_flag_is_include = False
   previous_flag_starts_with_dash = False
   current_flag_starts_with_dash = False
+  enable_windows_style_flags = False
+
+  for flag in flags:
+    if flag.startswith( '--driver-mode' ):
+      enable_windows_style_flags = ( flag == '--driver-mode=cl' )
 
   for flag in flags:
     previous_flag_starts_with_dash = current_flag_starts_with_dash
@@ -417,12 +422,14 @@ def _RemoveUnusedFlags( flags, filename ):
     # flags for headers. The returned flags include "foo.cpp" and we need to
     # remove that.
     if ( not current_flag_starts_with_dash and
-          ( not previous_flag_starts_with_dash or
-            ( not previous_flag_is_include and '/' in flag ) ) ):
+         ( not previous_flag_starts_with_dash or
+           ( not previous_flag_is_include and '/' in flag ) ) and
+             ( not enable_windows_style_flags or os.path.exists( flag ) ) ):
       continue
 
     new_flags.append( flag )
     previous_flag_is_include = flag in INCLUDE_FLAGS
+
   return new_flags
 
 
