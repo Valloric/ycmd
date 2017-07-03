@@ -215,6 +215,17 @@ def RemoveUnusedFlags_RemoveFlagWithoutPrecedingDashFlag_test():
   eq_( expected,
        flags._RemoveUnusedFlags( expected[ :1 ] + to_remove + expected[ 1: ],
                                  filename ) )
+  expected = [ 'g++', '-foo', '--driver-mode=cl', '-xc++', '-bar',
+               'include_dir', '/foo' ]
+  to_remove = [ '..' ]
+  filename = 'file'
+
+  eq_( expected,
+       flags._RemoveUnusedFlags( expected + to_remove, filename ) )
+
+  eq_( expected,
+       flags._RemoveUnusedFlags( expected[ :1 ] + to_remove + expected[ 1: ],
+                                 filename ) )
 
 
 def RemoveUnusedFlags_Depfiles_test():
