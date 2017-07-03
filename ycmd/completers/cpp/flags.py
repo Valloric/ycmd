@@ -39,7 +39,8 @@ from ycmd.responses import NoExtraConfDetected
 INCLUDE_FLAGS = [ '-isystem', '-I', '-iquote', '-isysroot', '--sysroot',
                   '-gcc-toolchain', '-include-pch', '-include', '-iframework',
                   '-F', '-imacros', '-idirafter' ]
-PATH_FLAGS =  [ '--sysroot=' ] + INCLUDE_FLAGS
+INCLUDE_FLAGS_WIN_STYLE = [ '/I' ]
+PATH_FLAGS =  [ '--sysroot=' ] + INCLUDE_FLAGS + INCLUDE_FLAGS_WIN_STYLE
 
 # We need to remove --fcolor-diagnostics because it will cause shell escape
 # sequences to show up in editors, which is bad. See Valloric/YouCompleteMe#1421
@@ -48,6 +49,8 @@ STATE_FLAGS_TO_SKIP = set( [ '-c',
                              '-MD',
                              '-MMD',
                              '--fcolor-diagnostics' ] )
+
+STATE_FLAGS_TO_SKIP_WIN_STYLE = set( [ '/c' ] )
 
 # The -M* flags spec:
 #   https://gcc.gnu.org/onlinedocs/gcc-4.9.0/gcc/Preprocessor-Options.html
@@ -145,7 +148,8 @@ class Flags( object ):
 
     sanitized_flags = PrepareFlagsForClang( flags,
                                             filename,
-                                            add_extra_clang_flags )
+                                            add_extra_clang_flags,
+                                            _ShouldAllowWinStyleFlags( flags ) )
 
     if results.get( 'do_cache', True ):
       self.flags_for_file[ filename ] = sanitized_flags
@@ -238,6 +242,15 @@ def _ExtractFlagsList( flags_for_file_output ):
   return [ ToUnicode( x ) for x in flags_for_file_output[ 'flags' ] ]
 
 
+def _ShouldAllowWinStyleFlags( flags ):
+  enable_windows_style_flags = False
+  for flag in flags:
+    if flag.startswith( '--driver-mode' ):
+      enable_windows_style_flags = ( flag == '--driver-mode=cl' )
+
+  return enable_windows_style_flags
+
+
 def _CallExtraConfFlagsForFile( module, filename, client_data ):
   # We want to ensure we pass a native py2 `str` on py2 and a native py3 `str`
   # (unicode) object on py3. That's the API we provide.
@@ -273,10 +286,13 @@ def _SysRootSpecifedIn( flags ):
   return False
 
 
-def PrepareFlagsForClang( flags, filename, add_extra_clang_flags = True ):
-  flags = _AddLanguageFlagWhenAppropriate( flags )
+def PrepareFlagsForClang( flags,
+                          filename,
+                          add_extra_clang_flags = True,
+                          enable_windows_style_flags = False ):
+  flags = _AddLanguageFlagWhenAppropriate( flags, enable_windows_style_flags )
   flags = _RemoveXclangFlags( flags )
-  flags = _RemoveUnusedFlags( flags, filename )
+  flags = _RemoveUnusedFlags( flags, filename, enable_windows_style_flags )
   if add_extra_clang_flags:
     flags = _EnableTypoCorrection( flags )
 
@@ -306,18 +322,21 @@ def _RemoveXclangFlags( flags ):
   return sanitized_flags
 
 
-def _RemoveFlagsPrecedingCompiler( flags ):
-  """Assuming that the flag just before the first flag (which starts with a
-  dash) is the compiler path, removes all flags preceding it."""
+def _RemoveFlagsPrecedingCompiler( flags, enable_windows_style_flags ):
+  """Assuming that the flag just before the first flag (looks like a flag,
+  not like a file path) is the compiler path, removes all flags preceding it."""
 
   for index, flag in enumerate( flags ):
-    if flag.startswith( '-' ):
+    if ( flag.startswith( '-' ) or
+         ( enable_windows_style_flags and
+           flag.startswith( '/' ) and
+           not os.path.exists( flag ) ) ):
       return ( flags[ index - 1: ] if index > 1 else
                flags )
   return flags[ :-1 ]
 
 
-def _AddLanguageFlagWhenAppropriate( flags ):
+def _AddLanguageFlagWhenAppropriate( flags, enable_windows_style_flags ):
   """When flags come from the compile_commands.json file, the flag preceding the
   first flag starting with a dash is usually the path to the compiler that
   should be invoked. Since LibClang does not deduce the language from the
@@ -326,18 +345,36 @@ def _AddLanguageFlagWhenAppropriate( flags ):
   the file extension. This handles the case where the .h extension is used for
   C++ headers."""
 
-  flags = _RemoveFlagsPrecedingCompiler( flags )
+  flags = _RemoveFlagsPrecedingCompiler( flags, enable_windows_style_flags )
 
-  # First flag is now the compiler path or a flag starting with a dash.
+  # First flag is now the compiler path, a flag starting with a dash or
+  # a flag starting with a forward slash if enable_windows_style_flags is True.
   first_flag = flags[ 0 ]
 
+  # NOTE: This is intentionally NOT checking for enable_windows_style_flags.
+  #
+  # Because of _RemoveFlagsPrecedingCompiler called above, irrelevant of
+  # enable_windows_style_flags. the first flag is either the compiler
+  # (path or executable), a Windows style flag or starts with a dash.
+  #
+  # If it doesn't start with a dash, it is either an absolute path,
+  # a Windows style flag or a C++ compiler executable from $PATH.
+  #   If it starts with a forward slash the falg can either be an absolute
+  #   flag or a Windows style flag.
+  #     If it matches the regex, it is safe to assume the flag is a compiler
+  #     path.
+  #     If it does not match the regex, it could still be a Windows style
+  #     path or an absolute path. - This is determined in _RemoveUnusedFlags()
+  #     and cleaned properly.
+  #   If the flag starts with anything else (i.e. not a '-' or a '/'), the flag
+  #   is a stray file path and shall be gotten rid of in _RemoveUnusedFlags().
   if ( not first_flag.startswith( '-' ) and
        CPP_COMPILER_REGEX.search( first_flag ) ):
     return [ first_flag, '-x', 'c++' ] + flags[ 1: ]
   return flags
 
 
-def _RemoveUnusedFlags( flags, filename ):
+def _RemoveUnusedFlags( flags, filename, enable_windows_style_flags ):
   """Given an iterable object that produces strings (flags for Clang), removes
   the '-c' and '-o' options that Clang does not like to see when it's producing
   completions for a file. Same for '-MD' etc.
@@ -359,15 +396,22 @@ def _RemoveUnusedFlags( flags, filename ):
   previous_flag_starts_with_dash = False
   current_flag_starts_with_dash = False
 
+  # Windows style flags
+  current_flag_starts_with_slash = False
+
   for flag in flags:
     previous_flag_starts_with_dash = current_flag_starts_with_dash
     current_flag_starts_with_dash = flag.startswith( '-' )
+
+    current_flag_starts_with_slash = flag.startswith( '/' )
 
     if skip_next:
       skip_next = False
       continue
 
-    if flag in STATE_FLAGS_TO_SKIP:
+    if ( flag in STATE_FLAGS_TO_SKIP or
+         ( enable_windows_style_flags and
+           flag in STATE_FLAGS_TO_SKIP_WIN_STYLE ) ):
       continue
 
     if flag in FILE_FLAGS_TO_SKIP:
@@ -383,13 +427,18 @@ def _RemoveUnusedFlags( flags, filename ):
     # "foo.cpp" when we are compiling "foo.h" because the comp db doesn't have
     # flags for headers. The returned flags include "foo.cpp" and we need to
     # remove that.
-    if ( not current_flag_starts_with_dash and
-          ( not previous_flag_starts_with_dash or
-            ( not previous_flag_is_include and '/' in flag ) ) ):
+    if ( not ( current_flag_starts_with_dash or
+               ( enable_windows_style_flags and
+                 current_flag_starts_with_slash ) ) and
+         ( not previous_flag_starts_with_dash or
+           ( not previous_flag_is_include and '/' in flag ) ) ):
       continue
 
     new_flags.append( flag )
-    previous_flag_is_include = flag in INCLUDE_FLAGS
+    previous_flag_is_include = ( flag in INCLUDE_FLAGS or
+                                 ( enable_windows_style_flags and
+                                   flag in INCLUDE_FLAGS_WIN_STYLE ) )
+
   return new_flags
 
 
@@ -541,6 +590,7 @@ def _MakeRelativePathsInFlagsAbsolute( flags, working_directory ):
         new_flag = os.path.join( working_directory, flag )
       new_flag = os.path.normpath( new_flag )
     else:
+      # TODO: Should we care about `/I` when enable_windows_style_flags
       for path_flag in PATH_FLAGS:
         # Single dash argument alone, e.g. -isysroot <path>
         if flag == path_flag:
