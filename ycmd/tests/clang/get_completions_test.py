@@ -508,6 +508,58 @@ def GetCompletions_Include_ClientDataGivenToExtraConf_test( app ):
   )
 
 
+@SharedYcmd
+def GetCompletions_ClangCLDriver_SimpleCompletion_test( app ):
+  RunTest( app, {
+    'description': 'basic completion with --driver-mode=cl',
+    'extra_conf': [ 'driver_mode_cl', '.ycm_extra_conf.py' ],
+    'request': {
+      'filetype': 'cpp',
+      'filepath': PathToTestFile( 'driver_mode_cl', 'driver_mode_cl.cpp' ),
+      'line_num': 8,
+      'column_num': 18,
+      'extra_conf_data': { '&filetype': 'cpp' },
+      'force_semantic': True,
+    },
+    'expect': {
+      'response': requests.codes.ok,
+      'data': has_entries( {
+        'completion_start_column': 3,
+        'completions': contains_inanyorder(
+          CompletionEntryMatcher( 'driver_mode_cl_include_func', 'void' ),
+          CompletionEntryMatcher( 'driver_mode_cl_include_int', 'int' ),
+        ),
+        'errors': empty(),
+      } )
+    }
+  } )
+
+
+@SharedYcmd
+def GetCompletions_ClangCLDriver_IncludeStatementCandidate_test( app ):
+  RunTest( app, {
+    'description': 'Completion inside include statement with CL driver',
+    'extra_conf': [ 'driver_mode_cl', '.ycm_extra_conf.py' ],
+    'request': {
+      'filetype': 'cpp',
+      'filepath': PathToTestFile( 'driver_mode_cl', 'driver_mode_cl.cpp' ),
+      'line_num': 1,
+      'column_num': 34,
+      'extra_conf_data': { '&filetype': 'cpp' },
+    },
+    'expect': {
+      'response': requests.codes.ok,
+      'data': has_entries( {
+        'completion_start_column': 11,
+        'completions': contains_inanyorder(
+          CompletionEntryMatcher( 'driver_mode_cl_include.h', '[File]' ),
+        ),
+        'errors': empty(),
+      } )
+    }
+  } )
+
+
 @ExpectedFailure( 'Filtering and sorting does not support candidates with '
                   'non-ASCII characters.',
                   contains_string( "value for 'completions' no item matches" ) )
