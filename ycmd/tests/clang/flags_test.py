@@ -26,7 +26,8 @@ import os
 
 from nose.tools import eq_, ok_
 from ycmd.completers.cpp import flags
-from mock import patch, Mock
+from mock import patch, MagicMock, Mock
+from types import ModuleType
 from ycmd.tests.test_utils import MacOnly
 from ycmd.responses import NoExtraConfDetected
 from ycmd.tests.clang import TemporaryClangProject, TemporaryClangTestDir
@@ -116,6 +117,45 @@ def FlagsForFile_FlagsCachedWhenDoCacheIsTrue_test( *args ):
               return_value = results ):
     flags_list = flags_object.FlagsForFile( '/foo', False )
     assert_that( flags_list, contains( '-x', 'c' ) )
+
+
+def FlagsForFile_FlagsRelativeToExtraConfDirectory_test( *args ):
+  flags_object = flags.Flags()
+
+  results = {
+    'flags': [ '-x', 'c', '-I', 'header' ]
+  }
+
+  mocked_module = MagicMock( spec = ModuleType )
+  mocked_module.__file__ = '/project_root/.ycm_extra_conf.py'
+  mocked_module.FlagsForFile = Mock( return_value = results )
+
+  with patch( 'ycmd.extra_conf_store.ModuleForSourceFile',
+              return_value = mocked_module ):
+    flags_list = flags_object.FlagsForFile( '/foo', False )
+    assert_that( flags_list,
+                 contains( '-x', 'c',
+                           '-I', os.path.normpath( '/project_root/header' ) ) )
+
+
+def FlagsForFile_FlagsRelativeToWorkingDirectory_test( *args ):
+  flags_object = flags.Flags()
+
+  results = {
+    'flags': [ '-x', 'c', '-I', 'header' ],
+    'working_directory': '/working_dir/'
+  }
+
+  mocked_module = MagicMock( spec = ModuleType )
+  mocked_module.__file__ = '/project_root/.ycm_extra_conf.py'
+  mocked_module.FlagsForFile = Mock( return_value = results )
+
+  with patch( 'ycmd.extra_conf_store.ModuleForSourceFile',
+              return_value = mocked_module ):
+    flags_list = flags_object.FlagsForFile( '/foo', False )
+    assert_that( flags_list,
+                 contains( '-x', 'c',
+                           '-I', os.path.normpath( '/working_dir/header' ) ) )
 
 
 def RemoveUnusedFlags_Passthrough_test():
