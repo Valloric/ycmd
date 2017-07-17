@@ -220,6 +220,10 @@ The return value must be one of the following:
 
   - `flags`: (mandatory) a list of compiler flags.
 
+  - `working_directory': (optional) the directory used to convert relative paths
+    in the list of flags to absolute. Defaults to the directory containing the
+    `.ycm_extra_conf.py` file.
+
   - `do_cache`: (optional) a boolean indicating whether or not the result of
     this call (i.e. the list of flags) should be cached for this file name.
     Defaults to `True`. If unsure, the default is almost always correct.
