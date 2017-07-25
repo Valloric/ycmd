@@ -49,12 +49,15 @@ LANGUAGE_SERVER_HOME = os.path.join( os.path.dirname( __file__ ),
 # TODO: Java 8 required (validate this)
 PATH_TO_JAVA = utils.PathToFirstExistingExecutable( [ 'java' ] )
 
-WORKSPACE_PATH = os.path.join( os.path.dirname( __file__ ),
-                               '..',
-                               '..',
-                               '..',
-                               'third_party',
-                               'eclipse.jdt.ls-workspace' )
+# TODO: If there are multiple instances of ycmd running, they will _share_ this
+# path. I don't think (from memory) that eclipse actually supports that and
+# probably aborts
+WORKSPACE_PATH_BASE = os.path.join( os.path.dirname( __file__ ),
+                                    '..',
+                                    '..',
+                                    '..',
+                                    'third_party',
+                                    'eclipse.jdt.ls-workspace' )
 
 
 def ShouldEnableJavaCompleter():
@@ -111,6 +114,9 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
       self._server = None
       self._server_handle = None
       self._server_stderr = None
+      self._workspace_path = os.path.join(
+        os.path.abspath( WORKSPACE_PATH_BASE ),
+        str( os.getpid() ) )
 
       self._Reset()
       self._StartServer()
@@ -132,7 +138,10 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
           name = "Java Language Server",
           handle = self._server_handle,
           executable = LANGUAGE_SERVER_HOME,
-          logfiles = [ self._server_stderr ],
+          logfiles = [
+            self._server_stderr,
+            os.path.join( self._workspace_path, '.metadata', '.log' )
+          ],
         )
       ] )
 
@@ -159,6 +168,12 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
 
     self._server_handle = None
 
+    try:
+      os.rmdir( self._workspace_path )
+    except OSError:
+      # We actually just ignore the error because on startup it won't exist
+      pass
+
     # TODO: close the sockets in the server
     self._server = None
 
@@ -172,16 +187,13 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
         '-Declipse.application=org.eclipse.jdt.ls.core.id1',
         '-Dosgi.bundles.defaultStartLevel=4',
         '-Declipse.product=org.eclipse.jdt.ls.core.product',
-        '-Dlog.protocol=true',
         '-Dlog.level=ALL',
-        '-noverify',
-        '-Xmx1G',
         '-jar',
         _PathToLauncherJar(),
         '-configuration',
         _LauncherConfiguration(),
         '-data',
-        os.path.abspath( WORKSPACE_PATH ),
+        self._workspace_path
       ]
 
       _logger.debug( 'Starting java-server with the following command: '
