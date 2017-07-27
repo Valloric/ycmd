@@ -533,23 +533,38 @@ class LanguageServerCompleter( Completer ):
     # on the same line (and containing) the originally requested position
     if 'textEdit' in item and item[ 'textEdit' ]:
       new_range = item[ 'textEdit' ][ 'range' ]
+      additional_text_edits = []
+
       if ( new_range[ 'start' ][ 'line' ] != new_range[ 'end' ][ 'line' ] or
            new_range[ 'start' ][ 'line' ] + 1 != request_data[ 'line_num' ] ):
         # We can't support completions that span lines. The protocol forbids it
         raise RuntimeError( 'Invalid textEdit supplied. Must be on a single '
                             'line' )
+      elif '\n' in item[ 'textEdit' ][ 'newText' ]:
+        # The insertion text contains newlines. This is tricky: most clients
+        # (i.e. Vim) won't support this. So we cheat. Set the insertable text to
+        # the simple text, and put and additionalTextEdit instead. We manipulate
+        # the real textEdit so that it replaces the inserted text with the real
+        # textEdit.
+        insertion_text = item[ 'insertText' ]
+
+        fixup_textedit = dict( item[ 'textEdit' ] )
+        fixup_textedit[ 'range' ][ 'end' ][ 'character' ] = (
+          fixup_textedit[ 'range' ][ 'end' ][ 'character' ] + len(
+            insertion_text ) )
+        additional_text_edits.append( fixup_textedit )
       else:
         request_data[ 'start_codepoint' ] = (
           new_range[ 'start' ][ 'character' ] + 1 )
         insertion_text = item[ 'textEdit' ][ 'newText' ]
 
-      additionalTextEdits = item.get( 'additionalTextEdits', None )
+      additional_text_edits.extend( item.get( 'additionalTextEdits', [] ) )
 
-      if additionalTextEdits:
+      if additional_text_edits:
         chunks = [ responses.FixItChunk( e[ 'newText' ],
                                          BuildRange( request_data[ 'filepath' ],
                                                      e[ 'range' ] ) )
-                   for e in additionalTextEdits ]
+                   for e in additional_text_edits ]
 
         fixits = responses.BuildFixItResponse(
           [ responses.FixIt( chunks[ 0].range.start_, chunks ) ] )
