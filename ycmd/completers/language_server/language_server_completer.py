@@ -64,6 +64,10 @@ class Response( object ):
     return self._message
 
 
+class LanguageServerConnectionTimeout( Exception ):
+  pass
+
+
 class LanguageServerConnection( object ):
   """
     Abstract language server communication object.
@@ -113,10 +117,11 @@ class LanguageServerConnection( object ):
 
 
   def TryServerConnection( self ):
-    self._connection_event.wait( timeout = 10 )
+    self._connection_event.wait( timeout = 5 )
 
     if not self._connection_event.isSet():
-      raise RuntimeError( 'Timed out waiting for server to connect' )
+      raise LanguageServerConnectionTimeout(
+        'Timed out waiting for server to connect' )
 
 
   def _run_loop( self ):
@@ -292,6 +297,8 @@ class LanguageServerCompleter( Completer ):
 
 
   def ComputeCandidatesInner( self, request_data ):
+    if not self.ServerIsHealthy():
+      return None
 
     # Need to update the file contents. TODO: so inefficient (and doesn't work
     # for the eclipse based completer for some reason - possibly because it
@@ -367,7 +374,8 @@ class LanguageServerCompleter( Completer ):
 
 
   def OnFileReadyToParse( self, request_data ):
-    self._RefreshFiles( request_data )
+    if self.ServerIsReady():
+      self._RefreshFiles( request_data )
 
     def BuildLocation( filename, loc ):
       # TODO: Look at tern complete, requires file contents to convert codepoint
@@ -410,6 +418,10 @@ class LanguageServerCompleter( Completer ):
     latest_diagnostics = None
     try:
       while True:
+        if not self.GetServer():
+          # The server isn't running or something. Don't re-poll.
+          return False
+
         notification = self._server._notifications.get_nowait()
         _logger.debug( 'notification {0}: {1}'.format(
           notification[ 'method' ],

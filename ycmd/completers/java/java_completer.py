@@ -61,13 +61,17 @@ WORKSPACE_PATH_BASE = os.path.join( os.path.dirname( __file__ ),
 
 
 def ShouldEnableJavaCompleter():
-  _logger.info( 'Looking for java lonaguage server' )
+  _logger.info( 'Looking for java language server (eclipse.jdt.ls)' )
   if not PATH_TO_JAVA:
     _logger.warning( "Not enabling java completion: Couldn't find java" )
     return False
 
   if not os.path.exists( LANGUAGE_SERVER_HOME ):
     _logger.warning( 'Not using java completion: not installed' )
+    return False
+
+  if not _PathToLauncherJar():
+    _logger.warning( 'Not using java completion: jdt.ls is not built' )
     return False
 
   # TODO: Check java version
@@ -77,7 +81,8 @@ def ShouldEnableJavaCompleter():
 
 def _PathToLauncherJar():
   # The file name changes between version of eclipse, so we use a glob as
-  # recommended by the language server developers
+  # recommended by the language server developers. There should only be one.
+  # TODO: sort ?
   p = glob.glob(
     os.path.abspath(
       os.path.join(
@@ -86,6 +91,9 @@ def _PathToLauncherJar():
         'org.eclipse.equinox.launcher_*.jar' ) ) )
 
   _logger.debug( 'Found launchers: {0}'.format( p ) )
+
+  if not p:
+    return None
 
   return p[ 0 ]
 
@@ -162,6 +170,13 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
     return True
 
 
+  def ShouldUseNowInner( self, request_data ):
+    if not self.ServerIsReady():
+      return False
+
+    return super( JavaCompleter, self ).ShouldUseNowInner( request_data )
+
+
   def _Reset( self ):
     if self._server_handle:
       utils.CloseStandardStreams( self._server_handle )
@@ -230,9 +245,13 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
       self._server.start()
 
       # Awaiting connection
-      # spinlock
-      # TODO: timeout
-      self._server.TryServerConnection()
+      try:
+        self._server.TryServerConnection()
+      except language_server_completer.LanguageServerConnectionTimeout:
+        _logger.warn( 'Java language server failed to start, or did not '
+                      'connect successfully' )
+        self._StopServer()
+        return
 
     self._WaitForInitiliase()
 
