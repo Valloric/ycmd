@@ -363,36 +363,50 @@ class LanguageServerCompleter( Completer ):
         response = self.GetServer().GetResponse( resolve_id, resolve )
         item = response[ 'result' ]
 
+      # Note Vim only displays the first character, so we map them to the
+      # documented Vim kinds:
+      #
+      #   v variable
+      #   f function or method
+      #   m member of a struct or class
+      #   t typedef
+      #   d #define or macro
+      #
+      # FIXME: I'm not happy with this completely. We're losing useful info,
+      # perhaps unnecessarily.
       ITEM_KIND = [
         None,  # 1-based
-        'Text',
-        'Method',
-        'Function',
-        'Constructor',
-        'Field',
-        'Variable',
-        'Class',
-        'Interface',
-        'Module',
-        'Property',
-        'Unit',
-        'Value',
-        'Enum',
-        'Keyword',
-        'Snippet',
-        'Color',
-        'File',
-        'Reference',
+        'd',   # 'Text',
+        'f',   # 'Method',
+        'f',   # 'Function',
+        'f',   # 'Constructor',
+        'm',   # 'Field',
+        'm',   # 'Variable',
+        't',   # 'Class',
+        't',   # 'Interface',
+        't',   # 'Module',
+        't',   # 'Property',
+        't',   # 'Unit',
+        'd',   # 'Value',
+        't',   # 'Enum',
+        'd',   # 'Keyword',
+        'd',   # 'Snippet',
+        'd',   # 'Color',
+        'd',   # 'File',
+        'd',   # 'Reference',
       ]
 
       ( insertion_text, fixits ) = self._GetInsertionText( request_data, item )
+
       return responses.BuildCompletionData(
         insertion_text,
-        None,
-        None,
-        item[ 'label' ],
-        ITEM_KIND[ item.get( 'kind', 0 ) ],
-        fixits )
+        extra_menu_info = item.get( 'detail', None ),
+        detailed_info = ( item[ 'label' ] +
+                          '\n\n' +
+                          item.get( 'documentation', '' ) ),
+        menu_text = item[ 'label' ],
+        kind = ITEM_KIND[ item.get( 'kind', 0 ) ],
+        extra_data = fixits )
 
     if isinstance( response[ 'result' ], list ):
       items = response[ 'result' ]
@@ -529,6 +543,12 @@ class LanguageServerCompleter( Completer ):
 
     fixits = None
 
+    # We will alwyas have one of insertText or label
+    if 'insertText' in item and item[ 'insertText' ]:
+      insertion_text = item[ 'insertText' ]
+    else:
+      insertion_text = item[ 'label' ]
+
     # Per the protocol, textEdit takes precedence over insertText, and must be
     # on the same line (and containing) the originally requested position
     if 'textEdit' in item and item[ 'textEdit' ]:
@@ -546,8 +566,6 @@ class LanguageServerCompleter( Completer ):
         # the simple text, and put and additionalTextEdit instead. We manipulate
         # the real textEdit so that it replaces the inserted text with the real
         # textEdit.
-        insertion_text = item[ 'insertText' ]
-
         fixup_textedit = dict( item[ 'textEdit' ] )
         fixup_textedit[ 'range' ][ 'end' ][ 'character' ] = (
           fixup_textedit[ 'range' ][ 'end' ][ 'character' ] + len(
@@ -569,10 +587,6 @@ class LanguageServerCompleter( Completer ):
         fixits = responses.BuildFixItResponse(
           [ responses.FixIt( chunks[ 0].range.start_, chunks ) ] )
 
-    elif 'insertText' in item and item[ 'insertText' ]:
-      insertion_text = item[ 'insertText' ]
-    else:
-      insertion_text = item[ 'label' ]
 
     if 'insertTextFormat' in item and item[ 'insertTextFormat' ]:
       text_format = INSERT_TEXT_FORMAT[ item[ 'insertTextFormat' ] ]
