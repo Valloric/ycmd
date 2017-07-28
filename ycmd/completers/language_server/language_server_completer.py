@@ -28,7 +28,6 @@ import threading
 import os
 import queue
 import json
-import re
 
 from ycmd.completers.completer import Completer
 # from ycmd.completers.completer_utils import GetFileContents
@@ -593,13 +592,9 @@ class LanguageServerCompleter( Completer ):
     else:
       text_format = 'PlainText'
 
-    if text_format == 'Snippet':
-      # TODO: This is not the snippet format! This is the format that was
-      # secretly supported in vscode, but has been superseded by a real format
-      # which is more like SnipMate
-      #
-      # FIXME!
-      insertion_text = re.sub( '{{[^}]*}}', '', insertion_text )
+    if text_format != 'PlainText':
+      raise ValueError( 'Snippet completions are not supported and should not'
+                        ' be returned by the language server.' )
 
     return ( insertion_text, fixits )
 
