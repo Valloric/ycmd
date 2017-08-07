@@ -21,11 +21,11 @@ from __future__ import division
 from __future__ import absolute_import
 from builtins import *  # noqa
 from future import standard_library
+from future.utils import iteritems, iterkeys
 standard_library.install_aliases()
 
 import logging
 import threading
-import json
 import os
 import queue
 
@@ -49,8 +49,8 @@ class Response( object ):
     self._event.set()
 
 
-  def AwaitResponse( self ):
-    self._event.wait( timeout = 1 )
+  def AwaitResponse( self, timeout ):
+    self._event.wait( timeout )
 
     if not self._event.isSet():
       raise RuntimeError( 'Response Timeout' )
@@ -96,23 +96,22 @@ class LanguageServerConnection( object ):
       return str( self._lastId )
 
 
-  def GetResponse( self, request_id, message ):
+  def GetResponse( self, request_id, message, timeout=1 ):
     response = Response()
 
     with self._responseMutex:
       assert request_id not in self._responses
       self._responses[ request_id ] = response
 
-    _logger.debug( 'TX: Sending message {0}'.format(
-      json.dumps( message, indent=2 ) ) )
+    _logger.debug( 'TX: Sending message {0}'.format( message ) )
 
     self._Write( message )
-    return response.AwaitResponse()
+    return response.AwaitResponse( timeout )
 
 
   def SendNotification( self, message ):
-    _logger.debug( 'TX: Sending Notification {0}'.format(
-      json.dumps( message, indent=2 ) ) )
+    _logger.debug( 'TX: Sending Notification {0}'.format( message ) )
+
     self._Write( message )
 
 
@@ -146,9 +145,9 @@ class LanguageServerConnection( object ):
         data = self._Read()
 
       while read_bytes < len( data ):
-        if data[ read_bytes ] == bytes( b'\n' ):
+        if utils.ToUnicode( data[ read_bytes: ] )[ 0 ] == '\n':
           line = prefix + data[ last_line : read_bytes ].strip()
-          prefix = ''
+          prefix = bytes( b'' )
           last_line = read_bytes
 
           if not line.strip():
@@ -165,7 +164,7 @@ class LanguageServerConnection( object ):
 
       if not headers_complete:
         prefix = data[ last_line : ]
-        data = ''
+        data = bytes( b'' )
 
 
     return ( data, read_bytes, headers )
@@ -205,6 +204,7 @@ class LanguageServerConnection( object ):
         content_read += len( content )
         read_bytes = content_to_read
 
+      # lsapi will convert content to unicode
       self._DespatchMessage( lsapi.Parse( content ) )
 
       # We only consumed len( content ) of data. If there is more, we start
@@ -447,7 +447,7 @@ class LanguageServerCompleter( Completer ):
 
   def _RefreshFiles( self, request_data ):
     with self._fileStateMutex:
-      for file_name, file_data in request_data[ 'file_data' ].iteritems():
+      for file_name, file_data in iteritems( request_data[ 'file_data' ] ):
         file_state = 'New'
         if file_name in self._serverFileState:
           file_state = self._serverFileState[ file_name ]
@@ -471,7 +471,7 @@ class LanguageServerCompleter( Completer ):
         self._serverFileState[ file_name ] = 'Open'
         self.GetServer().SendNotification( msg )
 
-      for file_name in self._serverFileState.iterkeys():
+      for file_name in iterkeys(self._serverFileState ):
         if file_name not in request_data[ 'file_data' ]:
           msg = lsapi.DidCloseTextDocument( file_name )
           del self._serverFileState[ file_name ]
@@ -482,7 +482,9 @@ class LanguageServerCompleter( Completer ):
     request_id = self.GetServer().NextRequestId()
 
     msg = lsapi.Initialise( request_id )
-    response = self.GetServer().GetResponse( request_id, msg )
+    response = self.GetServer().GetResponse( request_id,
+                                             msg,
+                                             timeout = 3 )
 
     self._server_capabilities = response[ 'result' ][ 'capabilities' ]
 

@@ -29,7 +29,7 @@ from urllib import parse as urlparse
 
 from collections import defaultdict
 
-from ycmd.utils import ToBytes
+from ycmd.utils import ToBytes, ToUnicode
 
 
 # TODO: Need a whole document management system!
@@ -129,4 +129,4 @@ def _Message( message ):
 
 
 def Parse( data ):
-  return json.loads( data )
+  return json.loads( ToUnicode( data ) )
