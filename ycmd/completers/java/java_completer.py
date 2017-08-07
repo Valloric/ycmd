@@ -298,10 +298,12 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
 
       # TODO: We should be able to determine the set of things available from
       # the capabilities supplied on initialise
-      'GetType':       (lambda self, request_data, args:
-                            self._GetType( request_data ) ),
+      'GetType': (lambda self, request_data, args:
+                    self._GetType( request_data ) ),
       'GoToDeclaration': (lambda self, request_data, args:
                             self._GoToDeclaration( request_data ) ),
+      'FixIt': (lambda self, request_data, args:
+                  self._CodeAction( request_data, args ) ),
     }
 
 
@@ -314,6 +316,16 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
 
       return responses.BuildDisplayMessageResponse(
         'Language server status: {0}'.format( message ) )
+
+    return None
+
+
+  def HandleServerCommand( self, request_data, command ):
+    if command[ 'command' ] == "java.apply.workspaceEdit":
+      return language_server_completer.WorkspaceEditToFixIt(
+        request_data,
+        command[ 'arguments' ][ 0 ],
+        text = command[ 'title' ] )
 
     return None
 
