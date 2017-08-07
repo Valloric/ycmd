@@ -127,7 +127,11 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
         str( os.getpid() ) )
 
       self._Reset()
-      self._StartServer()
+      try :
+        self._StartServer()
+      except:
+        _logger.exception( "The java language server failed to start." )
+        self._StopServer()
 
 
   def GetServer( self ):
