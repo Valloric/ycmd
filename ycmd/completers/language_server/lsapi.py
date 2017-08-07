@@ -118,6 +118,18 @@ def Definition( request_id, request_data ):
                        BuildTextDocumentPositionParams( request_data ) )
 
 
+def CodeAction( request_id, request_data, best_match_range, diagnostics ):
+  return BuildRequest( request_id, 'textDocument/codeAction', {
+    'textDocument': {
+      'uri': _MakeUriForFile( request_data[ 'filepath' ] ),
+    },
+    'range': best_match_range,
+    'context': {
+      'diagnostics': diagnostics,
+    },
+  } )
+
+
 def BuildTextDocumentPositionParams( request_data ):
   return {
     'textDocument': {

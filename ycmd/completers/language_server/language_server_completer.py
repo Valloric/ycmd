@@ -23,11 +23,12 @@ from __future__ import absolute_import
 from builtins import *  # noqa
 
 from future.utils import iteritems, iterkeys
+import abc
+import collections
 import logging
-import threading
 import os
 import queue
-import json
+import threading
 
 from ycmd.completers.completer import Completer
 # from ycmd.completers.completer_utils import GetFileContents
@@ -311,7 +312,7 @@ class LanguageServerCompleter( Completer ):
 
     self._serverFileState = {}
     self._fileStateMutex = threading.Lock()
-    self._server = LanguageServerConnection()
+    self._latest_diagnostics = collections.defaultdict( list )
 
 
   def GetServer( sefl ):
@@ -493,6 +494,7 @@ class LanguageServerCompleter( Completer ):
       # _any_ publishDiagnostics message was pending.
       params = notification[ 'params' ]
       uri = params[ 'uri' ]
+      self._latest_diagnostics[ uri ] = params[ 'diagnostics' ]
 
       # TODO(Ben): Does realpath break symlinks?
       # e.g. we putting symlinks in the testdata for the source does not work
@@ -627,6 +629,111 @@ class LanguageServerCompleter( Completer ):
       )
 
 
+  def _CodeAction( self, request_data, args ):
+    # The best match range is the widest range
+    best_match_range = {
+      'start': {
+        'line': 99999999,
+        'character': 99999999,
+      },
+      'end': {
+        'line': -1,
+        'character': -1,
+      }
+    }
+
+    def WithinRange( diag ):
+      line_num_ls = request_data[ 'line_num' ] - 1
+      column_codepoint_ls = request_data[ 'column_codepoint' ] - 1
+
+      r = diag[ 'range' ]
+
+      start = r[ 'start' ]
+      end = r[ 'end' ]
+
+      if start[ 'line' ] > line_num_ls or (
+          start[ 'line' ] == line_num_ls and
+          start[ 'character' ] > column_codepoint_ls ):
+        # Range starts before current line or before cursor position on same
+        # line
+        return False
+
+      # So we're after the start of the range, make sure we've before the end
+      if end[ 'line' ] < line_num_ls or (
+           end[ 'line' ] == line_num_ls and
+           end[ 'character' ] < column_codepoint_ls ):
+        # Range ends after current line or after cursor position on same
+        # line
+        return False
+
+      bmr_start = best_match_range[ 'start' ]
+      bmr_end = best_match_range[ 'end' ]
+
+      # The same logic as above, but generates the widest possible
+      # range covering the set of diagnostics
+      if start[ 'line' ] < bmr_start[ 'line' ] or (
+          start[ 'line' ] == bmr_start[ 'line' ] and
+          start[ 'character' ] < bmr_start[ 'character' ] ):
+        best_match_range[ 'start' ] = start
+
+      if end[ 'line' ] > end[ 'line' ] or (
+           end[ 'line' ] == bmr_end[ 'line' ] and
+           end[ 'character' ] > bmr_end[ 'character' ] ):
+        best_match_range[ 'end' ] = end
+
+      return True
+
+    # TODO: Do we need to do this? I mean, could we just send the whole current
+    # line as the range, as this is effectively what we do for other completers
+    #
+    # TODO: HACK: using internal lsapi method
+    matched_diagnostics = [
+      d for d in self._latest_diagnostics[
+        lsapi._MakeUriForFile( request_data[ 'filepath' ] )
+      ] if WithinRange( d )
+    ]
+
+    request_id = self.GetServer().NextRequestId()
+    if matched_diagnostics:
+      code_actions = self.GetServer().GetResponse(
+        request_id,
+        lsapi.CodeAction( request_id,
+                          request_data,
+                          best_match_range,
+                          matched_diagnostics) )
+
+    else:
+      code_actions = self.GetServer().GetResponse(
+        request_id,
+        lsapi.CodeAction(
+          request_id,
+          request_data,
+          {
+            'start': {
+              'line': request_data[ 'line_num' ] + 1,
+              'character': request_data[ 'column_codepoint' ] + 1,
+            },
+            'end': {
+              'line': request_data[ 'line_num' ] + 1,
+              'character': request_data[ 'column_codepoint' ] + 1,
+            }
+          },
+          [] ) )
+
+    response = [ self.HandleServerCommand( request_data, c )
+                 for c in code_actions[ 'result' ] ]
+
+    # Else, show a list of actions to the user to select which one to apply.
+    # This is (probably) a more common workflow for "code action".
+    return responses.BuildFixItResponse( [ r for r in response if r ] )
+
+
+  @abc.abstractmethod
+  def HandleServerCommand( self, request_data, command ):
+    _logger.debug( 'What is going on?' )
+    return None
+
+
   def _GetInsertionText( self, request_data, item ):
     # TODO: We probably need to implement this and (at least) strip out the
     # snippet parts?
@@ -731,3 +838,24 @@ def BuildDiagnostic( filename, diag ):
     location_extent = r,
     text = diag[ 'message' ],
     kind = SEVERITY_TO_YCM_SEVERITY[ SEVERITY[ diag[ 'severity' ] ] ] ) )
+
+
+def WorkspaceEditToFixIt( request_data, workspace_edit, text='' ):
+  if 'changes' not in workspace_edit:
+    return None
+
+  chunks = list()
+  for uri in iterkeys( workspace_edit[ 'changes' ] ):
+    filepath = lsapi.UriToFilePath( uri )
+    chunks.extend( [
+      responses.FixItChunk( change[ 'newText' ],
+                            BuildRange( filepath, change[ 'range' ] ) )
+      for change in workspace_edit[ 'changes' ][ uri ]
+    ] )
+
+  return responses.FixIt(
+    responses.Location( request_data[ 'line_num' ],
+                        request_data[ 'column_num' ],
+                        request_data[ 'filepath' ] ),
+    chunks,
+    text )
