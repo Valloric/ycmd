@@ -127,24 +127,12 @@ if ( USE_CLANG_COMPLETER AND
     execute_process( COMMAND tar -xzf ${CLANG_FILENAME} )
   endif()
 
-  # We need to set PATH_TO_LLVM_ROOT. To do that, we first have to find the
-  # folder name the archive produced. It isn't the archive base name.
-  # On Windows, the find command is not available so we directly set the path.
-  if ( WIN32 )
-    # Since 7-zip release version 15.12, files are not anymore extracted in
-    # $_OUTDIR folder but directly to the root. So, we check the existence of
-    # $_OUTDIR to appropriately set PATH_TO_LLVM_ROOT.
-    if ( EXISTS ${CMAKE_CURRENT_BINARY_DIR}/../$_OUTDIR )
-      set( PATH_TO_LLVM_ROOT ${CMAKE_CURRENT_BINARY_DIR}/../$_OUTDIR )
-    else()
-      set( PATH_TO_LLVM_ROOT ${CMAKE_CURRENT_BINARY_DIR}/.. )
-    endif()
-  else()
-    execute_process( COMMAND
-      find ${CMAKE_CURRENT_BINARY_DIR}/.. -maxdepth 1 -type d -name clang*
-      OUTPUT_VARIABLE PATH_TO_LLVM_ROOT
-      OUTPUT_STRIP_TRAILING_WHITESPACE )
-  endif()
+  # We determine PATH_TO_LLVM_ROOT by searching the libclang library path in
+  # CMake build folder.
+  file( GLOB_RECURSE PATH_TO_LLVM_ROOT ${CMAKE_BINARY_DIR}/**/libclang.* )
+  list( GET PATH_TO_LLVM_ROOT 0 PATH_TO_LLVM_ROOT )
+  get_filename_component( PATH_TO_LLVM_ROOT "${PATH_TO_LLVM_ROOT}/../.."
+                          ABSOLUTE )
 endif()
 
 if ( PATH_TO_LLVM_ROOT OR USE_SYSTEM_LIBCLANG OR EXTERNAL_LIBCLANG_PATH )
