@@ -105,6 +105,15 @@ endif()
 
 #############################################################################
 
+# MSVC has symbols hidden by default. On GCC and Clang we need to explicitly
+# set the to hidden to achieve the same result and then manually expose what
+# we need.
+if( CMAKE_COMPILER_IS_GNUCXX OR COMPILER_IS_CLANG )
+  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden" )
+endif()
+
+#############################################################################
+
 # Force release build by default, speed is of the essence
 if ( NOT CMAKE_BUILD_TYPE )
   set( CMAKE_BUILD_TYPE Release )
@@ -240,6 +249,16 @@ endif()
 #############################################################################
 
 option( USE_SYSTEM_BOOST "Set to ON to use the system boost libraries" OFF )
+if ( DEFINED ENV{YCM_BENCHMARK} OR DEFINED ENV{YCM_TESTRUN})
+  if ( MSVC )
+    add_definitions( -DYCM_EXPORT=__declspec\(\ dllexport\ \) )
+  elseif( CMAKE_COMPILER_IS_GNUCXX OR COMPILER_IS_CLANG )
+    add_definitions(
+      -DYCM_EXPORT=__attribute__\(\(visibility\(\"default\"\)\)\) )
+  else()
+    add_definitions( -DYCM_EXPORT )
+  endif()
+endif()
 
 if (NOT USE_SYSTEM_BOOST)
   add_subdirectory( BoostParts )
