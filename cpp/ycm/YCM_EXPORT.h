@@ -1,4 +1,4 @@
-// Copyright (C) 2015 ycmd contributors
+// Copyright (C) 2017 ycmd contributors.
 //
 // This file is part of ycmd.
 //
@@ -15,15 +15,13 @@
 // You should have received a copy of the GNU General Public License
 // along with ycmd.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef DLLDEFINES_H_0IYA3AQ3
-#define DLLDEFINES_H_0IYA3AQ3
+#ifndef YCM_EXPORT_H
+#define YCM_EXPORT_H
 
-// We need to export symbols for gmock tests on Windows.  The preprocessor
-// symbol ycm_core_EXPORTS is defined by CMake when building a shared library.
-#if defined( _WIN32 ) && defined( ycm_core_EXPORTS )
-#define YCM_DLL_EXPORT __declspec( dllexport )
-#else
-#define YCM_DLL_EXPORT
+// The true value of YCM_EXPORT is set on the compiler command line
+// which is done in YCM's CMakeLists.txt
+#if !defined( YCM_EXPORT )
+#define YCM_EXPORT
 #endif
 
-#endif /* end of include guard: DLLDEFINES_H_0IYA3AQ3 */
+#endif /* YCM_EXPORT_H */
