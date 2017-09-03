@@ -412,11 +412,15 @@ class LanguageServerCompleter( Completer ):
     if self.ServerIsReady():
       self._RefreshFiles( request_data )
 
-    # NOTE: We return diagnostics asynchronously via the long-polling mechanism
-    # because there's a big-old timing issue in that the above refresh doesn't
-    # return diagnostics immediately; we end up lagging at least one parse
-    # request behind. On slow completers (I'm looking at you eclipse), this
-    # leads to a poor user experience.
+    # NOTE: We also return diagnostics asynchronously via the long-polling
+    # mechanism to avoid timing issues with the servers asynchronous publication
+    # of diagnostics.
+    # However, we _also_ return them here to refresh diagnostics after, say
+    # changing the active file in the editor.
+    uri = lsapi.MakeUriForFile( request_data[ 'filepath' ] )
+    if self._latest_diagnostics[ uri ]:
+      return [ BuildDiagnostic( request_data, uri, diag )
+               for diag in self._latest_diagnostics[ uri ] ]
 
 
   def _PollForMessagesNoBlock( self, request_data, messages ):
@@ -475,17 +479,33 @@ class LanguageServerCompleter( Completer ):
         'Language server status: {0}'.format(
           notification[ 'params' ][ 'message' ] ) )
     elif notification[ 'method' ] == 'textDocument/publishDiagnostics':
-      latest_diagnostics = notification[ 'params' ]
-      response = {
-        'diagnostics': [ BuildDiagnostic( latest_diagnostics[ 'uri' ], x )
-                         for x in latest_diagnostics[ 'diagnostics' ] ]
-      }
-      return response
+      # Diagnostics are a little special. We only return diagnostics for the
+      # currently open file. The language server actually might sent us
+      # diagnostics for any file in the project, but (for now) we only show the
+      # current file.
+      #
+      # TODO(Ben): We should actually group up all the diagnostics messages,
+      # populating _latest_diagnostics, and then always send a single message if
+      # _any_ publishDiagnostics message was pending.
+      params = notification[ 'params' ]
+      uri = params[ 'uri' ]
+
+      # TODO(Ben): Does realpath break symlinks?
+      # e.g. we putting symlinks in the testdata for the source does not work
+      if os.path.realpath( lsapi.UriToFilePath( uri ) ) == os.path.realpath(
+        request_data[ 'filepath' ] ):
+        response = {
+          'diagnostics': [ BuildDiagnostic( request_data, uri, x )
+                           for x in params[ 'diagnostics' ] ]
+        }
+        return response
 
     return None
 
 
   def _RefreshFiles( self, request_data ):
+    # FIXME: Provide a Reset method which clears this state. Restarting
+    # downstream servers would leave this cache in the incorrect state.
     with self._fileStateMutex:
       for file_name, file_data in iteritems( request_data[ 'file_data' ] ):
         file_state = 'New'
@@ -513,12 +533,18 @@ class LanguageServerCompleter( Completer ):
         self._serverFileState[ file_name ] = 'Open'
         self.GetServer().SendNotification( msg )
 
-      for file_name in iterkeys(self._serverFileState ):
+      stale_files = list()
+      for file_name in iterkeys( self._serverFileState ):
         if file_name not in request_data[ 'file_data' ]:
-          msg = lsapi.DidCloseTextDocument( file_name )
-          del self._serverFileState[ file_name ]
-          self.GetServer().SendNotification( msg )
+          stale_files.append( file_name )
 
+      # We can't change the dictionary entries while using iterkeys, so we do
+      # that in a separate loop.
+      # TODO(Ben): Is this better than just not using iterkeys?
+      for file_name in stale_files:
+          msg = lsapi.DidCloseTextDocument( file_name )
+          self.GetServer().SendNotification( msg )
+          del self._serverFileState[ file_name ]
 
   def _WaitForInitiliase( self ):
     request_id = self.GetServer().NextRequestId()
