@@ -574,23 +574,13 @@ class LanguageServerCompleter( Completer ):
         self._syncType ) )
 
 
-  def _GetType( self, request_data ):
-    request_id = self._server.NextRequestId()
-    response = self._server.GetResponse( request_id,
+  def _GetHoverResponse( self, request_data ):
+    request_id = self.GetServer().NextRequestId()
+    response = self.GetServer().GetResponse( request_id,
                                          lsapi.Hover( request_id,
                                                       request_data ) )
 
-    if isinstance( response[ 'result' ][ 'contents' ], list ):
-      if len( response[ 'result' ][ 'contents' ] ):
-        info = response[ 'result' ][ 'contents' ][ 0 ]
-      else:
-        raise RuntimeError( 'No information' )
-    else:
-      info = response[ 'result' ][ 'contents' ]
-
-
-
-    return responses.BuildDisplayMessageResponse( str( info ) )
+    return response[ 'result' ][ 'contents' ]
 
 
   def LocationListToGoTo( self, request_data, response ):
