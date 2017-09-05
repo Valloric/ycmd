@@ -298,8 +298,10 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
 
       # TODO: We should be able to determine the set of things available from
       # the capabilities supplied on initialise
+      'GetDoc': ( lambda self, request_data, args:
+                     self.GetDoc( request_data ) ),
       'GetType': ( lambda self, request_data, args:
-                     self._GetType( request_data ) ),
+                     self.GetType( request_data ) ),
       'GoToDeclaration': ( lambda self, request_data, args:
                              self._GoToDeclaration( request_data ) ),
       'GoTo': ( lambda self, request_data, args:
@@ -326,6 +328,37 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
         'Language server status: {0}'.format( message ) )
 
     return None
+
+
+  def GetType( self, request_data ):
+    hover_response = self._GetHoverResponse( request_data )
+
+    if isinstance( hover_response, list ):
+      if len( hover_response ):
+        get_type_java = hover_response[ 0 ][ 'value' ]
+      else:
+        raise RuntimeError( 'No information' )
+    else:
+      get_type_java = hover_response
+
+    return responses.BuildDisplayMessageResponse( get_type_java )
+
+
+  def GetDoc( self, request_data ):
+    hover_response = self._GetHoverResponse( request_data )
+
+    if isinstance( hover_response, list ):
+      if len( hover_response ):
+        get_doc_java = ''
+        for docstring in hover_response:
+          if not isinstance( docstring, dict ):
+            get_doc_java += docstring + '\n'
+      else:
+        raise RuntimeError( 'No information' )
+    else:
+      get_doc_java = hover_response
+
+    return responses.BuildDisplayMessageResponse( get_doc_java.rstrip() )
 
 
   def HandleServerCommand( self, request_data, command ):
