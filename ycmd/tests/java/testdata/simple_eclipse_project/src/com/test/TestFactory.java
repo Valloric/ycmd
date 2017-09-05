@@ -10,8 +10,18 @@ package com.test;
  * implementation
  */
 public class TestFactory {
+  private static class Bar {
+    public int test;
+    public String testString;
+  }
+
   public AbstractTestWidget getWidget( String info ) {
     AbstractTestWidget w = new TestWidgetImpl( info );
+    Bar b = new Bar();
+
+    if ( b.test ) {
+      w.doSomethingVaguelyUseful();
+    }
     return w;
   }
 }
