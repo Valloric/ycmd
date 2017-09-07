@@ -68,6 +68,10 @@ class LanguageServerConnectionTimeout( Exception ):
   pass
 
 
+class LanguageServerConnectionStopped( Exception ):
+  pass
+
+
 class LanguageServerConnection( object ):
   """
     Abstract language server communication object.
@@ -88,6 +92,17 @@ class LanguageServerConnection( object ):
     self._notifications = queue.Queue()
 
     self._connection_event = threading.Event()
+    self._stop_event = threading.Event()
+
+
+  def stop( self ):
+    # Note lowercase stop() to match threading.Thread.start()
+    self._Stop()
+    self._stop_event.set()
+
+
+  def IsStopped( self ):
+    return self._stop_event.is_set()
 
 
   def NextRequestId( self ):
@@ -124,13 +139,19 @@ class LanguageServerConnection( object ):
 
 
   def _run_loop( self ):
-    # Wait for the connection to fully establsh (block)
-    self._TryServerConnectionBlocking()
+    # Wait for the connection to fully establish (this runs in the thread
+    # context, so we block until a connection is received or there is a timeout,
+    # which throws an exception)
+    try:
+      self._TryServerConnectionBlocking()
 
-    self._connection_event.set()
+      self._connection_event.set()
 
-    # Blocking loop which reads whole messages and calls _DespatchMessage
-    self._ReadMessages( )
+      # Blocking loop which reads whole messages and calls _DespatchMessage
+      self._ReadMessages( )
+    except LanguageServerConnectionStopped:
+      _logger.debug( 'Connection was closed cleanly' )
+      pass
 
 
   def _ReadHeaders( self, data ):
@@ -226,6 +247,10 @@ class LanguageServerConnection( object ):
     raise RuntimeError( 'Not implemented' )
 
 
+  def _Stop( self ):
+    raise RuntimeError( 'Not implemented' )
+
+
   def _Write( self, data ):
     raise RuntimeError( 'Not implemented' )
 
@@ -248,7 +273,12 @@ class StandardIOLanguageServerConnection( LanguageServerConnection,
 
 
   def _TryServerConnectionBlocking( self ):
+    # standard in/out don't need to wait for the server to connect to us
     return True
+
+
+  def _Stop( self ):
+    self.server_stdin.close()
 
 
   def _Write( self, data ):
@@ -264,8 +294,12 @@ class StandardIOLanguageServerConnection( LanguageServerConnection,
     else:
       data = self.server_stdout.readline()
 
+    if self.IsStopped():
+      raise LanguageServerConnectionStopped()
+
     if not data:
-      # The connection diea
+      # No data means the connection was severed. Connection severed when (not
+      # self.IsStopped()) means the server died unexpectedly.
       raise RuntimeError( "Connection to server died" )
 
     _logger.debug( "Data!!: {0}".format( data ) )

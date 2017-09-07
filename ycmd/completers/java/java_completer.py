@@ -196,7 +196,6 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
       _logger.exception( 'Failed to remove workspace path: {0}'.format(
         self._workspace_path ) )
 
-    # TODO: close the sockets in the server
     self._server = None
 
 
@@ -260,19 +259,29 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
 
   def _StopServer( self ):
     with self._server_state_mutex:
-      if self._server_handle:
-        utils.CloseStandardStreams( self._server_handle )
-
       if self._ServerIsRunning():
+        # We don't use utils.CloseStandardStreams, because the stdin/out is
+        # connected to our server connector. Just close stderr.
+        if self._server_handle and self._server_handle.stderr:
+          self._server_handle.stderr.close()
+
+        self._server.stop()
+
         _logger.info( 'Stopping java server with PID {0}'.format(
                           self._server_handle.pid ) )
+
         self._server_handle.terminate()
+
         try:
           utils.WaitUntilProcessIsTerminated( self._server_handle,
                                               timeout = 5 )
+
+          self._server.join()
+
           _logger.info( 'JDT Language server stopped' )
         except RuntimeError:
           _logger.exception( 'Error while stopping java server' )
+
 
       self._Reset()
 
