@@ -40,6 +40,9 @@ def RemoveIdentifierFreeText_PythonComments_test():
 
 
 def RemoveIdentifierFreeText_CstyleComments_test():
+  eq_( " bar",
+       iu.RemoveIdentifierFreeText( "/* foo */ bar" ) )
+
   eq_( "foo \nbar \nqux",
        iu.RemoveIdentifierFreeText( "foo \nbar /* foo */\nqux" ) )
 
