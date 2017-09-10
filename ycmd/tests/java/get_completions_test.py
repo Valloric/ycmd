@@ -22,7 +22,11 @@ from __future__ import division
 # Not installing aliases from python-future; it's unreliable and slow.
 from builtins import *  # noqa
 
-from hamcrest import ( assert_that, contains_inanyorder, empty, has_entries )
+from hamcrest import ( assert_that,
+                       contains,
+                       contains_inanyorder,
+                       empty,
+                       has_entries )
 from nose.tools import eq_
 
 from pprint import pformat
@@ -122,7 +126,7 @@ def GetCompletions_NoQuery_test( app ):
                                     'com',
                                     'test',
                                     'TestFactory.java' ),
-      'line_num'  : 22,
+      'line_num'  : 27,
       'column_num': 12,
     },
     'expect': {
@@ -133,6 +137,144 @@ def GetCompletions_NoQuery_test( app ):
             CompletionEntryMatcher( 'test', 'TestFactory.Bar' ),
             CompletionEntryMatcher( 'testString', 'TestFactory.Bar' )
           )
+        ),
+        'errors': empty(),
+      } )
+    },
+  } )
+
+
+@SharedYcmd
+def GetCompletions_WithQuery_test( app ):
+  RunTest( app, {
+    'description': 'semantic completion works for builtin types (no query)',
+    'request': {
+      'filetype'  : 'java',
+      'filepath'  : PathToTestFile( 'simple_eclipse_project',
+                                    'src',
+                                    'com',
+                                    'test',
+                                    'TestFactory.java' ),
+      'line_num'  : 27,
+      'column_num': 15,
+    },
+    'expect': {
+      'response': requests.codes.ok,
+      'data': has_entries( {
+        'completions': contains_inanyorder(
+            CompletionEntryMatcher( 'test', 'TestFactory.Bar' ),
+            CompletionEntryMatcher( 'testString', 'TestFactory.Bar' )
+        ),
+        'errors': empty(),
+      } )
+    },
+  } )
+
+
+@SharedYcmd
+def GetCompletions_WithSnippet_test( app ):
+  RunTest( app, {
+    'description': 'semantic completion works for builtin types (no query)',
+    'request': {
+      'filetype'  : 'java',
+      'filepath'  : PathToTestFile( 'simple_eclipse_project',
+                                    'src',
+                                    'com',
+                                    'test',
+                                    'TestFactory.java' ),
+      'line_num'  : 19,
+      'column_num': 25,
+    },
+    'expect': {
+      'response': requests.codes.ok,
+      'data': has_entries( {
+        'completions': contains_inanyorder( CompletionEntryMatcher(
+          'CUTHBERT',
+          'com.test.wobble.Wibble',
+          {
+            'extra_data': has_entries( {
+              'fixits': contains( has_entries( {
+                'chunks': contains(
+                  # For some reason, jdtls feels it's OK to replace the text
+                  # before the cursor. Perhaps it does this to canonicalise the
+                  # path ?
+                  has_entries( {
+                    'replacement_text': 'Wibble',
+                    'range': has_entries( {
+                      'start': has_entries( {
+                        'line_num': 19,
+                        'column_num': 15,
+                      } ),
+                      'end': has_entries( {
+                        'line_num': 19,
+                        'column_num': 21,
+                      } )
+                    } ),
+                  } ),
+                  # When doing an import, eclipse likes to add two newlines
+                  # after the package. I suppose this is config in real eclipse,
+                  # but there's no mechanism to configure this in jdtl afaik.
+                  has_entries( {
+                    'replacement_text': '\n\n',
+                    'range': has_entries( {
+                      'start': has_entries( {
+                        'line_num': 1,
+                        'column_num': 18,
+                      } ),
+                      'end': has_entries( {
+                        'line_num': 1,
+                        'column_num': 18,
+                      } )
+                    } ),
+                  } ),
+                  # OK, so it inserts the import
+                  has_entries( {
+                    'replacement_text': 'import com.test.wobble.Wibble;',
+                    'range': has_entries( {
+                      'start': has_entries( {
+                        'line_num': 1,
+                        'column_num': 18,
+                      } ),
+                      'end': has_entries( {
+                        'line_num': 1,
+                        'column_num': 18,
+                      } )
+                    } ),
+                  } ),
+                  # More newlines. Who doesn't like newlines?!
+                  has_entries( {
+                    'replacement_text': '\n\n',
+                    'range': has_entries( {
+                      'start': has_entries( {
+                        'line_num': 1,
+                        'column_num': 18,
+                      } ),
+                      'end': has_entries( {
+                        'line_num': 1,
+                        'column_num': 18,
+                      } )
+                    } ),
+                  } ),
+                  # For reasons known only to the eclipse JDT developers, it
+                  # seems to want to delete the lines after the package first.
+                  #
+                  has_entries( {
+                    'replacement_text': '',
+                    'range': has_entries( {
+                      'start': has_entries( {
+                        'line_num': 1,
+                        'column_num': 18,
+                      } ),
+                      'end': has_entries( {
+                        'line_num': 3,
+                        'column_num': 1,
+                      } )
+                    } ),
+                  } ),
+                ),
+              } ) ),
+            } ),
+          } ),
         ),
         'errors': empty(),
       } )
