@@ -766,6 +766,9 @@ class LanguageServerCompleter( Completer ):
       text_format = 'PlainText'
 
     if text_format != 'PlainText':
+      # TODO: Strictly speaking, we could support this in the Vim client by
+      # integrating with "ad hoc" UltiSnips triggers. I've done this before and
+      # it works as well as the 'additionalTextEdits' above.
       raise ValueError( 'Snippet completions are not supported and should not'
                         ' be returned by the language server.' )
 
