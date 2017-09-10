@@ -15,6 +15,11 @@ public class TestFactory {
     public String testString;
   }
 
+  private void Wimble( Wibble w ) {
+    if ( w == Wibble.CUTHBERT ) {
+    }
+  }
+
   public AbstractTestWidget getWidget( String info ) {
     AbstractTestWidget w = new TestWidgetImpl( info );
     Bar b = new Bar();
