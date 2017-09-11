@@ -394,33 +394,33 @@ def Subcommands_RefactorRename_Simple_test( app ):
 
 @SharedYcmd
 def Subcommands_RefactorRename_MultipleFiles_test( app ):
-  filepath1 = PathToTestFile( 'simple_eclipse_project',
-                              'src',
-                              'com',
-                              'test',
-                              'AbstractTestWidget.java' )
-  filepath2 = PathToTestFile( 'simple_eclipse_project',
-                              'src',
-                              'com',
-                              'test',
-                              'TestFactory.java' )
-  filepath3 = PathToTestFile( 'simple_eclipse_project',
-                              'src',
-                              'com',
-                              'test',
-                              'TestLauncher.java' )
-  filepath4 = PathToTestFile( 'simple_eclipse_project',
-                              'src',
-                              'com',
-                              'test',
-                              'TestWidgetImpl.java' )
+  AbstractTestWidget = PathToTestFile( 'simple_eclipse_project',
+                                       'src',
+                                       'com',
+                                       'test',
+                                       'AbstractTestWidget.java' )
+  TestFactory = PathToTestFile( 'simple_eclipse_project',
+                                'src',
+                                'com',
+                                'test',
+                                'TestFactory.java' )
+  TestLauncher = PathToTestFile( 'simple_eclipse_project',
+                                 'src',
+                                 'com',
+                                 'test',
+                                 'TestLauncher.java' )
+  TestWidgetImpl = PathToTestFile( 'simple_eclipse_project',
+                                   'src',
+                                   'com',
+                                   'test',
+                                   'TestWidgetImpl.java' )
 
   RunTest( app, {
     'description': 'RefactorRename works across files',
     'request': {
       'command': 'RefactorRename',
       'arguments': [ 'a-quite-long-string' ],
-      'filepath': filepath3,
+      'filepath': TestLauncher,
       'line_num': 8,
       'column_num': 7,
     },
@@ -431,22 +431,22 @@ def Subcommands_RefactorRename_MultipleFiles_test( app ):
           'chunks': contains(
             ChunkMatcher(
               'a-quite-long-string',
-              LocationMatcher( filepath3, 8, 7 ),
-              LocationMatcher( filepath3, 8, 31 ) ),
+              LocationMatcher( AbstractTestWidget, 10, 15 ),
+              LocationMatcher( AbstractTestWidget, 10, 39 ) ),
             ChunkMatcher(
               'a-quite-long-string',
-              LocationMatcher( filepath4, 20, 15 ),
-              LocationMatcher( filepath4, 20, 39 ) ),
+              LocationMatcher( TestFactory, 28, 9 ),
+              LocationMatcher( TestFactory, 28, 33 ) ),
             ChunkMatcher(
               'a-quite-long-string',
-              LocationMatcher( filepath1, 10, 15 ),
-              LocationMatcher( filepath1, 10, 39 ) ),
+              LocationMatcher( TestLauncher, 8, 7 ),
+              LocationMatcher( TestLauncher, 8, 31 ) ),
             ChunkMatcher(
               'a-quite-long-string',
-              LocationMatcher( filepath2, 28, 9 ),
-              LocationMatcher( filepath2, 28, 33 ) ),
+              LocationMatcher( TestWidgetImpl, 20, 15 ),
+              LocationMatcher( TestWidgetImpl, 20, 39 ) ),
           ),
-          'location': LocationMatcher( filepath3, 8, 7 )
+          'location': LocationMatcher( TestLauncher, 8, 7 )
         } ) )
       } )
     }
