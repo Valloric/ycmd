@@ -853,7 +853,10 @@ def WorkspaceEditToFixIt( request_data, workspace_edit, text='' ):
     return None
 
   chunks = list()
-  for uri in iterkeys( workspace_edit[ 'changes' ] ):
+  # We sort the filenames to make the response stable. Edits are applied in
+  # strict sequence within a file, but apply to files in arbitrary order.
+  # However, it's important for the response to be stable for the tests.
+  for uri in sorted( iterkeys( workspace_edit[ 'changes' ] ) ):
     chunks.extend( TextEditToChunks( request_data,
                                      uri,
                                      workspace_edit[ 'changes' ][ uri ] ) )
