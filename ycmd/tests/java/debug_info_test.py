@@ -22,17 +22,14 @@ from __future__ import division
 # Not installing aliases from python-future; it's unreliable and slow.
 from builtins import *  # noqa
 
-from hamcrest import ( assert_that, contains, contains_inanyorder, empty,
-                       has_entry, has_entries, instance_of )
-from nose.tools import eq_
+from hamcrest import ( assert_that,
+                       contains,
+                       has_entry,
+                       has_entries,
+                       instance_of )
 
-from pprint import pformat
-import requests
-
-from ycmd.tests.java import ( PathToTestFile, SharedYcmd )
-from ycmd.tests.test_utils import ( BuildRequest,
-                                    CompletionEntryMatcher )
-from ycmd.utils import ReadFile
+from ycmd.tests.java import SharedYcmd
+from ycmd.tests.test_utils import BuildRequest
 
 
 @SharedYcmd
