@@ -320,6 +320,7 @@ class StandardIOLanguageServerConnection( LanguageServerConnection,
       data = self.server_stdout.readline()
 
     if self.IsStopped():
+      self.server_stdout.close()
       raise LanguageServerConnectionStopped()
 
     if not data:
