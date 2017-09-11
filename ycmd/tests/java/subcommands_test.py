@@ -431,20 +431,20 @@ def Subcommands_RefactorRename_MultipleFiles_test( app ):
           'chunks': contains(
             ChunkMatcher(
               'a-quite-long-string',
-              LocationMatcher( filepath1, 10, 15 ),
-              LocationMatcher( filepath1, 10, 39 ) ),
-            ChunkMatcher(
-              'a-quite-long-string',
-              LocationMatcher( filepath2, 28, 9 ),
-              LocationMatcher( filepath2, 28, 33 ) ),
+              LocationMatcher( filepath3, 8, 7 ),
+              LocationMatcher( filepath3, 8, 31 ) ),
             ChunkMatcher(
               'a-quite-long-string',
               LocationMatcher( filepath4, 20, 15 ),
               LocationMatcher( filepath4, 20, 39 ) ),
             ChunkMatcher(
               'a-quite-long-string',
-              LocationMatcher( filepath3, 8, 7 ),
-              LocationMatcher( filepath3, 8, 31 ) )
+              LocationMatcher( filepath1, 10, 15 ),
+              LocationMatcher( filepath1, 10, 39 ) ),
+            ChunkMatcher(
+              'a-quite-long-string',
+              LocationMatcher( filepath2, 28, 9 ),
+              LocationMatcher( filepath2, 28, 33 ) ),
           ),
           'location': LocationMatcher( filepath3, 8, 7 )
         } ) )
