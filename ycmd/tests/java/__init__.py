@@ -137,13 +137,9 @@ def WaitUntilCompleterServerReady( app, timeout = 30 ):
       # things without some trigger.
       app.post_json( '/receive_messages', BuildRequest( **{
         'filetype'  : 'java',
-        'filepath'  : PathToTestFile( 'simple_eclipse_project',
-                                      'src',
-                                      'com',
-                                      'test',
-                                      'TestFactory.java' ),
-        'line_num'  : 15,
-        'column_num': 15,
+        'filepath'  : PathToTestFile( 'DEFAULT_PROJECT_DIR' ),
+        'line_num'  : 1,
+        'column_num': 1,
         'contents': ''
       } ) )
 
