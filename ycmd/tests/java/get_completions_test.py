@@ -191,6 +191,7 @@ def GetCompletions_WithSnippet_test( app ):
         'completions': contains_inanyorder( CompletionEntryMatcher(
           'CUTHBERT',
           'com.test.wobble.Wibble',
+          # FIXME: Replace with ChunkMatcher, LocationMatcher, etc.
           {
             'extra_data': has_entries( {
               'fixits': contains( has_entries( {

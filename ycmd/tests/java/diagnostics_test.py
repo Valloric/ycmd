@@ -33,6 +33,7 @@ import time
 from pprint import pformat
 
 
+# TODO: Replace with ChunkMatcher, LocationMatcher, etc.
 def PositionMatch( line, column ):
   return has_entries( {
     'line_num': line,
