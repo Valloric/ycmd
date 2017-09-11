@@ -26,6 +26,7 @@ from hamcrest import ( assert_that,
                        contains,
                        contains_inanyorder,
                        empty,
+                       matches_regexp,
                        has_entries )
 from nose.tools import eq_
 
@@ -92,10 +93,10 @@ OBJECT_METHODS = [
   CompletionEntryMatcher( 'notifyAll', 'Object' ),
   CompletionEntryMatcher( 'toString', 'Object' ),
   CompletionEntryMatcher( 'wait', 'Object', {
-    'menu_text': 'wait(long timeout, int nanos) : void',
+    'menu_text': matches_regexp( 'wait\\(long .*, int .*\\) : void' ),
   } ),
   CompletionEntryMatcher( 'wait', 'Object', {
-    'menu_text': 'wait(long timeout) : void',
+    'menu_text': matches_regexp( 'wait\\(long .*\\) : void' ),
   } ),
   CompletionEntryMatcher( 'wait', 'Object', {
     'menu_text': 'wait() : void',
