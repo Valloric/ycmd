@@ -646,6 +646,9 @@ class LanguageServerCompleter( Completer ):
 
 
   def LocationListToGoTo( self, request_data, response ):
+    if not response:
+      raise RuntimeError( 'Cannot jump to location' )
+
     if len( response[ 'result' ] ) > 1:
       positions = response[ 'result' ]
       return [
