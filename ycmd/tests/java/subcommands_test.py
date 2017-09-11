@@ -22,13 +22,74 @@ from __future__ import division
 # Not installing aliases from python-future; it's unreliable and slow.
 from builtins import *  # noqa
 
-from hamcrest import assert_that
+from hamcrest import assert_that, contains, has_entries
 from nose.tools import eq_
 import os.path
+from pprint import pformat
+import requests
 
 from ycmd.utils import ReadFile
 from ycmd.tests.java import PathToTestFile, SharedYcmd
-from ycmd.tests.test_utils import BuildRequest, ErrorMatcher
+from ycmd.tests.test_utils import BuildRequest, ChunkMatcher, ErrorMatcher, LocationMatcher
+
+
+@SharedYcmd
+def Subcommands_DefinedSubcommands_test( app ):
+  subcommands_data = BuildRequest( completer_target = 'java' )
+
+  eq_( sorted( [ 'FixIt',
+                 'GoToDeclaration',
+                 'GoToDefinition',
+                 'GoTo',
+                 'GetDoc',
+                 'GetType',
+                 'GoToReferences',
+                 'RefactorRename',
+                 'RestartServer' ] ),
+       app.post_json( '/defined_subcommands',
+                      subcommands_data ).json )
+
+
+def RunTest( app, test, contents = None ):
+  if not contents:
+    contents = ReadFile( test[ 'request' ][ 'filepath' ] )
+
+  def CombineRequest( request, data ):
+    kw = request
+    request.update( data )
+    return BuildRequest( **kw )
+
+  # Because we aren't testing this command, we *always* ignore errors. This
+  # is mainly because we (may) want to test scenarios where the completer
+  # throws an exception and the easiest way to do that is to throw from
+  # within the FlagsForFile function.
+  app.post_json( '/event_notification',
+                 CombineRequest( test[ 'request' ], {
+                                 'event_name': 'FileReadyToParse',
+                                 'contents': contents,
+                                 'filetype': 'java',
+                                 } ),
+                 expect_errors = True )
+
+  # We also ignore errors here, but then we check the response code
+  # ourself. This is to allow testing of requests returning errors.
+  response = app.post_json(
+    '/run_completer_command',
+    CombineRequest( test[ 'request' ], {
+      'completer_target': 'filetype_default',
+      'contents': contents,
+      'filetype': 'java',
+      'command_arguments': ( [ test[ 'request' ][ 'command' ] ]
+                             + test[ 'request' ].get( 'arguments', [] ) )
+    } ),
+    expect_errors = True
+  )
+
+  print( 'completer response: {0}'.format( pformat( response.json ) ) )
+
+  eq_( response.status_code, test[ 'expect' ][ 'response' ] )
+
+  assert_that( response.json, test[ 'expect' ][ 'data' ] )
 
 
 @SharedYcmd
@@ -290,3 +351,123 @@ def Subcommands_GoToReferences_test( app ):
            # 'description': '',
            'line_num': 8
          } ] )
+
+
+@SharedYcmd
+def Subcommands_RefactorRename_Simple_test( app ):
+  filepath = PathToTestFile( 'simple_eclipse_project',
+                             'src',
+                             'com',
+                             'test',
+                             'TestLauncher.java' )
+  RunTest( app, {
+    'description': 'RefactorRename works within a single scope/file',
+    'request': {
+      'command': 'RefactorRename',
+      'arguments': [ 'renamed_l' ],
+      'filepath': filepath,
+      'line_num': 15,
+      'column_num': 5,
+    },
+    'expect': {
+      'response': requests.codes.ok,
+      'data': has_entries ( {
+        'fixits': contains( has_entries( {
+          'chunks': contains(
+              ChunkMatcher( 'renamed_l',
+                            LocationMatcher( filepath, 14, 18 ),
+                            LocationMatcher( filepath, 14, 19 ) ),
+              ChunkMatcher( 'renamed_l',
+                            LocationMatcher( filepath, 15, 5 ),
+                            LocationMatcher( filepath, 15, 6 ) ),
+          ),
+          'location': LocationMatcher( filepath, 15, 5 )
+        } ) )
+      } )
+    }
+  } )
+
+
+@SharedYcmd
+def Subcommands_RefactorRename_MultipleFiles_test( app ):
+  filepath1 = PathToTestFile( 'simple_eclipse_project',
+                              'src',
+                              'com',
+                              'test',
+                              'AbstractTestWidget.java' )
+  filepath2 = PathToTestFile( 'simple_eclipse_project',
+                              'src',
+                              'com',
+                              'test',
+                              'TestFactory.java' )
+  filepath3 = PathToTestFile( 'simple_eclipse_project',
+                              'src',
+                              'com',
+                              'test',
+                              'TestLauncher.java' )
+  filepath4 = PathToTestFile( 'simple_eclipse_project',
+                              'src',
+                              'com',
+                              'test',
+                              'TestWidgetImpl.java' )
+
+  RunTest( app, {
+    'description': 'RefactorRename works across files',
+    'request': {
+      'command': 'RefactorRename',
+      'arguments': [ 'a-quite-long-string' ],
+      'filepath': filepath3,
+      'line_num': 8,
+      'column_num': 7,
+    },
+    'expect': {
+      'response': requests.codes.ok,
+      'data': has_entries ( {
+        'fixits': contains( has_entries( {
+          'chunks': contains(
+            ChunkMatcher(
+              'a-quite-long-string',
+              LocationMatcher( filepath1, 10, 15 ),
+              LocationMatcher( filepath1, 10, 39 ) ),
+            ChunkMatcher(
+              'a-quite-long-string',
+              LocationMatcher( filepath2, 23, 9 ),
+              LocationMatcher( filepath2, 23, 33 ) ),
+            ChunkMatcher(
+              'a-quite-long-string',
+              LocationMatcher( filepath4, 20, 15 ),
+              LocationMatcher( filepath4, 20, 39 ) ),
+            ChunkMatcher(
+              'a-quite-long-string',
+              LocationMatcher( filepath3, 8, 7 ),
+              LocationMatcher( filepath3, 8, 31 ) )
+          ),
+          'location': LocationMatcher( filepath3, 8, 7 )
+        } ) )
+      } )
+    }
+  } )
+
+
+@SharedYcmd
+def Subcommands_RefactorRename_Missing_New_Name_test( app ):
+  filepath = PathToTestFile( 'simple_eclipse_project',
+                             'src',
+                             'com',
+                             'test',
+                             'TestLauncher.java' )
+  RunTest( app, {
+    'description': 'RefactorRename raises an error without new name',
+    'request': {
+      'command': 'RefactorRename',
+      'line_num': 15,
+      'column_num': 5,
+      'filepath': filepath,
+    },
+    'expect': {
+      'response': requests.codes.internal_server_error,
+      'data': ErrorMatcher( ValueError,
+                            'Please specify a new name to rename it to.\n'
+                            'Usage: RefactorRename <new name>' ),
+    }
+  } )
