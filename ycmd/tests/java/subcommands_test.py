@@ -24,13 +24,15 @@ from builtins import *  # noqa
 
 from hamcrest import assert_that, contains, has_entries
 from nose.tools import eq_
-import os.path
 from pprint import pformat
 import requests
 
 from ycmd.utils import ReadFile
 from ycmd.tests.java import PathToTestFile, SharedYcmd
-from ycmd.tests.test_utils import BuildRequest, ChunkMatcher, ErrorMatcher, LocationMatcher
+from ycmd.tests.test_utils import ( BuildRequest,
+                                    ChunkMatcher,
+                                    ErrorMatcher,
+                                    LocationMatcher )
 
 
 @SharedYcmd
@@ -166,6 +168,7 @@ def Subcommands_GetType_Class_test( app ):
          'message': 'com.test.TestWidgetImpl'
   } )
 
+
 @SharedYcmd
 def Subcommands_GetType_Constructor_test( app ):
   filepath = PathToTestFile( 'simple_eclipse_project',
@@ -238,6 +241,7 @@ def Subcommands_GetType_MethodArgument_test( app ):
                      'com.test.TestWidgetImpl.TestWidgetImpl(String)'
   } )
 
+
 @SharedYcmd
 def Subcommands_GetType_MethodVariable_test( app ):
   filepath = PathToTestFile( 'simple_eclipse_project',
@@ -287,28 +291,28 @@ def Subcommands_GetType_Method_test( app ):
   } )
 
 # Commented out because of an overlooked corner case
-#@SharedYcmd
-#def Subcommands_GetType_Class_test( app ):
-#  filepath = PathToTestFile( 'simple_eclipse_project',
-#                             'src',
-#                             'com',
-#                             'test',
-#                             'TestWidgetImpl.java' )
-#  contents = ReadFile( filepath )
+# @SharedYcmd
+# def Subcommands_GetType_Class_test( app ):
+#   filepath = PathToTestFile( 'simple_eclipse_project',
+#                              'src',
+#                              'com',
+#                              'test',
+#                              'TestWidgetImpl.java' )
+#   contents = ReadFile( filepath )
 #
-#  event_data = BuildRequest( filepath = filepath,
-#                             filetype = 'java',
-#                             line_num = 15,
-#                             column_num = 13,
-#                             contents = contents,
-#                             command_arguments = [ 'GetType' ],
-#                             completer_target = 'filetype_default' )
+#   event_data = BuildRequest( filepath = filepath,
+#                              filetype = 'java',
+#                              line_num = 15,
+#                              column_num = 13,
+#                              contents = contents,
+#                              command_arguments = [ 'GetType' ],
+#                              completer_target = 'filetype_default' )
 #
-#  response = app.post_json( '/run_completer_command', event_data ).json
+#   response = app.post_json( '/run_completer_command', event_data ).json
 #
-#  eq_( response, {
-#    'message': ''
-#  } )
+#   eq_( response, {
+#     'message': ''
+#   } )
 
 
 @SharedYcmd
