@@ -343,7 +343,7 @@ def Subcommands_GoToReferences_test( app ):
                                        'TestFactory.java' ),
            'column_num': 9,
            # 'description': '',
-           'line_num': 23
+           'line_num': 28
          },
          {
            'filepath': PathToTestFile( 'simple_eclipse_project',
@@ -435,8 +435,8 @@ def Subcommands_RefactorRename_MultipleFiles_test( app ):
               LocationMatcher( filepath1, 10, 39 ) ),
             ChunkMatcher(
               'a-quite-long-string',
-              LocationMatcher( filepath2, 23, 9 ),
-              LocationMatcher( filepath2, 23, 33 ) ),
+              LocationMatcher( filepath2, 28, 9 ),
+              LocationMatcher( filepath2, 28, 33 ) ),
             ChunkMatcher(
               'a-quite-long-string',
               LocationMatcher( filepath4, 20, 15 ),
