@@ -110,7 +110,7 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
 
 
     with self._server_state_mutex:
-      self._server = None
+      self._connection = None
       self._server_handle = None
       self._server_stderr = None
       self._workspace_path = None
@@ -123,8 +123,8 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
         self._StopServer()
 
 
-  def GetServer( self ):
-    return self._server
+  def GetConnection( self ):
+    return self._connection
 
 
   def SupportedFiletypes( self ):
@@ -195,7 +195,7 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
     self._server_handle = None
     self._received_ready_message = threading.Event()
 
-    self._server = None
+    self._connection = None
 
     self._ServerReset()
 
@@ -238,17 +238,17 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
         _logger.warning( 'JDT Language Server failed to start' )
         return
 
-      self._server = (
+      self._connection = (
         language_server_completer.StandardIOLanguageServerConnection(
           self._server_handle.stdin,
           self._server_handle.stdout,
           self._GetDefaultNotificationHandler() )
       )
 
-      self._server.start()
+      self._connection.start()
 
       try:
-        self._server.TryServerConnection()
+        self._connection.TryServerConnection()
       except language_server_completer.LanguageServerConnectionTimeout:
         _logger.warn( 'Java language server failed to start, or did not '
                       'connect successfully' )
@@ -270,8 +270,8 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
         utils.WaitUntilProcessIsTerminated( self._server_handle,
                                             timeout = 5 )
 
-        if self._server:
-          self._server.join()
+        if self._connection:
+          self._connection.join()
 
         _logger.info( 'JDT Language server stopped' )
       except Exception:
@@ -289,8 +289,8 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
         utils.WaitUntilProcessIsTerminated( self._server_handle,
                                             timeout = 5 )
 
-        if self._server:
-          self._server.join()
+        if self._connection:
+          self._connection.join()
 
         _logger.info( 'JDT Language server killed' )
       except Exception:
@@ -305,8 +305,8 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
         self._server_handle.stderr.close()
 
       # Tell the connection to expect the server to disconnect
-      if self._server:
-        self._server.stop()
+      if self._connection:
+        self._connection.stop()
 
       # Tell the server to exit using the shutdown request.
       self._StopServerCleanly()
