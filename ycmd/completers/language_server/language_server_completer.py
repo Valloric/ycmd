@@ -379,13 +379,13 @@ class LanguageServerCompleter( Completer ):
 
   def _ShutdownServer( self ):
     if self.ServerIsReady():
-      request_id = self.GetServer().NextRequestId()
+      request_id = self.GetConnection().NextRequestId()
       msg = lsapi.Shutdown( request_id )
 
       try:
-        self.GetServer().GetResponse( request_id,
-                                      msg,
-                                      REQUEST_TIMEOUT_INITIALISE )
+        self.GetConnection().GetResponse( request_id,
+                                          msg,
+                                          REQUEST_TIMEOUT_INITIALISE )
       except ResponseAbortedException:
         # When the language server (heinously) dies handling the shutdown
         # request, it is aborted. Just return - we're done.
@@ -397,12 +397,12 @@ class LanguageServerCompleter( Completer ):
 
     # Assuming that worked, send the exit notification
     if self.ServerIsHealthy():
-      self.GetServer().SendNotification( lsapi.Exit() )
+      self.GetConnection().SendNotification( lsapi.Exit() )
 
 
 
   @abc.abstractmethod
-  def GetServer( sefl ):
+  def GetConnection( sefl ):
     """Method that must be implemented by derived classes to return an instance
     of LanguageServerConnection appropriate for the language server in
     question"""
@@ -428,11 +428,11 @@ class LanguageServerCompleter( Completer ):
 
     self._RefreshFiles( request_data )
 
-    request_id = self.GetServer().NextRequestId()
+    request_id = self.GetConnection().NextRequestId()
     msg = lsapi.Completion( request_id, request_data )
-    response = self.GetServer().GetResponse( request_id,
-                                             msg,
-                                             REQUEST_TIMEOUT_COMPLETION )
+    response = self.GetConnection().GetResponse( request_id,
+                                                 msg,
+                                                 REQUEST_TIMEOUT_COMPLETION )
 
     do_resolve = (
       'completionProvider' in self._server_capabilities and
@@ -446,11 +446,12 @@ class LanguageServerCompleter( Completer ):
       # _at all_ here.
 
       if do_resolve:
-        resolve_id = self.GetServer().NextRequestId()
+        resolve_id = self.GetConnection().NextRequestId()
         resolve = lsapi.ResolveCompletion( resolve_id, item )
-        response = self.GetServer().GetResponse( resolve_id,
-                                                 resolve,
-                                                 REQUEST_TIMEOUT_COMPLETION )
+        response = self.GetConnection().GetResponse(
+          resolve_id,
+          resolve,
+          REQUEST_TIMEOUT_COMPLETION )
         item = response[ 'result' ]
 
       # Note Vim only displays the first character, so we map them to the
@@ -524,7 +525,7 @@ class LanguageServerCompleter( Completer ):
 
 
   def _PollForMessagesNoBlock( self, request_data, messages ):
-    notification = self.GetServer()._notifications.get_nowait( )
+    notification = self.GetConnection()._notifications.get_nowait( )
     message = self._ConvertNotificationToMessage( request_data,
                                                   notification )
     if message:
@@ -534,12 +535,12 @@ class LanguageServerCompleter( Completer ):
   def _PollForMessagesBlock( self, request_data ):
     try:
       while True:
-        if not self.GetServer():
+        if not self.GetConnection():
           # The server isn't running or something. Don't re-poll, as this will
           # just cause errors.
           return False
 
-        notification = self.GetServer()._notifications.get(
+        notification = self.GetConnection()._notifications.get(
           timeout = MESSAGE_POLL_TIMEOUT )
         message = self._ConvertNotificationToMessage( request_data,
                                                       notification )
@@ -555,7 +556,7 @@ class LanguageServerCompleter( Completer ):
     messages = list()
     try:
       while True:
-        if not self.GetServer():
+        if not self.GetConnection():
           # The server isn't running or something. Don't re-poll.
           return False
 
@@ -647,7 +648,7 @@ class LanguageServerCompleter( Completer ):
                                              file_data[ 'contents' ] )
 
         self._serverFileState[ file_name ] = 'Open'
-        self.GetServer().SendNotification( msg )
+        self.GetConnection().SendNotification( msg )
 
       stale_files = list()
       for file_name in iterkeys( self._serverFileState ):
@@ -660,7 +661,7 @@ class LanguageServerCompleter( Completer ):
       # TODO(Ben): Isn't there a client->server event when a buffer is closed?
       for file_name in stale_files:
           msg = lsapi.DidCloseTextDocument( file_name )
-          self.GetServer().SendNotification( msg )
+          self.GetConnection().SendNotification( msg )
           del self._serverFileState[ file_name ]
 
 
@@ -668,7 +669,7 @@ class LanguageServerCompleter( Completer ):
     with self._mutex:
       assert not self._initialise_response
 
-      request_id = self.GetServer().NextRequestId()
+      request_id = self.GetConnection().NextRequestId()
       msg = lsapi.Initialise( request_id )
 
       def response_handler( response, message ):
@@ -677,7 +678,7 @@ class LanguageServerCompleter( Completer ):
 
         self._HandleInitialiseInPollThread( message )
 
-      self._initialise_response = self.GetServer().GetResponseAsync(
+      self._initialise_response = self.GetConnection().GetResponseAsync(
         request_id,
         msg,
         response_handler )
@@ -706,8 +707,8 @@ class LanguageServerCompleter( Completer ):
     if not self.ServerIsReady():
       raise RuntimeError( 'Server is initialising. Please wait.' )
 
-    request_id = self.GetServer().NextRequestId()
-    response = self.GetServer().GetResponse(
+    request_id = self.GetConnection().NextRequestId()
+    response = self.GetConnection().GetResponse(
       request_id,
       lsapi.Hover( request_id,
                    request_data ),
@@ -737,8 +738,8 @@ class LanguageServerCompleter( Completer ):
     if not self.ServerIsReady():
       raise RuntimeError( 'Server is initialising. Please wait.' )
 
-    request_id = self.GetServer().NextRequestId()
-    response = self.GetServer().GetResponse(
+    request_id = self.GetConnection().NextRequestId()
+    response = self.GetConnection().GetResponse(
       request_id,
       lsapi.Definition( request_id,
                         request_data ),
@@ -756,8 +757,8 @@ class LanguageServerCompleter( Completer ):
     if not self.ServerIsReady():
       raise RuntimeError( 'Server is initialising. Please wait.' )
 
-    request_id = self.GetServer().NextRequestId()
-    response = self.GetServer().GetResponse(
+    request_id = self.GetConnection().NextRequestId()
+    response = self.GetConnection().GetResponse(
       request_id,
       lsapi.References( request_id,
                         request_data ),
@@ -792,9 +793,9 @@ class LanguageServerCompleter( Completer ):
       d for d in file_diagnostics if WithinRange( d )
     ]
 
-    request_id = self.GetServer().NextRequestId()
+    request_id = self.GetConnection().NextRequestId()
     if matched_diagnostics:
-      code_actions = self.GetServer().GetResponse(
+      code_actions = self.GetConnection().GetResponse(
         request_id,
         lsapi.CodeAction( request_id,
                           request_data,
@@ -803,7 +804,7 @@ class LanguageServerCompleter( Completer ):
         REQUEST_TIMEOUT_COMMAND )
 
     else:
-      code_actions = self.GetServer().GetResponse(
+      code_actions = self.GetConnection().GetResponse(
         request_id,
         lsapi.CodeAction(
           request_id,
@@ -846,8 +847,8 @@ class LanguageServerCompleter( Completer ):
 
     new_name = args[ 0 ]
 
-    request_id = self.GetServer().NextRequestId()
-    response = self.GetServer().GetResponse(
+    request_id = self.GetConnection().NextRequestId()
+    response = self.GetConnection().GetResponse(
       request_id,
       lsapi.Rename( request_id,
                     request_data,
