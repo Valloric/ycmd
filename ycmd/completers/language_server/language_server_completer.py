@@ -193,7 +193,8 @@ class LanguageServerConnection( object ):
         self._responses.clear()
 
       _logger.debug( 'Connection was closed cleanly' )
-      pass
+
+    self._Close()
 
 
   def _ReadHeaders( self, data ):
@@ -293,6 +294,11 @@ class LanguageServerConnection( object ):
 
 
   @abc.abstractmethod
+  def _Close( self ):
+    pass
+
+
+  @abc.abstractmethod
   def _Write( self, data ):
     pass
 
@@ -318,6 +324,14 @@ class StandardIOLanguageServerConnection( LanguageServerConnection,
     self._run_loop()
 
 
+  def _Close( self ):
+    if not self.server_stdin.closed:
+      self.server_stdin.close()
+
+    if not self.server_stdout.closed:
+      self.server_stdout.close()
+
+
   def _TryServerConnectionBlocking( self ):
     # standard in/out don't need to wait for the server to connect to us
     return True
@@ -336,15 +350,11 @@ class StandardIOLanguageServerConnection( LanguageServerConnection,
       data = self.server_stdout.readline()
 
     if self.IsStopped():
-      self.server_stdin.close()
-      self.server_stdout.close()
       raise LanguageServerConnectionStopped()
 
     if not data:
       # No data means the connection was severed. Connection severed when (not
       # self.IsStopped()) means the server died unexpectedly.
-      self.server_stdin.close()
-      self.server_stdout.close()
       raise RuntimeError( "Connection to server died" )
 
     return data
