@@ -26,7 +26,6 @@ from future.utils import iteritems, iterkeys
 import abc
 import collections
 import logging
-import os
 import queue
 import threading
 
@@ -108,7 +107,11 @@ class LanguageServerConnection( threading.Thread ):
   """
     Abstract language server communication object.
 
-    Implementations are required to provide the following methods:
+    This connection runs as a thread and is generally only used directly by
+    LanguageServerCompleter, but is instantiated, startd and stopped by Concrete
+    LanguageServerCompleter implementations.
+
+    Implementations of this class are required to provide the following methods:
       - _TryServerConnectionBlocking: Connect to the server and return when the
                                       connection is established
       - _Close: Close any sockets or channels prior to the thread exit
@@ -116,7 +119,7 @@ class LanguageServerConnection( threading.Thread ):
       - _Read: Read some data from the server, blocking until some data is
                available
 
-    Implementations are required to follow the following procedures:
+    Using this class in concrete LanguageServerCompleter implementations:
 
     Startup
 
@@ -131,6 +134,18 @@ class LanguageServerConnection( threading.Thread ):
     - Call join() after closing down the downstream server to wait for this
       thread to exit
 
+    Footnote: Why does this interface exist?
+
+    Language servers are at liberty to provide their communication interface
+    over any transport. Typically, this is either stdio or a socket (though some
+    servers require multiple sockets). This interface abstracts the
+    implementation detail of the communication from the transport, allowing
+    concrete completers to choose the right transport according to the
+    downstream server (i.e. whatever works best).
+
+    If in doubt, use the StandardIOLanguageServerConnection as that is the
+    simplest. Socket-based connections often require the server to connect back
+    to us, which can lead to complexity and possibly blocking.
   """
   @abc.abstractmethod
   def _TryServerConnectionBlocking( self ):
@@ -326,14 +341,18 @@ class LanguageServerConnection( threading.Thread ):
 
 
 class StandardIOLanguageServerConnection( LanguageServerConnection ):
-  def __init__( self, server_stdin,
+  """Concrete language server connection using stdin/stdout to communicate with
+  the server. This should be the default choice for concrete completers."""
+
+  def __init__( self,
+                server_stdin,
                 server_stdout,
                 notification_handler = None ):
     super( StandardIOLanguageServerConnection, self ).__init__(
       notification_handler )
 
-    self.server_stdin = server_stdin
-    self.server_stdout = server_stdout
+    self._server_stdin = server_stdin
+    self._server_stdout = server_stdout
 
 
   def _TryServerConnectionBlocking( self ):
@@ -342,24 +361,24 @@ class StandardIOLanguageServerConnection( LanguageServerConnection ):
 
 
   def _Close( self ):
-    if not self.server_stdin.closed:
-      self.server_stdin.close()
+    if not self._server_stdin.closed:
+      self._server_stdin.close()
 
-    if not self.server_stdout.closed:
-      self.server_stdout.close()
+    if not self._server_stdout.closed:
+      self._server_stdout.close()
 
 
   def _Write( self, data ):
-    to_write = data + utils.ToBytes( '\r\n' )
-    self.server_stdin.write( to_write )
-    self.server_stdin.flush()
+    bytes_to_write = data + utils.ToBytes( '\r\n' )
+    self._server_stdin.write( bytes_to_write )
+    self._server_stdin.flush()
 
 
   def _Read( self, size=-1 ):
     if size > -1:
-      data = self.server_stdout.read( size )
+      data = self._server_stdout.read( size )
     else:
-      data = self.server_stdout.readline()
+      data = self._server_stdout.readline()
 
     if self.IsStopped():
       raise LanguageServerConnectionStopped()
@@ -1004,8 +1023,7 @@ def BuildLocation( request_data, filename, loc ):
     line = loc[ 'line' ] + 1,
     column = utils.CodepointOffsetToByteOffset( line_contents,
                                                 loc[ 'character' ] + 1 ),
-    # FIXME: Does realpath break symlinks?
-    filename = os.path.realpath( filename ) )
+    filename = filename )
 
 
 def BuildRange( request_data, filename, r ):
