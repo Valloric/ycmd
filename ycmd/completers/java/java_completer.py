@@ -123,12 +123,51 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
         self._StopServer()
 
 
-  def GetConnection( self ):
-    return self._connection
-
-
   def SupportedFiletypes( self ):
     return [ 'java' ]
+
+
+  def GetSubcommandsMap( self ):
+    return {
+      # Handled by base class
+      'GoToDeclaration': (
+        lambda self, request_data, args: self.GoToDeclaration( request_data )
+      ),
+      'GoTo': (
+        lambda self, request_data, args: self.GoToDeclaration( request_data )
+      ),
+      'GoToDefinition': (
+        lambda self, request_data, args: self.GoToDeclaration( request_data )
+      ),
+      'GoToReferences': (
+        lambda self, request_data, args: self.GoToReferences( request_data )
+      ),
+      'FixIt': (
+        lambda self, request_data, args: self.CodeAction( request_data,
+                                                          args )
+      ),
+      'RefactorRename': (
+        lambda self, request_data, args: self.Rename( request_data, args )
+      ),
+
+      # Handled by us
+      'RestartServer': (
+        lambda self, request_data, args: self._RestartServer(
+        ) ),
+      'StopServer': (
+        lambda self, request_data, args: self._StopServer(
+        ) ),
+      'GetDoc': (
+        lambda self, request_data, args: self.GetDoc( request_data )
+      ),
+      'GetType': (
+        lambda self, request_data, args: self.GetType( request_data )
+      ),
+    }
+
+
+  def GetConnection( self ):
+    return self._connection
 
 
   def DebugInfo( self, request_data ):
@@ -169,11 +208,14 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
              super( JavaCompleter, self ).ServerIsReady() )
 
 
-  def ShouldUseNowInner( self, request_data ):
-    if not self.ServerIsReady():
-      return False
+  def _ServerIsRunning( self ):
+    return utils.ProcessIsRunning( self._server_handle )
 
-    return super( JavaCompleter, self ).ShouldUseNowInner( request_data )
+
+  def _RestartServer( self ):
+    with self._server_state_mutex:
+      self._StopServer()
+      self._StartServer()
 
 
   def _Reset( self ):
@@ -197,7 +239,7 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
 
     self._connection = None
 
-    self._ServerReset()
+    self.ServerReset()
 
 
   def _StartServer( self ):
@@ -242,20 +284,41 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
         language_server_completer.StandardIOLanguageServerConnection(
           self._server_handle.stdin,
           self._server_handle.stdout,
-          self._GetDefaultNotificationHandler() )
+          self.GetDefaultNotificationHandler() )
       )
 
       self._connection.start()
 
       try:
-        self._connection.TryServerConnection()
+        self._connection.AwaitServerConnection()
       except language_server_completer.LanguageServerConnectionTimeout:
         _logger.warn( 'Java language server failed to start, or did not '
                       'connect successfully' )
         self._StopServer()
         return
 
-    self._SendInitialiseAsync()
+    self.SendInitialise()
+
+
+  def _StopServer( self ):
+    with self._server_state_mutex:
+      # We don't use utils.CloseStandardStreams, because the stdin/out is
+      # connected to our server connector. Just close stderr.
+      if self._server_handle and self._server_handle.stderr:
+        self._server_handle.stderr.close()
+
+      # Tell the connection to expect the server to disconnect
+      if self._connection:
+        self._connection.stop()
+
+      # Tell the server to exit using the shutdown request.
+      self._StopServerCleanly()
+
+      # If the server is still running, e.g. due to erros, kill it
+      self._StopServerForecefully()
+
+      # Tidy up our internal state
+      self._Reset()
 
 
   def _StopServerCleanly( self ):
@@ -264,7 +327,7 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
       _logger.info( 'Stopping java server with PID {0}'.format(
                         self._server_handle.pid ) )
 
-      self._ShutdownServer()
+      self.ShutdownServer()
 
       try:
         utils.WaitUntilProcessIsTerminated( self._server_handle,
@@ -297,55 +360,6 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
         _logger.exception( 'Error while killing java server' )
 
 
-  def _StopServer( self ):
-    with self._server_state_mutex:
-      # We don't use utils.CloseStandardStreams, because the stdin/out is
-      # connected to our server connector. Just close stderr.
-      if self._server_handle and self._server_handle.stderr:
-        self._server_handle.stderr.close()
-
-      # Tell the connection to expect the server to disconnect
-      if self._connection:
-        self._connection.stop()
-
-      # Tell the server to exit using the shutdown request.
-      self._StopServerCleanly()
-
-      # If the server is still running, e.g. due to erros, kill it
-      self._StopServerForecefully()
-
-      # Tidy up our internal state
-      self._Reset()
-
-
-  def GetSubcommandsMap( self ):
-    return {
-      'RestartServer': ( lambda self, request_data, args:
-                            self._RestartServer() ),
-      'StopServer': ( lambda self, request_data, args:
-                            self._StopServer() ),
-
-      # TODO: We should be able to determine the set of things available from
-      # the capabilities supplied on initialise
-      'GetDoc': ( lambda self, request_data, args:
-                     self.GetDoc( request_data ) ),
-      'GetType': ( lambda self, request_data, args:
-                     self.GetType( request_data ) ),
-      'GoToDeclaration': ( lambda self, request_data, args:
-                             self._GoToDeclaration( request_data ) ),
-      'GoTo': ( lambda self, request_data, args:
-                             self._GoToDeclaration( request_data ) ),
-      'GoToDefinition': ( lambda self, request_data, args:
-                             self._GoToDeclaration( request_data ) ),
-      'GoToReferences': ( lambda self, request_data, args:
-                            self._GoToReferences( request_data ) ),
-      'FixIt': ( lambda self, request_data, args:
-                   self._CodeAction( request_data, args ) ),
-      'RefactorRename': ( lambda self, request_data, args:
-                            self._Rename( request_data, args ) ),
-    }
-
-
   def _HandleNotificationInPollThread( self, notification ):
     if notification[ 'method' ] == 'language/status':
       message_type = notification[ 'params' ][ 'type' ]
@@ -369,7 +383,7 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
 
 
   def GetType( self, request_data ):
-    hover_response = self._GetHoverResponse( request_data )
+    hover_response = self.GetHoverResponse( request_data )
 
     if isinstance( hover_response, list ):
       if len( hover_response ):
@@ -383,7 +397,7 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
 
 
   def GetDoc( self, request_data ):
-    hover_response = self._GetHoverResponse( request_data )
+    hover_response = self.GetHoverResponse( request_data )
 
     if isinstance( hover_response, list ):
       if len( hover_response ):
@@ -407,13 +421,3 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
         text = command[ 'title' ] )
 
     return None
-
-
-  def _RestartServer( self ):
-    with self._server_state_mutex:
-      self._StopServer()
-      self._StartServer()
-
-
-  def _ServerIsRunning( self ):
-    return utils.ProcessIsRunning( self._server_handle )
