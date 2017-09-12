@@ -104,17 +104,54 @@ class LanguageServerConnectionStopped( Exception ):
   pass
 
 
-class LanguageServerConnection( object ):
+class LanguageServerConnection( threading.Thread ):
   """
     Abstract language server communication object.
 
     Implementations are required to provide the following methods:
       - _TryServerConnectionBlocking: Connect to the server and return when the
                                       connection is established
+      - _Close: Close any sockets or channels prior to the thread exit
       - _Write: Write some data to the server
       - _Read: Read some data from the server, blocking until some data is
                available
+
+    Implementations are required to follow the following procedures:
+
+    Startup
+
+    - Call start() and AwaitServerConnection()
+    - AwaitServerConnection() throws LanguageServerConnectionTimeout if the
+      server fails to connect in a reasonable time.
+
+    Shutdown
+
+    - Call stop() prior to shutting down the downstream server (see
+      LanguageServerCompleter.ShutdownServer to do that part)
+    - Call join() after closing down the downstream server to wait for this
+      thread to exit
+
   """
+  @abc.abstractmethod
+  def _TryServerConnectionBlocking( self ):
+    pass
+
+
+  @abc.abstractmethod
+  def _Close( self ):
+    pass
+
+
+  @abc.abstractmethod
+  def _Write( self, data ):
+    pass
+
+
+  @abc.abstractmethod
+  def _Read( self, size=-1 ):
+    pass
+
+
   def __init__( self, notification_handler = None ):
     super( LanguageServerConnection, self ).__init__()
 
@@ -126,6 +163,28 @@ class LanguageServerConnection( object ):
     self._connection_event = threading.Event()
     self._stop_event = threading.Event()
     self._notification_handler = notification_handler
+
+
+  def run( self ):
+    try:
+      # Wait for the connection to fully establish (this runs in the thread
+      # context, so we block until a connection is received or there is a
+      # timeout, which throws an exception)
+      self._TryServerConnectionBlocking()
+      self._connection_event.set()
+
+      # Blocking loop which reads whole messages and calls _DespatchMessage
+      self._ReadMessages( )
+    except LanguageServerConnectionStopped:
+      # Abort any outstanding requests
+      with self._responseMutex:
+        for _, response in iteritems( self._responses ):
+          response.Abort()
+        self._responses.clear()
+
+      _logger.debug( 'Connection was closed cleanly' )
+
+    self._Close()
 
 
   def stop( self ):
@@ -167,35 +226,12 @@ class LanguageServerConnection( object ):
     self._Write( message )
 
 
-  def TryServerConnection( self ):
+  def AwaitServerConnection( self ):
     self._connection_event.wait( timeout = CONNECTION_TIMEOUT )
 
     if not self._connection_event.isSet():
       raise LanguageServerConnectionTimeout(
         'Timed out waiting for server to connect' )
-
-
-  def _run_loop( self ):
-    # Wait for the connection to fully establish (this runs in the thread
-    # context, so we block until a connection is received or there is a timeout,
-    # which throws an exception)
-    try:
-      self._TryServerConnectionBlocking()
-
-      self._connection_event.set()
-
-      # Blocking loop which reads whole messages and calls _DespatchMessage
-      self._ReadMessages( )
-    except LanguageServerConnectionStopped:
-      # Abort any outstanding requests
-      with self._responseMutex:
-        for _, response in iteritems( self._responses ):
-          response.Abort()
-        self._responses.clear()
-
-      _logger.debug( 'Connection was closed cleanly' )
-
-    self._Close()
 
 
   def _ReadHeaders( self, data ):
@@ -289,28 +325,7 @@ class LanguageServerConnection( object ):
         self._notification_handler( self, message )
 
 
-  @abc.abstractmethod
-  def _TryServerConnectionBlocking( self ):
-    pass
-
-
-  @abc.abstractmethod
-  def _Close( self ):
-    pass
-
-
-  @abc.abstractmethod
-  def _Write( self, data ):
-    pass
-
-
-  @abc.abstractmethod
-  def _Read( self, size=-1 ):
-    pass
-
-
-class StandardIOLanguageServerConnection( LanguageServerConnection,
-                                          threading.Thread ):
+class StandardIOLanguageServerConnection( LanguageServerConnection ):
   def __init__( self, server_stdin,
                 server_stdout,
                 notification_handler = None ):
@@ -321,8 +336,9 @@ class StandardIOLanguageServerConnection( LanguageServerConnection,
     self.server_stdout = server_stdout
 
 
-  def run( self ):
-    self._run_loop()
+  def _TryServerConnectionBlocking( self ):
+    # standard in/out don't need to wait for the server to connect to us
+    return True
 
 
   def _Close( self ):
@@ -331,11 +347,6 @@ class StandardIOLanguageServerConnection( LanguageServerConnection,
 
     if not self.server_stdout.closed:
       self.server_stdout.close()
-
-
-  def _TryServerConnectionBlocking( self ):
-    # standard in/out don't need to wait for the server to connect to us
-    return True
 
 
   def _Write( self, data ):
@@ -362,13 +373,79 @@ class StandardIOLanguageServerConnection( LanguageServerConnection,
 
 
 class LanguageServerCompleter( Completer ):
+  """
+  Abstract completer implementation for Language Server Protocol. Concrete
+  implementations are required to:
+    - Handle downstream server state and create a LanguageServerConnection,
+      returning it in GetConnection
+      - Set its notification handler to self.GetDefaultNotificationHandler()
+      - See below for Startup/Shutdown instructions
+    - Implement any server-specific Commands in HandleServerCommand
+    - Implement the following Completer abstract methods:
+      - SupportedFiletypes
+      - DebugInfo
+      - Shutdown
+      - ServerIsHealthy : Return True if the server is _running_
+      - GetSubcommandsMap
+
+  Startup
+
+  - After starting and connecting to the server, call SendInitialise
+  - See also LanguageServerConnection requirements
+
+  Shutdown
+
+  - Call ShutdownServer and wait for the downstream server to exit
+  - Call ServerReset to clear down state
+  - See also LanguageServerConnection requirements
+
+  Completions
+
+  - The implementation should not require any code to support completions
+
+  Diagnostics
+
+  - The implementation should not require any code to support diagnostics
+
+  Subcommands
+
+  - The subcommands map is bespoke to the implementation, but generally, this
+    class attempts to provide all of the pieces where it can generically.
+  - The following commands typically don't require any special handling, just
+    call the base implementation as below:
+      Subcommands     -> Handler
+    - GoToDeclaration -> GoToDeclaration
+    - GoTo            -> GoToDeclaration
+    - GoToReferences  -> GoToReferences
+    - RefactorRename  -> Rename
+  - GetType/GetDoc are bespoke to the downstream server, though this class
+    provides GetHoverResponse which is useful in this context.
+  - FixIt requests are handled by CodeAction, but the responses are passed to
+    HandleServerCommand, which must return a FixIt. See WorkspaceEditToFixIt and
+    TextEditToChunks for some helpers. If the server returns other types of
+    command that aren't FixIt, either throw an exception or update the ycmd
+    protocol to handle it :)
+  """
+  @abc.abstractmethod
+  def GetConnection( sefl ):
+    """Method that must be implemented by derived classes to return an instance
+    of LanguageServerConnection appropriate for the language server in
+    question"""
+    pass
+
+
+  @abc.abstractmethod
+  def HandleServerCommand( self, request_data, command ):
+    pass
+
+
   def __init__( self, user_options):
     super( LanguageServerCompleter, self ).__init__( user_options )
     self._mutex = threading.Lock()
-    self._ServerReset()
+    self.ServerReset()
 
 
-  def _ServerReset( self ):
+  def ServerReset( self ):
     with self._mutex:
       self._serverFileState = {}
       self._latest_diagnostics = collections.defaultdict( list )
@@ -377,7 +454,7 @@ class LanguageServerCompleter( Completer ):
       self._initialise_event = threading.Event()
 
 
-  def _ShutdownServer( self ):
+  def ShutdownServer( self ):
     if self.ServerIsReady():
       request_id = self.GetConnection().NextRequestId()
       msg = lsapi.Shutdown( request_id )
@@ -395,21 +472,14 @@ class LanguageServerCompleter( Completer ):
         # anyway
         _logger.exception( 'Shutdown request failed. Ignoring.' )
 
-    # Assuming that worked, send the exit notification
     if self.ServerIsHealthy():
       self.GetConnection().SendNotification( lsapi.Exit() )
 
 
-
-  @abc.abstractmethod
-  def GetConnection( sefl ):
-    """Method that must be implemented by derived classes to return an instance
-    of LanguageServerConnection appropriate for the language server in
-    question"""
-    pass
-
-
   def ServerIsReady( self ):
+    if not self.ServerIsHealthy():
+      return False
+
     if self._initialise_event.is_set():
       # We already got the initialise response
       return True
@@ -420,6 +490,10 @@ class LanguageServerCompleter( Completer ):
 
     # Initialise request in progress. Will be handled asynchronously.
     return False
+
+
+  def ShouldUseNowInner( self, request_data ):
+    return self.ServerIsReady()
 
 
   def ComputeCandidatesInner( self, request_data ):
@@ -487,7 +561,7 @@ class LanguageServerCompleter( Completer ):
         'd',   # 'Reference',
       ]
 
-      ( insertion_text, fixits ) = self._GetInsertionText( request_data, item )
+      ( insertion_text, fixits ) = InsertionTextForItem( request_data, item )
 
       return responses.BuildCompletionData(
         insertion_text,
@@ -524,6 +598,28 @@ class LanguageServerCompleter( Completer ):
                  for diag in self._latest_diagnostics[ uri ] ]
 
 
+  def PollForMessagesInner( self, request_data ):
+    # scoop up any pending messages into one big list
+    messages = list()
+    try:
+      while True:
+        if not self.GetConnection():
+          # The server isn't running or something. Don't re-poll.
+          return False
+
+        self._PollForMessagesNoBlock( request_data, messages )
+    except queue.Empty:
+      # We drained the queue
+      pass
+
+    # If we found some messages, return them immediately
+    if messages:
+      return messages
+
+    # otherwise, block until we get one
+    return self._PollForMessagesBlock( request_data )
+
+
   def _PollForMessagesNoBlock( self, request_data, messages ):
     notification = self.GetConnection()._notifications.get_nowait( )
     message = self._ConvertNotificationToMessage( request_data,
@@ -550,30 +646,7 @@ class LanguageServerCompleter( Completer ):
       return True
 
 
-  def PollForMessagesInner( self, request_data ):
-
-    # scoop up any pending messages into one big list
-    messages = list()
-    try:
-      while True:
-        if not self.GetConnection():
-          # The server isn't running or something. Don't re-poll.
-          return False
-
-        self._PollForMessagesNoBlock( request_data, messages )
-    except queue.Empty:
-      # We drained the queue
-      pass
-
-    # If we found some messages, return them immediately
-    if messages:
-      return messages
-
-    # otherwise, block until we get one
-    return self._PollForMessagesBlock( request_data )
-
-
-  def _GetDefaultNotificationHandler( self ):
+  def GetDefaultNotificationHandler( self ):
     def handler( server, notification ):
       self._HandleNotificationInPollThread( notification )
     return handler
@@ -590,19 +663,18 @@ class LanguageServerCompleter( Completer ):
 
 
   def _ConvertNotificationToMessage( self, request_data, notification ):
-
-    log_level = [
-      None, # 1-based enum from LSP
-      logging.ERROR,
-      logging.WARNING,
-      logging.INFO,
-      logging.DEBUG,
-    ]
-
     if notification[ 'method' ] == 'window/showMessage':
       return responses.BuildDisplayMessageResponse(
         notification[ 'params' ][ 'message' ] )
     elif notification[ 'method' ] == 'window/logMessage':
+      log_level = [
+        None, # 1-based enum from LSP
+        logging.ERROR,
+        logging.WARNING,
+        logging.INFO,
+        logging.DEBUG,
+      ]
+
       params = notification[ 'params' ]
       _logger.log( log_level[ int( params[ 'type' ] ) ],
                    SERVER_LOG_PREFIX + params[ 'message' ] )
@@ -621,8 +693,6 @@ class LanguageServerCompleter( Completer ):
 
 
   def _RefreshFiles( self, request_data ):
-    # FIXME: Provide a Reset method which clears this state. Restarting
-    # downstream servers would leave this cache in the incorrect state.
     with self._mutex:
       for file_name, file_data in iteritems( request_data[ 'file_data' ] ):
         file_state = 'New'
@@ -657,7 +727,6 @@ class LanguageServerCompleter( Completer ):
 
       # We can't change the dictionary entries while using iterkeys, so we do
       # that in a separate loop.
-      # TODO(Ben): Is this better than just not using iterkeys?
       # TODO(Ben): Isn't there a client->server event when a buffer is closed?
       for file_name in stale_files:
           msg = lsapi.DidCloseTextDocument( file_name )
@@ -665,7 +734,7 @@ class LanguageServerCompleter( Completer ):
           del self._serverFileState[ file_name ]
 
 
-  def _SendInitialiseAsync( self ):
+  def SendInitialise( self ):
     with self._mutex:
       assert not self._initialise_response
 
@@ -703,7 +772,7 @@ class LanguageServerCompleter( Completer ):
       self._initialise_event.set()
 
 
-  def _GetHoverResponse( self, request_data ):
+  def GetHoverResponse( self, request_data ):
     if not self.ServerIsReady():
       raise RuntimeError( 'Server is initialising. Please wait.' )
 
@@ -717,24 +786,7 @@ class LanguageServerCompleter( Completer ):
     return response[ 'result' ][ 'contents' ]
 
 
-  def LocationListToGoTo( self, request_data, response ):
-    if not response:
-      raise RuntimeError( 'Cannot jump to location' )
-
-    if len( response[ 'result' ] ) > 1:
-      positions = response[ 'result' ]
-      return [
-        responses.BuildGoToResponseFromLocation(
-          _PositionToLocation( request_data,
-                               position ) ) for position in positions
-      ]
-    else:
-      position = response[ 'result' ][ 0 ]
-      return responses.BuildGoToResponseFromLocation(
-        _PositionToLocation( request_data, position ) )
-
-
-  def _GoToDeclaration( self, request_data ):
+  def GoToDeclaration( self, request_data ):
     if not self.ServerIsReady():
       raise RuntimeError( 'Server is initialising. Please wait.' )
 
@@ -746,14 +798,14 @@ class LanguageServerCompleter( Completer ):
       REQUEST_TIMEOUT_COMMAND )
 
     if isinstance( response[ 'result' ], list ):
-      return self.LocationListToGoTo( request_data, response )
+      return LocationListToGoTo( request_data, response )
     else:
       position = response[ 'result' ]
       return responses.BuildGoToResponseFromLocation(
-        _PositionToLocation( request_data, position ) )
+        PositionToLocation( request_data, position ) )
 
 
-  def _GoToReferences( self, request_data ):
+  def GoToReferences( self, request_data ):
     if not self.ServerIsReady():
       raise RuntimeError( 'Server is initialising. Please wait.' )
 
@@ -764,10 +816,10 @@ class LanguageServerCompleter( Completer ):
                         request_data ),
       REQUEST_TIMEOUT_COMMAND )
 
-    return self.LocationListToGoTo( request_data, response )
+    return LocationListToGoTo( request_data, response )
 
 
-  def _CodeAction( self, request_data, args ):
+  def CodeAction( self, request_data, args ):
     if not self.ServerIsReady():
       raise RuntimeError( 'Server is initialising. Please wait.' )
 
@@ -831,13 +883,7 @@ class LanguageServerCompleter( Completer ):
     return responses.BuildFixItResponse( [ r for r in response if r ] )
 
 
-  @abc.abstractmethod
-  def HandleServerCommand( self, request_data, command ):
-    _logger.debug( 'What is going on?' )
-    return None
-
-
-  def _Rename( self, request_data, args ):
+  def Rename( self, request_data, args ):
     if not self.ServerIsReady():
       raise RuntimeError( 'Server is initialising. Please wait.' )
 
@@ -859,79 +905,94 @@ class LanguageServerCompleter( Completer ):
       [ WorkspaceEditToFixIt( request_data, response[ 'result' ] ) ] )
 
 
-  def _GetInsertionText( self, request_data, item ):
-    # TODO: We probably need to implement this and (at least) strip out the
-    # snippet parts?
-    INSERT_TEXT_FORMAT = [
-      None, # 1-based
-      'PlainText',
-      'Snippet'
+def InsertionTextForItem( request_data, item ):
+  INSERT_TEXT_FORMAT = [
+    None, # 1-based
+    'PlainText',
+    'Snippet'
+  ]
+
+  fixits = None
+
+  # We will alwyas have one of insertText or label
+  if 'insertText' in item and item[ 'insertText' ]:
+    insertion_text = item[ 'insertText' ]
+  else:
+    insertion_text = item[ 'label' ]
+
+  # Per the protocol, textEdit takes precedence over insertText, and must be
+  # on the same line (and containing) the originally requested position
+  if 'textEdit' in item and item[ 'textEdit' ]:
+    new_range = item[ 'textEdit' ][ 'range' ]
+    additional_text_edits = []
+
+    if ( new_range[ 'start' ][ 'line' ] != new_range[ 'end' ][ 'line' ] or
+         new_range[ 'start' ][ 'line' ] + 1 != request_data[ 'line_num' ] ):
+      # We can't support completions that span lines. The protocol forbids it
+      raise ValueError( 'Invalid textEdit supplied. Must be on a single '
+                          'line' )
+    elif '\n' in item[ 'textEdit' ][ 'newText' ]:
+      # The insertion text contains newlines. This is tricky: most clients
+      # (i.e. Vim) won't support this. So we cheat. Set the insertable text to
+      # the simple text, and put and additionalTextEdit instead. We manipulate
+      # the real textEdit so that it replaces the inserted text with the real
+      # textEdit.
+      fixup_textedit = dict( item[ 'textEdit' ] )
+      fixup_textedit[ 'range' ][ 'end' ][ 'character' ] = (
+        fixup_textedit[ 'range' ][ 'end' ][ 'character' ] + len(
+          insertion_text ) )
+      additional_text_edits.append( fixup_textedit )
+    else:
+      request_data[ 'start_codepoint' ] = (
+        new_range[ 'start' ][ 'character' ] + 1 )
+      insertion_text = item[ 'textEdit' ][ 'newText' ]
+
+    additional_text_edits.extend( item.get( 'additionalTextEdits', [] ) )
+
+    if additional_text_edits:
+      chunks = [ responses.FixItChunk( e[ 'newText' ],
+                                       BuildRange( request_data,
+                                                   request_data[ 'filepath' ],
+                                                   e[ 'range' ] ) )
+                 for e in additional_text_edits ]
+
+      fixits = responses.BuildFixItResponse(
+        [ responses.FixIt( chunks[ 0].range.start_, chunks ) ] )
+
+
+  if 'insertTextFormat' in item and item[ 'insertTextFormat' ]:
+    text_format = INSERT_TEXT_FORMAT[ item[ 'insertTextFormat' ] ]
+  else:
+    text_format = 'PlainText'
+
+  if text_format != 'PlainText':
+    # TODO: Strictly speaking, we could support this in the Vim client by
+    # integrating with "ad hoc" UltiSnips triggers. I've done this before and
+    # it works as well as the 'additionalTextEdits' above.
+    raise ValueError( 'Snippet completions are not supported and should not'
+                      ' be returned by the language server.' )
+
+  return ( insertion_text, fixits )
+
+
+def LocationListToGoTo( request_data, response ):
+  if not response:
+    raise RuntimeError( 'Cannot jump to location' )
+
+  if len( response[ 'result' ] ) > 1:
+    positions = response[ 'result' ]
+    return [
+      responses.BuildGoToResponseFromLocation(
+        PositionToLocation( request_data,
+                             position ) ) for position in positions
     ]
-
-    fixits = None
-
-    # We will alwyas have one of insertText or label
-    if 'insertText' in item and item[ 'insertText' ]:
-      insertion_text = item[ 'insertText' ]
-    else:
-      insertion_text = item[ 'label' ]
-
-    # Per the protocol, textEdit takes precedence over insertText, and must be
-    # on the same line (and containing) the originally requested position
-    if 'textEdit' in item and item[ 'textEdit' ]:
-      new_range = item[ 'textEdit' ][ 'range' ]
-      additional_text_edits = []
-
-      if ( new_range[ 'start' ][ 'line' ] != new_range[ 'end' ][ 'line' ] or
-           new_range[ 'start' ][ 'line' ] + 1 != request_data[ 'line_num' ] ):
-        # We can't support completions that span lines. The protocol forbids it
-        raise ValueError( 'Invalid textEdit supplied. Must be on a single '
-                            'line' )
-      elif '\n' in item[ 'textEdit' ][ 'newText' ]:
-        # The insertion text contains newlines. This is tricky: most clients
-        # (i.e. Vim) won't support this. So we cheat. Set the insertable text to
-        # the simple text, and put and additionalTextEdit instead. We manipulate
-        # the real textEdit so that it replaces the inserted text with the real
-        # textEdit.
-        fixup_textedit = dict( item[ 'textEdit' ] )
-        fixup_textedit[ 'range' ][ 'end' ][ 'character' ] = (
-          fixup_textedit[ 'range' ][ 'end' ][ 'character' ] + len(
-            insertion_text ) )
-        additional_text_edits.append( fixup_textedit )
-      else:
-        request_data[ 'start_codepoint' ] = (
-          new_range[ 'start' ][ 'character' ] + 1 )
-        insertion_text = item[ 'textEdit' ][ 'newText' ]
-
-      additional_text_edits.extend( item.get( 'additionalTextEdits', [] ) )
-
-      if additional_text_edits:
-        chunks = [ responses.FixItChunk( e[ 'newText' ],
-                                         BuildRange( request_data,
-                                                     request_data[ 'filepath' ],
-                                                     e[ 'range' ] ) )
-                   for e in additional_text_edits ]
-
-        fixits = responses.BuildFixItResponse(
-          [ responses.FixIt( chunks[ 0].range.start_, chunks ) ] )
+  else:
+    position = response[ 'result' ][ 0 ]
+    return responses.BuildGoToResponseFromLocation(
+      PositionToLocation( request_data, position ) )
 
 
-    if 'insertTextFormat' in item and item[ 'insertTextFormat' ]:
-      text_format = INSERT_TEXT_FORMAT[ item[ 'insertTextFormat' ] ]
-    else:
-      text_format = 'PlainText'
-
-    if text_format != 'PlainText':
-      # TODO: Strictly speaking, we could support this in the Vim client by
-      # integrating with "ad hoc" UltiSnips triggers. I've done this before and
-      # it works as well as the 'additionalTextEdits' above.
-      raise ValueError( 'Snippet completions are not supported and should not'
-                        ' be returned by the language server.' )
-
-    return ( insertion_text, fixits )
-
-
-def _PositionToLocation( request_data, position ):
+def PositionToLocation( request_data, position ):
   return BuildLocation( request_data,
                         lsapi.UriToFilePath( position[ 'uri' ] ),
                         position[ 'range' ][ 'start' ] )
