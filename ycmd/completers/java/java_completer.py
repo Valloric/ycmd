@@ -73,20 +73,19 @@ def ShouldEnableJavaCompleter():
 def _PathToLauncherJar():
   # The file name changes between version of eclipse, so we use a glob as
   # recommended by the language server developers. There should only be one.
-  # TODO: sort ?
-  p = glob.glob(
+  launcher_jars = glob.glob(
     os.path.abspath(
       os.path.join(
         LANGUAGE_SERVER_HOME,
         'plugins',
         'org.eclipse.equinox.launcher_*.jar' ) ) )
 
-  _logger.debug( 'Found launchers: {0}'.format( p ) )
+  _logger.debug( 'Found launchers: {0}'.format( launcher_jars ) )
 
-  if not p:
+  if not launcher_jars:
     return None
 
-  return p[ 0 ]
+  return launcher_jars[ 0 ]
 
 
 def _LauncherConfiguration():
