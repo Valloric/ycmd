@@ -114,7 +114,7 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
       self._server = None
       self._server_handle = None
       self._server_stderr = None
-      self._workspace_path = tempfile.mkdtemp()
+      self._workspace_path = None
       self._Reset()
 
       try :
@@ -183,15 +183,19 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
         utils.RemoveIfExists( self._server_stderr )
         self._server_stderr = None
 
+      if self._workspace_path:
+        try:
+          rmtree( self._workspace_path )
+        except OSError:
+          # We actually just ignore the error because there's really not much
+          # else we can do
+          _logger.exception( 'Failed to remove workspace path: {0}'.format(
+            self._workspace_path ) )
+
+
+    self._workspace_path = tempfile.mkdtemp()
     self._server_handle = None
     self._received_ready_message = threading.Event()
-
-    try:
-      rmtree( self._workspace_path )
-    except OSError:
-      # We actually just ignore the error because on startup it won't exist
-      _logger.exception( 'Failed to remove workspace path: {0}'.format(
-        self._workspace_path ) )
 
     self._server = None
 
