@@ -279,7 +279,7 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
              super( JavaCompleter, self ).ServerIsReady() )
 
 
-  def GetProjectDirectory( self ):
+  def _GetProjectDirectory( self ):
     return self._project_dir
 
 
@@ -322,7 +322,7 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
     with self._server_state_mutex:
       _logger.info( 'Starting JDT Language Server...' )
 
-      self._project_dir = _FindProjectDir( os.getcwd() )
+      self._project_dir = _FindProjectDir( utils.GetCurrentDirectory() )
       self._workspace_path = _WorkspaceDirForProject(
         self._project_dir,
         self._use_clean_workspace )
