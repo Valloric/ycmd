@@ -235,6 +235,18 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
 
 
   def DebugInfo( self, request_data ):
+    items = [
+      responses.DebugInfoItem( 'Java Path', PATH_TO_JAVA ),
+      responses.DebugInfoItem( 'Launcher Config.', self._launcher_config ),
+    ]
+
+    if self._project_dir:
+      items.append( responses.DebugInfoItem( 'Project Directory',
+                                             self._project_dir ) )
+
+    if self._workspace_path:
+      items.append( responses.DebugInfoItem( 'Workspace Path',
+                                             self._workspace_path ) )
     return responses.BuildDebugInfoResponse(
       name = "Java",
       servers = [
@@ -247,12 +259,7 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
             os.path.join( self._workspace_path, '.metadata', '.log' )
           ] )
       ],
-      items = [
-        responses.DebugInfoItem( 'Project Directory', self._project_dir ),
-        responses.DebugInfoItem( 'Workspace Path', self._workspace_path ),
-        responses.DebugInfoItem( 'Java Path', PATH_TO_JAVA ),
-        responses.DebugInfoItem( 'Launcher Config.', self._launcher_config ),
-      ] )
+      items = items )
 
 
   def Shutdown( self ):
@@ -299,11 +306,10 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
         _logger.exception( 'Failed to clean up workspace dir {0}'.format(
           self._workspace_path ) )
 
-    self._project_dir = _FindProjectDir( os.getcwd() )
-    self._workspace_path = _WorkspaceDirForProject( self._project_dir,
-                                                    self._use_clean_workspace )
     self._launcher_path = _PathToLauncherJar()
     self._launcher_config = _LauncherConfiguration()
+    self._workspace_path = None
+    self._project_dir = None
     self._received_ready_message = threading.Event()
 
     self._server_handle = None
@@ -315,6 +321,11 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
   def _StartServer( self ):
     with self._server_state_mutex:
       _logger.info( 'Starting JDT Language Server...' )
+
+      self._project_dir = _FindProjectDir( os.getcwd() )
+      self._workspace_path = _WorkspaceDirForProject(
+        self._project_dir,
+        self._use_clean_workspace )
 
       command = [
         PATH_TO_JAVA,
