@@ -200,11 +200,10 @@ def _BuildMessageData( message ):
   data = ToBytes( json.dumps( message, sort_keys=True ) )
   packet = ToBytes( 'Content-Length: {0}\r\n'
                     'Content-Type: application/vscode-jsonrpc;charset=utf8\r\n'
-                    '\r\n'
-                     .format( len(data) ) ) + data
+                    '\r\n'.format( len(data) ) ) + data
   return packet
 
 
 def Parse( data ):
-  """Reads the raw language server data |data| into a Python dictionary"""
+  """Reads the raw language server message payload into a Python dictionary"""
   return json.loads( ToUnicode( data ) )
