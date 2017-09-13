@@ -19,13 +19,13 @@ class TestLauncher {
   public static void main( String[] args ) {
     TestLauncher l = new TestLauncher();
     l.Run( new Launchable() {
-	@Override
-	public void launch() {
-          AbstractTestWidget w = factory.getWidget( "Test" );
-          w.doSomethingVaguelyUseful();
+      @Override
+      public void launch() {
+        AbstractTestWidget w = factory.getWidget( "Test" );
+        w.doSomethingVaguelyUseful();
 
-          System.out.println( "Did something useful: " + w.getWidgetInfo() );
-	}
+        System.out.println( "Did something useful: " + w.getWidgetInfo() );
+      }
     });
   }
 }
