@@ -18,9 +18,7 @@ class TestLauncher {
 
   public static void main( String[] args ) {
     TestLauncher l = new TestLauncher();
-    l.Run(
     l.Run( new Launchable() {
-
 	@Override
 	public void launch() {
           AbstractTestWidget w = factory.getWidget( "Test" );
