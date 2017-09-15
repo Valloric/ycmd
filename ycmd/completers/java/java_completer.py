@@ -48,7 +48,6 @@ LANGUAGE_SERVER_HOME = os.path.join( os.path.dirname( __file__ ),
                                      'target',
                                      'repository')
 
-# TODO: Java 8 required (validate this)
 PATH_TO_JAVA = utils.PathToFirstExistingExecutable( [ 'java' ] )
 
 PROJECT_FILE_TAILS = [
@@ -99,8 +98,6 @@ def ShouldEnableJavaCompleter():
   if not _PathToLauncherJar():
     _logger.warning( 'Not using java completion: jdt.ls is not built' )
     return False
-
-  # TODO: Check java version
 
   return True
 
