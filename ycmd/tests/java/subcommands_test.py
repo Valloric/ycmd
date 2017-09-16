@@ -359,6 +359,36 @@ def Subcommands_GetType_Method_test( app ):
 
 
 @SharedYcmd
+def Subcommands_GetType_Unicode_test( app ):
+  filepath = PathToTestFile( DEFAULT_PROJECT_DIR,
+                             'src',
+                             'com',
+                             'youcompleteme',
+                             'Test.java' )
+  contents = ReadFile( filepath )
+
+  app.post_json( '/event_notification',
+                 BuildRequest( filepath = filepath,
+                               filetype = 'java',
+                               contents = contents,
+                               event_name = 'FileReadyToParse' ) )
+
+  event_data = BuildRequest( filepath = filepath,
+                             filetype = 'java',
+                             line_num = 7,
+                             column_num = 17,
+                             contents = contents,
+                             command_arguments = [ 'GetType' ],
+                             completer_target = 'filetype_default' )
+
+  response = app.post_json( '/run_completer_command', event_data ).json
+
+  eq_( response, {
+         'message': 'String whåtawîdgé - com.youcompleteme.Test.doUnicødeTes()'
+  } )
+
+
+@SharedYcmd
 def Subcommands_GetType_LiteralValue_test( app ):
   filepath = PathToTestFile( 'simple_eclipse_project',
                              'src',
@@ -602,6 +632,45 @@ def Subcommands_RefactorRename_Missing_New_Name_test( app ):
                             'Usage: RefactorRename <new name>' ),
     }
   } )
+
+
+@SharedYcmd
+def Subcommands_RefactorRename_Unicode_test( app ):
+  filepath = PathToTestFile( 'simple_eclipse_project',
+                             'src',
+                             'com',
+                             'youcompleteme',
+                             'Test.java' )
+  RunTest( app, {
+    'description': 'Rename works for unicode identifier',
+    'request': {
+      'command': 'RefactorRename',
+      'arguments': [ 'shorter' ],
+      'line_num': 7,
+      'column_num': 21,
+      'filepath': filepath,
+    },
+    'expect': {
+      'response': requests.codes.ok,
+      'data': has_entries ( {
+        'fixits': contains( has_entries( {
+          'chunks': contains(
+            ChunkMatcher(
+              'shorter',
+              LocationMatcher( filepath, 7, 12 ),
+              LocationMatcher( filepath, 7, 25 )
+            ),
+            ChunkMatcher(
+              'shorter',
+              LocationMatcher( filepath, 8, 12 ),
+              LocationMatcher( filepath, 8, 25 )
+            ),
+          ),
+        } ) ),
+      } ),
+    },
+  } )
+
 
 
 @SharedYcmd
@@ -861,6 +930,49 @@ def Subcommands_FixIt_NoDiagnostics_test():
           filepath, 1, 1, has_entries( { 'fixits': empty() } ) )
 
 
+def Subcommands_FixIt_Unicode_test():
+  filepath = PathToTestFile( 'simple_eclipse_project',
+                             'src',
+                             'com',
+                             'youcompleteme',
+                             'Test.java' )
+
+  fixits = has_entries ( {
+    'fixits': contains_inanyorder(
+      has_entries( {
+        'text': "Remove argument to match 'doUnicødeTes()'",
+        'chunks': contains(
+          ChunkMatcher( '',
+                        LocationMatcher( filepath, 13, 24 ),
+                        LocationMatcher( filepath, 13, 29 ) ),
+        ),
+      } ),
+      has_entries( {
+        'text': "Change method 'doUnicødeTes()': Add parameter 'String'",
+        'chunks': contains(
+          ChunkMatcher( 'String test2',
+                        LocationMatcher( filepath, 6, 31 ),
+                        LocationMatcher( filepath, 6, 31 ) ),
+        ),
+      } ),
+      has_entries( {
+        'text': "Create method 'doUnicødeTes(String)'",
+        'chunks': contains(
+          ChunkMatcher( 'private void doUnicødeTes(String test2) {\n}',
+                        LocationMatcher( filepath, 20, 3 ),
+                        LocationMatcher( filepath, 20, 3 ) ),
+          ChunkMatcher( '\n\n\n',
+                        LocationMatcher( filepath, 20, 3 ),
+                        LocationMatcher( filepath, 20, 3 ) ),
+        ),
+      } ),
+    )
+  } )
+
+  yield ( RunFixItTest, 'FixIts and diagnostics work with unicode strings',
+          filepath, 13, 1, fixits )
+
+
 @SharedYcmd
 def RunGoToTest( app, description, filepath, line, col, cmd, goto_response ):
   RunTest( app, {
@@ -884,6 +996,12 @@ def Subcommands_GoTo_test():
                              'com',
                              'test',
                              'TestLauncher.java' )
+
+  unicode_filepath = PathToTestFile( 'simple_eclipse_project',
+                                     'src',
+                                     'com',
+                                     'youcompleteme',
+                                     'Test.java' )
 
   tests = [
     # Member function local variable
@@ -923,7 +1041,10 @@ def Subcommands_GoTo_test():
       'response': { 'line_num': 6, 'column_num': 7, 'filepath': filepath },
       'description': 'GoTo works for jumping to class declaration' },
     # Unicode
-
+    { 'request': { 'line': 8, 'col': 12, 'filepath': unicode_filepath },
+      'response': { 'line_num': 7, 'column_num': 12, 'filepath':
+                    unicode_filepath },
+      'description': 'GoTo works for unicode identifiers' }
   ]
 
   for command in [ 'GoTo', 'GoToDefinition', 'GoToDeclaration' ]:
