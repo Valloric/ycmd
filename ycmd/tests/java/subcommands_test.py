@@ -387,6 +387,33 @@ def Subcommands_GetType_LiteralValue_test( app ):
 
 
 @IsolatedYcmdInDirectory( PathToTestFile( DEFAULT_PROJECT_DIR  ) )
+def Subcommands_GoTo_NoLocation_test( app ):
+  WaitUntilCompleterServerReady( app )
+  filepath = PathToTestFile( 'simple_eclipse_project',
+                             'src',
+                             'com',
+                             'test',
+                             'AbstractTestWidget.java' )
+  contents = ReadFile( filepath )
+
+  event_data = BuildRequest( filepath = filepath,
+                             filetype = 'java',
+                             line_num = 18,
+                             column_num = 1,
+                             contents = contents,
+                             command_arguments = [ 'GoTo' ],
+                             completer_target = 'filetype_default' )
+
+  response = app.post_json( '/run_completer_command',
+                            event_data,
+                            expect_errors = True )
+
+  eq_( response.status_code, requests.codes.internal_server_error )
+
+  assert_that( response.json, ErrorMatcher( KeyError, '\'uri\'' ) )
+
+
+@IsolatedYcmdInDirectory( PathToTestFile( DEFAULT_PROJECT_DIR  ) )
 def Subcommands_GoToReferences_NoReferences_test( app ):
   WaitUntilCompleterServerReady( app )
   filepath = PathToTestFile( 'simple_eclipse_project',
@@ -453,7 +480,7 @@ def Subcommands_GoToReferences_test( app ):
                                        'TestLauncher.java' ),
            'column_num': 11,
            # 'description': '',
-           'line_num': 25
+           'line_num': 32
          } ] )
 
 
@@ -470,7 +497,7 @@ def Subcommands_RefactorRename_Simple_test( app ):
       'command': 'RefactorRename',
       'arguments': [ 'renamed_l' ],
       'filepath': filepath,
-      'line_num': 21,
+      'line_num': 28,
       'column_num': 5,
     },
     'expect': {
@@ -479,13 +506,13 @@ def Subcommands_RefactorRename_Simple_test( app ):
         'fixits': contains( has_entries( {
           'chunks': contains(
               ChunkMatcher( 'renamed_l',
-                            LocationMatcher( filepath, 20, 18 ),
-                            LocationMatcher( filepath, 20, 19 ) ),
+                            LocationMatcher( filepath, 27, 18 ),
+                            LocationMatcher( filepath, 27, 19 ) ),
               ChunkMatcher( 'renamed_l',
-                            LocationMatcher( filepath, 21, 5 ),
-                            LocationMatcher( filepath, 21, 6 ) ),
+                            LocationMatcher( filepath, 28, 5 ),
+                            LocationMatcher( filepath, 28, 6 ) ),
           ),
-          'location': LocationMatcher( filepath, 21, 5 )
+          'location': LocationMatcher( filepath, 28, 5 )
         } ) )
       } )
     }
@@ -521,7 +548,7 @@ def Subcommands_RefactorRename_MultipleFiles_test( app ):
       'command': 'RefactorRename',
       'arguments': [ 'a-quite-long-string' ],
       'filepath': TestLauncher,
-      'line_num': 25,
+      'line_num': 32,
       'column_num': 13,
     },
     'expect': {
@@ -539,14 +566,14 @@ def Subcommands_RefactorRename_MultipleFiles_test( app ):
               LocationMatcher( TestFactory, 28, 33 ) ),
             ChunkMatcher(
               'a-quite-long-string',
-              LocationMatcher( TestLauncher, 25, 11 ),
-              LocationMatcher( TestLauncher, 25, 35 ) ),
+              LocationMatcher( TestLauncher, 32, 11 ),
+              LocationMatcher( TestLauncher, 32, 35 ) ),
             ChunkMatcher(
               'a-quite-long-string',
               LocationMatcher( TestWidgetImpl, 20, 15 ),
               LocationMatcher( TestWidgetImpl, 20, 39 ) ),
           ),
-          'location': LocationMatcher( TestLauncher, 25, 13 )
+          'location': LocationMatcher( TestLauncher, 32, 13 )
         } ) )
       } )
     }
@@ -832,3 +859,79 @@ def Subcommands_FixIt_NoDiagnostics_test():
 
   yield ( RunFixItTest, "no FixIts means you gotta code it yo' self",
           filepath, 1, 1, has_entries( { 'fixits': empty() } ) )
+
+
+@SharedYcmd
+def RunGoToTest( app, description, filepath, line, col, cmd, goto_response ):
+  RunTest( app, {
+    'description': description,
+    'request': {
+      'command': cmd,
+      'line_num': line,
+      'column_num': col,
+      'filepath': filepath
+    },
+    'expect': {
+      'response': requests.codes.ok,
+      'data': goto_response,
+    }
+  } )
+
+
+def Subcommands_GoTo_test():
+  filepath = PathToTestFile( 'simple_eclipse_project',
+                             'src',
+                             'com',
+                             'test',
+                             'TestLauncher.java' )
+
+  tests = [
+    # Member function local variable
+    { 'request': { 'line': 28, 'col': 5, 'filepath': filepath },
+      'response': { 'line_num': 27, 'column_num': 18, 'filepath': filepath },
+      'description': 'GoTo works for memeber local variable' },
+    # Member variable
+    { 'request': { 'line': 22, 'col': 7, 'filepath': filepath },
+      'response': { 'line_num': 8, 'column_num': 16, 'filepath': filepath },
+      'description': 'GoTo works for memeber variable' },
+    # Method
+    { 'request': { 'line': 28, 'col': 7, 'filepath': filepath },
+      'response': { 'line_num': 21, 'column_num': 16, 'filepath': filepath },
+      'description': 'GoTo works for method' },
+    # Constructor
+    { 'request': { 'line': 38, 'col': 26, 'filepath': filepath },
+      'response': { 'line_num': 10, 'column_num': 10, 'filepath': filepath },
+      'description': 'GoTo works for jumping to constructor' },
+    # Jump to self - main()
+    { 'request': { 'line': 26, 'col': 22, 'filepath': filepath },
+      'response': { 'line_num': 26, 'column_num': 22, 'filepath': filepath },
+      'description': 'GoTo works for jumping to the same position' },
+    # # Static method
+    { 'request': { 'line': 37, 'col': 11, 'filepath': filepath },
+      'response': { 'line_num': 13, 'column_num': 21, 'filepath': filepath },
+      'description': 'GoTo works for static method' },
+    # Static variable
+    { 'request': { 'line': 14, 'col': 11, 'filepath': filepath },
+      'response': { 'line_num': 12, 'column_num': 21, 'filepath': filepath },
+      'description': 'GoTo works for static variable' },
+    # Argument variable
+    { 'request': { 'line': 23, 'col': 5, 'filepath': filepath },
+      'response': { 'line_num': 21, 'column_num': 32, 'filepath': filepath },
+      'description': 'GoTo works for argument variable' },
+    # Class
+    { 'request': { 'line': 27, 'col': 30, 'filepath': filepath },
+      'response': { 'line_num': 6, 'column_num': 7, 'filepath': filepath },
+      'description': 'GoTo works for jumping to class declaration' },
+    # Unicode
+
+  ]
+
+  for command in [ 'GoTo', 'GoToDefinition', 'GoToDeclaration' ]:
+    for test in tests:
+      yield ( RunGoToTest,
+              test[ 'description' ],
+              test[ 'request' ][ 'filepath' ],
+              test[ 'request' ][ 'line' ],
+              test[ 'request' ][ 'col' ],
+              command,
+              test[ 'response' ] )
