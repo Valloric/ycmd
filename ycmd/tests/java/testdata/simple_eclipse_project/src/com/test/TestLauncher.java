@@ -24,7 +24,7 @@ class TestLauncher {
   }
 
   public static void main( String[] args ) {
-    TestLauncher l = new TestLauncher();
+    TestLauncher l = new TestLauncher( 10 );
     l.Run( new Launchable() {
       @Override
       public void launch() {
@@ -36,5 +36,6 @@ class TestLauncher {
     });
     static_method();
     TestLauncher t = new TestLauncher( 4 );
+    t.Run( null );
   }
 }
