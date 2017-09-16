@@ -1099,12 +1099,19 @@ def PositionToLocation( request_data, position ):
 
 
 def BuildLocation( request_data, filename, loc ):
-  line_contents = utils.SplitLines( GetFileContents( request_data, filename ) )
-  return responses.Location(
-    line = loc[ 'line' ] + 1,
-    column = utils.CodepointOffsetToByteOffset( line_contents,
-                                                loc[ 'character' ] + 1 ),
-    filename = filename )
+  file_contents = utils.SplitLines( GetFileContents( request_data, filename ) )
+  try:
+    line_value = file_contents[ loc[ 'line' ] ]
+    column = utils.CodepointOffsetToByteOffset( line_value,
+                                                loc[ 'character' ] + 1 )
+  except IndexError:
+    # This can happen when there are stale diagnostics in OnFileReadyToParse,
+    # just return the value as-is.
+    column = loc[ 'character' ] + 1
+
+  return responses.Location( loc[ 'line' ] + 1,
+                             column,
+                             filename = filename )
 
 
 def BuildRange( request_data, filename, r ):
