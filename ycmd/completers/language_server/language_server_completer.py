@@ -850,8 +850,11 @@ class LanguageServerCompleter( Completer ):
       return LocationListToGoTo( request_data, response )
     else:
       position = response[ 'result' ]
-      return responses.BuildGoToResponseFromLocation(
-        PositionToLocation( request_data, position ) )
+      try:
+        return responses.BuildGoToResponseFromLocation(
+          PositionToLocation( request_data, position ) )
+      except KeyError:
+        raise RuntimeError( 'Cannot jump to location' )
 
 
   def GoToReferences( self, request_data ):
@@ -1088,7 +1091,9 @@ def LocationListToGoTo( request_data, response ):
       position = response[ 'result' ][ 0 ]
       return responses.BuildGoToResponseFromLocation(
         PositionToLocation( request_data, position ) )
-  except( IndexError ):
+  except IndexError:
+    raise RuntimeError( 'Cannot jump to location' )
+  except KeyError:
     raise RuntimeError( 'Cannot jump to location' )
 
 
