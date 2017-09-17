@@ -1,4 +1,5 @@
 # Copyright (C) 2017 ycmd contributors
+# encoding: utf-8
 #
 # This file is part of ycmd.
 #
