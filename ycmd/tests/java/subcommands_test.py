@@ -441,7 +441,8 @@ def Subcommands_GoTo_NoLocation_test( app ):
 
   eq_( response.status_code, requests.codes.internal_server_error )
 
-  assert_that( response.json, ErrorMatcher( KeyError, '\'uri\'' ) )
+  assert_that( response.json,
+               ErrorMatcher( RuntimeError, 'Cannot jump to location' ) )
 
 
 @IsolatedYcmdInDirectory( PathToTestFile( DEFAULT_PROJECT_DIR  ) )
