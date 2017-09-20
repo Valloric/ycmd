@@ -1,4 +1,4 @@
-# Copyright (C) 2018 ycmd contributors
+# Copyright (C) 2016-2018 ycmd contributors
 #
 # This file is part of ycmd.
 #
@@ -25,8 +25,8 @@ from builtins import *  # noqa
 import functools
 import os
 
-from ycmd.tests.test_utils import ( ClearCompletionsCache, IsolatedApp,
-                                    SetUpApp, StopCompleterServer,
+from ycmd.tests.test_utils import ( BuildRequest, ClearCompletionsCache,
+                                    IsolatedApp, SetUpApp, StopCompleterServer,
                                     WaitUntilCompleterServerReady )
 
 shared_app = None
@@ -44,14 +44,25 @@ def setUpPackage():
   subserver, should be done here."""
   global shared_app
 
-  shared_app = SetUpApp()
-  WaitUntilCompleterServerReady( shared_app, 'javascript' )
+  shared_app = SetUpApp( { 'use_tern_completer': 1 } )
+  StartJavaScriptCompleterServerInDirectory( shared_app, PathToTestFile() )
 
 
 def tearDownPackage():
+  """Cleans up the tests using the SharedYcmd decorator in this package. It is
+  executed once after running all the tests in the package."""
   global shared_app
 
   StopCompleterServer( shared_app, 'javascript' )
+
+
+def StartJavaScriptCompleterServerInDirectory( app, directory ):
+  app.post_json( '/event_notification',
+                 BuildRequest(
+                   filepath = os.path.join( directory, 'test.js' ),
+                   event_name = 'FileReadyToParse',
+                   filetype = 'javascript' ) )
+  WaitUntilCompleterServerReady( shared_app, 'javascript' )
 
 
 def SharedYcmd( test ):
@@ -70,15 +81,16 @@ def SharedYcmd( test ):
 
 def IsolatedYcmd( test ):
   """Defines a decorator to be attached to tests of this package. This decorator
-  passes a unique ycmd application as a parameter. It should be used on tests
-  that change the server state in a irreversible way (ex: a semantic subserver
-  is stopped or restarted) or expect a clean state (ex: no semantic subserver
-  started, no .ycm_extra_conf.py loaded, etc).
+  passes a unique ycmd application as a parameter running in the directory
+  supplied. It should be used on tests that change the server state in a
+  irreversible way (ex: a semantic subserver is stopped or restarted) or expect
+  a clean state (ex: no semantic subserver started, no .ycm_extra_conf.py
+  loaded, etc).
 
   Do NOT attach it to test generators but directly to the yielded tests."""
   @functools.wraps( test )
   def Wrapper( *args, **kwargs ):
-    with IsolatedApp() as app:
+    with IsolatedApp( { 'use_tern_completer': 1 } ) as app:
       try:
         test( app, *args, **kwargs )
       finally:

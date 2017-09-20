@@ -68,6 +68,7 @@ class Client_test( object ):
     self._hmac_secret = os.urandom( HMAC_SECRET_LENGTH )
     self._options_dict[ 'hmac_secret' ] = ToUnicode(
       b64encode( self._hmac_secret ) )
+    self._options_dict[ 'use_tern_completer' ] = 1
 
 
   def tearDown( self ):
