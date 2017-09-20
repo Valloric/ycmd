@@ -81,7 +81,7 @@ class Shutdown_test( Client_test ):
 
   @Client_test.CaptureLogfiles
   def FromWatchdogWithSubservers_test( self ):
-    self.Start( idle_suicide_seconds = 5, check_interval_seconds = 1 )
+    self.Start( idle_suicide_seconds = 10, check_interval_seconds = 1 )
 
     filetypes = [ 'cs',
                   'go',
