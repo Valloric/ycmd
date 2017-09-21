@@ -17,7 +17,6 @@
 
 #include "TranslationUnitStore.h"
 #include "CompletionData.h"
-#include "exceptions.h"
 #include "Utils.h"
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
@@ -54,11 +53,19 @@ TEST_F( TranslationUnitTest, ExceptionThrownOnParseFailure ) {
   std::vector< std::string > flags;
   flags.push_back( junk );
 
-  EXPECT_THROW( TranslationUnit( test_file.string(),
-                                 std::vector< UnsavedFile >(),
-                                 flags,
-                                 NULL ),
-                ClangParseError );
+  try {
+    TranslationUnit( test_file.string(),
+                     std::vector< UnsavedFile >(),
+                     flags,
+                     NULL );
+    FAIL() << "Expected std::runtime_error exception.";
+  } catch ( std::runtime_error &error ) {
+    EXPECT_EQ( error.what(),
+               std::string( "Parsing the translation unit "
+                            "with invalid arguments." ) );
+  } catch ( ... ) {
+    FAIL() << "Expected std::runtime_error exception.";
+  }
 }
 
 TEST_F( TranslationUnitTest, GoToDefinitionWorks ) {
@@ -142,12 +149,16 @@ TEST_F( TranslationUnitTest, InvalidTranslationUnitStore ) {
   std::vector< std::string > flags;
 
   TranslationUnitStore translation_unit_store{ clang_index_ };
-  std::shared_ptr< TranslationUnit > unit = translation_unit_store
-                                             .GetOrCreate( filename,
-                                                           unsaved_files,
-                                                           flags );
-
-  EXPECT_EQ( std::shared_ptr< TranslationUnit >(), unit );
+  try {
+    translation_unit_store.GetOrCreate( filename, unsaved_files, flags );
+    FAIL() << "Expected std::runtime_error exception.";
+  } catch ( std::runtime_error &error ) {
+    EXPECT_EQ( error.what(),
+               std::string( "An AST deserialization error occured "
+                            "while parsing the translation unit." ) );
+  } catch ( ... ) {
+    FAIL() << "Expected std::runtime_error exception.";
+  }
 }
 
 

@@ -37,6 +37,8 @@ std::string CXFileToFilepath( CXFile file );
 
 std::string ClangVersion();
 
+std::string CXErrorCodeToString( CXErrorCode code );
+
 } // namespace YouCompleteMe
 
 #endif /* end of include guard: CLANGUTILS_H_9MVHQLJS */
