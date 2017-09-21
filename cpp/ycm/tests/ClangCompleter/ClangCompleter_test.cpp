@@ -24,6 +24,8 @@
 
 #include <boost/filesystem.hpp>
 
+namespace fs = boost::filesystem;
+
 namespace YouCompleteMe {
 
 using ::testing::ElementsAre;
@@ -205,58 +207,30 @@ TEST( ClangCompleterTest, GetDocString ) {
 }
 
 
-TEST( ClangCompleterTest, NoTranslationUnit ) {
+TEST( ClangCompleterTest, ExceptionThrownOnReparseFailure ) {
   ClangCompleter completer;
 
-  const std::string filename;
-  const std::vector< UnsavedFile > unsaved_files;
-  const std::vector< std::string > flags;
+  // Create a translation unit for a C++ file that is not saved on disk.
+  fs::path test_file = PathToTestFile( "unsaved_file.cpp" );
+  UnsavedFile unsaved_file;
+  unsaved_file.filename_ = test_file.string();
 
-  EXPECT_EQ( std::vector< Diagnostic >(),
-             completer.UpdateTranslationUnit( filename, unsaved_files, flags) );
+  completer.UpdateTranslationUnit( test_file.string(),
+                                   std::vector< UnsavedFile >{ unsaved_file },
+                                   std::vector< std::string >() );
 
-  EXPECT_EQ( std::vector< CompletionData >(),
-             completer.CandidatesForLocationInFile( filename,
-                                                    1,
-                                                    1,
-                                                    unsaved_files,
-                                                    flags ) );
-
-  EXPECT_EQ( Location(), completer.GetDeclarationLocation( filename,
-                                                           1,
-                                                           1,
-                                                           unsaved_files,
-                                                           flags ) );
-  EXPECT_EQ( Location(), completer.GetDefinitionLocation( filename,
-                                                          1,
-                                                          1,
-                                                          unsaved_files,
-                                                          flags ) );
-  EXPECT_EQ( std::string( "no unit" ),
-             completer.GetTypeAtLocation( filename,
-                                          1,
-                                          1,
-                                          unsaved_files,
-                                          flags ) );
-  EXPECT_EQ( std::string( "no unit" ),
-             completer.GetEnclosingFunctionAtLocation( filename,
-                                                       1,
-                                                       1,
-                                                       unsaved_files,
-                                                       flags ) );
-  EXPECT_EQ( std::vector< FixIt >(),
-             completer.GetFixItsForLocationInFile( filename,
-                                                   1,
-                                                   1,
-                                                   unsaved_files,
-                                                   flags ) );
-
-  EXPECT_EQ( DocumentationData(),
-             completer.GetDocsForLocationInFile( filename,
-                                                 1,
-                                                 1,
-                                                 unsaved_files,
-                                                 flags ) );
+  try {
+    // libclang cannot reparse a file that doesn't exist and is not in the list
+    // of unsaved files.
+    completer.UpdateTranslationUnit( test_file.string(),
+                                     std::vector< UnsavedFile >(),
+                                     std::vector< std::string >() );
+    FAIL() << "Expected ClangParseError exception.";
+  } catch ( const ClangParseError &error ) {
+    EXPECT_STREQ( error.what(), "Failed to parse the translation unit." );
+  } catch ( ... ) {
+    FAIL() << "Expected ClangParseError exception.";
+  }
 }
 
 } // namespace YouCompleteMe
