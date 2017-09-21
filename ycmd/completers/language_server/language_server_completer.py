@@ -323,6 +323,8 @@ class LanguageServerConnection( threading.Thread ):
         content_read += len( content )
         read_bytes = content_to_read
 
+      _logger.debug( 'RX: Received message: {0}'.format( content ) )
+
       # lsapi will convert content to unicode
       self._DespatchMessage( lsapi.Parse( content ) )
 
@@ -332,7 +334,6 @@ class LanguageServerConnection( threading.Thread ):
 
 
   def _DespatchMessage( self, message ):
-    _logger.debug( 'RX: Received message: {0}'.format( message ) )
     if 'id' in message:
       with self._responseMutex:
         assert str( message[ 'id' ] ) in self._responses
