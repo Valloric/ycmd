@@ -55,6 +55,27 @@ bool HasClangSupport() {
 }
 
 
+PyObject* CreatePythonException( const char* name,
+                                 PyObject* base_exception = PyExc_Exception ) {
+  std::string scope_name = extract< std::string >( scope().attr( "__name__" ) );
+  std::string qualified_name = scope_name + "." + name;
+  char *raw_name = const_cast< char * >( qualified_name.c_str() );
+  PyObject* object = PyErr_NewException( raw_name, base_exception, NULL );
+  scope().attr( name ) = handle<>( borrowed( object ) );
+  return object;
+}
+
+
+#ifdef USE_CLANG_COMPLETER
+PyObject* PyExc_ClangParseError = NULL;
+
+
+void TranslateClangParseError( const ClangParseError &error ) {
+  PyErr_SetString( PyExc_ClangParseError, error.what() );
+}
+#endif // USE_CLANG_COMPLETER
+
+
 BOOST_PYTHON_FUNCTION_OVERLOADS( FilterAndSortCandidatesOverloads,
                                  FilterAndSortCandidates,
                                  3, 4 )
@@ -95,6 +116,9 @@ BOOST_PYTHON_MODULE(ycm_core)
     .def( vector_indexing_suite< std::vector< std::string > >() );
 
 #ifdef USE_CLANG_COMPLETER
+  PyExc_ClangParseError = CreatePythonException( "ClangParseError" );
+  register_exception_translator< ClangParseError >( &TranslateClangParseError );
+
   def( "ClangVersion", ClangVersion );
 
   // CAREFUL HERE! For filename and contents we are referring directly to
