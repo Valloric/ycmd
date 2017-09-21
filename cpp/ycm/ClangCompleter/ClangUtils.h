@@ -37,6 +37,16 @@ std::string CXFileToFilepath( CXFile file );
 
 std::string ClangVersion();
 
+const char *CXErrorCodeToString( CXErrorCode code );
+
+/**
+ * Thrown when libclang fails to parse (or reparse) the translation unit.
+ */
+struct ClangParseError : virtual std::runtime_error {
+  ClangParseError( const char *what_arg );
+  ClangParseError( CXErrorCode code );
+};
+
 } // namespace YouCompleteMe
 
 #endif /* end of include guard: CLANGUTILS_H_9MVHQLJS */

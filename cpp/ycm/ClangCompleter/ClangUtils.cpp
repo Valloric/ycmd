@@ -43,4 +43,28 @@ std::string ClangVersion() {
   return CXStringToString( clang_getClangVersion() );
 }
 
+const char *CXErrorCodeToString( CXErrorCode code ) {
+  switch ( code ) {
+    case CXError_Success:
+      return "No error encountered while parsing the translation unit.";
+    case CXError_Failure:
+      return "Failed to parse the translation unit.";
+    case CXError_Crashed:
+      return "Libclang crashed while parsing the translation unit.";
+    case CXError_InvalidArguments:
+      return "Parsing the translation unit with invalid arguments.";
+    case CXError_ASTReadError:
+      return "An AST deserialization error occurred "
+             "while parsing the translation unit.";
+  }
+}
+
+ClangParseError::ClangParseError( const char *what_arg )
+  : std::runtime_error( what_arg ) {
+};
+
+ClangParseError::ClangParseError( CXErrorCode code )
+  : ClangParseError( CXErrorCodeToString( code ) ) {
+};
+
 } // namespace YouCompleteMe
