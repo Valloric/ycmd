@@ -229,7 +229,7 @@ class LanguageServerConnection( threading.Thread ):
       assert request_id not in self._responses
       self._responses[ request_id ] = response
 
-    _logger.debug( 'TX: Sending message {0}'.format( message ) )
+    _logger.debug( 'TX: Sending message: %r', message )
 
     self._Write( message )
     return response
@@ -241,7 +241,7 @@ class LanguageServerConnection( threading.Thread ):
 
 
   def SendNotification( self, message ):
-    _logger.debug( 'TX: Sending Notification {0}'.format( message ) )
+    _logger.debug( 'TX: Sending notification: %r', message )
 
     self._Write( message )
 
@@ -323,7 +323,7 @@ class LanguageServerConnection( threading.Thread ):
         content_read += len( content )
         read_bytes = content_to_read
 
-      _logger.debug( 'RX: Received message: {0}'.format( content ) )
+      _logger.debug( 'RX: Received message: %r', content )
 
       # lsapi will convert content to unicode
       self._DespatchMessage( lsapi.Parse( content ) )
