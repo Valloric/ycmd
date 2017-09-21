@@ -16,7 +16,6 @@
 // along with ycmd.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "ClangCompleter.h"
-#include "exceptions.h"
 #include "Result.h"
 #include "Candidate.h"
 #include "TranslationUnit.h"
@@ -90,11 +89,12 @@ std::vector< Diagnostic > ClangCompleter::UpdateTranslationUnit(
     return unit->Reparse( unsaved_files );
   }
 
-  catch ( ClangParseError & ) {
+  catch ( std::runtime_error & ) {
     // If unit->Reparse fails, then the underlying TranslationUnit object is not
     // valid anymore and needs to be destroyed and removed from the filename ->
     // TU map.
     translation_unit_store_.Remove( filename );
+    throw;
   }
 
   return std::vector< Diagnostic >();

@@ -17,7 +17,6 @@
 
 #include "TranslationUnitStore.h"
 #include "CompletionData.h"
-#include "exceptions.h"
 #include "Utils.h"
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
@@ -58,7 +57,7 @@ TEST_F( TranslationUnitTest, ExceptionThrownOnParseFailure ) {
                                  std::vector< UnsavedFile >(),
                                  flags,
                                  NULL ),
-                ClangParseError );
+                std::runtime_error );
 }
 
 TEST_F( TranslationUnitTest, GoToDefinitionWorks ) {
