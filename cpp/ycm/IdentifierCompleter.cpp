@@ -1,4 +1,4 @@
-// Copyright (C) 2011, 2012 Google Inc.
+// Copyright (C) 2018 ycmd contributors
 //
 // This file is part of ycmd.
 //
@@ -86,9 +86,6 @@ std::vector< std::string > IdentifierCompleter::CandidatesForQueryAndType(
   const size_t max_candidates ) const {
   ReleaseGil unlock;
 
-  if ( !IsPrintable( query ) )
-    return std::vector< std::string >();
-
   std::vector< Result > results;
   identifier_database_.ResultsForQueryAndType( query,
                                                filetype,
@@ -98,9 +95,9 @@ std::vector< std::string > IdentifierCompleter::CandidatesForQueryAndType(
   std::vector< std::string > candidates;
   candidates.reserve( results.size() );
 
-  for ( const Result & result : results ) {
-    candidates.push_back( *result.Text() );
-  }
+  for ( const Result & result : results )
+    candidates.push_back( result.Text() );
+
   return candidates;
 }
 

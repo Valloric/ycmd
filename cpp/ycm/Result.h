@@ -1,4 +1,4 @@
-// Copyright (C) 2011, 2012 Google Inc.
+// Copyright (C) 2018 ycmd contributors
 //
 // This file is part of ycmd.
 //
@@ -18,43 +18,38 @@
 #ifndef RESULT_H_CZYD2SGN
 #define RESULT_H_CZYD2SGN
 
+#include "Candidate.h"
+#include "Query.h"
+
 #include <string>
 
 namespace YouCompleteMe {
 
 class Result {
 public:
-  explicit Result( bool is_subsequence = false );
+  explicit Result();
 
-  Result( bool is_subsequence,
-          const std::string *text,
-          const std::string *case_swapped_text,
-          bool text_is_lowercase,
-          int char_match_index_sum,
-          const std::string &word_boundary_chars,
-          const std::string &query );
+  Result( const Candidate *candidate,
+          const Query *query,
+          unsigned char_match_index_sum,
+          bool query_is_candidate_prefix_ );
 
   bool operator< ( const Result &other ) const;
+
+  inline const std::string Text() const {
+    return candidate_->Text();
+  }
+
+  inline const std::vector< const Character * > &Characters() const {
+    return candidate_->Characters();
+  }
 
   inline bool IsSubsequence() const {
     return is_subsequence_;
   }
 
-  inline const std::string *Text() const {
-    return text_;
-  }
-
 private:
-  void SetResultFeaturesFromQuery(
-    const std::string &query,
-    const std::string &word_boundary_chars );
-
-  bool QueryIsPrefix( const std::string &text,
-                      const std::string &query );
-
-  // true when the query for which the result was created was an empty string;
-  // in these cases we just use a lexicographic comparison
-  bool query_is_empty_;
+  void SetResultFeaturesFromQuery();
 
   // true when the characters of the query are a subsequence of the characters
   // in the candidate text, e.g. the characters "abc" are a subsequence for
@@ -75,22 +70,19 @@ private:
   // for "foobar" candidate.
   bool query_is_candidate_prefix_;
 
-  // true when the candidate text is all lowercase, e.g. "foo" candidate.
-  bool text_is_lowercase_;
-
   // The sum of the indexes of all the letters the query "hit" in the candidate
   // text. For instance, the result for the query "abc" in the candidate
   // "012a45bc8" has char_match_index_sum of 3 + 6 + 7 = 16 because those are
   // the char indexes of those letters in the candidate string.
-  int char_match_index_sum_;
+  unsigned char_match_index_sum_;
 
-  // points to the full candidate text
-  const std::string *text_;
+  unsigned num_wb_matches_;
 
-  // like text_ but with lowercase letters converted to uppercase and vice
-  // versa.
-  const std::string *case_swapped_text_;
+  // points to the candidate
+  const Candidate *candidate_;
 
+  // points to the query
+  const Query *query_;
 };
 
 template< class T >
