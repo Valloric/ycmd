@@ -18,24 +18,17 @@
 #ifndef CANDIDATE_H_R5LZH6AC
 #define CANDIDATE_H_R5LZH6AC
 
-#include "LetterNode.h"
+#include "Query.h"
+#include "Word.h"
 
 #include <memory>
 #include <string>
-#include <bitset>
 
 namespace YouCompleteMe {
 
 class Result;
 
-using Bitset = std::bitset< NUM_LETTERS >;
-
-YCM_EXPORT Bitset LetterBitsetFromString( const std::string &text );
-
-// Public for tests
-YCM_EXPORT std::string GetWordBoundaryChars( const std::string &text );
-
-class Candidate {
+class Candidate : public Word {
 public:
 
   YCM_EXPORT explicit Candidate( const std::string &text );
@@ -43,26 +36,28 @@ public:
   Candidate( const Candidate& ) = delete;
   Candidate& operator=( const Candidate& ) = delete;
 
-  inline const std::string &Text() const {
-    return text_;
+  inline const std::string &CaseSwappedText() const {
+    return case_swapped_text_;
   }
 
-  // Returns true if the candidate contains the bits from the query (it may also
-  // contain other bits)
-  inline bool MatchesQueryBitset( const Bitset &query_bitset ) const {
-    return ( letters_present_ & query_bitset ) == query_bitset;
+  inline const std::vector< const Character * > &WordBoundaryChars() const {
+    return word_boundary_chars_;
   }
 
-  YCM_EXPORT Result QueryMatchResult( const std::string &query,
-                                          bool case_sensitive ) const;
+  inline bool TextIsLowercase() const {
+    return text_is_lowercase_;
+  }
+
+  YCM_EXPORT Result QueryMatchResult( const Query &query ) const;
 
 private:
-  std::string text_;
+  void ComputeCaseSwappedText();
+  void ComputeTextIsLowercase();
+  void ComputeWordBoundaryChars();
+
   std::string case_swapped_text_;
-  std::string word_boundary_chars_;
+  std::vector< const Character * > word_boundary_chars_;
   bool text_is_lowercase_;
-  Bitset letters_present_;
-  const std::unique_ptr< LetterNode > root_node_;
 };
 
 } // namespace YouCompleteMe

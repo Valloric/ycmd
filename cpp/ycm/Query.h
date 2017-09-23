@@ -15,28 +15,24 @@
 // You should have received a copy of the GNU General Public License
 // along with ycmd.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef EXCEPTIONS_H_3PHJ9YOB
-#define EXCEPTIONS_H_3PHJ9YOB
+#ifndef QUERY_H_39D9SMCE
+#define QUERY_H_39D9SMCE
 
-#include <exception>
+#include "Word.h"
+
+#include <string>
+#include <vector>
 
 namespace YouCompleteMe {
 
-// YouCompleteMe uses the "Exception types as semantic tags" idiom.
-// For more information, see this link:
-//   http://www.boost.org/doc/libs/1_50_0/libs/exception/doc/exception_types_as_simple_semantic_tags.html
-
-/**
- * Thrown when a file does not exist.
- */
-struct YCM_EXPORT ClangParseError : virtual std::exception {};
-
-/**
- * Thrown when an error occurs while decoding a UTF-8 string.
- */
-struct YCM_EXPORT UnicodeDecodeError : virtual std::exception {};
+class Query : public Word {
+public:
+  YCM_EXPORT explicit Query( const std::string &text );
+  // Make class noncopyable
+  Query( const Query& ) = delete;
+  Query& operator=( const Query& ) = delete;
+};
 
 } // namespace YouCompleteMe
 
-#endif /* end of include guard: EXCEPTIONS_H_3PHJ9YOB */
-
+#endif /* end of include guard: QUERY_H_39D9SMCE */
