@@ -27,7 +27,6 @@ using ::testing::WhenSorted;
 
 namespace YouCompleteMe {
 
-
 TEST( IdentifierCompleterTest, SortOnEmptyQuery ) {
   EXPECT_THAT( IdentifierCompleter( {
                  "foo",
@@ -246,17 +245,17 @@ TEST( IdentifierCompleterTest, NonAlnumStartChar ) {
 }
 
 
-TEST( IdentifierCompleterTest, EmptyCandidatesForUnicode ) {
+TEST( IdentifierCompleterTest, UnicodeCandidates ) {
   EXPECT_THAT( IdentifierCompleter( {
                  "uni¢𐍈d€" } ).CandidatesForQuery( "¢" ),
-               IsEmpty() );
+               ElementsAre( "uni¢𐍈d€" ) );
 }
 
 
-TEST( IdentifierCompleterTest, EmptyCandidatesForNonPrintable ) {
+TEST( IdentifierCompleterTest, NonPrintableCandidates ) {
   EXPECT_THAT( IdentifierCompleter( {
                  "\x01\x1f\x7f" } ).CandidatesForQuery( "\x1f" ),
-               IsEmpty() );
+               ElementsAre( "\x01\x1f\x7f" ) );
 }
 
 
