@@ -18,16 +18,18 @@
 #ifndef CANDIDATEREPOSITORY_H_K9OVCMHG
 #define CANDIDATEREPOSITORY_H_K9OVCMHG
 
-#include <vector>
+#include "Candidate.h"
+
+#include <memory>
+#include <mutex>
 #include <string>
 #include <unordered_map>
-#include <mutex>
+#include <vector>
 
 namespace YouCompleteMe {
 
-class Candidate;
-
-using CandidateHolder = std::unordered_map< std::string, const Candidate * >;
+using CandidateHolder = std::unordered_map< std::string,
+                                            std::unique_ptr< Candidate > >;
 
 
 // This singleton stores already built Candidate objects for candidate strings
@@ -45,7 +47,7 @@ public:
   CandidateRepository( const CandidateRepository& ) = delete;
   CandidateRepository& operator=( const CandidateRepository& ) = delete;
 
-  int NumStoredCandidates();
+  size_t NumStoredCandidates();
 
   YCM_EXPORT std::vector< const Candidate * > GetCandidatesForStrings(
     const std::vector< std::string > &strings );
@@ -54,8 +56,8 @@ public:
   YCM_EXPORT void ClearCandidates();
 
 private:
-  CandidateRepository() {};
-  ~CandidateRepository();
+  CandidateRepository() = default;
+  ~CandidateRepository() = default;
 
   const std::string &ValidatedCandidateText( const std::string &text );
 
@@ -64,7 +66,9 @@ private:
   static std::mutex singleton_mutex_;
   static CandidateRepository *instance_;
 
-  const std::string empty_;
+  // MSVC 12 complains that no appropriate default constructor is available if
+  // this property is not initialized.
+  const std::string empty_{};
 
   // This data structure owns all the Candidate pointers
   CandidateHolder candidate_holder_;
