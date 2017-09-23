@@ -1,4 +1,4 @@
-// Copyright (C) 2011, 2012 Google Inc.
+// Copyright (C) 2011-2018 ycmd contributors
 //
 // This file is part of ycmd.
 //
@@ -18,6 +18,8 @@
 #ifndef EXCEPTIONS_H_3PHJ9YOB
 #define EXCEPTIONS_H_3PHJ9YOB
 
+#include <exception>
+
 namespace YouCompleteMe {
 
 // YouCompleteMe uses the "Exception types as semantic tags" idiom.
@@ -28,6 +30,11 @@ namespace YouCompleteMe {
  * Thrown when a file does not exist.
  */
 struct YCM_EXPORT ClangParseError : virtual std::exception {};
+
+/**
+ * Thrown when an error occurs while decoding a UTF-8 string.
+ */
+struct YCM_EXPORT UnicodeDecodeError : virtual std::exception {};
 
 } // namespace YouCompleteMe
 
