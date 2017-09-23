@@ -1,4 +1,4 @@
-// Copyright (C) 2011, 2012 Google Inc.
+// Copyright (C) 2018 ycmd contributors
 //
 // This file is part of ycmd.
 //
@@ -16,97 +16,131 @@
 // along with ycmd.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <gtest/gtest.h>
+#include <gmock/gmock.h>
 #include "Candidate.h"
 #include "Result.h"
 
+#include <iostream>
+
+using ::testing::ContainerEq;
+
 namespace YouCompleteMe {
 
-TEST( GetWordBoundaryCharsTest, SimpleOneWord ) {
-  EXPECT_EQ( "s", GetWordBoundaryChars( "simple" ) );
+void WordBoundaryCharsTest( const std::string &candidate,
+                            const std::string &boundary_chars ) {
+  EXPECT_THAT( Candidate( candidate ).WordBoundaryChars(),
+               ContainerEq( Word( boundary_chars ).Characters() ) );
 }
 
-TEST( GetWordBoundaryCharsTest, PunctuationInMiddle ) {
-  EXPECT_EQ( "sf", GetWordBoundaryChars( "simple_foo" ) );
+TEST( WordBoundaryCharsTest, SimpleOneWord ) {
+  WordBoundaryCharsTest( "simple", "s" );
 }
 
-TEST( GetWordBoundaryCharsTest, PunctuationStart ) {
-  EXPECT_EQ( "s", GetWordBoundaryChars( "_simple" ) );
-  EXPECT_EQ( "s", GetWordBoundaryChars( ".simple" ) );
-  EXPECT_EQ( "s", GetWordBoundaryChars( "/simple" ) );
-  EXPECT_EQ( "s", GetWordBoundaryChars( ":simple" ) );
-  EXPECT_EQ( "s", GetWordBoundaryChars( "-simple" ) );
+TEST( WordBoundaryCharsTest, PunctuationInMiddle ) {
+  WordBoundaryCharsTest( "simple_foo", "sf" );
 }
 
-TEST( GetWordBoundaryCharsTest, PunctuationStartButFirstDigit ) {
-  EXPECT_EQ( "", GetWordBoundaryChars( "_1simple" ) );
-  EXPECT_EQ( "p", GetWordBoundaryChars( "_1simPle" ) );
+TEST( WordBoundaryCharsTest, PunctuationStart ) {
+  WordBoundaryCharsTest( "_simple", "s" );
+  WordBoundaryCharsTest( ".simple", "s" );
+  WordBoundaryCharsTest( "/simple", "s" );
+  WordBoundaryCharsTest( ":simple", "s" );
+  WordBoundaryCharsTest( "-simple", "s" );
+  WordBoundaryCharsTest( "«simple", "s" );
+  WordBoundaryCharsTest( "…simple", "s" );
+  WordBoundaryCharsTest( "𐬺simple", "s" );
 }
 
-TEST( GetWordBoundaryCharsTest, ManyPunctuationStart ) {
-  EXPECT_EQ( "s", GetWordBoundaryChars( "___simple" ) );
-  EXPECT_EQ( "s", GetWordBoundaryChars( ".;/simple" ) );
+TEST( WordBoundaryCharsTest, PunctuationStartButFirstDigit ) {
+  WordBoundaryCharsTest( "_1simple", "" );
+  WordBoundaryCharsTest( "_1simPle", "P" );
+  WordBoundaryCharsTest( "…𝟝simple", "" );
+  WordBoundaryCharsTest( "…𝟝simPle", "P" );
 }
 
-TEST( GetWordBoundaryCharsTest, PunctuationStartAndInMiddle ) {
-  EXPECT_EQ( "sf", GetWordBoundaryChars( "_simple_foo" ) );
-  EXPECT_EQ( "sf", GetWordBoundaryChars( "/simple.foo" ) );
+TEST( WordBoundaryCharsTest, ManyPunctuationStart ) {
+  WordBoundaryCharsTest( "___simple", "s" );
+  WordBoundaryCharsTest( ".;/simple", "s" );
+  WordBoundaryCharsTest( "«…𐬺simple", "s" );
 }
 
-TEST( GetWordBoundaryCharsTest, ManyPunctuationStartAndInMiddle ) {
-  EXPECT_EQ( "sf", GetWordBoundaryChars( "___simple__foo" ) );
-  EXPECT_EQ( "sf", GetWordBoundaryChars( "./;:simple..foo" ) );
+TEST( WordBoundaryCharsTest, PunctuationStartAndInMiddle ) {
+  WordBoundaryCharsTest( "_simple_foo", "sf" );
+  WordBoundaryCharsTest( "/simple.foo", "sf" );
+  WordBoundaryCharsTest( "𐬺simple—foo", "sf" );
 }
 
-TEST( GetWordBoundaryCharsTest, SimpleCapitalStart ) {
-  EXPECT_EQ( "s", GetWordBoundaryChars( "Simple" ) );
+TEST( WordBoundaryCharsTest, ManyPunctuationStartAndInMiddle ) {
+  WordBoundaryCharsTest( "___simple__foo", "sf" );
+  WordBoundaryCharsTest( "./;:simple..foo", "sf" );
+  WordBoundaryCharsTest( "«𐬺…simple——foo", "sf" );
 }
 
-TEST( GetWordBoundaryCharsTest, SimpleCapitalTwoWord ) {
-  EXPECT_EQ( "ss", GetWordBoundaryChars( "SimpleStuff" ) );
+TEST( WordBoundaryCharsTest, SimpleCapitalStart ) {
+  WordBoundaryCharsTest( "Simple", "S" );
+  WordBoundaryCharsTest( "Σimple", "Σ" );
 }
 
-TEST( GetWordBoundaryCharsTest, SimpleCapitalTwoWordPunctuationMiddle ) {
-  EXPECT_EQ( "ss", GetWordBoundaryChars( "Simple_Stuff" ) );
+TEST( WordBoundaryCharsTest, SimpleCapitalTwoWord ) {
+  WordBoundaryCharsTest( "SimpleStuff", "SS" );
+  WordBoundaryCharsTest( "ΣimpleΣtuff", "ΣΣ" );
 }
 
-TEST( GetWordBoundaryCharsTest, JavaCase ) {
-  EXPECT_EQ( "ssf", GetWordBoundaryChars( "simpleStuffFoo" ) );
+TEST( WordBoundaryCharsTest, SimpleCapitalTwoWordPunctuationMiddle ) {
+  WordBoundaryCharsTest( "Simple_Stuff", "SS" );
+  WordBoundaryCharsTest( "Σimple…Σtuff", "ΣΣ" );
 }
 
-TEST( GetWordBoundaryCharsTest, UppercaseSequence ) {
-  EXPECT_EQ( "ss", GetWordBoundaryChars( "simpleSTUFF" ) );
+TEST( WordBoundaryCharsTest, JavaCase ) {
+  WordBoundaryCharsTest( "simpleStuffFoo", "sSF" );
+  WordBoundaryCharsTest( "σimpleΣtuffΦoo", "σΣΦ" );
 }
 
-TEST( GetWordBoundaryCharsTest, UppercaseSequenceInMiddle ) {
-  EXPECT_EQ( "ss", GetWordBoundaryChars( "simpleSTUFFfoo" ) );
+TEST( WordBoundaryCharsTest, UppercaseSequence ) {
+  WordBoundaryCharsTest( "simpleSTUFF", "sS" );
+  WordBoundaryCharsTest( "σimpleΣTUFF", "σΣ" );
 }
 
-TEST( GetWordBoundaryCharsTest, UppercaseSequenceInMiddlePunctuation ) {
-  EXPECT_EQ( "ssf", GetWordBoundaryChars( "simpleSTUFF_Foo" ) );
+TEST( WordBoundaryCharsTest, UppercaseSequenceInMiddle ) {
+  WordBoundaryCharsTest( "simpleSTUFFfoo", "sS" );
+  WordBoundaryCharsTest( "σimpleΣTUFFφoo", "σΣ" );
 }
 
-TEST( GetWordBoundaryCharsTest, UppercaseSequenceInMiddlePunctuationLowercase ) {
-  EXPECT_EQ( "ssf", GetWordBoundaryChars( "simpleSTUFF_foo" ) );
-  EXPECT_EQ( "ssf", GetWordBoundaryChars( "simpleSTUFF.foo" ) );
+TEST( WordBoundaryCharsTest, UppercaseSequenceInMiddlePunctuation ) {
+  WordBoundaryCharsTest( "simpleSTUFF_Foo", "sSF" );
+  WordBoundaryCharsTest( "σimpleΣTUFF…Φoo", "σΣΦ" );
 }
 
-TEST( GetWordBoundaryCharsTest, AllCapsSimple ) {
-  EXPECT_EQ( "s", GetWordBoundaryChars( "SIMPLE" ) );
+TEST( WordBoundaryCharsTest, UppercaseSequenceInMiddlePunctuationLowercase ) {
+  WordBoundaryCharsTest( "simpleSTUFF_foo", "sSf" );
+  WordBoundaryCharsTest( "simpleSTUFF.foo", "sSf" );
+  WordBoundaryCharsTest( "σimpleΣTUFF…φoo", "σΣφ" );
+}
+
+TEST( WordBoundaryCharsTest, AllCapsSimple ) {
+  WordBoundaryCharsTest( "SIMPLE", "S" );
+  WordBoundaryCharsTest( "ΣIMPLE", "Σ" );
 }
 
 TEST( GetWordBoundaryCharsTest, AllCapsPunctuationStart ) {
-  EXPECT_EQ( "s", GetWordBoundaryChars( "_SIMPLE" ) );
-  EXPECT_EQ( "s", GetWordBoundaryChars( ".SIMPLE" ) );
+  WordBoundaryCharsTest( "_SIMPLE", "S" );
+  WordBoundaryCharsTest( ".SIMPLE", "S" );
+  WordBoundaryCharsTest( "«ΣIMPLE", "Σ" );
+  WordBoundaryCharsTest( "…ΣIMPLE", "Σ" );
 }
 
-TEST( GetWordBoundaryCharsTest, AllCapsPunctuationMiddle ) {
-  EXPECT_EQ( "ss", GetWordBoundaryChars( "SIMPLE_STUFF" ) );
-  EXPECT_EQ( "ss", GetWordBoundaryChars( "SIMPLE/STUFF" ) );
+TEST( WordBoundaryCharsTest, AllCapsPunctuationMiddle ) {
+  WordBoundaryCharsTest( "SIMPLE_STUFF", "SS" );
+  WordBoundaryCharsTest( "SIMPLE/STUFF", "SS" );
+  WordBoundaryCharsTest( "SIMPLE—ΣTUFF", "SΣ" );
+  WordBoundaryCharsTest( "ΣIMPLE…STUFF", "ΣS" );
 }
 
-TEST( GetWordBoundaryCharsTest, AllCapsPunctuationMiddleAndStart ) {
-  EXPECT_EQ( "ss", GetWordBoundaryChars( "_SIMPLE_STUFF" ) );
-  EXPECT_EQ( "ss", GetWordBoundaryChars( ":SIMPLE.STUFF" ) );
+TEST( WordBoundaryCharsTest, AllCapsPunctuationMiddleAndStart ) {
+  WordBoundaryCharsTest( "_SIMPLE_STUFF", "SS" );
+  WordBoundaryCharsTest( ":SIMPLE.STUFF", "SS" );
+  WordBoundaryCharsTest( "«ΣIMPLE—ΣTUFF", "ΣΣ" );
+  WordBoundaryCharsTest( "𐬺SIMPLE—ΣTUFF", "SΣ" );
 }
 
 TEST( CandidateTest, TextValid ) {
@@ -116,123 +150,54 @@ TEST( CandidateTest, TextValid ) {
   EXPECT_EQ( text, candidate.Text() );
 }
 
-TEST( CandidateTest, MatchesQueryBitsetWhenMatch ) {
-  Candidate candidate( "foobaaar" );
-
-  EXPECT_TRUE( candidate.MatchesQueryBitset(
-                 LetterBitsetFromString( "foobaaar" ) ) );
-  EXPECT_TRUE( candidate.MatchesQueryBitset(
-                 LetterBitsetFromString( "fobar" ) ) );
-  EXPECT_TRUE( candidate.MatchesQueryBitset(
-                 LetterBitsetFromString( "rabof" ) ) );
-  EXPECT_TRUE( candidate.MatchesQueryBitset(
-                 LetterBitsetFromString( "bfroa" ) ) );
-  EXPECT_TRUE( candidate.MatchesQueryBitset(
-                 LetterBitsetFromString( "fbr" ) ) );
-  EXPECT_TRUE( candidate.MatchesQueryBitset(
-                 LetterBitsetFromString( "r" ) ) );
-  EXPECT_TRUE( candidate.MatchesQueryBitset(
-                 LetterBitsetFromString( "bbb" ) ) );
-  EXPECT_TRUE( candidate.MatchesQueryBitset(
-                 LetterBitsetFromString( "" ) ) );
-}
-
-TEST( CandidateTest, DoesntMatchQueryBitset ) {
-  Candidate candidate( "foobar" );
-
-  EXPECT_FALSE( candidate.MatchesQueryBitset(
-                  LetterBitsetFromString( "foobare" ) ) );
-  EXPECT_FALSE( candidate.MatchesQueryBitset(
-                  LetterBitsetFromString( "gggg" ) ) );
-  EXPECT_FALSE( candidate.MatchesQueryBitset(
-                  LetterBitsetFromString( "x" ) ) );
-  EXPECT_FALSE( candidate.MatchesQueryBitset(
-                  LetterBitsetFromString( "nfoobar" ) ) );
-  EXPECT_FALSE( candidate.MatchesQueryBitset(
-                  LetterBitsetFromString( "fbrmmm" ) ) );
-}
-
-TEST( CandidateTest, QueryMatchResultCaseInsensitiveIsSubsequence ) {
-  Candidate candidate( "foobaaar" );
-
-  EXPECT_TRUE( candidate.QueryMatchResult( "foobaaar", false ).IsSubsequence() );
-  EXPECT_TRUE( candidate.QueryMatchResult( "foOBAaar", false ).IsSubsequence() );
-  EXPECT_TRUE( candidate.QueryMatchResult( "FOOBAAAR", false ).IsSubsequence() );
-  EXPECT_TRUE( candidate.QueryMatchResult( "fobar"   , false ).IsSubsequence() );
-  EXPECT_TRUE( candidate.QueryMatchResult( "fbr"     , false ).IsSubsequence() );
-  EXPECT_TRUE( candidate.QueryMatchResult( "f"       , false ).IsSubsequence() );
-  EXPECT_TRUE( candidate.QueryMatchResult( "F"       , false ).IsSubsequence() );
-  EXPECT_TRUE( candidate.QueryMatchResult( "o"       , false ).IsSubsequence() );
-  EXPECT_TRUE( candidate.QueryMatchResult( "O"       , false ).IsSubsequence() );
-  EXPECT_TRUE( candidate.QueryMatchResult( "a"       , false ).IsSubsequence() );
-  EXPECT_TRUE( candidate.QueryMatchResult( "r"       , false ).IsSubsequence() );
-  EXPECT_TRUE( candidate.QueryMatchResult( "b"       , false ).IsSubsequence() );
-  EXPECT_TRUE( candidate.QueryMatchResult( "bar"     , false ).IsSubsequence() );
-  EXPECT_TRUE( candidate.QueryMatchResult( "oa"      , false ).IsSubsequence() );
-  EXPECT_TRUE( candidate.QueryMatchResult( "obr"     , false ).IsSubsequence() );
-  EXPECT_TRUE( candidate.QueryMatchResult( "oar"     , false ).IsSubsequence() );
-  EXPECT_TRUE( candidate.QueryMatchResult( "oo"      , false ).IsSubsequence() );
-  EXPECT_TRUE( candidate.QueryMatchResult( "aaa"     , false ).IsSubsequence() );
-  EXPECT_TRUE( candidate.QueryMatchResult( "AAA"     , false ).IsSubsequence() );
-  EXPECT_TRUE( candidate.QueryMatchResult( ""        , false ).IsSubsequence() );
-}
-
-TEST( CandidateTest, QueryMatchResultCaseInsensitiveIsntSubsequence ) {
-  Candidate candidate( "foobaaar" );
-
-  EXPECT_FALSE( candidate.QueryMatchResult( "foobra"   , false ).IsSubsequence() );
-  EXPECT_FALSE( candidate.QueryMatchResult( "frb"      , false ).IsSubsequence() );
-  EXPECT_FALSE( candidate.QueryMatchResult( "brf"      , false ).IsSubsequence() );
-  EXPECT_FALSE( candidate.QueryMatchResult( "x"        , false ).IsSubsequence() );
-  EXPECT_FALSE( candidate.QueryMatchResult( "9"        , false ).IsSubsequence() );
-  EXPECT_FALSE( candidate.QueryMatchResult( "-"        , false ).IsSubsequence() );
-  EXPECT_FALSE( candidate.QueryMatchResult( "~"        , false ).IsSubsequence() );
-  EXPECT_FALSE( candidate.QueryMatchResult( " "        , false ).IsSubsequence() );
-  EXPECT_FALSE( candidate.QueryMatchResult( "rabof"    , false ).IsSubsequence() );
-  EXPECT_FALSE( candidate.QueryMatchResult( "oabfr"    , false ).IsSubsequence() );
-  EXPECT_FALSE( candidate.QueryMatchResult( "ooo"      , false ).IsSubsequence() );
-  EXPECT_FALSE( candidate.QueryMatchResult( "baaara"   , false ).IsSubsequence() );
-  EXPECT_FALSE( candidate.QueryMatchResult( "ffoobaaar", false ).IsSubsequence() );
-  EXPECT_FALSE( candidate.QueryMatchResult( "xfoobaaar", false ).IsSubsequence() );
-  EXPECT_FALSE( candidate.QueryMatchResult( " foobaaar", false ).IsSubsequence() );
-  EXPECT_FALSE( candidate.QueryMatchResult( "foobaaar ", false ).IsSubsequence() );
-  EXPECT_FALSE( candidate.QueryMatchResult( "ff"       , false ).IsSubsequence() );
-}
-
 TEST( CandidateTest, QueryMatchResultCaseSensitiveIsSubsequence ) {
-  Candidate candidate( "FooBaAAr" );
+  std::string candidate = "F𐍈oβaＡAr";
+  std::vector< std::string > queries = {
+    "F𐍈oβaＡAr",
+    "FβＡA",
+    "F",
+    "ＡA",
+    "A",
+    "β",
+    "f𐍈oβaａar",
+    "f𐍈oβaＡAr",
+    "fβＡA",
+    "fβaa",
+    "β",
+    "f",
+    "fβａr"
+  };
 
-  EXPECT_TRUE( candidate.QueryMatchResult( "FooBaAAr", true ).IsSubsequence() );
-  EXPECT_TRUE( candidate.QueryMatchResult( "FBAA"    , true ).IsSubsequence() );
-  EXPECT_TRUE( candidate.QueryMatchResult( "F"       , true ).IsSubsequence() );
-  EXPECT_TRUE( candidate.QueryMatchResult( "AA"      , true ).IsSubsequence() );
-  EXPECT_TRUE( candidate.QueryMatchResult( "A"       , true ).IsSubsequence() );
-  EXPECT_TRUE( candidate.QueryMatchResult( "B"       , true ).IsSubsequence() );
-  EXPECT_TRUE( candidate.QueryMatchResult( "foobaaar", true ).IsSubsequence() );
-  EXPECT_TRUE( candidate.QueryMatchResult( "foobaAAr", true ).IsSubsequence() );
-  EXPECT_TRUE( candidate.QueryMatchResult( "fbAA"    , true ).IsSubsequence() );
-  EXPECT_TRUE( candidate.QueryMatchResult( "fbaa"    , true ).IsSubsequence() );
-  EXPECT_TRUE( candidate.QueryMatchResult( "b"       , true ).IsSubsequence() );
-  EXPECT_TRUE( candidate.QueryMatchResult( "f"       , true ).IsSubsequence() );
-  EXPECT_TRUE( candidate.QueryMatchResult( "fbar"    , true ).IsSubsequence() );
+  for ( const std::string &query : queries ) {
+    Result result = Candidate( candidate ).QueryMatchResult( Query( query ) );
+    EXPECT_TRUE( result.IsSubsequence() )
+      << query << " is expected to be a subsequence of " << candidate;
+  }
 }
 
 TEST( CandidateTest, QueryMatchResultCaseSensitiveIsntSubsequence ) {
-  Candidate candidate( "FooBaAAr" );
+  std::string candidate = "F𐍈oβaＡAr";
+  std::vector< std::string > queries = {
+    "g𐍈o",
+    "R",
+    "O",
+    "𐍈O",
+    "OβA",
+    "FβAR",
+    "FβＡAR",
+    "Oar",
+    "F𐍈oβaＡＡr",
+    "F𐍈OβaＡAr",
+    "F𐍈Oβaａar",
+    "f𐍈Oβaａar",
+    "f𐍈oβaａaR"
+  };
 
-  EXPECT_FALSE( candidate.QueryMatchResult( "goo"     , true ).IsSubsequence() );
-  EXPECT_FALSE( candidate.QueryMatchResult( "R"       , true ).IsSubsequence() );
-  EXPECT_FALSE( candidate.QueryMatchResult( "O"       , true ).IsSubsequence() );
-  EXPECT_FALSE( candidate.QueryMatchResult( "OO"      , true ).IsSubsequence() );
-  EXPECT_FALSE( candidate.QueryMatchResult( "OBA"     , true ).IsSubsequence() );
-  EXPECT_FALSE( candidate.QueryMatchResult( "FBAR"    , true ).IsSubsequence() );
-  EXPECT_FALSE( candidate.QueryMatchResult( "FBAAR"   , true ).IsSubsequence() );
-  EXPECT_FALSE( candidate.QueryMatchResult( "Oar"     , true ).IsSubsequence() );
-  EXPECT_FALSE( candidate.QueryMatchResult( "FooBAAAr", true ).IsSubsequence() );
-  EXPECT_FALSE( candidate.QueryMatchResult( "FOoBaAAr", true ).IsSubsequence() );
-  EXPECT_FALSE( candidate.QueryMatchResult( "FOobaaar", true ).IsSubsequence() );
-  EXPECT_FALSE( candidate.QueryMatchResult( "fOobaaar", true ).IsSubsequence() );
-  EXPECT_FALSE( candidate.QueryMatchResult( "foobaaaR", true ).IsSubsequence() );
+  for ( const std::string &query : queries ) {
+    Result result = Candidate( candidate ).QueryMatchResult( Query( query ) );
+    EXPECT_FALSE( result.IsSubsequence() )
+      << query << " is not expected to be a subsequence of " << candidate;
+  }
 }
 
 } // namespace YouCompleteMe

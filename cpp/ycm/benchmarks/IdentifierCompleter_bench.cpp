@@ -1,4 +1,4 @@
-// Copyright (C) 2017 ycmd contributors
+// Copyright (C) 2017-2018 ycmd contributors
 //
 // This file is part of ycmd.
 //
@@ -18,6 +18,7 @@
 #include "benchmark/benchmark_api.h"
 #include "BenchUtils.h"
 #include "CandidateRepository.h"
+#include "CharacterRepository.h"
 #include "IdentifierCompleter.h"
 
 namespace YouCompleteMe {
@@ -25,6 +26,7 @@ namespace YouCompleteMe {
 class IdentifierCompleterFixture : public benchmark::Fixture {
 public:
   void SetUp( const benchmark::State& ) {
+    CharacterRepository::Instance().ClearCharacters();
     CandidateRepository::Instance().ClearCandidates();
   }
 };

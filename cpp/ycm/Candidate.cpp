@@ -1,4 +1,4 @@
-// Copyright (C) 2011, 2012 Google Inc.
+// Copyright (C) 2018 ycmd contributors
 //
 // This file is part of ycmd.
 //
@@ -20,88 +20,88 @@
 
 namespace YouCompleteMe {
 
-std::string GetWordBoundaryChars( const std::string &text ) {
-  std::string result;
-
-  for ( size_t i = 0; i < text.size(); ++i ) {
-    bool is_first_char_but_not_punctuation = i == 0 &&
-                                             !IsPunctuation( text[ i ] );
-    bool is_good_uppercase = i > 0 &&
-                             IsUppercase( text[ i ] ) &&
-                             !IsUppercase( text[ i - 1 ] );
-    bool is_alpha_after_punctuation = i > 0 &&
-                                      IsPunctuation( text[ i - 1 ] ) &&
-                                      IsAlpha( text[ i ] );
-
-    if ( is_first_char_but_not_punctuation ||
-         is_good_uppercase ||
-         is_alpha_after_punctuation ) {
-      result.push_back( Lowercase( text[ i ] ) );
+void Candidate::ComputeCaseSwappedText() {
+  for ( const Character *character : Characters() ) {
+    if ( character->IsUppercase() ) {
+      for ( unsigned char byte : character->Lowercase() )
+        case_swapped_text_.push_back( byte );
+    } else {
+      for ( unsigned char byte : character->Uppercase() )
+        case_swapped_text_.push_back( byte );
     }
   }
-
-  return result;
 }
 
 
-Bitset LetterBitsetFromString( const std::string &text ) {
-  Bitset letter_bitset;
+void Candidate::ComputeWordBoundaryChars() {
+  const std::vector< const Character * > characters = Characters();
 
-  for ( char letter : text ) {
-    int letter_index = IndexForLetter( letter );
+  auto character = characters.begin();
+  if ( character == characters.end() )
+    return;
 
-    if ( IsAscii( letter_index ) )
-      letter_bitset.set( letter_index );
+  if ( !( *character )->IsPunctuation() )
+    word_boundary_chars_.push_back( *character );
+
+  auto previous_character = characters.begin();
+  character++;
+  for ( ; character != characters.end(); ++previous_character, ++character ) {
+    if ( ( !( *previous_character )->IsUppercase() &&
+           ( *character )->IsUppercase() ) ||
+         ( ( *previous_character )->IsPunctuation() &&
+           ( *character )->IsLetter() ) )
+      word_boundary_chars_.push_back( *character );
+  }
+}
+
+
+void Candidate::ComputeTextIsLowercase() {
+  for ( const Character *character : Characters() ) {
+    if ( character->IsUppercase() ) {
+      text_is_lowercase_ = false;
+      return;
+    }
   }
 
-  return letter_bitset;
+  text_is_lowercase_ = true;
 }
 
 
 Candidate::Candidate( const std::string &text )
   :
-  text_( text ),
-  case_swapped_text_( SwapCase( text ) ),
-  word_boundary_chars_( GetWordBoundaryChars( text ) ),
-  text_is_lowercase_( IsLowercase( text ) ),
-  letters_present_( LetterBitsetFromString( text ) ),
-  root_node_( new LetterNode( text ) ) {
+  Candidate::Word( text ) {
+  ComputeCaseSwappedText();
+  ComputeWordBoundaryChars();
+  ComputeTextIsLowercase();
 }
 
 
-Result Candidate::QueryMatchResult( const std::string &query,
-                                    bool case_sensitive ) const {
-  LetterNode *node = root_node_.get();
-  int index_sum = 0;
+Result Candidate::QueryMatchResult( const Query &query ) const {
+  if ( !query )
+    return Result( this, &query, 0, false );
 
-  for ( char letter : query ) {
-    const NearestLetterNodeIndices *nearest =
-      node->NearestLetterNodesForLetter( letter );
+  unsigned index = 0, query_index = 0, index_sum = 0;
 
-    if ( !nearest )
-      return Result();
+  const std::vector< const Character * > &query_characters = query.Characters();
+  const std::vector< const Character * > &characters = Characters();
 
-    // When the query letter is uppercase, then we force an uppercase match
-    // but when the query letter is lowercase, then it can match both an
-    // uppercase and a lowercase letter. This is by design and it's much
-    // better than forcing lowercase letter matches.
-    node = NULL;
-    if ( case_sensitive && IsUppercase( letter ) ) {
-      if ( nearest->indexOfFirstUppercaseOccurrence >= 0 )
-        node = ( *root_node_ )[ nearest->indexOfFirstUppercaseOccurrence ];
-    } else {
-      if ( nearest->indexOfFirstOccurrence >= 0 )
-        node = ( *root_node_ )[ nearest->indexOfFirstOccurrence ];
+  auto query_character = query_characters.begin();
+  auto character = characters.begin();
+
+  for ( ; character != characters.end(); ++character, ++index ) {
+    if ( ( !( *query_character )->IsUppercase() &&
+           ( *query_character )->CaseInsensitivilyEquals( **character ) ) ||
+         **query_character == **character ) {
+      index_sum += index;
+
+      if ( ++query_character == query_characters.end() )
+        return Result( this, &query, index_sum, index == query_index );
+
+      query_index++;
     }
-
-    if ( !node )
-      return Result();
-
-    index_sum += node->Index();
   }
 
-  return Result( true, &text_, &case_swapped_text_, text_is_lowercase_,
-                 index_sum, word_boundary_chars_, query );
+  return Result();
 }
 
 } // namespace YouCompleteMe
