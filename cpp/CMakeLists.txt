@@ -176,10 +176,12 @@ endif()
 
 #############################################################################
 
-# For MSVC enable UNICODE and compilation on multiple processors
+# For MSVC enable UNICODE and compilation on multiple processors. Increase the
+# number of sections that an object file can hold. This is needed for storing
+# the Unicode table.
 if ( MSVC )
   add_definitions( /DUNICODE /D_UNICODE /Zc:wchar_t- )
-  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP" )
+  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP /bigobj" )
 endif()
 
 # Solves the conflict in names of hypot in python sources and boost::python
