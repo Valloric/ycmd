@@ -24,6 +24,7 @@
  * before anything python related.
  */
 #include <iostream>
+#include "CodePoint.h"
 #include "IdentifierCompleter.h"
 #include "PythonSupport.h"
 #include "versioning.h"
@@ -68,6 +69,8 @@ BOOST_PYTHON_MODULE(ycm_core)
 {
   // Necessary because of usage of the ReleaseGil class
   PyEval_InitThreads();
+
+  PythonException< UnicodeDecodeError >( "UnicodeDecodeError" );
 
   def( "HasClangSupport", HasClangSupport );
 
