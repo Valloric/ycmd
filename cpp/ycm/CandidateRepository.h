@@ -46,7 +46,7 @@ public:
   CandidateRepository( const CandidateRepository& ) = delete;
   CandidateRepository& operator=( const CandidateRepository& ) = delete;
 
-  int NumStoredCandidates();
+  unsigned NumStoredCandidates();
 
   YCM_EXPORT std::vector< const Candidate * > GetCandidatesForStrings(
     const std::vector< std::string > &strings );
