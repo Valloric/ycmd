@@ -1,0 +1,78 @@
+// Copyright (C) 2018 ycmd contributors
+//
+// This file is part of ycmd.
+//
+// ycmd is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// ycmd is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with ycmd.  If not, see <http://www.gnu.org/licenses/>.
+
+#ifndef CHARACTER_H_YTIET2HZ
+#define CHARACTER_H_YTIET2HZ
+
+#include <string>
+#include <vector>
+
+namespace YouCompleteMe {
+
+typedef std::vector< unsigned char > ByteSequence;
+
+class Character {
+public:
+  YCM_EXPORT Character( const std::string &codepoint );
+  // Make class noncopyable
+  Character( const Character& ) = delete;
+  Character& operator=( const Character& ) = delete;
+
+  inline ByteSequence Original() const {
+    return original_;
+  }
+
+  inline ByteSequence Lowercase() const {
+    return lowercase_;
+  }
+
+  inline ByteSequence Uppercase() const {
+    return uppercase_;
+  }
+
+  inline bool IsLetter() const {
+    return is_letter_;
+  }
+
+  inline bool IsPunctuation() const {
+    return is_punctuation_;
+  }
+
+  inline bool IsUppercase() const {
+    return is_uppercase_;
+  }
+
+  inline bool operator== ( const Character &other ) const {
+    return original_ == other.original_;
+  };
+
+  inline bool CaseInsensitivilyEquals( const Character &other ) const {
+    return uppercase_ == other.uppercase_;
+  };
+
+private:
+  ByteSequence original_;
+  ByteSequence lowercase_;
+  ByteSequence uppercase_;
+  bool is_letter_;
+  bool is_punctuation_;
+  bool is_uppercase_;
+};
+
+} // namespace YouCompleteMe
+
+#endif /* end of include guard: CHARACTER_H_YTIET2HZ */

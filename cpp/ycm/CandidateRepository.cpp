@@ -31,7 +31,7 @@ namespace {
 
 // We set a reasonable max limit to prevent issues with huge candidate strings
 // entering the database. Such large candidates are almost never desirable.
-const int MAX_CANDIDATE_SIZE = 80;
+const unsigned MAX_CANDIDATE_SIZE = 80;
 
 }  // unnamed namespace
 
@@ -51,7 +51,7 @@ CandidateRepository &CandidateRepository::Instance() {
 }
 
 
-int CandidateRepository::NumStoredCandidates() {
+unsigned CandidateRepository::NumStoredCandidates() {
   std::lock_guard< std::mutex > locker( holder_mutex_ );
   return candidate_holder_.size();
 }
@@ -103,8 +103,7 @@ CandidateRepository::~CandidateRepository() {
 // Returns a ref to empty_ if candidate not valid.
 const std::string &CandidateRepository::ValidatedCandidateText(
   const std::string &candidate_text ) {
-  if ( candidate_text.size() <= MAX_CANDIDATE_SIZE &&
-       IsPrintable( candidate_text ) )
+  if ( candidate_text.size() <= MAX_CANDIDATE_SIZE )
     return candidate_text;
 
   return empty_;

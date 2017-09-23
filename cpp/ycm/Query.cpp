@@ -1,4 +1,4 @@
-// Copyright (C) 2011, 2012 Google Inc.
+// Copyright (C) 2018 ycmd contributors
 //
 // This file is part of ycmd.
 //
@@ -15,21 +15,13 @@
 // You should have received a copy of the GNU General Public License
 // along with ycmd.  If not, see <http://www.gnu.org/licenses/>.
 
-#include <gtest/gtest.h>
-#include "LetterNodeListMap.h"
+#include "Query.h"
 
 namespace YouCompleteMe {
 
-TEST( IndexForLetterTest, Basic ) {
-  EXPECT_EQ( static_cast<int>( 'a' ), IndexForLetter( 'a' ) );
-  EXPECT_EQ( static_cast<int>( 'a' ), IndexForLetter( 'A' ) );
-  EXPECT_EQ( static_cast<int>( 'z' ), IndexForLetter( 'z' ) );
-  EXPECT_EQ( static_cast<int>( 'z' ), IndexForLetter( 'Z' ) );
-
-  EXPECT_EQ( static_cast<int>( '[' ), IndexForLetter( '[' ) );
-  EXPECT_EQ( static_cast<int>( ' ' ), IndexForLetter( ' ' ) );
-  EXPECT_EQ( static_cast<int>( '~' ), IndexForLetter( '~' ) );
+Query::Query( const std::string &text )
+  :
+  Query::Word( text ) {
 }
 
 } // namespace YouCompleteMe
-

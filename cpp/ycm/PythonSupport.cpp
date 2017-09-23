@@ -66,9 +66,6 @@ boost::python::list FilterAndSortCandidates(
   const size_t max_candidates ) {
   pylist filtered_candidates;
 
-  if ( !IsPrintable( query ) )
-    return boost::python::list();
-
   size_t num_candidates = len( candidates );
   std::vector< const Candidate * > repository_candidates =
     CandidatesFromObjectList( candidates, candidate_property );
@@ -76,18 +73,15 @@ boost::python::list FilterAndSortCandidates(
   std::vector< ResultAnd< size_t > > result_and_objects;
   {
     ReleaseGil unlock;
-    Bitset query_bitset = LetterBitsetFromString( query );
-    bool query_has_uppercase_letters = HasUppercase( query );
+    Query query_object( query );
 
     for ( size_t i = 0; i < num_candidates; ++i ) {
       const Candidate *candidate = repository_candidates[ i ];
 
-      if ( candidate->Text().empty() ||
-           !candidate->MatchesQueryBitset( query_bitset ) )
+      if ( !*candidate || !candidate->MatchesBytes( query_object ) )
         continue;
 
-      Result result = candidate->QueryMatchResult( query,
-                                                   query_has_uppercase_letters );
+      Result result = candidate->QueryMatchResult( query_object );
 
       if ( result.IsSubsequence() ) {
         ResultAnd< size_t > result_and_object( result, i );
