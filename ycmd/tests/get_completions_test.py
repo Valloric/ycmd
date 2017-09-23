@@ -1,7 +1,6 @@
 # encoding: utf-8
 #
-# Copyright (C) 2013 Google Inc.
-#               2015 ycmd contributors
+# Copyright (C) 2013-2018 ycmd contributors
 #
 # This file is part of ycmd.
 #
@@ -26,14 +25,13 @@ from __future__ import absolute_import
 from builtins import *  # noqa
 
 from hamcrest import ( assert_that, empty, equal_to, has_items,
-                       contains_string, contains_inanyorder )
+                       contains_inanyorder )
 from mock import patch
 from nose.tools import eq_
 
 from ycmd.tests import IsolatedYcmd, SharedYcmd, PathToTestFile
 from ycmd.tests.test_utils import ( BuildRequest, CompletionEntryMatcher,
-                                    DummyCompleter, PatchCompleter,
-                                    ExpectedFailure )
+                                    DummyCompleter, PatchCompleter )
 
 
 @SharedYcmd
@@ -147,9 +145,6 @@ def GetCompletions_IdentifierCompleter_Unicode_InLine_test( app ):
   )
 
 
-@ExpectedFailure( 'The identifier completer does not support '
-                  'unicode characters',
-                  contains_string( '[]' ) )
 @SharedYcmd
 def GetCompletions_IdentifierCompleter_UnicodeQuery_InLine_test( app ):
   contents = """
