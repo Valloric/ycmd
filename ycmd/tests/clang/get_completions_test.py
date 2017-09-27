@@ -539,6 +539,32 @@ def GetCompletions_UnicodeInLine_test( app ):
   } )
 
 
+@SharedYcmd
+def GetCompletions_StandardLibrary_Namespace_test( app ):
+  RunTest( app, {
+    'description': 'completion of the vector library',
+    'extra_conf': [ '.ycm_extra_conf.py' ],
+    'request': {
+      'filetype'  : 'cpp',
+      'filepath'  : PathToTestFile( 'standard_library.cpp' ),
+      'line_num'  : 5,
+      'column_num': 9,
+      'extra_conf_data': { '&filetype': 'cpp' },
+      'force_semantic': True
+    },
+    'expect': {
+      'response': requests.codes.ok,
+      'data': has_entries( {
+        'completion_start_column': 8,
+        'completions': has_item(
+          CompletionEntryMatcher( 'vector' ),
+        ),
+        'errors': empty(),
+      } )
+    },
+  } )
+
+
 @ExpectedFailure( 'Filtering and sorting does not support candidates with '
                   'non-ASCII characters.',
                   contains_string( "value for 'completions' no item matches" ) )
@@ -958,6 +984,32 @@ def GetCompletions_BracketInclude_AtDirectorySeparator_test( app ):
       'data': has_entries( {
         'completion_start_column': 18,
         'completions': empty(),
+        'errors': empty(),
+      } )
+    },
+  } )
+
+
+@IsolatedYcmd( { 'max_num_candidates': 0 } )
+def GetCompletions_BracketInclude_StandardLibrary_test( app ):
+  RunTest( app, {
+    'description': 'completion of #include <',
+    'extra_conf': [ '.ycm_extra_conf.py' ],
+    'request': {
+      'filetype'  : 'cpp',
+      'filepath'  : PathToTestFile( 'standard_library.cpp' ),
+      'line_num'  : 2,
+      'column_num': 11,
+      'extra_conf_data': { '&filetype': 'cpp' },
+      'force_semantic': True
+    },
+    'expect': {
+      'response': requests.codes.ok,
+      'data': has_entries( {
+        'completion_start_column': 11,
+        'completions': has_item(
+          CompletionEntryMatcher( 'vector', '[File]' ),
+        ),
         'errors': empty(),
       } )
     },

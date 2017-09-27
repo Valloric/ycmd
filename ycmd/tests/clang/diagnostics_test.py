@@ -249,3 +249,21 @@ def Diagnostics_MultipleMissingIncludes_test( app ):
       'fixit_available': False
     } ),
   ) )
+
+
+@IsolatedYcmd()
+def Diagnostics_StandardLibrary_NoErrors_test( app ):
+  app.post_json( '/load_extra_conf_file',
+                 { 'filepath': PathToTestFile( '.ycm_extra_conf.py' ) } )
+
+  filepath = PathToTestFile( 'standard_library.cpp' )
+  event_data = BuildRequest( filepath = filepath,
+                             contents = ReadFile( filepath ),
+                             event_name = 'FileReadyToParse',
+                             filetype = 'cpp' )
+
+  response = app.post_json( '/event_notification', event_data ).json
+
+  pprint( response )
+
+  assert_that( response, empty() )
