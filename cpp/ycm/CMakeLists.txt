@@ -224,7 +224,8 @@ file( GLOB_RECURSE SERVER_SOURCES *.h *.cpp )
 # them. The CMakeFiles cpp file is picked up when the user creates an in-source
 # build, and we don't want that. We also remove client-specific code.
 file( GLOB_RECURSE to_remove tests/*.h tests/*.cpp benchmarks/*.h
-                             benchmarks/*.cpp CMakeFiles/*.cpp *client* )
+                             benchmarks/*.cpp CMakeFiles/*.cpp *client*
+                             fake_clang/main.cpp )
 
 if( to_remove )
   list( REMOVE_ITEM SERVER_SOURCES ${to_remove} )
@@ -471,6 +472,9 @@ if( SYSTEM_IS_OPENBSD OR SYSTEM_IS_FREEBSD )
   set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread" )
 endif()
 
+if ( USE_CLANG_COMPLETER )
+  add_subdirectory( fake_clang )
+endif()
 if ( DEFINED ENV{YCM_TESTRUN} )
   add_subdirectory( tests )
 endif()
