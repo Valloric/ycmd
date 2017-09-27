@@ -26,10 +26,12 @@ import ycm_core
 import os
 import inspect
 import re
+import subprocess
 from future.utils import PY2, native
 from ycmd import extra_conf_store
-from ycmd.utils import ( ToCppStringCompatible, OnMac, OnWindows, ToUnicode,
-                         ToBytes, PathsToAllParentFolders )
+from ycmd.utils import ( GetExecutable, ToCppStringCompatible, OnMac, OnWindows,
+                         ToUnicode, ToBytes, PathsToAllParentFolders,
+                         SafePopen )
 from ycmd.responses import NoExtraConfDetected
 
 
@@ -75,6 +77,26 @@ SOURCE_EXTENSIONS = [ '.cpp', '.cxx', '.cc', '.c', '.m', '.mm' ]
 EMPTY_FLAGS = {
   'flags': [],
 }
+
+PATH_TO_YCMD_DIR = os.path.abspath( os.path.dirname( ycm_core.__file__ ) )
+FAKE_CLANG_EXECUTABLE = GetExecutable( os.path.join( PATH_TO_YCMD_DIR,
+                                                     'ycm_fake_clang' ) )
+CLANG_RESOURCE_DIR = '-resource-dir=' + os.path.join( PATH_TO_YCMD_DIR,
+                                                      'clang_includes' )
+
+# Regular expression to capture the list of system headers from the output of
+# ycm_fake_clang.
+SYSTEM_HEADER_REGEX = re.compile(
+  "#include <\.\.\.> search starts here:\n((?: .*\n)*)End of search list.",
+  re.MULTILINE )
+
+# These additional header paths are required on macOS; specifying -resource-dir
+# is not enough.
+MAC_SYSTEM_HEADERS = [ '-isystem', os.path.join( PATH_TO_YCMD_DIR,
+                                                 'clang_includes', 'include' ),
+                       '-isystem', os.path.join( PATH_TO_YCMD_DIR,
+                                                 'mac_includes', 'include',
+                                                 'c++', 'v1' ) ]
 
 
 class NoCompilationDatabase( Exception ):
@@ -140,6 +162,7 @@ class Flags( object ):
       return []
 
     if add_extra_clang_flags:
+      flags = _AddSystemHeaderPaths( flags, filename )
       flags += self.extra_clang_flags
 
     sanitized_flags = PrepareFlagsForClang( flags,
@@ -301,22 +324,11 @@ def _CallExtraConfFlagsForFile( module, filename, client_data ):
   return results
 
 
-def _SysRootSpecifedIn( flags ):
-  for flag in flags:
-    if flag == '-isysroot' or flag.startswith( '--sysroot' ):
-      return True
-
-  return False
-
-
 def PrepareFlagsForClang( flags, filename, add_extra_clang_flags = True ):
   flags = _AddLanguageFlagWhenAppropriate( flags )
   flags = _RemoveXclangFlags( flags )
   flags = _RemoveUnusedFlags( flags, filename )
   if add_extra_clang_flags:
-    if OnMac() and not _SysRootSpecifedIn( flags ):
-      for path in _MacIncludePaths():
-        flags.extend( [ '-isystem', path ] )
     flags = _EnableTypoCorrection( flags )
 
   vector = ycm_core.StringVector()
@@ -432,94 +444,8 @@ def _RemoveUnusedFlags( flags, filename ):
   return new_flags
 
 
-# There are 2 ways to get a development enviornment (as standard) on OS X:
-#  - install XCode.app, or
-#  - install the command-line tools (xcode-select --install)
-#
-# Most users have xcode installed, but in order to be as compatible as
-# possible we consider both possible installation locations
-MAC_CLANG_TOOLCHAIN_DIRS = [
-  '/Applications/Xcode.app/Contents/Developer/Toolchains/'
-    'XcodeDefault.xctoolchain',
-  '/Library/Developer/CommandLineTools'
-]
-
-
-# Returns a list containing the supplied path as a suffix of each of the known
-# Mac toolchains
-def _PathsForAllMacToolchains( path ):
-  return [ os.path.join( x, path ) for x in MAC_CLANG_TOOLCHAIN_DIRS ]
-
-
-# Ultimately, this method exists only for testability
-def _GetMacClangVersionList( candidates_dir ):
-  try:
-    return os.listdir( candidates_dir )
-  except OSError:
-    # Path might not exist, so just ignore
-    return []
-
-
-# Ultimately, this method exists only for testability
-def _MacClangIncludeDirExists( candidate_include ):
-  return os.path.exists( candidate_include )
-
-
-# Add in any clang headers found in the installed toolchains. These are
-# required for the same reasons as described below, but unfortuantely, these
-# are in versioned directories and there is no easy way to find the "correct"
-# version. We simply pick the highest version in the first toolchain that we
-# find, as this is the most likely to be correct.
-def _LatestMacClangIncludes():
-  for path in MAC_CLANG_TOOLCHAIN_DIRS:
-    # we use the first toolchain which actually contains any versions, rather
-    # than trying all of the toolchains and picking the highest. We
-    # favour Xcode over CommandLineTools as using Xcode is more common.
-    # It might be possible to extrace this information from xcode-select, though
-    # xcode-select -p does not point at the toolchain directly
-    candidates_dir = os.path.join( path, 'usr', 'lib', 'clang' )
-    versions = _GetMacClangVersionList( candidates_dir )
-
-    for version in reversed( sorted( versions ) ):
-      candidate_include = os.path.join( candidates_dir, version, 'include' )
-      if _MacClangIncludeDirExists( candidate_include ):
-        return [ candidate_include ]
-
-  return []
-
-
-MAC_INCLUDE_PATHS = []
-
-if OnMac():
-  # These are the standard header search paths that clang will use on Mac BUT
-  # libclang won't, for unknown reasons. We add these paths when the user is on
-  # a Mac because if we don't, libclang would fail to find <vector> etc.  This
-  # should be fixed upstream in libclang, but until it does, we need to help
-  # users out.
-  # See the following for details:
-  #  - Valloric/YouCompleteMe#303
-  #  - Valloric/YouCompleteMe#2268
-  MAC_INCLUDE_PATHS = (
-    _PathsForAllMacToolchains( 'usr/include/c++/v1' ) +
-    [ '/usr/local/include' ] +
-    _PathsForAllMacToolchains( 'usr/include' ) +
-    [ '/usr/include', '/System/Library/Frameworks', '/Library/Frameworks' ] +
-    _LatestMacClangIncludes() +
-    # We include the MacOS platform SDK because some meaningful parts of the
-    # standard library are located there. If users are compiling for (say)
-    # iPhone.platform, etc. they should appear earlier in the include path.
-    [ '/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/'
-      'Developer/SDKs/MacOSX.sdk/usr/include' ]
-  )
-
-
-def _MacIncludePaths():
-  # This method exists for testing only
-  return MAC_INCLUDE_PATHS
-
-
 def _ExtraClangFlags():
-  flags = _SpecialClangIncludes()
+  flags = [ CLANG_RESOURCE_DIR ]
   # On Windows, parsing of templates is delayed until instantiation time.
   # This makes GetType and GetParent commands fail to return the expected
   # result when the cursor is in a template.
@@ -550,12 +476,6 @@ def _EnableTypoCorrection( flags ):
 
   flags.append( '-fspell-checking' )
   return flags
-
-
-def _SpecialClangIncludes():
-  libclang_dir = os.path.dirname( ycm_core.__file__ )
-  path_to_includes = os.path.join( libclang_dir, 'clang_includes' )
-  return [ '-resource-dir=' + path_to_includes ]
 
 
 def _MakeRelativePathsInFlagsAbsolute( flags, working_directory ):
@@ -618,3 +538,61 @@ def _GetCompilationInfoForFile( database, file_name, file_extension ):
   # No corresponding source file was found, so we can't generate any flags for
   # this source file.
   return None
+
+
+def _GetFakeFlags( flags ):
+  """Return the -resource-dir flag and the flags from |flags| that are relevant
+  to the system header directories returned by the ycm_fake_clang executable:
+   - the -x flag which determines the language used to parse the translation
+     unit;
+   - the --sysroot flag which specifies the headers and libraries root;
+   - the -gcc-toolchain flag for using a particular GCC toolchain."""
+  fake_flags = [ CLANG_RESOURCE_DIR ]
+  try:
+    iter_flags = iter( flags )
+    for flag in iter_flags:
+      if flag in [ '-x', '--sysroot', '-gcc-toolchain' ]:
+        fake_flags.extend( [ flag, next( iter_flags ) ] )
+      elif ( flag.startswith( '--sysroot=' ) or
+             flag.startswith( '--gcc-toolchain=' ) ):
+        fake_flags.append( flag )
+  except StopIteration:
+    pass
+  return fake_flags
+
+
+def _AddSystemHeaderPaths( flags, filename ):
+  """Add the system header directories to the list of flags given by the user.
+  This is needed to provide completion of these headers in include statements
+  as well as jumping to these headers."""
+  if not FAKE_CLANG_EXECUTABLE:
+    return []
+
+  # Use the ycm_fake_clang executable to output the list of system header
+  # directories. Only the file extension is needed; libclang will deduce the
+  # language from it when the -x flag is not given.
+  _, extension = os.path.splitext( filename )
+  _, stderr = SafePopen( [ FAKE_CLANG_EXECUTABLE, '-E', '-v' ] +
+                         _GetFakeFlags( flags ) +
+                         [ 'ycm_dummy_file' + extension ],
+                         stderr = subprocess.PIPE ).communicate()
+
+  match = re.search( SYSTEM_HEADER_REGEX, ToUnicode( stderr ) )
+  if not match:
+    return []
+
+  system_headers = []
+
+  if OnMac():
+    system_headers.extend( MAC_SYSTEM_HEADERS )
+
+  for include_line in match.group( 1 ).splitlines():
+    include_line = include_line.strip()
+    if include_line.endswith( ' (framework directory)' ):
+      framework_path = include_line[ : -len( ' (framework directory)' ) ]
+      system_headers.extend( [ '-iframework',
+                               os.path.abspath( framework_path ) ] )
+    else:
+      system_headers.extend( [ '-isystem', os.path.abspath( include_line ) ] )
+
+  return flags + system_headers

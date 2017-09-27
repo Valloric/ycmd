@@ -417,6 +417,8 @@ def BuildYcmdLib( args ):
     CheckCall( [ 'cmake' ] + full_cmake_args, exit_message = exit_message )
 
     build_targets = [ 'ycm_core' ]
+    if args.clang_completer:
+      build_targets.append( 'ycm_fake_clang' )
     if 'YCM_TESTRUN' in os.environ:
       build_targets.append( 'ycm_core_tests' )
     if 'YCM_BENCHMARK' in os.environ:

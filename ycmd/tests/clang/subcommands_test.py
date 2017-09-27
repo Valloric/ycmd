@@ -25,7 +25,7 @@ from __future__ import division
 from builtins import *  # noqa
 
 from hamcrest import ( assert_that, calling, contains, contains_string,
-                       equal_to, has_entries, raises )
+                       ends_with, equal_to, has_entries, raises )
 from nose.tools import eq_
 from pprint import pprint
 from webtest import AppError
@@ -286,6 +286,31 @@ def Subcommands_GoToInclude_Fail_test():
   assert_that(
     calling( RunGoToIncludeTest ).with_args( 'GoToImprecise', test ),
     raises( AppError, r'Can\\\'t jump to definition or declaration.' ) )
+
+
+@SharedYcmd
+def Subcommands_GoToInclude_StandardLibrary_test( app ):
+  app.post_json( '/load_extra_conf_file',
+                 { 'filepath': PathToTestFile( '.ycm_extra_conf.py' ) } )
+
+  filepath = PathToTestFile( 'standard_library.cpp' )
+  goto_data = BuildRequest( filepath = filepath,
+                            filetype = 'cpp',
+                            contents = ReadFile( filepath ),
+                            command_arguments = [ 'GoToInclude' ],
+                            line_num = 2,
+                            column_num = 14 )
+
+  response = app.post_json( '/run_completer_command', goto_data ).json
+
+  pprint( response )
+
+  assert_that( response, has_entries( {
+    'filepath': ends_with( 'vector' ),
+    'column_num': 1,
+    'line_num': 1
+  } ) )
+  assert_that( os.path.isfile( response[ 'filepath' ] ), equal_to( True ) )
 
 
 @SharedYcmd
