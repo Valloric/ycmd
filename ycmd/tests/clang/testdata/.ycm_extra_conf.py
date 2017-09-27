@@ -1,2 +1,2 @@
 def FlagsForFile( filename ):
-  return { 'flags': ['-x', 'c++', '-I', '.'] }
+  return { 'flags': [ '-x', 'c++' ] }

@@ -565,3 +565,29 @@ def GetCompletions_UnicodeInLineFilter_test( app ):
       } )
     },
   } )
+
+
+@SharedYcmd
+def GetCompletions_StandardLibrary_test( app ):
+  RunTest( app, {
+    'description': 'completion of the vector library',
+    'extra_conf': [ '.ycm_extra_conf.py' ],
+    'request': {
+      'filetype'  : 'cpp',
+      'filepath'  : PathToTestFile( 'standard_library.cpp' ),
+      'line_num'  : 5,
+      'column_num': 9,
+      'extra_conf_data': { '&filetype': 'cpp' },
+      'force_semantic': True
+    },
+    'expect': {
+      'response': requests.codes.ok,
+      'data': has_entries( {
+        'completion_start_column': 8,
+        'completions': has_item(
+          CompletionEntryMatcher( 'vector' ),
+        ),
+        'errors': empty(),
+      } )
+    },
+  } )

@@ -29,11 +29,10 @@ from nose.tools import eq_, ok_
 from ycmd.completers.cpp import flags
 from mock import patch, MagicMock, Mock
 from types import ModuleType
-from ycmd.tests.test_utils import MacOnly
 from ycmd.responses import NoExtraConfDetected
 from ycmd.tests.clang import TemporaryClangProject, TemporaryClangTestDir
 
-from hamcrest import assert_that, calling, contains, has_item, not_, raises
+from hamcrest import assert_that, calling, contains, raises
 
 
 @contextlib.contextmanager
@@ -401,74 +400,12 @@ def ExtraClangFlags_test():
   eq_( 1, num_found )
 
 
-@MacOnly
-@patch( 'ycmd.completers.cpp.flags._GetMacClangVersionList',
-        return_value = [ '1.0.0', '7.0.1', '7.0.2', '___garbage__' ] )
-@patch( 'ycmd.completers.cpp.flags._MacClangIncludeDirExists',
-        side_effect = [ False, True, True, True ] )
-def Mac_LatestMacClangIncludes_test( *args ):
-  eq_( flags._LatestMacClangIncludes(),
-       [ '/Applications/Xcode.app/Contents/Developer/Toolchains/'
-         'XcodeDefault.xctoolchain/usr/lib/clang/7.0.2/include' ] )
-
-
-@MacOnly
-def Mac_LatestMacClangIncludes_NoSuchDirectory_test():
-  def RaiseOSError( x ):
-    raise OSError( x )
-
-  with patch( 'os.listdir', side_effect = RaiseOSError ):
-    eq_( flags._LatestMacClangIncludes(), [] )
-
-
-@MacOnly
-def Mac_PathsForAllMacToolchains_test():
-  eq_( flags._PathsForAllMacToolchains( 'test' ),
-       [ '/Applications/Xcode.app/Contents/Developer/Toolchains/'
-         'XcodeDefault.xctoolchain/test',
-         '/Library/Developer/CommandLineTools/test' ] )
-
-
 def CompilationDatabase_NoDatabase_test():
   with TemporaryClangTestDir() as tmp_dir:
     assert_that(
       calling( flags.Flags().FlagsForFile ).with_args(
         os.path.join( tmp_dir, 'test.cc' ) ),
       raises( NoExtraConfDetected ) )
-
-
-@MacOnly
-@patch( 'ycmd.completers.cpp.flags._MacIncludePaths',
-        return_value = [ 'sentinel_value_for_testing' ] )
-def PrepareFlagsForClang_NoSysroot_test( *args ):
-  assert_that(
-    list( flags.PrepareFlagsForClang( [ '-test', '--test1', '--test2=test' ],
-                                      'test.cc',
-                                      True ) ),
-    has_item( 'sentinel_value_for_testing' ) )
-
-
-@MacOnly
-@patch( 'ycmd.completers.cpp.flags._MacIncludePaths',
-        return_value = [ 'sentinel_value_for_testing' ] )
-def PrepareFlagsForClang_Sysroot_test( *args ):
-  assert_that(
-    list( flags.PrepareFlagsForClang( [ '-isysroot', 'test1', '--test2=test' ],
-                                      'test.cc',
-                                      True ) ),
-    not_( has_item( 'sentinel_value_for_testing' ) ) )
-
-  assert_that(
-    list( flags.PrepareFlagsForClang( [ '-test', '--sysroot', 'test1' ],
-                                      'test.cc',
-                                      True ) ),
-    not_( has_item( 'sentinel_value_for_testing' ) ) )
-
-  assert_that(
-    list( flags.PrepareFlagsForClang( [ '-test', 'test1', '--sysroot=test' ],
-                                      'test.cc',
-                                      True ) ),
-    not_( has_item( 'sentinel_value_for_testing' ) ) )
 
 
 def CompilationDatabase_FileNotInDatabase_test():
@@ -910,3 +847,29 @@ def MakeRelativePathsInFlagsAbsolute_NoWorkingDir_test():
     'expect': [ 'list', 'of', 'flags', 'not', 'changed', '-Itest' ],
     'wd': ''
   }
+
+
+def GetFakeFlags_test():
+  assert_that( flags._GetFakeFlags( [ '--some-flag', '-another-flag' ] ),
+    contains( flags.CLANG_RESOURCE_DIR ) )
+
+  assert_that( flags._GetFakeFlags( [ '-x', 'c',
+                                      '--sysroot', '/some/path',
+                                      '--some-flag',
+                                      '--gcc-toolchain=/another/path' ] ),
+    contains( flags.CLANG_RESOURCE_DIR,
+              '-x', 'c',
+              '--sysroot', '/some/path',
+              '--gcc-toolchain=/another/path' ) )
+
+  assert_that( flags._GetFakeFlags( [ '--some-flag',
+                                      '-x', 'c++',
+                                      '--sysroot=/some/path',
+                                      '-gcc-toolchain',
+                                      '/another/path',
+                                      '-x', 'c' ] ),
+    contains( flags.CLANG_RESOURCE_DIR,
+              '-x', 'c++',
+              '--sysroot=/some/path',
+              '-gcc-toolchain', '/another/path',
+              '-x', 'c' ) )
