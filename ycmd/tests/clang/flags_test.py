@@ -29,11 +29,10 @@ from nose.tools import eq_, ok_
 from ycmd.completers.cpp import flags
 from mock import patch, MagicMock
 from types import ModuleType
-from ycmd.tests.test_utils import MacOnly
 from ycmd.responses import NoExtraConfDetected
 from ycmd.tests.clang import TemporaryClangProject, TemporaryClangTestDir
 
-from hamcrest import assert_that, calling, contains, has_item, not_, raises
+from hamcrest import assert_that, calling, contains, raises
 
 
 @contextlib.contextmanager
@@ -169,56 +168,6 @@ def FlagsForFile_MakeRelativePathsAbsoluteIfOptionSpecified_test():
     assert_that( flags_list,
                  contains( '-x', 'c',
                            '-I', os.path.normpath( '/working_dir/header' ) ) )
-
-
-@MacOnly
-@patch( 'ycmd.completers.cpp.flags.MAC_INCLUDE_PATHS',
-        [ 'sentinel_value_for_testing' ] )
-def FlagsForFile_AddMacIncludePathsWithoutSysroot_test():
-  flags_object = flags.Flags()
-
-  def FlagsForFile( filename ):
-    return {
-      'flags': [ '-test', '--test1', '--test2=test' ]
-    }
-
-  with MockExtraConfModule( FlagsForFile ):
-    flags_list = flags_object.FlagsForFile( '/foo' )
-    assert_that( flags_list, has_item( 'sentinel_value_for_testing' ) )
-
-
-@MacOnly
-@patch( 'ycmd.completers.cpp.flags.MAC_INCLUDE_PATHS',
-        [ 'sentinel_value_for_testing' ] )
-def FlagsForFile_DoNotAddMacIncludePathsWithSysroot_test():
-  flags_object = flags.Flags()
-
-  def FlagsForFile( filename ):
-    return {
-      'flags': [ '-isysroot', 'test1', '--test2=test' ]
-    }
-
-  with MockExtraConfModule( FlagsForFile ):
-    flags_list = flags_object.FlagsForFile( '/foo' )
-    assert_that( flags_list, not_( has_item( 'sentinel_value_for_testing' ) ) )
-
-  def FlagsForFile( filename ):
-    return {
-      'flags': [ '-test', '--sysroot', 'test1' ]
-    }
-
-  with MockExtraConfModule( FlagsForFile ):
-    flags_list = flags_object.FlagsForFile( '/foo' )
-    assert_that( flags_list, not_( has_item( 'sentinel_value_for_testing' ) ) )
-
-  def FlagsForFile( filename ):
-    return {
-      'flags': [ '-test', 'test1', '--sysroot=test' ]
-    }
-
-  with MockExtraConfModule( FlagsForFile ):
-    flags_list = flags_object.FlagsForFile( '/foo' )
-    assert_that( flags_list, not_( has_item( 'sentinel_value_for_testing' ) ) )
 
 
 def RemoveUnusedFlags_Passthrough_test():
@@ -448,56 +397,6 @@ def ExtraClangFlags_test():
       num_found += 1
 
   eq_( 1, num_found )
-
-
-@MacOnly
-@patch( 'ycmd.completers.cpp.flags._GetMacClangVersionList',
-        return_value = [ '1.0.0', '7.0.1', '7.0.2', '___garbage__' ] )
-@patch( 'ycmd.completers.cpp.flags._MacClangIncludeDirExists',
-        side_effect = [ False, True, True, True ] )
-def Mac_LatestMacClangIncludes_test( *args ):
-  eq_( flags._LatestMacClangIncludes( '/tmp' ),
-       [ '/tmp/usr/lib/clang/7.0.2/include' ] )
-
-
-@MacOnly
-def Mac_LatestMacClangIncludes_NoSuchDirectory_test():
-  def RaiseOSError( x ):
-    raise OSError( x )
-
-  with patch( 'os.listdir', side_effect = RaiseOSError ):
-    eq_( flags._LatestMacClangIncludes( '/tmp' ), [] )
-
-
-@MacOnly
-@patch( 'ycmd.completers.cpp.flags._MacClangIncludeDirExists',
-        side_effect = [ False, False ] )
-def Mac_SelectMacToolchain_None_test( *args ):
-  eq_( flags._SelectMacToolchain(), None )
-
-
-@MacOnly
-@patch( 'ycmd.completers.cpp.flags._MacClangIncludeDirExists',
-        side_effect = [ True, False ] )
-def Mac_SelectMacToolchain_XCode_test( *args ):
-  eq_( flags._SelectMacToolchain(),
-       '/Applications/Xcode.app/Contents/Developer/Toolchains/'
-       'XcodeDefault.xctoolchain' )
-
-
-@MacOnly
-@patch( 'ycmd.completers.cpp.flags._MacClangIncludeDirExists',
-        side_effect = [ False, True ] )
-def Mac_SelectMacToolchain_CommandLineTools_test( *args ):
-  eq_( flags._SelectMacToolchain(), '/Library/Developer/CommandLineTools' )
-
-
-def CompilationDatabase_NoDatabase_test():
-  with TemporaryClangTestDir() as tmp_dir:
-    assert_that(
-      calling( flags.Flags().FlagsForFile ).with_args(
-        os.path.join( tmp_dir, 'test.cc' ) ),
-      raises( NoExtraConfDetected ) )
 
 
 def CompilationDatabase_FileNotInDatabase_test():
@@ -939,3 +838,29 @@ def MakeRelativePathsInFlagsAbsolute_NoWorkingDir_test():
     'expect': [ 'list', 'of', 'flags', 'not', 'changed', '-Itest' ],
     'wd': ''
   }
+
+
+def GetFakeFlags_test():
+  assert_that( flags._GetFakeFlags( [ '--some-flag', '-another-flag' ] ),
+    contains( flags.CLANG_RESOURCE_DIR ) )
+
+  assert_that( flags._GetFakeFlags( [ '-x', 'c',
+                                      '--sysroot', '/some/path',
+                                      '--some-flag',
+                                      '--gcc-toolchain=/another/path' ] ),
+    contains( flags.CLANG_RESOURCE_DIR,
+              '-x', 'c',
+              '--sysroot', '/some/path',
+              '--gcc-toolchain=/another/path' ) )
+
+  assert_that( flags._GetFakeFlags( [ '--some-flag',
+                                      '-x', 'c++',
+                                      '--sysroot=/some/path',
+                                      '-gcc-toolchain',
+                                      '/another/path',
+                                      '-x', 'c' ] ),
+    contains( flags.CLANG_RESOURCE_DIR,
+              '-x', 'c++',
+              '--sysroot=/some/path',
+              '-gcc-toolchain', '/another/path',
+              '-x', 'c' ) )
