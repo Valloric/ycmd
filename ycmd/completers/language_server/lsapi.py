@@ -107,7 +107,19 @@ def ResolveCompletion( request_id, completion ):
 
 
 def Hover( request_id, request_data ):
-  return BuildRequest( request_id, 'textDocument/hover', {
+  return BuildRequest( request_id,
+                       'textDocument/hover',
+                       BuildTextDocumentPositionParams( request_data ) )
+
+
+def Definition( request_id, request_data ):
+  return BuildRequest( request_id,
+                       'textDocument/definition',
+                       BuildTextDocumentPositionParams( request_data ) )
+
+
+def BuildTextDocumentPositionParams( request_data ):
+  return {
     'textDocument': {
       'uri': _MakeUriForFile( request_data[ 'filepath' ] ),
     },
@@ -115,7 +127,7 @@ def Hover( request_id, request_data ):
       'line': request_data[ 'line_num' ] - 1,
       'character': request_data[ 'start_column' ] - 1,
     },
-  } )
+  }
 
 
 def _MakeUriForFile( file_name ):
