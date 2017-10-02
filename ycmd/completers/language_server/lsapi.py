@@ -130,6 +130,19 @@ def CodeAction( request_id, request_data, best_match_range, diagnostics ):
   } )
 
 
+def Rename( request_id, request_data, new_name ):
+  return BuildRequest( request_id, 'textDocument/rename', {
+    'textDocument': {
+      'uri': _MakeUriForFile( request_data[ 'filepath' ] ),
+    },
+    'position': {
+      'line': request_data[ 'line_num' ] - 1,
+      'character': request_data[ 'start_column' ] - 1,
+    },
+    'newName': new_name,
+  } )
+
+
 def BuildTextDocumentPositionParams( request_data ):
   return {
     'textDocument': {
