@@ -418,7 +418,7 @@ class LanguageServerCompleter( Completer ):
     # of diagnostics.
     # However, we _also_ return them here to refresh diagnostics after, say
     # changing the active file in the editor.
-    uri = lsapi.MakeUriForFile( request_data[ 'filepath' ] )
+    uri = lsapi.FilePathToUri( request_data[ 'filepath' ] )
     if self._latest_diagnostics[ uri ]:
       return [ BuildDiagnostic( request_data, uri, diag )
                for diag in self._latest_diagnostics[ uri ] ]
@@ -636,7 +636,7 @@ class LanguageServerCompleter( Completer ):
       return True
 
     file_diagnostics = self._latest_diagnostics[
-        lsapi.MakeUriForFile( request_data[ 'filepath' ] ) ]
+        lsapi.FilePathToUri( request_data[ 'filepath' ] ) ]
 
     matched_diagnostics = [
       d for d in file_diagnostics if WithinRange( d )

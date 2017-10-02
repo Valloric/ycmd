@@ -24,11 +24,10 @@ from builtins import *  # noqa
 
 import os
 import json
-from urllib import parse as urlparse
 
 from collections import defaultdict
-
-from ycmd.utils import ToBytes, ToUnicode
+from ycmd.utils import ( pathname2url, ToBytes, ToUnicode, url2pathname,
+                         urljoin )
 
 
 # FIXME: We might need a whole document management system eventually. For now,
@@ -61,7 +60,7 @@ def Initialise( request_id ):
   return BuildRequest( request_id, 'initialize', {
     'processId': os.getpid(),
     'rootPath': os.getcwd(), # deprecated
-    'rootUri': MakeUriForFile( os.getcwd() ),
+    'rootUri': FilePathToUri( os.getcwd() ),
     'initializationOptions': { },
     'capabilities': { 'trace': 'verbose' }
   } )
@@ -71,7 +70,7 @@ def DidOpenTextDocument( file_name, file_types, file_contents ):
   LAST_VERSION[ file_name ] = LAST_VERSION[ file_name ] + 1
   return BuildNotification( 'textDocument/didOpen', {
     'textDocument': {
-      'uri': MakeUriForFile( file_name ),
+      'uri': FilePathToUri( file_name ),
       'languageId': '/'.join( file_types ),
       'version': LAST_VERSION[ file_name ],
       'text': file_contents
@@ -92,7 +91,7 @@ def DidChangeTextDocument( file_name, file_types, file_contents ):
 def DidCloseTextDocument( file_name ):
   return BuildNotification( 'textDocument/didClose', {
     'textDocument': {
-      'uri': MakeUriForFile( file_name ),
+      'uri': FilePathToUri( file_name ),
       'version': LAST_VERSION[ file_name ],
     },
   } )
@@ -101,7 +100,7 @@ def DidCloseTextDocument( file_name ):
 def Completion( request_id, request_data ):
   return BuildRequest( request_id, 'textDocument/completion', {
     'textDocument': {
-      'uri': MakeUriForFile( request_data[ 'filepath' ] ),
+      'uri': FilePathToUri( request_data[ 'filepath' ] ),
     },
     'position': Position( request_data ),
   } )
@@ -126,7 +125,7 @@ def Definition( request_id, request_data ):
 def CodeAction( request_id, request_data, best_match_range, diagnostics ):
   return BuildRequest( request_id, 'textDocument/codeAction', {
     'textDocument': {
-      'uri': MakeUriForFile( request_data[ 'filepath' ] ),
+      'uri': FilePathToUri( request_data[ 'filepath' ] ),
     },
     'range': best_match_range,
     'context': {
@@ -138,7 +137,7 @@ def CodeAction( request_id, request_data, best_match_range, diagnostics ):
 def Rename( request_id, request_data, new_name ):
   return BuildRequest( request_id, 'textDocument/rename', {
     'textDocument': {
-      'uri': MakeUriForFile( request_data[ 'filepath' ] ),
+      'uri': FilePathToUri( request_data[ 'filepath' ] ),
     },
     'position': Position( request_data ),
   } )
@@ -147,7 +146,7 @@ def Rename( request_id, request_data, new_name ):
 def BuildTextDocumentPositionParams( request_data ):
   return {
     'textDocument': {
-      'uri': MakeUriForFile( request_data[ 'filepath' ] ),
+      'uri': FilePathToUri( request_data[ 'filepath' ] ),
     },
     'position': Position( request_data ),
   }
@@ -167,15 +166,13 @@ def Position( request_data ):
   }
 
 
-def MakeUriForFile( file_name ):
-  return 'file://{0}'.format( file_name )
+def FilePathToUri( file_name ):
+  return urljoin( 'file:', pathname2url( file_name ) )
 
 
 def UriToFilePath( uri ):
-  # NOTE: This assumes file://
-  # TODO(Ben): work out how urlparse works with __future__
-  # TODO(Ben): doesn't work on Windows (probably)
-  return urlparse.urlparse( uri ).path
+  # NOTE: This assumes the URI starts with file:
+  return url2pathname( uri[ 5 : ] )
 
 
 def _BuildMessageData( message ):
