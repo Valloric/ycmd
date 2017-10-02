@@ -572,6 +572,25 @@ class LanguageServerCompleter( Completer ):
         self._syncType ) )
 
 
+  def _GetType( self, request_data ):
+    request_id = self._server.NextRequestId()
+    response = self._server.GetResponse( request_id,
+                                         lsapi.Hover( request_id,
+                                                      request_data ) )
+
+    if isinstance( response[ 'result' ][ 'contents' ], list ):
+      if len( response[ 'result' ][ 'contents' ] ):
+        info = response[ 'result' ][ 'contents' ][ 0 ]
+      else:
+        raise RuntimeError( 'No information' )
+    else:
+      info = response[ 'result' ][ 'contents' ]
+
+
+
+    return responses.BuildDisplayMessageResponse( str( info ) )
+
+
   def _GetInsertionText( self, request_data, item ):
     # TODO: We probably need to implement this and (at least) strip out the
     # snippet parts?
