@@ -191,6 +191,21 @@ def SetUpApp( custom_options = {} ):
   return TestApp( handlers.app )
 
 
+@contextlib.contextmanager
+def IsolatedApp( custom_options = {} ):
+  old_server_state = handlers._server_state
+  old_module_for_module_file = extra_conf_store._module_for_module_file
+  old_module_file_for_source_file = (
+    extra_conf_store._module_file_for_source_file )
+  try:
+    yield SetUpApp( custom_options )
+  finally:
+    handlers._server_state = old_server_state
+    extra_conf_store._module_for_module_file = old_module_for_module_file
+    extra_conf_store._module_file_for_source_file = (
+      old_module_file_for_source_file )
+
+
 def StartCompleterServer( app, filetype, filepath = '/foo' ):
   app.post_json( '/run_completer_command',
                  BuildRequest( command_arguments = [ 'RestartServer' ],
