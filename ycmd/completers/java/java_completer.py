@@ -295,6 +295,8 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
     return {
       'RestartServer': ( lambda self, request_data, args:
                             self._RestartServer() ),
+      'GetType':       (lambda self, request_data, args:
+                            self._GetType( request_data ) )
     }
 
 
