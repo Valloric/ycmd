@@ -302,6 +302,10 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
                      self._GetType( request_data ) ),
       'GoToDeclaration': ( lambda self, request_data, args:
                              self._GoToDeclaration( request_data ) ),
+      'GoTo': ( lambda self, request_data, args:
+                             self._GoToDeclaration( request_data ) ),
+      'GoToDefinition': ( lambda self, request_data, args:
+                             self._GoToDeclaration( request_data ) ),
       'GoToReferences': ( lambda self, request_data, args:
                             self._GoToReferences( request_data ) ),
       'FixIt': ( lambda self, request_data, args:
