@@ -19,15 +19,15 @@ from __future__ import unicode_literals
 from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
+# Not installing aliases from python-future; it's unreliable and slow.
 from builtins import *  # noqa
-from future import standard_library
-from future.utils import iteritems, iterkeys
-standard_library.install_aliases()
 
+from future.utils import iteritems, iterkeys
 import logging
 import threading
 import os
 import queue
+import json
 
 from ycmd.completers.completer import Completer
 from ycmd import utils
