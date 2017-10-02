@@ -155,6 +155,12 @@ def BuildTextDocumentPositionParams( request_data ):
   }
 
 
+def References( request_id, request_data ):
+  request = BuildTextDocumentPositionParams( request_data )
+  request[ 'context' ] = { 'includeDeclaration': True }
+  return BuildRequest( request_id, 'textDocument/references', request )
+
+
 def _MakeUriForFile( file_name ):
   return 'file://{0}'.format( file_name )
 

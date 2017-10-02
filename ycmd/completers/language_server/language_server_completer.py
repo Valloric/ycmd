@@ -593,6 +593,28 @@ class LanguageServerCompleter( Completer ):
     return responses.BuildDisplayMessageResponse( str( info ) )
 
 
+  def LocationListToGoTo( self, response ):
+    if len( response[ 'result' ] ) > 1:
+      positions = response[ 'result' ]
+      return [
+        responses.BuildGoToResponseFromLocation(
+          # TODO: Codepoint to byte offset
+          responses.Location(
+            position[ 'range' ][ 'start' ][ 'line' ] + 1,
+            position[ 'range' ][ 'start' ][ 'character' ] + 1,
+            lsapi.UriToFilePath( position[ 'uri' ] ) )
+        ) for position in positions
+      ]
+    else:
+      position = response[ 'result' ][ 0 ]
+      return responses.BuildGoToResponseFromLocation(
+        # TODO: Codepoint to byte offset
+        responses.Location( position[ 'range' ][ 'start' ][ 'line' ] + 1,
+                            position[ 'range' ][ 'start' ][ 'character' ] + 1,
+                            lsapi.UriToFilePath( position[ 'uri' ] ) )
+      )
+
+
   def _GoToDeclaration( self, request_data ):
     request_id = self.GetServer().NextRequestId()
     response = self.GetServer().GetResponse( request_id,
@@ -600,25 +622,7 @@ class LanguageServerCompleter( Completer ):
                                                                request_data ) )
 
     if isinstance( response[ 'result' ], list ):
-      if len( response[ 'result' ] ) > 1:
-        positions = response[ 'result' ]
-        return [
-          responses.BuildGoToResponseFromLocation(
-            # TODO: Codepoint to byte offset
-            responses.Location(
-              position[ 'range' ][ 'start' ][ 'line' ] + 1,
-              position[ 'range' ][ 'start' ][ 'character' ] + 1,
-              lsapi.UriToFilePath( position[ 'uri' ] ) )
-          ) for position in positions
-        ]
-      else:
-        position = response[ 'result' ][ 0 ]
-        return responses.BuildGoToResponseFromLocation(
-          # TODO: Codepoint to byte offset
-          responses.Location( position[ 'range' ][ 'start' ][ 'line' ] + 1,
-                              position[ 'range' ][ 'start' ][ 'character' ] + 1,
-                              lsapi.UriToFilePath( position[ 'uri' ] ) )
-        )
+      return self.LocationListToGoTo( response )
     else:
       position = response[ 'result' ]
       return responses.BuildGoToResponseFromLocation(
@@ -627,6 +631,15 @@ class LanguageServerCompleter( Completer ):
                             position[ 'range' ][ 'start' ][ 'character' ] + 1,
                             lsapi.UriToFilePath( position[ 'uri' ] ) )
       )
+
+
+  def _GoToReferences( self, request_data ):
+    request_id = self.GetServer().NextRequestId()
+    response = self.GetServer().GetResponse( request_id,
+                                             lsapi.References( request_id,
+                                                               request_data ) )
+
+    return self.LocationListToGoTo( response )
 
 
   def _CodeAction( self, request_data, args ):
