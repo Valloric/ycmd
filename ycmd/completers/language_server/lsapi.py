@@ -114,6 +114,7 @@ def _MakeUriForFile( file_name ):
 def UriToFilePath( uri ):
   # TODO: This assumes file://
   # TODO: work out how urlparse works with __future__
+  # TODO: doesn't work on Windows (probably)
   return urlparse.urlparse( uri ).path
 
 
