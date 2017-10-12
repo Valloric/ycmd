@@ -21,6 +21,8 @@ This PR implements native support in ycmd for the Java language, based on
   * GetType
   * GetDoc
 
+See the [trello board][trello] for a more complete picture.
+
 # Why is this necessary and useful?
 
 The current state of the plugin for YCM support for Java is basically [eclim][]
