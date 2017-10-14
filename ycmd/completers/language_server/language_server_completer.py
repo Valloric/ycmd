@@ -462,8 +462,7 @@ class StandardIOLanguageServerConnection( LanguageServerConnection ):
 
 
   def _Write( self, data ):
-    bytes_to_write = data + utils.ToBytes( '\r\n' )
-    self._server_stdin.write( bytes_to_write )
+    self._server_stdin.write( data )
     self._server_stdin.flush()
 
 
