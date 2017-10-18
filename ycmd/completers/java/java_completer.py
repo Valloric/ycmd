@@ -431,12 +431,12 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
 
         _logger.info( 'jdt.ls Language server stopped' )
       except Exception:
-        _logger.exception( 'Error while stopping java server' )
+        _logger.exception( 'Error while stopping jdt.ls server' )
 
 
   def _StopServerForcefully( self ):
     if self._ServerIsRunning():
-      _logger.info( 'Killing java server with PID {0}'.format(
+      _logger.info( 'Killing jdt.ls server with PID {0}'.format(
                         self._server_handle.pid ) )
 
       self._server_handle.terminate()
@@ -451,7 +451,7 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
 
         _logger.info( 'jdt.ls Language server killed' )
       except Exception:
-        _logger.exception( 'Error while killing java server' )
+        _logger.exception( 'Error while killing jdt.ls server' )
 
 
   def _HandleNotificationInPollThread( self, notification ):
