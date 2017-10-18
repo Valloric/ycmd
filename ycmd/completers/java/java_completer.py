@@ -426,7 +426,6 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
                                             timeout = 5 )
 
         if self._connection:
-          self._connection.join()
           self._connection.Close()
 
         _logger.info( 'jdt.ls Language server stopped' )
@@ -446,7 +445,6 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
                                             timeout = 5 )
 
         if self._connection:
-          self._connection.join()
           self._connection.Close()
 
         _logger.info( 'jdt.ls Language server killed' )

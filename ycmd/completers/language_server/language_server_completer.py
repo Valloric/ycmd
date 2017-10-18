@@ -179,9 +179,8 @@ class LanguageServerConnection( threading.Thread ):
 
     - Call stop() prior to shutting down the downstream server (see
       LanguageServerCompleter.ShutdownServer to do that part)
-    - Call join() after closing down the downstream server to wait for this
-      thread to exit
-    - Call Close() to close any remaining streams
+    - Call Close() to close any remaining streams. Do this in a request thread.
+      DO NOT CALL THIS FROM THE DISPATCH THREAD.
 
     Footnote: Why does this interface exist?
 
@@ -202,7 +201,7 @@ class LanguageServerConnection( threading.Thread ):
 
 
   @abc.abstractmethod
-  def Close( self ):
+  def _Close( self ):
     pass
 
 
@@ -252,6 +251,11 @@ class LanguageServerConnection( threading.Thread ):
   def stop( self ):
     # Note lowercase stop() to match threading.Thread.start()
     self._stop_event.set()
+
+
+  def Close( self ):
+    self.join()
+    self._Close()
 
 
   def IsStopped( self ):
@@ -452,7 +456,7 @@ class StandardIOLanguageServerConnection( LanguageServerConnection ):
     return True
 
 
-  def Close( self ):
+  def _Close( self ):
     if not self._server_stdin.closed:
       self._server_stdin.close()
 
