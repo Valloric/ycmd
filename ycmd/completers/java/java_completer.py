@@ -265,7 +265,8 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
           executable = self._launcher_path,
           logfiles = [
             self._server_stderr,
-            os.path.join( self._workspace_path, '.metadata', '.log' )
+            ( os.path.join( self._workspace_path, '.metadata', '.log' )
+              if self._workspace_path else None )
           ],
           extras = items
         )
