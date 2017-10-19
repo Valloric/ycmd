@@ -110,7 +110,7 @@ class Flags( object ):
     self.file_directory_heuristic_map = dict()
 
 
-  def FlagsForFile( self,
+  def FlagsForFile( self,                         # noqa - cyclomatic compexity
                     filename,
                     add_extra_clang_flags = True,
                     client_data = None ):
@@ -132,14 +132,17 @@ class Flags( object ):
       if not self.no_extra_conf_file_warning_posted:
         self.no_extra_conf_file_warning_posted = True
         raise NoExtraConfDetected
-      return []
+      return ( [], filename )
 
     if not results or not results.get( 'flags_ready', True ):
-      return []
+      return ( [], filename )
+
+    if 'override_filename' in results:
+      filename = results[ 'override_filename' ]
 
     flags = _ExtractFlagsList( results )
     if not flags:
-      return []
+      return ( [], filename )
 
     if add_extra_clang_flags:
       flags += self.extra_clang_flags
@@ -151,8 +154,9 @@ class Flags( object ):
                                             _ShouldAllowWinStyleFlags( flags ) )
 
     if results.get( 'do_cache', True ):
-      self.flags_for_file[ filename ] = sanitized_flags
-    return sanitized_flags
+      self.flags_for_file[ filename ] = ( sanitized_flags, filename )
+
+    return ( sanitized_flags, filename )
 
 
   def _GetFlagsFromExtraConfOrDatabase( self, module, filename, client_data ):

@@ -50,6 +50,10 @@ def DebugInfo_FlagsWhenExtraConfLoadedAndNoCompilationDatabase_test( app ):
         has_entries( {
           'key': 'flags',
           'value': matches_regexp( "\['-x', 'c\+\+', .*\]" )
+        } ),
+        has_entries( {
+          'key': 'translation_unit',
+          'value': PathToTestFile( 'basic.cpp' )
         } )
       )
     } ) )
@@ -73,6 +77,10 @@ def DebugInfo_FlagsWhenNoExtraConfAndNoCompilationDatabase_test( app ):
         has_entries( {
           'key': 'flags',
           'value': '[]'
+        } ),
+        has_entries( {
+          'key': 'translation_unit',
+          'value': instance_of( str )
         } )
       )
     } ) )
@@ -91,6 +99,10 @@ def DebugInfo_FlagsWhenNoExtraConfAndNoCompilationDatabase_test( app ):
         has_entries( {
           'key': 'flags',
           'value': '[]'
+        } ),
+        has_entries( {
+          'key': 'translation_unit',
+          'value': instance_of( str )
         } )
       )
     } ) )
@@ -116,6 +128,10 @@ def DebugInfo_FlagsWhenExtraConfNotLoadedAndNoCompilationDatabase_test(
         has_entries( {
           'key': 'flags',
           'value': '[]'
+        } ),
+        has_entries( {
+          'key': 'translation_unit',
+          'value': PathToTestFile( 'basic.cpp' )
         } )
       )
     } ) )
@@ -151,6 +167,10 @@ def DebugInfo_FlagsWhenNoExtraConfAndCompilationDatabaseLoaded_test( app ):
               'key': 'flags',
               'value': matches_regexp(
                   "\['clang\+\+', '-x', 'c\+\+', .*, '-Wall', .*\]" )
+            } ),
+            has_entries( {
+              'key': 'translation_unit',
+              'value': os.path.join( tmp_dir, 'test.cc' ),
             } )
           )
         } ) )
@@ -179,6 +199,10 @@ def DebugInfo_FlagsWhenNoExtraConfAndInvalidCompilationDatabase_test( app ):
             has_entries( {
               'key': 'flags',
               'value': '[]'
+            } ),
+            has_entries( {
+              'key': 'translation_unit',
+              'value': os.path.join( tmp_dir, 'test.cc' )
             } )
           )
         } ) )
