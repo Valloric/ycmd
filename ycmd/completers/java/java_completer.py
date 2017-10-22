@@ -214,11 +214,12 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
         lambda self, request_data, args: self.GoToReferences( request_data )
       ),
       'FixIt': (
-        lambda self, request_data, args: self.CodeAction( request_data,
-                                                          args )
+        lambda self, request_data, args: self.GetCodeActions( request_data,
+                                                              args )
       ),
       'RefactorRename': (
-        lambda self, request_data, args: self.Rename( request_data, args )
+        lambda self, request_data, args: self.RefactorRename( request_data,
+                                                              args )
       ),
 
       # Handled by us
