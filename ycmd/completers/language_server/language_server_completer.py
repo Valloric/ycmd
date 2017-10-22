@@ -35,7 +35,7 @@ from ycmd.completers.completer_utils import GetFileContents
 from ycmd import utils
 from ycmd import responses
 
-from ycmd.completers.language_server import lsapi
+from ycmd.completers.language_server import language_server_protocol as lsp
 
 _logger = logging.getLogger( __name__ )
 
@@ -361,8 +361,8 @@ class LanguageServerConnection( threading.Thread ):
 
       _logger.debug( 'RX: Received message: %r', content )
 
-      # lsapi will convert content to unicode
-      self._DespatchMessage( lsapi.Parse( content ) )
+      # lsp will convert content to unicode
+      self._DispatchMessage( lsp.Parse( content ) )
 
       # We only consumed len( content ) of data. If there is more, we start
       # again with the remainder and look for headers
@@ -583,7 +583,7 @@ class LanguageServerCompleter( Completer ):
     # servers exit on receipt of the shutdown request, so we handle that too.
     if self.ServerIsReady():
       request_id = self.GetConnection().NextRequestId()
-      msg = lsapi.Shutdown( request_id )
+      msg = lsp.Shutdown( request_id )
 
       try:
         self.GetConnection().GetResponse( request_id,
@@ -599,7 +599,7 @@ class LanguageServerCompleter( Completer ):
         _logger.exception( 'Shutdown request failed. Ignoring.' )
 
     if self.ServerIsHealthy():
-      self.GetConnection().SendNotification( lsapi.Exit() )
+      self.GetConnection().SendNotification( lsp.Exit() )
 
 
   def ServerIsReady( self ):
@@ -635,7 +635,7 @@ class LanguageServerCompleter( Completer ):
     self._RefreshFiles( request_data )
 
     request_id = self.GetConnection().NextRequestId()
-    msg = lsapi.Completion( request_id, request_data )
+    msg = lsp.Completion( request_id, request_data )
     response = self.GetConnection().GetResponse( request_id,
                                                  msg,
                                                  REQUEST_TIMEOUT_COMPLETION )
@@ -706,7 +706,7 @@ class LanguageServerCompleter( Completer ):
       if do_resolve:
         try:
           resolve_id = self.GetConnection().NextRequestId()
-          resolve = lsapi.ResolveCompletion( resolve_id, item )
+          resolve = lsp.ResolveCompletion( resolve_id, item )
           response = self.GetConnection().GetResponse(
             resolve_id,
             resolve,
@@ -776,7 +776,7 @@ class LanguageServerCompleter( Completer ):
     # However, we _also_ return them here to refresh diagnostics after, say
     # changing the active file in the editor, or for clients not supporting the
     # polling mechanism.
-    uri = lsapi.FilePathToUri( request_data[ 'filepath' ] )
+    uri = lsp.FilePathToUri( request_data[ 'filepath' ] )
     with self._mutex:
       if uri in self._latest_diagnostics:
         return [ BuildDiagnostic( request_data, uri, diag )
@@ -890,14 +890,14 @@ class LanguageServerCompleter( Completer ):
       params = notification[ 'params' ]
       uri = params[ 'uri' ]
       try:
-        filepath = lsapi.UriToFilePath( uri )
+        filepath = lsp.UriToFilePath( uri )
         response = {
           'diagnostics': [ BuildDiagnostic( request_data, uri, x )
                            for x in params[ 'diagnostics' ] ],
           'filepath': filepath
         }
         return response
-      except lsapi.InvalidUriException:
+      except lsp.InvalidUriException:
         _logger.exception( 'Ignoring diagnostics for unrecognised URI' )
         pass
 
@@ -919,18 +919,18 @@ class LanguageServerCompleter( Completer ):
         _logger.debug( 'Refreshing file {0}: State is {1}'.format(
           file_name, file_state ) )
         if file_state == 'New' or self._syncType == 'Full':
-          msg = lsapi.DidOpenTextDocument( file_name,
-                                           file_data[ 'filetypes' ],
-                                           file_data[ 'contents' ] )
+          msg = lsp.DidOpenTextDocument( file_name,
+                                         file_data[ 'filetypes' ],
+                                         file_data[ 'contents' ] )
         else:
           # FIXME: DidChangeTextDocument doesn't actually do anything different
           # from DidOpenTextDocument other than send the right message, because
           # we don't actually have a mechanism for generating the diffs or
           # proper document versioning or lifecycle management. This isn't
           # strictly necessary, but might lead to performance problems.
-          msg = lsapi.DidChangeTextDocument( file_name,
-                                             file_data[ 'filetypes' ],
-                                             file_data[ 'contents' ] )
+          msg = lsp.DidChangeTextDocument( file_name,
+                                           file_data[ 'filetypes' ],
+                                           file_data[ 'contents' ] )
 
         self._serverFileState[ file_name ] = 'Open'
         self.GetConnection().SendNotification( msg )
@@ -943,7 +943,7 @@ class LanguageServerCompleter( Completer ):
       # We can't change the dictionary entries while using iterkeys, so we do
       # that in a separate loop.
       for file_name in stale_files:
-          msg = lsapi.DidCloseTextDocument( file_name )
+          msg = lsp.DidCloseTextDocument( file_name )
           self.GetConnection().SendNotification( msg )
           del self._serverFileState[ file_name ]
 
@@ -968,7 +968,7 @@ class LanguageServerCompleter( Completer ):
       assert not self._initialise_response
 
       request_id = self.GetConnection().NextRequestId()
-      msg = lsapi.Initialise( request_id, self._GetProjectDirectory() )
+      msg = lsp.Initialise( request_id, self._GetProjectDirectory() )
 
       def response_handler( response, message ):
         if message is None:
@@ -1002,7 +1002,7 @@ class LanguageServerCompleter( Completer ):
       # We must notify the server that we received the initialize response.
       # There are other things that could happen here, such as loading custom
       # server configuration, but we don't support that (yet).
-      self.GetConnection().SendNotification( lsapi.Initialized() )
+      self.GetConnection().SendNotification( lsp.Initialized() )
 
       # Notify the other threads that we have completed the initialize exchange.
       self._initialise_response = None
@@ -1038,8 +1038,7 @@ class LanguageServerCompleter( Completer ):
     request_id = self.GetConnection().NextRequestId()
     response = self.GetConnection().GetResponse(
       request_id,
-      lsapi.Hover( request_id,
-                   request_data ),
+      lsp.Hover( request_id, request_data ),
       REQUEST_TIMEOUT_COMMAND )
 
     return response[ 'result' ][ 'contents' ]
@@ -1056,8 +1055,7 @@ class LanguageServerCompleter( Completer ):
     request_id = self.GetConnection().NextRequestId()
     response = self.GetConnection().GetResponse(
       request_id,
-      lsapi.Definition( request_id,
-                        request_data ),
+      lsp.Definition( request_id, request_data ),
       REQUEST_TIMEOUT_COMMAND )
 
     if isinstance( response[ 'result' ], list ):
@@ -1082,8 +1080,7 @@ class LanguageServerCompleter( Completer ):
     request_id = self.GetConnection().NextRequestId()
     response = self.GetConnection().GetResponse(
       request_id,
-      lsapi.References( request_id,
-                        request_data ),
+      lsp.References( request_id, request_data ),
       REQUEST_TIMEOUT_COMMAND )
 
     return LocationListToGoTo( request_data, response )
@@ -1110,7 +1107,7 @@ class LanguageServerCompleter( Completer ):
 
     with self._mutex:
       file_diagnostics = list( self._latest_diagnostics[
-          lsapi.FilePathToUri( request_data[ 'filepath' ] ) ] )
+          lsp.FilePathToUri( request_data[ 'filepath' ] ) ] )
 
     matched_diagnostics = [
       d for d in file_diagnostics if WithinRange( d )
@@ -1120,16 +1117,16 @@ class LanguageServerCompleter( Completer ):
     if matched_diagnostics:
       code_actions = self.GetConnection().GetResponse(
         request_id,
-        lsapi.CodeAction( request_id,
-                          request_data,
-                          matched_diagnostics[ 0 ][ 'range' ],
-                          matched_diagnostics ),
+        lsp.CodeAction( request_id,
+                        request_data,
+                        matched_diagnostics[ 0 ][ 'range' ],
+                        matched_diagnostics ),
         REQUEST_TIMEOUT_COMMAND )
 
     else:
       code_actions = self.GetConnection().GetResponse(
         request_id,
-        lsapi.CodeAction(
+        lsp.CodeAction(
           request_id,
           request_data,
           # Use the whole line
@@ -1171,9 +1168,7 @@ class LanguageServerCompleter( Completer ):
     request_id = self.GetConnection().NextRequestId()
     response = self.GetConnection().GetResponse(
       request_id,
-      lsapi.Rename( request_id,
-                    request_data,
-                    new_name ),
+      lsp.Rename( request_id, request_data, new_name ),
       REQUEST_TIMEOUT_COMMAND )
 
     return responses.BuildFixItResponse(
@@ -1221,7 +1216,7 @@ def InsertionTextForItem( request_data, item ):
   )"""
   # We explicitly state that we do not support completion types of "Snippet".
   # Abort this request if the server is buggy and ignores us.
-  assert lsapi.INSERT_TEXT_FORMAT[
+  assert lsp.INSERT_TEXT_FORMAT[
     item.get( 'insertTextFormat', 1 ) ] == 'PlainText'
 
   fixits = None
@@ -1328,10 +1323,10 @@ def LocationListToGoTo( request_data, response ):
 def PositionToLocationAndDescription( request_data, position ):
   """Convert a LSP position to a ycmd location."""
   try:
-    filename = lsapi.UriToFilePath( position[ 'uri' ] )
+    filename = lsp.UriToFilePath( position[ 'uri' ] )
     file_contents = utils.SplitLines( GetFileContents( request_data,
                                                        filename ) )
-  except lsapi.InvalidUriException:
+  except lsp.InvalidUriException:
     _logger.debug( "Invalid URI, file contents not available in GoTo" )
     filename = ''
     file_contents = []
@@ -1388,8 +1383,8 @@ def BuildRange( request_data, filename, r ):
 def BuildDiagnostic( request_data, uri, diag ):
   """Return a ycmd diagnostic from a LSP diagnostic."""
   try:
-    filename = lsapi.UriToFilePath( uri )
-  except lsapi.InvalidUriException:
+    filename = lsp.UriToFilePath( uri )
+  except lsp.InvalidUriException:
     _logger.debug( 'Invalid URI received for diagnostic' )
     filename = ''
 
@@ -1400,14 +1395,14 @@ def BuildDiagnostic( request_data, uri, diag ):
     location = r.start_,
     location_extent = r,
     text = diag[ 'message' ],
-    kind = SEVERITY_TO_YCM_SEVERITY[ lsapi.SEVERITY[ diag[ 'severity' ] ] ] ) )
+    kind = SEVERITY_TO_YCM_SEVERITY[ lsp.SEVERITY[ diag[ 'severity' ] ] ] ) )
 
 
 def TextEditToChunks( request_data, uri, text_edit ):
   """Returns a list of FixItChunks from a LSP textEdit."""
   try:
-    filepath = lsapi.UriToFilePath( uri )
-  except lsapi.InvalidUriException:
+    filepath = lsp.UriToFilePath( uri )
+  except lsp.InvalidUriException:
     _logger.debug( 'Invalid filepath received in TextEdit' )
     filepath = ''
 
