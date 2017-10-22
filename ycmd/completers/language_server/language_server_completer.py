@@ -156,16 +156,40 @@ class LanguageServerConnection( threading.Thread ):
     Abstract language server communication object.
 
     This connection runs as a thread and is generally only used directly by
-    LanguageServerCompleter, but is instantiated, startd and stopped by Concrete
-    LanguageServerCompleter implementations.
+    LanguageServerCompleter, but is instantiated, started and stopped by
+    Concrete LanguageServerCompleter implementations.
 
     Implementations of this class are required to provide the following methods:
       - _TryServerConnectionBlocking: Connect to the server and return when the
                                       connection is established
-      - Close: Close any sockets or channels prior to the thread exit
+      - _Close: Close any sockets or channels prior to the thread exit
       - _Write: Write some data to the server
       - _Read: Read some data from the server, blocking until some data is
                available
+
+    Threads:
+
+    LSP is by its nature an asyncronous protocol. There are request-reply like
+    requests and unsolicited notifications. Receipt of the latter is mandatory,
+    so we cannot rely on there being a bottle thread executing a client request.
+
+    So we need a message pump and dispatch thread. This is actually the
+    LanguageServerConnection, which implements Thread. It's main method simply
+    listens on the socket/stream and dispatches complete messages to the
+    LanguageServerCompleter. It does this:
+
+    - For requests: Using python event objects, wrapped in the Response class
+    - For notifications: via a synchronised Queue.
+
+    NOTE: Some handling is done in the dispatch thread. There are certain
+    notifications which we have to handle when we get them, such as:
+
+    - Initialisation messages
+    - Diagnostics
+
+    In these cases, we allow some code to be executed inline within the dispatch
+    thread, as there is no other thread guaranteed to execute. These are handled
+    by callback functions and mutexes.
 
     Using this class in concrete LanguageServerCompleter implementations:
 
@@ -180,7 +204,9 @@ class LanguageServerConnection( threading.Thread ):
     - Call stop() prior to shutting down the downstream server (see
       LanguageServerCompleter.ShutdownServer to do that part)
     - Call Close() to close any remaining streams. Do this in a request thread.
-      DO NOT CALL THIS FROM THE DISPATCH THREAD.
+      DO NOT CALL THIS FROM THE DISPATCH THREAD. That is, Close() must not be
+      called from a callback supplied to GetResponseAsync, or in any callback or
+      method with a name like "*InPollThread". The result would be a deadlock.
 
     Footnote: Why does this interface exist?
 
