@@ -531,12 +531,12 @@ class LanguageServerCompleter( Completer ):
     - GoToDeclaration -> GoToDeclaration
     - GoTo            -> GoToDeclaration
     - GoToReferences  -> GoToReferences
-    - RefactorRename  -> Rename
+    - RefactorRename  -> RefactorRename
   - GetType/GetDoc are bespoke to the downstream server, though this class
     provides GetHoverResponse which is useful in this context.
-  - FixIt requests are handled by CodeAction, but the responses are passed to
-    HandleServerCommand, which must return a FixIt. See WorkspaceEditToFixIt and
-    TextEditToChunks for some helpers. If the server returns other types of
+  - FixIt requests are handled by GetCodeActions, but the responses are passed
+    to HandleServerCommand, which must return a FixIt. See WorkspaceEditToFixIt
+    and TextEditToChunks for some helpers. If the server returns other types of
     command that aren't FixIt, either throw an exception or update the ycmd
     protocol to handle it :)
   """
@@ -1086,7 +1086,7 @@ class LanguageServerCompleter( Completer ):
     return LocationListToGoTo( request_data, response )
 
 
-  def CodeAction( self, request_data, args ):
+  def GetCodeActions( self, request_data, args ):
     """Performs the codeaction request and returns the result as a FixIt
     response."""
     if not self.ServerIsReady():
@@ -1151,7 +1151,7 @@ class LanguageServerCompleter( Completer ):
     return responses.BuildFixItResponse( [ r for r in response if r ] )
 
 
-  def Rename( self, request_data, args ):
+  def RefactorRename( self, request_data, args ):
     """Issues the rename request and returns the result as a FixIt response."""
     if not self.ServerIsReady():
       raise RuntimeError( 'Server is initializing. Please wait.' )
