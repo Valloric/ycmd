@@ -1267,11 +1267,11 @@ def InsertionTextForItem( request_data, item ):
   # clients won't be able to apply arbitrary edits (only 'completion', as
   # opposed to 'content assist').
   if 'textEdit' in item and item[ 'textEdit' ]:
-    textEdit = item[ 'textEdit' ]
-    start_codepoint = _GetCompletionItemStartCodepointOrReject( textEdit,
+    text_edit = item[ 'textEdit' ]
+    start_codepoint = _GetCompletionItemStartCodepointOrReject( text_edit,
                                                                 request_data )
 
-    insertion_text = textEdit[ 'newText' ]
+    insertion_text = text_edit[ 'newText' ]
 
     if '\n' in insertion_text:
       # jdt.ls can return completions which generate code, such as
@@ -1309,8 +1309,8 @@ def InsertionTextForItem( request_data, item ):
   return ( insertion_text, fixits, start_codepoint )
 
 
-def _GetCompletionItemStartCodepointOrReject( textEdit, request_data ):
-  edit_range = textEdit[ 'range' ]
+def _GetCompletionItemStartCodepointOrReject( text_edit, request_data ):
+  edit_range = text_edit[ 'range' ]
   start_codepoint = edit_range[ 'start' ][ 'character' ] + 1
   end_codepoint = edit_range[ 'end' ][ 'character' ] + 1
 
@@ -1318,17 +1318,17 @@ def _GetCompletionItemStartCodepointOrReject( textEdit, request_data ):
   if edit_range[ 'start' ][ 'line' ] != edit_range[ 'end' ][ 'line' ]:
     raise IncompatibleCompletionException(
       "The TextEdit '{0}' spans multiple lines".format(
-        textEdit[ 'newText' ] ) )
+        text_edit[ 'newText' ] ) )
 
   if start_codepoint > request_data[ 'start_codepoint' ]:
     raise IncompatibleCompletionException(
       "The TextEdit '{0}' starts after the start position".format(
-        textEdit[ 'newText' ] ) )
+        text_edit[ 'newText' ] ) )
 
   if end_codepoint < request_data[ 'start_codepoint' ]:
     raise IncompatibleCompletionException(
       "The TextEdit '{0}' ends before the start position".format(
-        textEdit[ 'newText' ] ) )
+        text_edit[ 'newText' ] ) )
 
   return start_codepoint
 
