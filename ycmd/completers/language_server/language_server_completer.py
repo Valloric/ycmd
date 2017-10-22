@@ -218,9 +218,9 @@ class LanguageServerConnection( threading.Thread ):
   def __init__( self, notification_handler = None ):
     super( LanguageServerConnection, self ).__init__()
 
-    self._lastId = 0
+    self._last_id = 0
     self._responses = {}
-    self._responseMutex = threading.Lock()
+    self._response_mutex = threading.Lock()
     self._notifications = queue.Queue()
 
     self._connection_event = threading.Event()
@@ -240,7 +240,7 @@ class LanguageServerConnection( threading.Thread ):
       self._ReadMessages( )
     except LanguageServerConnectionStopped:
       # Abort any outstanding requests
-      with self._responseMutex:
+      with self._response_mutex:
         for _, response in iteritems( self._responses ):
           response.Abort()
         self._responses.clear()
@@ -263,9 +263,9 @@ class LanguageServerConnection( threading.Thread ):
 
 
   def NextRequestId( self ):
-    with self._responseMutex:
-      self._lastId += 1
-      return str( self._lastId )
+    with self._response_mutex:
+      self._last_id += 1
+      return str( self._last_id )
 
 
   def GetResponseAsync( self, request_id, message, response_callback=None ):
@@ -276,7 +276,7 @@ class LanguageServerConnection( threading.Thread ):
     Returns the Response instance created."""
     response = Response( response_callback )
 
-    with self._responseMutex:
+    with self._response_mutex:
       assert request_id not in self._responses
       self._responses[ request_id ] = response
 
@@ -423,7 +423,7 @@ class LanguageServerConnection( threading.Thread ):
     them in a Queue which is polled by the long-polling mechanism in
     LanguageServerCompleter."""
     if 'id' in message:
-      with self._responseMutex:
+      with self._response_mutex:
         assert str( message[ 'id' ] ) in self._responses
         self._responses[ str( message[ 'id' ] ) ].ResponseReceived( message )
         del self._responses[ str( message[ 'id' ] ) ]
@@ -699,7 +699,7 @@ class LanguageServerCompleter( Completer ):
     min_start_codepoint = request_data[ 'start_codepoint' ]
 
     # First generate all of the completion items and store their
-    # start_codepoints.  Then, we fix-up the completion texts to use the
+    # start_codepoints. Then, we fix-up the completion texts to use the
     # earliest start_codepoint by borrowing text from the original line.
     for item in items:
       # First, resolve the completion.
