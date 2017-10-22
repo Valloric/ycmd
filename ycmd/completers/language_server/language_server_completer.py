@@ -754,15 +754,9 @@ class LanguageServerCompleter( Completer ):
 
       # Build a ycmd-compatible completion for the text as we received it. Later
       # we might mofify insertion_text should we see a lower start codepoint.
-      completions.append( responses.BuildCompletionData(
-        insertion_text,
-        extra_menu_info = item.get( 'detail', None ),
-        detailed_info = ( item[ 'label' ] +
-                          '\n\n' +
-                          item.get( 'documentation', '' ) ),
-        menu_text = item[ 'label' ],
-        kind = lsapi.ITEM_KIND[ item.get( 'kind', 0 ) ],
-        extra_data = fixits ) )
+      completions.append( CompletionItemToCompletionData( insertion_text,
+                                                          item,
+                                                          fixits ) )
       start_codepoints.append( start_codepoint )
 
     if ( len( completions ) > 1 and
@@ -1201,6 +1195,18 @@ class LanguageServerCompleter( Completer ):
       [ WorkspaceEditToFixIt( request_data, response[ 'result' ] ) ] )
 
 
+def CompletionItemToCompletionData( insertion_text, item, fixits ):
+  return responses.BuildCompletionData(
+    insertion_text,
+    extra_menu_info = item.get( 'detail', None ),
+    detailed_info = ( item[ 'label' ] +
+                      '\n\n' +
+                      item.get( 'documentation', '' ) ),
+    menu_text = item[ 'label' ],
+    kind = lsp.ITEM_KIND[ item.get( 'kind', 0 ) ],
+    extra_data = fixits )
+
+
 def FixUpCompletionPrefixes( completions,
                              start_codepoints,
                              request_data,
@@ -1263,30 +1269,12 @@ def InsertionTextForItem( request_data, item ):
   # opposed to 'content assist').
   if 'textEdit' in item and item[ 'textEdit' ]:
     textEdit = item[ 'textEdit' ]
-    edit_range = textEdit[ 'range' ]
-    start_codepoint = edit_range[ 'start' ][ 'character' ] + 1
-    end_codepoint = edit_range[ 'end' ][ 'character' ] + 1
-
-    # Conservatively rejecting candidates that breach the protocol
-    if edit_range[ 'start' ][ 'line' ] != edit_range[ 'end' ][ 'line' ]:
-      raise IncompatibleCompletionException(
-        "The TextEdit '{0}' spans multiple lines".format(
-          textEdit[ 'newText' ] ) )
-
-    if start_codepoint > request_data[ 'start_codepoint' ]:
-      raise IncompatibleCompletionException(
-        "The TextEdit '{0}' starts after the start position".format(
-          textEdit[ 'newText' ] ) )
-
-    if end_codepoint < request_data[ 'start_codepoint' ]:
-      raise IncompatibleCompletionException(
-        "The TextEdit '{0}' ends before the start position".format(
-          textEdit[ 'newText' ] ) )
-
+    start_codepoint = _GetCompletionItemStartCodepointOrReject( textEdit,
+                                                                request_data )
 
     insertion_text = textEdit[ 'newText' ]
 
-    if '\n' in textEdit[ 'newText' ]:
+    if '\n' in insertion_text:
       # jdt.ls can return completions which generate code, such as
       # getters/setters and entire anonymous classes.
       #
@@ -1305,7 +1293,7 @@ def InsertionTextForItem( request_data, item ):
       #
       # These sorts of completions aren't really in the spirit of ycmd at the
       # moment anyway. So for now, we just ignore this candidate.
-      raise IncompatibleCompletionException( textEdit[ 'newText' ] )
+      raise IncompatibleCompletionException( insertion_text )
 
   additional_text_edits.extend( item.get( 'additionalTextEdits', [] ) )
 
@@ -1320,6 +1308,30 @@ def InsertionTextForItem( request_data, item ):
       [ responses.FixIt( chunks[ 0 ].range.start_, chunks ) ] )
 
   return ( insertion_text, fixits, start_codepoint )
+
+
+def _GetCompletionItemStartCodepointOrReject( textEdit, request_data ):
+  edit_range = textEdit[ 'range' ]
+  start_codepoint = edit_range[ 'start' ][ 'character' ] + 1
+  end_codepoint = edit_range[ 'end' ][ 'character' ] + 1
+
+  # Conservatively rejecting candidates that breach the protocol
+  if edit_range[ 'start' ][ 'line' ] != edit_range[ 'end' ][ 'line' ]:
+    raise IncompatibleCompletionException(
+      "The TextEdit '{0}' spans multiple lines".format(
+        textEdit[ 'newText' ] ) )
+
+  if start_codepoint > request_data[ 'start_codepoint' ]:
+    raise IncompatibleCompletionException(
+      "The TextEdit '{0}' starts after the start position".format(
+        textEdit[ 'newText' ] ) )
+
+  if end_codepoint < request_data[ 'start_codepoint' ]:
+    raise IncompatibleCompletionException(
+      "The TextEdit '{0}' ends before the start position".format(
+        textEdit[ 'newText' ] ) )
+
+  return start_codepoint
 
 
 def LocationListToGoTo( request_data, response ):
