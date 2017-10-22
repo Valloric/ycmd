@@ -658,7 +658,7 @@ class LanguageServerCompleter( Completer ):
     if not self.ServerIsReady():
       return None
 
-    self._RefreshFiles( request_data )
+    self._UpdateServerWithFileContents( request_data )
 
     request_id = self.GetConnection().NextRequestId()
     msg = lsp.Completion( request_id, request_data )
@@ -782,16 +782,16 @@ class LanguageServerCompleter( Completer ):
       return
 
     # If we haven't finished initializing yet, we need to queue up a call to
-    # _RefreshFiles. This ensures that the server is up to date as soon as we
-    # are able to send more messages. This is important because server start up
-    # can be quite slow and we must not block the user, while we must keep the
-    # server synchronized.
+    # _UpdateServerWithFileContents. This ensures that the server is up to date
+    # as soon as we are able to send more messages. This is important because
+    # server start up can be quite slow and we must not block the user, while we
+    # must keep the server synchronized.
     if not self._initialise_event.is_set():
-      self._OnInitialiseComplete( lambda self: self._RefreshFiles(
-        request_data ) )
+      self._OnInitialiseComplete(
+        lambda self: self._UpdateServerWithFileContents( request_data ) )
       return
 
-    self._RefreshFiles( request_data )
+    self._UpdateServerWithFileContents( request_data )
 
     # Return the latest diagnostics that we have received.
     #
@@ -930,7 +930,7 @@ class LanguageServerCompleter( Completer ):
     return None
 
 
-  def _RefreshFiles( self, request_data ):
+  def _UpdateServerWithFileContents( self, request_data ):
     """Update the server with the current contents of all open buffers, and
     close any buffers no longer open.
 
@@ -1035,8 +1035,8 @@ class LanguageServerCompleter( Completer ):
       self._initialise_event.set()
 
     # Fire any events that are pending on the completion of the initialize
-    # exchange. Typically, this will be calls to _RefreshFiles or something that
-    # occurred while we were waiting.
+    # exchange. Typically, this will be calls to _UpdateServerWithFileContents
+    # or something that occurred while we were waiting.
     for handler in self._on_initialise_complete_handlers:
       handler( self )
 
@@ -1059,7 +1059,7 @@ class LanguageServerCompleter( Completer ):
     if not self.ServerIsReady():
       raise RuntimeError( 'Server is initializing. Please wait.' )
 
-    self._RefreshFiles( request_data )
+    self._UpdateServerWithFileContents( request_data )
 
     request_id = self.GetConnection().NextRequestId()
     response = self.GetConnection().GetResponse(
@@ -1076,7 +1076,7 @@ class LanguageServerCompleter( Completer ):
     if not self.ServerIsReady():
       raise RuntimeError( 'Server is initializing. Please wait.' )
 
-    self._RefreshFiles( request_data )
+    self._UpdateServerWithFileContents( request_data )
 
     request_id = self.GetConnection().NextRequestId()
     response = self.GetConnection().GetResponse(
@@ -1101,7 +1101,7 @@ class LanguageServerCompleter( Completer ):
     if not self.ServerIsReady():
       raise RuntimeError( 'Server is initializing. Please wait.' )
 
-    self._RefreshFiles( request_data )
+    self._UpdateServerWithFileContents( request_data )
 
     request_id = self.GetConnection().NextRequestId()
     response = self.GetConnection().GetResponse(
@@ -1118,7 +1118,7 @@ class LanguageServerCompleter( Completer ):
     if not self.ServerIsReady():
       raise RuntimeError( 'Server is initializing. Please wait.' )
 
-    self._RefreshFiles( request_data )
+    self._UpdateServerWithFileContents( request_data )
 
     line_num_ls = request_data[ 'line_num' ] - 1
 
@@ -1187,7 +1187,7 @@ class LanguageServerCompleter( Completer ):
                         'Usage: RefactorRename <new name>' )
 
 
-    self._RefreshFiles( request_data )
+    self._UpdateServerWithFileContents( request_data )
 
     new_name = args[ 0 ]
 
