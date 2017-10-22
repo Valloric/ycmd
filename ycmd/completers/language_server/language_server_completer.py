@@ -41,11 +41,11 @@ _logger = logging.getLogger( __name__ )
 
 SERVER_LOG_PREFIX = 'Server reported: '
 
+# All timeout values are in seconds
 REQUEST_TIMEOUT_COMPLETION = 5
 REQUEST_TIMEOUT_INITIALISE = 30
 REQUEST_TIMEOUT_COMMAND    = 30
 CONNECTION_TIMEOUT         = 5
-MESSAGE_POLL_TIMEOUT       = 10
 
 SEVERITY_TO_YCM_SEVERITY = {
   'Error': 'ERROR',
@@ -803,21 +803,20 @@ class LanguageServerCompleter( Completer ):
                  for diag in self._latest_diagnostics[ uri ] ]
 
 
-  def PollForMessagesInner( self, request_data ):
-    # scoop up any pending messages into one big list
-    messages = self._PollForMessagesBlock( request_data )
-
-    # If we found some messages, return them immediately
+  def PollForMessagesInner( self, request_data, timeout ):
+    # If there are messages pending in the queue, return them immediately
+    messages = self._GetPendingMessages( request_data )
     if messages:
       return messages
 
-    # Otherwise, there are no pending messages. Block until we get one.
-    return self._PollForMessagesBlock( request_data )
+    # Otherwise, block until we get one or we hit the timeout.
+    return self._AwaitServerMessages( request_data, timeout )
 
 
-  def _PollForMessagesNoBlock( self, request_data, messages ):
+  def _GetPendingMessages( self, request_data ):
     """Convert any pending notifications to messages and return them in a list.
-    If there are no messages pending, returns an empty list."""
+    If there are no messages pending, returns an empty list. Returns False if an
+    error occurred and no further polling should be attempted."""
     messages = list()
     try:
       while True:
@@ -825,12 +824,12 @@ class LanguageServerCompleter( Completer ):
           # The server isn't running or something. Don't re-poll.
           return False
 
-      notification = self.GetConnection()._notifications.get_nowait( )
-      message = self._ConvertNotificationToMessage( request_data,
-                                                    notification )
+        notification = self.GetConnection()._notifications.get_nowait( )
+        message = self._ConvertNotificationToMessage( request_data,
+                                                      notification )
 
-      if message:
-        messages.append( message )
+        if message:
+          messages.append( message )
     except queue.Empty:
       # We drained the queue
       pass
@@ -838,7 +837,7 @@ class LanguageServerCompleter( Completer ):
     return messages
 
 
-  def _PollForMessagesBlock( self, request_data ):
+  def _AwaitServerMessages( self, request_data, timeout ):
     """Block until either we receive a notification, or a timeout occurs.
     Returns one of the following:
        - a list containing a single message
@@ -853,7 +852,7 @@ class LanguageServerCompleter( Completer ):
           return False
 
         notification = self.GetConnection()._notifications.get(
-          timeout = MESSAGE_POLL_TIMEOUT )
+          timeout = timeout )
         message = self._ConvertNotificationToMessage( request_data,
                                                       notification )
         if message:
