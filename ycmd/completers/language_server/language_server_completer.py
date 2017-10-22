@@ -262,7 +262,7 @@ class LanguageServerConnection( threading.Thread ):
       self._TryServerConnectionBlocking()
       self._connection_event.set()
 
-      # Blocking loop which reads whole messages and calls _DespatchMessage
+      # Blocking loop which reads whole messages and calls _DispatchMessage
       self._ReadMessages( )
     except LanguageServerConnectionStopped:
       # Abort any outstanding requests
@@ -344,8 +344,8 @@ class LanguageServerConnection( threading.Thread ):
 
   def _ReadMessages( self ):
     """Main message pump. Within the message pump thread context, reads messages
-    from the socket/stream by calling self._Read in a loop and despatch complete
-    messages by calling self._DespatchMessage.
+    from the socket/stream by calling self._Read in a loop and dispatch complete
+    messages by calling self._DispatchMessage.
 
     When the server is shut down cleanly, raises
     LanguageServerConnectionStopped"""
@@ -442,7 +442,7 @@ class LanguageServerConnection( threading.Thread ):
     return ( data, read_bytes, headers )
 
 
-  def _DespatchMessage( self, message ):
+  def _DispatchMessage( self, message ):
     """Called in the message pump thread context when a complete message was
     read. For responses, calls the Response object's ResponseReceived method, or
     for notifications (unsolicited messages from the server), simply accumulates
