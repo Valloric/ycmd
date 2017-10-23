@@ -54,6 +54,8 @@ TOO_MANY_ERRORS_DIAG_TEXT_TO_IGNORE = 'too many errors emitted, stopping now'
 NO_DOCUMENTATION_MESSAGE = 'No documentation available for current context'
 INCLUDE_REGEX = re.compile( '(\s*#\s*(?:include|import)\s*)(:?"[^"]*|<[^>]*)' )
 
+_logger = logging.getLogger( __name__ )
+
 
 class ClangCompleter( Completer ):
   def __init__( self, user_options ):
@@ -64,7 +66,6 @@ class ClangCompleter( Completer ):
     self._flags = Flags()
     self._diagnostic_store = None
     self._files_being_compiled = EphemeralValuesSet()
-    self._logger = logging.getLogger( __name__ )
 
 
   def SupportedFiletypes( self ):
@@ -129,7 +130,7 @@ class ClangCompleter( Completer ):
         # listdir.
         relative_paths = os.listdir( unicode_path )
       except Exception:
-        self._logger.exception( 'Error while listing %s folder.', unicode_path )
+        _logger.exception( 'Error while listing %s folder.', unicode_path )
         relative_paths = []
 
       paths.extend( os.path.join( include_path, path_dir, relative_path ) for
@@ -553,7 +554,8 @@ def _BuildGetDocResponse( doc_data ):
   # future, we can use this XML for more interesting things.
   try:
     root = xml.etree.ElementTree.fromstring( doc_data.comment_xml )
-  except:
+  except Exception:
+    _logger.exception( 'Error while parsing XML documentation.' )
     raise ValueError( NO_DOCUMENTATION_MESSAGE )
 
   # Note: declaration is False-y if it has no child elements, hence the below
