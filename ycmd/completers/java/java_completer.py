@@ -427,7 +427,7 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
         self.ShutdownServer()
 
         utils.WaitUntilProcessIsTerminated( self._server_handle,
-                                            timeout = 5 )
+                                            timeout = 15 )
 
         if self._connection:
           self._connection.Close()
@@ -446,7 +446,7 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
 
       try:
         utils.WaitUntilProcessIsTerminated( self._server_handle,
-                                            timeout = 5 )
+                                            timeout = 15 )
 
         if self._connection:
           self._connection.Close()
