@@ -553,7 +553,7 @@ def _BuildGetDocResponse( doc_data ):
   # future, we can use this XML for more interesting things.
   try:
     root = xml.etree.ElementTree.fromstring( doc_data.comment_xml )
-  except:
+  except xml.etree.ElementTree.ParseError:
     raise ValueError( NO_DOCUMENTATION_MESSAGE )
 
   # Note: declaration is False-y if it has no child elements, hence the below
