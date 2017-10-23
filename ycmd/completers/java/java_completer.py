@@ -392,6 +392,7 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
 
   def _StopServer( self ):
     with self._server_state_mutex:
+      _logger.info( 'Shutting down jdt.ls...' )
       # We don't use utils.CloseStandardStreams, because the stdin/out is
       # connected to our server connector. Just close stderr.
       #
@@ -412,6 +413,8 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
 
       # Tidy up our internal state
       self._CleanUp()
+
+      _logger.info( 'Shutting down jdt.ls...complete.' )
 
 
   def _StopServerCleanly( self ):
