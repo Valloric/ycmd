@@ -601,6 +601,8 @@ class LanguageServerCompleter( Completer ):
       self._initialise_response = None
       self._initialise_event = threading.Event()
       self._on_initialise_complete_handlers = list()
+      self._server_capabilities = None
+      self._resolve_completion_items = False
 
 
   def ShutdownServer( self ):
@@ -704,6 +706,9 @@ class LanguageServerCompleter( Completer ):
 
 
   def _ShouldResolveCompletionItems( self ):
+    # We might not actually need to issue the resolve request if the server
+    # claims that it doesn't support it. However, we still might need to fix up
+    # the completion items.
     return ( 'completionProvider' in self._server_capabilities and
              self._server_capabilities[ 'completionProvider' ].get(
                'resolveProvider',
@@ -713,11 +718,6 @@ class LanguageServerCompleter( Completer ):
   def _ResolveCompletionItems( self, items, request_data ):
     """Issue the resolve request for each completion item in |items|, then fix
     up the items such that a single start codepoint is used."""
-
-    # We might not actually need to issue the resolve request if the server
-    # claims that it doesn't support it. However, we still might need to fix up
-    # the completion items.
-    do_resolve = self._ShouldResolveCompletionItems( )
 
     #
     # Important note on the following logic:
@@ -754,7 +754,7 @@ class LanguageServerCompleter( Completer ):
     # earliest start_codepoint by borrowing text from the original line.
     for item in items:
       # First, resolve the completion.
-      if do_resolve:
+      if self._resolve_completion_items:
         item = self._ResolveCompletionItem( item )
 
       try:
@@ -1021,6 +1021,7 @@ class LanguageServerCompleter( Completer ):
     when the initialize request receives a response."""
     with self._mutex:
       self._server_capabilities = response[ 'result' ][ 'capabilities' ]
+      self._resolve_completion_items = self._ShouldResolveCompletionItems()
 
       if 'textDocumentSync' in response[ 'result' ][ 'capabilities' ]:
         SYNC_TYPE = [
