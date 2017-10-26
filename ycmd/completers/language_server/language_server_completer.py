@@ -160,11 +160,11 @@ class LanguageServerConnection( threading.Thread ):
     Concrete LanguageServerCompleter implementations.
 
     Implementations of this class are required to provide the following methods:
-      - _TryServerConnectionBlocking: Connect to the server and return when the
+      - TryServerConnectionBlocking: Connect to the server and return when the
                                       connection is established
-      - _Close: Close any sockets or channels prior to the thread exit
-      - _Write: Write some data to the server
-      - _Read: Read some data from the server, blocking until some data is
+      - Shutdown: Close any sockets or channels prior to the thread exit
+      - WriteData: Write some data to the server
+      - ReadData: Read some data from the server, blocking until some data is
                available
 
     Threads:
@@ -222,22 +222,22 @@ class LanguageServerConnection( threading.Thread ):
     to us, which can lead to complexity and possibly blocking.
   """
   @abc.abstractmethod
-  def _TryServerConnectionBlocking( self ):
+  def TryServerConnectionBlocking( self ):
     pass
 
 
   @abc.abstractmethod
-  def _Close( self ):
+  def Shutdown( self ):
     pass
 
 
   @abc.abstractmethod
-  def _Write( self, data ):
+  def WriteData( self, data ):
     pass
 
 
   @abc.abstractmethod
-  def _Read( self, size=-1 ):
+  def ReadData( self, size=-1 ):
     pass
 
 
@@ -259,7 +259,7 @@ class LanguageServerConnection( threading.Thread ):
       # Wait for the connection to fully establish (this runs in the thread
       # context, so we block until a connection is received or there is a
       # timeout, which throws an exception)
-      self._TryServerConnectionBlocking()
+      self.TryServerConnectionBlocking()
       self._connection_event.set()
 
       # Blocking loop which reads whole messages and calls _DispatchMessage
@@ -274,14 +274,19 @@ class LanguageServerConnection( threading.Thread ):
       _logger.debug( 'Connection was closed cleanly' )
 
 
-  def stop( self ):
-    # Note lowercase stop() to match threading.Thread.start()
+  def Start( self ):
+    # Wraps the fact that this class inherits (privately, in a sense) from
+    # Thread.
+    self.start()
+
+
+  def Stop( self ):
     self._stop_event.set()
 
 
   def Close( self ):
     self.join()
-    self._Close()
+    self.Shutdown()
 
 
   def IsStopped( self ):
@@ -308,7 +313,7 @@ class LanguageServerConnection( threading.Thread ):
 
     _logger.debug( 'TX: Sending message: %r', message )
 
-    self._Write( message )
+    self.WriteData( message )
     return response
 
 
@@ -324,7 +329,7 @@ class LanguageServerConnection( threading.Thread ):
     no response will be received and nothing is returned."""
     _logger.debug( 'TX: Sending notification: %r', message )
 
-    self._Write( message )
+    self.WriteData( message )
 
 
   def AwaitServerConnection( self ):
@@ -344,8 +349,8 @@ class LanguageServerConnection( threading.Thread ):
 
   def _ReadMessages( self ):
     """Main message pump. Within the message pump thread context, reads messages
-    from the socket/stream by calling self._Read in a loop and dispatch complete
-    messages by calling self._DispatchMessage.
+    from the socket/stream by calling self.ReadData in a loop and dispatch
+    complete messages by calling self._DispatchMessage.
 
     When the server is shut down cleanly, raises
     LanguageServerConnectionStopped"""
@@ -379,7 +384,7 @@ class LanguageServerConnection( threading.Thread ):
       while content_read < content_length:
         # There is more content to read, but data is exhausted - read more from
         # the socket
-        data = self._Read( content_length - content_read )
+        data = self.ReadData( content_length - content_read )
         content_to_read = min( content_length - content_read, len( data ) )
         content += data[ : content_to_read ]
         content_read += len( content )
@@ -416,7 +421,7 @@ class LanguageServerConnection( threading.Thread ):
       read_bytes = 0
       last_line = 0
       if len( data ) == 0:
-        data = self._Read()
+        data = self.ReadData()
 
       while read_bytes < len( data ):
         if utils.ToUnicode( data[ read_bytes: ] )[ 0 ] == '\n':
@@ -477,12 +482,12 @@ class StandardIOLanguageServerConnection( LanguageServerConnection ):
     self._server_stdout = server_stdout
 
 
-  def _TryServerConnectionBlocking( self ):
+  def TryServerConnectionBlocking( self ):
     # standard in/out don't need to wait for the server to connect to us
     return True
 
 
-  def _Close( self ):
+  def Shutdown( self ):
     if not self._server_stdin.closed:
       self._server_stdin.close()
 
@@ -490,12 +495,12 @@ class StandardIOLanguageServerConnection( LanguageServerConnection ):
       self._server_stdout.close()
 
 
-  def _Write( self, data ):
+  def WriteData( self, data ):
     self._server_stdin.write( data )
     self._server_stdin.flush()
 
 
-  def _Read( self, size=-1 ):
+  def ReadData( self, size=-1 ):
     if size > -1:
       data = self._server_stdout.read( size )
     else:
@@ -676,13 +681,13 @@ class LanguageServerCompleter( Completer ):
     # simply resolve each completion item we get. Should this be a performance
     # issue, we could restrict it in future.
     #
-    # Note: ResolveCompletionItems does a lot of work on the actual completion
+    # Note: _ResolveCompletionItems does a lot of work on the actual completion
     # text to ensure that the returned text and start_codepoint are applicable
     # to our model of a single start column.
-    return self.ResolveCompletionItems( items, request_data )
+    return self._ResolveCompletionItems( items, request_data )
 
 
-  def ResolveCompletionItems( self, items, request_data ):
+  def _ResolveCompletionItems( self, items, request_data ):
     """Issue the resolve request for each completion item in |items|, then fix
     up the items such that a single start codepoint is used."""
 
@@ -744,7 +749,7 @@ class LanguageServerCompleter( Completer ):
 
       try:
         ( insertion_text, fixits, start_codepoint ) = (
-          InsertionTextForItem( request_data, item ) )
+          _InsertionTextForItem( request_data, item ) )
       except IncompatibleCompletionException:
         _logger.exception( 'Ignoring incompatible completion suggestion '
                            '{0}'.format( item ) )
@@ -754,18 +759,18 @@ class LanguageServerCompleter( Completer ):
 
       # Build a ycmd-compatible completion for the text as we received it. Later
       # we might mofify insertion_text should we see a lower start codepoint.
-      completions.append( CompletionItemToCompletionData( insertion_text,
-                                                          item,
-                                                          fixits ) )
+      completions.append( _CompletionItemToCompletionData( insertion_text,
+                                                           item,
+                                                           fixits ) )
       start_codepoints.append( start_codepoint )
 
     if ( len( completions ) > 1 and
          min_start_codepoint != request_data[ 'start_codepoint' ] ):
       # We need to fix up the completions, go do that
-      return FixUpCompletionPrefixes( completions,
-                                      start_codepoints,
-                                      request_data,
-                                      min_start_codepoint )
+      return _FixUpCompletionPrefixes( completions,
+                                       start_codepoints,
+                                       request_data,
+                                       min_start_codepoint )
 
     request_data[ 'start_codepoint' ] = min_start_codepoint
     return completions
@@ -799,7 +804,7 @@ class LanguageServerCompleter( Completer ):
     uri = lsp.FilePathToUri( request_data[ 'filepath' ] )
     with self._mutex:
       if uri in self._latest_diagnostics:
-        return [ BuildDiagnostic( request_data, uri, diag )
+        return [ _BuildDiagnostic( request_data, uri, diag )
                  for diag in self._latest_diagnostics[ uri ] ]
 
 
@@ -825,8 +830,8 @@ class LanguageServerCompleter( Completer ):
           return False
 
         notification = self.GetConnection()._notifications.get_nowait( )
-        message = self._ConvertNotificationToMessage( request_data,
-                                                      notification )
+        message = self.ConvertNotificationToMessage( request_data,
+                                                     notification )
 
         if message:
           messages.append( message )
@@ -853,8 +858,8 @@ class LanguageServerCompleter( Completer ):
 
         notification = self.GetConnection()._notifications.get(
           timeout = timeout )
-        message = self._ConvertNotificationToMessage( request_data,
-                                                      notification )
+        message = self.ConvertNotificationToMessage( request_data,
+                                                     notification )
         if message:
           return [ message ]
     except queue.Empty:
@@ -865,11 +870,11 @@ class LanguageServerCompleter( Completer ):
     """Return a notification handler method suitable for passing to
     LanguageServerConnection constructor"""
     def handler( server, notification ):
-      self._HandleNotificationInPollThread( notification )
+      self.HandleNotificationInPollThread( notification )
     return handler
 
 
-  def _HandleNotificationInPollThread( self, notification ):
+  def HandleNotificationInPollThread( self, notification ):
     """Called by the LanguageServerConnection in its message pump context when a
     notification message arrives."""
 
@@ -883,7 +888,7 @@ class LanguageServerCompleter( Completer ):
         self._latest_diagnostics[ uri ] = params[ 'diagnostics' ]
 
 
-  def _ConvertNotificationToMessage( self, request_data, notification ):
+  def ConvertNotificationToMessage( self, request_data, notification ):
     """Convert the supplied server notification to a ycmd message. Returns None
     if the notification should be ignored.
 
@@ -911,7 +916,7 @@ class LanguageServerCompleter( Completer ):
       try:
         filepath = lsp.UriToFilePath( uri )
         response = {
-          'diagnostics': [ BuildDiagnostic( request_data, uri, x )
+          'diagnostics': [ _BuildDiagnostic( request_data, uri, x )
                            for x in params[ 'diagnostics' ] ],
           'filepath': filepath
         }
@@ -1078,12 +1083,12 @@ class LanguageServerCompleter( Completer ):
       REQUEST_TIMEOUT_COMMAND )
 
     if isinstance( response[ 'result' ], list ):
-      return LocationListToGoTo( request_data, response )
+      return _LocationListToGoTo( request_data, response )
     else:
       position = response[ 'result' ]
       try:
         return responses.BuildGoToResponseFromLocation(
-          *PositionToLocationAndDescription( request_data, position ) )
+          *_PositionToLocationAndDescription( request_data, position ) )
       except KeyError:
         raise RuntimeError( 'Cannot jump to location' )
 
@@ -1102,7 +1107,7 @@ class LanguageServerCompleter( Completer ):
       lsp.References( request_id, request_data ),
       REQUEST_TIMEOUT_COMMAND )
 
-    return LocationListToGoTo( request_data, response )
+    return _LocationListToGoTo( request_data, response )
 
 
   def GetCodeActions( self, request_data, args ):
@@ -1194,7 +1199,7 @@ class LanguageServerCompleter( Completer ):
       [ WorkspaceEditToFixIt( request_data, response[ 'result' ] ) ] )
 
 
-def CompletionItemToCompletionData( insertion_text, item, fixits ):
+def _CompletionItemToCompletionData( insertion_text, item, fixits ):
   return responses.BuildCompletionData(
     insertion_text,
     extra_menu_info = item.get( 'detail', None ),
@@ -1206,10 +1211,10 @@ def CompletionItemToCompletionData( insertion_text, item, fixits ):
     extra_data = fixits )
 
 
-def FixUpCompletionPrefixes( completions,
-                             start_codepoints,
-                             request_data,
-                             min_start_codepoint ):
+def _FixUpCompletionPrefixes( completions,
+                              start_codepoints,
+                              request_data,
+                              min_start_codepoint ):
   """Fix up the insertion texts so they share the same start_codepoint by
   borrowing text from the source."""
   line = request_data[ 'line_value' ]
@@ -1235,7 +1240,7 @@ def FixUpCompletionPrefixes( completions,
   return completions
 
 
-def InsertionTextForItem( request_data, item ):
+def _InsertionTextForItem( request_data, item ):
   """Determines the insertion text for the completion item |item|, and any
   additional FixIts that need to be applied when selecting it.
 
@@ -1298,9 +1303,9 @@ def InsertionTextForItem( request_data, item ):
 
   if additional_text_edits:
     chunks = [ responses.FixItChunk( e[ 'newText' ],
-                                     BuildRange( request_data,
-                                                 request_data[ 'filepath' ],
-                                                 e[ 'range' ] ) )
+                                     _BuildRange( request_data,
+                                                  request_data[ 'filepath' ],
+                                                  e[ 'range' ] ) )
                for e in additional_text_edits ]
 
     fixits = responses.BuildFixItResponse(
@@ -1333,7 +1338,7 @@ def _GetCompletionItemStartCodepointOrReject( text_edit, request_data ):
   return start_codepoint
 
 
-def LocationListToGoTo( request_data, response ):
+def _LocationListToGoTo( request_data, response ):
   """Convert a LSP list of locations to a ycmd GoTo response."""
   if not response:
     raise RuntimeError( 'Cannot jump to location' )
@@ -1343,21 +1348,21 @@ def LocationListToGoTo( request_data, response ):
       positions = response[ 'result' ]
       return [
         responses.BuildGoToResponseFromLocation(
-          *PositionToLocationAndDescription( request_data,
-                                             position ) )
+          *_PositionToLocationAndDescription( request_data,
+                                              position ) )
         for position in positions
       ]
     else:
       position = response[ 'result' ][ 0 ]
       return responses.BuildGoToResponseFromLocation(
-        *PositionToLocationAndDescription( request_data, position ) )
+        *_PositionToLocationAndDescription( request_data, position ) )
   except IndexError:
     raise RuntimeError( 'Cannot jump to location' )
   except KeyError:
     raise RuntimeError( 'Cannot jump to location' )
 
 
-def PositionToLocationAndDescription( request_data, position ):
+def _PositionToLocationAndDescription( request_data, position ):
   """Convert a LSP position to a ycmd location."""
   try:
     filename = lsp.UriToFilePath( position[ 'uri' ] )
@@ -1370,13 +1375,13 @@ def PositionToLocationAndDescription( request_data, position ):
   except IOError:
     file_contents = []
 
-  return BuildLocationAndDescription( request_data,
-                                      filename,
-                                      file_contents,
-                                      position[ 'range' ][ 'start' ] )
+  return _BuildLocationAndDescription( request_data,
+                                       filename,
+                                       file_contents,
+                                       position[ 'range' ][ 'start' ] )
 
 
-def BuildLocationAndDescription( request_data, filename, file_contents, loc ):
+def _BuildLocationAndDescription( request_data, filename, file_contents, loc ):
   """Returns a tuple of (
     - ycmd Location for the supplied filename and LSP location
     - contents of the line at that location
@@ -1399,7 +1404,7 @@ def BuildLocationAndDescription( request_data, filename, file_contents, loc ):
            line_value )
 
 
-def BuildRange( request_data, filename, r ):
+def _BuildRange( request_data, filename, r ):
   """Returns a ycmd range from a LSP range |r|."""
   try:
     file_contents = utils.SplitLines( GetFileContents( request_data,
@@ -1407,17 +1412,17 @@ def BuildRange( request_data, filename, r ):
   except IOError:
     file_contents = []
 
-  return responses.Range( BuildLocationAndDescription( request_data,
-                                                       filename,
-                                                       file_contents,
-                                                       r[ 'start' ] )[ 0 ],
-                          BuildLocationAndDescription( request_data,
-                                                       filename,
-                                                       file_contents,
-                                                       r[ 'end' ] )[ 0 ] )
+  return responses.Range( _BuildLocationAndDescription( request_data,
+                                                        filename,
+                                                        file_contents,
+                                                        r[ 'start' ] )[ 0 ],
+                          _BuildLocationAndDescription( request_data,
+                                                        filename,
+                                                        file_contents,
+                                                        r[ 'end' ] )[ 0 ] )
 
 
-def BuildDiagnostic( request_data, uri, diag ):
+def _BuildDiagnostic( request_data, uri, diag ):
   """Return a ycmd diagnostic from a LSP diagnostic."""
   try:
     filename = lsp.UriToFilePath( uri )
@@ -1425,7 +1430,7 @@ def BuildDiagnostic( request_data, uri, diag ):
     _logger.debug( 'Invalid URI received for diagnostic' )
     filename = ''
 
-  r = BuildRange( request_data, filename, diag[ 'range' ] )
+  r = _BuildRange( request_data, filename, diag[ 'range' ] )
 
   return responses.BuildDiagnosticData ( responses.Diagnostic(
     ranges = [ r ],
@@ -1445,9 +1450,9 @@ def TextEditToChunks( request_data, uri, text_edit ):
 
   return [
     responses.FixItChunk( change[ 'newText' ],
-                          BuildRange( request_data,
-                                      filepath,
-                                      change[ 'range' ] ) )
+                          _BuildRange( request_data,
+                                       filepath,
+                                       change[ 'range' ] ) )
     for change in text_edit
   ]
 
