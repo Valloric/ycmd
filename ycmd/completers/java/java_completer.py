@@ -171,7 +171,6 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
     # Used to ensure that starting/stopping of the server is synchronized
     self._server_state_mutex = threading.RLock()
 
-
     with self._server_state_mutex:
       self._connection = None
       self._server_handle = None
@@ -377,7 +376,7 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
           self.GetDefaultNotificationHandler() )
       )
 
-      self._connection.start()
+      self._connection.Start()
 
       try:
         self._connection.AwaitServerConnection()
@@ -403,7 +402,7 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
 
       # Tell the connection to expect the server to disconnect
       if self._connection:
-        self._connection.stop()
+        self._connection.Stop()
 
       # Tell the server to exit using the shutdown request.
       self._StopServerCleanly()
@@ -456,7 +455,7 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
         _logger.exception( 'Error while killing jdt.ls server' )
 
 
-  def _HandleNotificationInPollThread( self, notification ):
+  def HandleNotificationInPollThread( self, notification ):
     if notification[ 'method' ] == 'language/status':
       message_type = notification[ 'params' ][ 'type' ]
 
@@ -466,16 +465,16 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
 
       self._server_init_status = notification[ 'params' ][ 'message' ]
 
-    super( JavaCompleter, self )._HandleNotificationInPollThread( notification )
+    super( JavaCompleter, self ).HandleNotificationInPollThread( notification )
 
 
-  def _ConvertNotificationToMessage( self, request_data, notification ):
+  def ConvertNotificationToMessage( self, request_data, notification ):
     if notification[ 'method' ] == 'language/status':
       message = notification[ 'params' ][ 'message' ]
       return responses.BuildDisplayMessageResponse(
         'Initializing Java completer: {0}'.format( message ) )
 
-    return super( JavaCompleter, self )._ConvertNotificationToMessage(
+    return super( JavaCompleter, self ).ConvertNotificationToMessage(
       request_data,
       notification )
 
