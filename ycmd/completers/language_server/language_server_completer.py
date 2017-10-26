@@ -687,6 +687,29 @@ class LanguageServerCompleter( Completer ):
     return self._ResolveCompletionItems( items, request_data )
 
 
+  def _ResolveCompletionItem( self, item ):
+    try:
+      resolve_id = self.GetConnection().NextRequestId()
+      resolve = lsp.ResolveCompletion( resolve_id, item )
+      response = self.GetConnection().GetResponse(
+        resolve_id,
+        resolve,
+        REQUEST_TIMEOUT_COMPLETION )
+      item = response[ 'result' ]
+    except ResponseFailedException:
+      _logger.exception( 'A completion item could not be resolved. Using '
+                         'basic data.' )
+
+    return item
+
+
+  def _ShouldResolveCompletionItems( self ):
+    return ( 'completionProvider' in self._server_capabilities and
+             self._server_capabilities[ 'completionProvider' ].get(
+               'resolveProvider',
+               False ) )
+
+
   def _ResolveCompletionItems( self, items, request_data ):
     """Issue the resolve request for each completion item in |items|, then fix
     up the items such that a single start codepoint is used."""
@@ -694,10 +717,7 @@ class LanguageServerCompleter( Completer ):
     # We might not actually need to issue the resolve request if the server
     # claims that it doesn't support it. However, we still might need to fix up
     # the completion items.
-    do_resolve = (
-      'completionProvider' in self._server_capabilities and
-      self._server_capabilities[ 'completionProvider' ].get( 'resolveProvider',
-                                                             False ) )
+    do_resolve = self._ShouldResolveCompletionItems( )
 
     #
     # Important note on the following logic:
@@ -735,17 +755,7 @@ class LanguageServerCompleter( Completer ):
     for item in items:
       # First, resolve the completion.
       if do_resolve:
-        try:
-          resolve_id = self.GetConnection().NextRequestId()
-          resolve = lsp.ResolveCompletion( resolve_id, item )
-          response = self.GetConnection().GetResponse(
-            resolve_id,
-            resolve,
-            REQUEST_TIMEOUT_COMPLETION )
-          item = response[ 'result' ]
-        except ResponseFailedException:
-          _logger.exception( 'A completion item could not be resolved. Using '
-                             'basic data.' )
+        item = self._ResolveCompletionItem( item )
 
       try:
         ( insertion_text, fixits, start_codepoint ) = (
