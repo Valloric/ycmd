@@ -78,6 +78,18 @@ class IncompatibleCompletionException( Exception ):
   pass
 
 
+class LanguageServerConnectionTimeout( Exception ):
+  """Raised by LanguageServerConnection if the connection to the server is not
+  established with the specified timeout."""
+  pass
+
+
+class LanguageServerConnectionStopped( Exception ):
+  """Internal exception raised by LanguageServerConnection when the server is
+  successfully shut down according to user request."""
+  pass
+
+
 class Response( object ):
   """Represents a blocking pending request.
 
@@ -137,18 +149,6 @@ class Response( object ):
         error.get( 'message', 'No message' ) ) )
 
     return self._message
-
-
-class LanguageServerConnectionTimeout( Exception ):
-  """Raised by LanguageServerConnection if the connection to the server is not
-  established with the specified timeout."""
-  pass
-
-
-class LanguageServerConnectionStopped( Exception ):
-  """Internal exception raised by LanguageServerConnection when the server is
-  successfully shut down according to user request."""
-  pass
 
 
 class LanguageServerConnection( threading.Thread ):
