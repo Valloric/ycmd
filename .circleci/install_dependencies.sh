@@ -50,12 +50,9 @@ PATH="${PYENV_ROOT}/bin:${PATH}"
 eval "$(pyenv init -)"
 
 if [ "${YCMD_PYTHON_VERSION}" == "2.7" ]; then
-  # Versions prior to 2.7.2 fail to compile with error "ld: library not found
-  # for -lSystemStubs"
-  # FIXME: pip 10 fails to upgrade packages on Python 2.7.3 or older. See
-  # https://github.com/pypa/pip/issues/5231 for the error. Revert to 2.7.2 once
-  # this is fixed in pip.
-  PYENV_VERSION="2.7.4"
+  # Python 2 versions older than 2.7.9 lack SNI support which is required to
+  # download rustup when enabling the Rust completer.
+  PYENV_VERSION="2.7.9"
 else
   PYENV_VERSION="3.4.0"
 fi
@@ -97,20 +94,6 @@ if [ ! -f "${MONO_PATH}/mono-5.12.0.pkg" ]; then
 fi
 sudo installer -pkg ${MONO_PATH}/mono-5.12.0.pkg -target /
 echo "export PATH=/Library/Frameworks/Mono.framework/Versions/Current/Commands:\$PATH" >> $BASH_ENV
-
-############
-# Rust setup
-############
-
-curl https://sh.rustup.rs -sSf | sh -s -- -y
-
-CARGO_PATH="${HOME}/.cargo/bin"
-PATH="${CARGO_PATH}:${PATH}"
-rustup update
-rustc -Vv
-cargo -V
-
-echo "export PATH=${CARGO_PATH}:\$PATH" >> $BASH_ENV
 
 #################
 # Java 8 setup
