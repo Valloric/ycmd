@@ -71,6 +71,7 @@ def RunFlake8():
 #  - no aliases.
 SIMPLE_COMPLETERS = [
   'clangd',
+  'rust'
 ]
 
 # More complex or legacy cases can specify all of:
@@ -97,11 +98,6 @@ COMPLETERS = {
     'build': [ '--go-completer' ],
     'test': [ '--exclude-dir=ycmd/tests/go' ],
     'aliases': [ 'gocode' ]
-  },
-  'rust': {
-    'build': [ '--rust-completer' ],
-    'test': [ '--exclude-dir=ycmd/tests/rust' ],
-    'aliases': [ 'racer', 'racerd', ]
   },
   'typescript': {
     'build': [ '--ts-completer' ],
