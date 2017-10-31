@@ -1,4 +1,4 @@
-# Copyright (C) 2017-2018 ycmd contributors
+# Copyright (C) 2017-2019 ycmd contributors
 #
 # This file is part of ycmd.
 #
@@ -650,13 +650,14 @@ class LanguageServerCompleter( Completer ):
       - Shutdown
       - ServerIsHealthy : Return True if the server is _running_
       - StartServer : Return True if the server was started.
-      - Language : a string used to identify the language in user's extra conf
     - Optionally override methods to customise behavior:
-      - _GetProjectDirectory
-      - _GetTriggerCharacters
+      - ConvertNotificationToMessage
+      - GetCompleterName
+      - GetProjectDirectory
+      - GetTriggerCharacters
       - GetDefaultNotificationHandler
       - HandleNotificationInPollThread
-      - ConvertNotificationToMessage
+      - Language
 
   Startup
 
@@ -741,6 +742,9 @@ class LanguageServerCompleter( Completer ):
     #    cached query is a prefix of the subsequent queries.
     self._completions_cache = LanguageServerCompletionsCache()
 
+    self._completer_name = self.__class__.__name__.replace( 'Completer', '' )
+    self._language = self._completer_name.lower()
+
 
   def ServerReset( self ):
     """Clean up internal state related to the running server instance.
@@ -759,9 +763,15 @@ class LanguageServerCompleter( Completer ):
       self._settings = {}
       self._server_started = False
 
-  @abc.abstractmethod
+
+  def GetCompleterName( self ):
+    return self._completer_name
+
+
   def Language( self ):
-    pass # pragma: no cover
+    """Returns the string used to identify the language in user's
+    .ycm_extra_conf.py file. Default to the completer name in lower case."""
+    return self._language
 
 
   @abc.abstractmethod
@@ -1454,7 +1464,7 @@ class LanguageServerCompleter( Completer ):
     del self._server_file_state[ file_state.filename ]
 
 
-  def _GetProjectDirectory( self, request_data, extra_conf_dir ):
+  def GetProjectDirectory( self, request_data, extra_conf_dir ):
     """Return the directory in which the server should operate. Language server
     protocol and most servers have a concept of a 'project directory'. Where a
     concrete completer can detect this better, it should override this method,
@@ -1487,8 +1497,8 @@ class LanguageServerCompleter( Completer ):
     with self._server_info_mutex:
       assert not self._initialize_response
 
-      self._project_directory = self._GetProjectDirectory( request_data,
-                                                           extra_conf_dir )
+      self._project_directory = self.GetProjectDirectory( request_data,
+                                                          extra_conf_dir )
       request_id = self.GetConnection().NextRequestId()
 
       # FIXME: According to the discussion on
@@ -1512,7 +1522,7 @@ class LanguageServerCompleter( Completer ):
         response_handler )
 
 
-  def _GetTriggerCharacters( self, server_trigger_characters ):
+  def GetTriggerCharacters( self, server_trigger_characters ):
     """Given the server trigger characters supplied in the initialize response,
     returns the trigger characters to merge with the ycmd-defined ones. By
     default, all server trigger characters are merged in. Note this might not be
@@ -1560,7 +1570,7 @@ class LanguageServerCompleter( Completer ):
                       self.Language(),
                       server_trigger_characters )
 
-        trigger_characters = self._GetTriggerCharacters(
+        trigger_characters = self.GetTriggerCharacters(
           server_trigger_characters )
 
         if trigger_characters:
@@ -1753,8 +1763,11 @@ class LanguageServerCompleter( Completer ):
       lsp.Rename( request_id, request_data, new_name ),
       REQUEST_TIMEOUT_COMMAND )
 
-    return responses.BuildFixItResponse(
-      [ WorkspaceEditToFixIt( request_data, response[ 'result' ] ) ] )
+    fixit = WorkspaceEditToFixIt( request_data, response[ 'result' ] )
+    if not fixit:
+      raise RuntimeError( 'Cannot rename under cursor.' )
+
+    return responses.BuildFixItResponse( [ fixit ] )
 
 
   def Format( self, request_data ):
@@ -1829,12 +1842,15 @@ def _CompletionItemToCompletionData( insertion_text, item, fixits ):
     kind = lsp.ITEM_KIND[ item.get( 'kind' ) or 0 ]
   except IndexError:
     kind = lsp.ITEM_KIND[ 0 ] # Fallback to None for unsupported kinds.
+
+  documentation = item.get( 'documentation' ) or ''
+  if isinstance( documentation, dict ):
+    documentation = documentation[ 'value' ]
+
   return responses.BuildCompletionData(
     insertion_text,
     extra_menu_info = item.get( 'detail' ),
-    detailed_info = ( item[ 'label' ] +
-                      '\n\n' +
-                      ( item.get( 'documentation' ) or '' ) ),
+    detailed_info = item[ 'label' ] + '\n\n' + documentation,
     menu_text = item[ 'label' ],
     kind = kind,
     extra_data = fixits )

@@ -27,11 +27,9 @@ aliases:
         - ~/Library/Caches/Homebrew
         - ~/Library/Caches/pip
         - ~/.npm
-        - ~/.cargo
         - ~/.pyenv
         - ~/mono
         - clang_archives
-        - third_party/racerd/target
         - third_party/eclipse.jdt.ls/target/cache
         - third_party/clangd/cache
   restore-cache: &restore-cache
