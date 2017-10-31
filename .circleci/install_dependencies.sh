@@ -52,9 +52,6 @@ eval "$(pyenv init -)"
 if [ "${YCMD_PYTHON_VERSION}" == "2.7" ]; then
   # Versions prior to 2.7.2 fail to compile with error "ld: library not found
   # for -lSystemStubs"
-  # FIXME: pip 10 fails to upgrade packages on Python 2.7.3 or older. See
-  # https://github.com/pypa/pip/issues/5231 for the error. Revert to 2.7.2 once
-  # this is fixed in pip.
   PYENV_VERSION="2.7.4"
 else
   PYENV_VERSION="3.4.0"
@@ -102,15 +99,15 @@ echo "export PATH=/Library/Frameworks/Mono.framework/Versions/Current/Commands:\
 # Rust setup
 ############
 
-curl https://sh.rustup.rs -sSf | sh -s -- -y
-
-CARGO_PATH="${HOME}/.cargo/bin"
-PATH="${CARGO_PATH}:${PATH}"
-rustup update
-rustc -Vv
-cargo -V
-
-echo "export PATH=${CARGO_PATH}:\$PATH" >> $BASH_ENV
+# rustup is required to enable the Rust completer on Python versions older than
+# 2.7.9.
+if [ "${YCMD_PYTHON_VERSION}" == "2.7" ]; then
+  curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain none
+  CARGO_PATH="${HOME}/.cargo/bin"
+  PATH="${CARGO_PATH}:${PATH}"
+  rustup --version
+  echo "export PATH=${CARGO_PATH}:\$PATH" >> $BASH_ENV
+fi
 
 #################
 # Java 8 setup
