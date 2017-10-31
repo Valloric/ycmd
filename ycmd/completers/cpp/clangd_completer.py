@@ -217,7 +217,7 @@ class ClangdCompleter( simple_language_server_completer.SimpleLSPCompleter ):
 
 
   def GetServerName( self ):
-    return 'clangd'
+    return 'Clangd'
 
 
   def GetCommandLine( self ):
@@ -232,7 +232,7 @@ class ClangdCompleter( simple_language_server_completer.SimpleLSPCompleter ):
     return self.GetHoverResponse( request_data )[ 'value' ]
 
 
-  def _GetTriggerCharacters( self, server_trigger_characters ):
+  def GetTriggerCharacters( self, server_trigger_characters ):
     # The trigger characters supplied by clangd are worse than ycmd's own
     # semantic triggers which are more sophisticated (regex-based). So we
     # ignore them.
