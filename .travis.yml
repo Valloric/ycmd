@@ -60,10 +60,8 @@ cache:
   directories:
     - $HOME/.cache/pip  # Python packages from pip
     - $HOME/.npm  # Node packages from npm
-    - $HOME/.cargo  # Cargo package deps
     - $HOME/.pyenv  # pyenv
     - $TRAVIS_BUILD_DIR/clang_archives  # Clang downloads
-    - $TRAVIS_BUILD_DIR/third_party/racerd/target  # Racerd compilation
       # jdt.ls download
     - $TRAVIS_BUILD_DIR/third_party/eclipse.jdt.ls/target/cache
     - $TRAVIS_BUILD_DIR/third_party/clangd/cache

@@ -1,4 +1,4 @@
-# Copyright (C) 2018 ycmd contributors
+# Copyright (C) 2018-2019 ycmd contributors
 #
 # This file is part of ycmd.
 #
@@ -80,17 +80,17 @@ class SimpleLSPCompleter( lsc.LanguageServerCompleter ):
                                           logfiles = [ self._stderr_file ],
                                           extras = self.CommonDebugItems() )
 
-    return responses.BuildDebugInfoResponse( name = self.Language(),
+    return responses.BuildDebugInfoResponse( name = self.GetCompleterName(),
                                              servers = [ server ] )
-
-
-  def Language( self ):
-    return self.GetServerName()
 
 
   def ServerIsHealthy( self ):
     with self._server_state_mutex:
       return utils.ProcessIsRunning( self._server_handle )
+
+
+  def GetServerEnvironment( self ):
+    return None
 
 
   def StartServer( self, request_data ):
@@ -103,10 +103,12 @@ class SimpleLSPCompleter( lsc.LanguageServerCompleter ):
         utils.MakeSafeFileNameString( self.GetServerName() ) ) )
 
       with utils.OpenForStdHandle( self._stderr_file ) as stderr:
-        self._server_handle = utils.SafePopen( self.GetCommandLine(),
-                                               stdin = subprocess.PIPE,
-                                               stdout = subprocess.PIPE,
-                                               stderr = stderr )
+        self._server_handle = utils.SafePopen(
+          self.GetCommandLine(),
+          stdin = subprocess.PIPE,
+          stdout = subprocess.PIPE,
+          stderr = stderr,
+          env = self.GetServerEnvironment() )
 
       self._connection = (
         lsc.StandardIOLanguageServerConnection(
