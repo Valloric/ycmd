@@ -94,7 +94,7 @@ def Subcommands_ServerNotReady_test():
 
   @WithRetry
   @SharedYcmd
-  @patch.object( completer, 'ServerIsReady', return_value = False )
+  @patch.object( completer, '_ServerIsInitialized', return_value = False )
   def Test( app, cmd, arguments, *args ):
     RunTest( app, {
       'description': 'Subcommand ' + cmd + ' handles server not ready',

@@ -1,0 +1,6 @@
+[package]
+name = "formatting"
+version = "0.1.0"
+authors = ["micbou <contact@micbou.com>"]
+
+[dependencies]
