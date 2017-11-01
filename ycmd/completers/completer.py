@@ -151,7 +151,7 @@ class Completer( with_metaclass( abc.ABCMeta, object ) ):
   If the completer server provides unsolicited messages, such as used in
   Language Server Protocol, then you can override the PollForMessagesInner
   method. This method is called by the client in the "long poll" fashion to
-  receive unsolicted messages. The method should block until a message is
+  receive unsolicited messages. The method should block until a message is
   available and return a message response when one becomes available, or True if
   no message becomes available before the timeout. The return value must be one
   of the following:

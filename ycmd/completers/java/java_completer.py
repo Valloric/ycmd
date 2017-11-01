@@ -73,9 +73,9 @@ WORKSPACE_ROOT_PATH = os.path.join( os.path.dirname( __file__ ),
 #
 # Cons:
 #  - A little more complexity (we hash the project path to create the workspace
-#    dir)
+#    directory)
 #  - It breaks our tests which expect the logs to be deleted
-#  - It can lead to multiple jdt.js instances using the same workspace (BAD)
+#  - It can lead to multiple jdt.ls instances using the same workspace (BAD)
 #  - It breaks our tests which do exactly that
 #
 # So:
@@ -180,7 +180,7 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
 
       try :
         # When we start the server initially, we don't have the request data, so
-        # we use the ycmd working directory. The RestartServer subcommand uses
+        # we use the ycmd working directory. The RestartServer sub-command uses
         # the client's working directory if it is supplied.
         #
         # FIXME: We could start the server in the FileReadyToParse event, though
@@ -352,11 +352,7 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
       _logger.debug( 'Starting java-server with the following command: '
                      '{0}'.format( ' '.join( command ) ) )
 
-      LOGFILE_FORMAT = 'jdt.ls_{pid}_{std}_'
-
-      self._server_stderr = utils.CreateLogfile(
-          LOGFILE_FORMAT.format( pid = os.getpid(), std = 'stderr' ) )
-
+      self._server_stderr = utils.CreateLogfile( 'jdt.ls_stderr_' )
       with utils.OpenForStdHandle( self._server_stderr ) as stderr:
         self._server_handle = utils.SafePopen( command,
                                                stdin = PIPE,
@@ -386,7 +382,7 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
         self._StopServer()
         return
 
-    self.SendInitialise()
+    self.SendInitialize()
 
 
   def _StopServer( self ):
