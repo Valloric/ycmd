@@ -34,7 +34,7 @@ from nose.tools import eq_
 from pprint import pformat
 import requests
 
-from ycmd.tests.java import ( DEFAULT_PROJECT_DIR, PathToTestFile, SharedYcmd )
+from ycmd.tests.java import DEFAULT_PROJECT_DIR, PathToTestFile, SharedYcmd
 from ycmd.tests.test_utils import ( BuildRequest,
                                     ChunkMatcher,
                                     CompletionEntryMatcher,
