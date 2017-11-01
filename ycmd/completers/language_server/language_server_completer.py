@@ -265,6 +265,11 @@ class LanguageServerConnection( threading.Thread ):
         self._responses.clear()
 
       _logger.debug( 'Connection was closed cleanly' )
+    except Exception:
+      _logger.exception( 'The language server communication channel closed '
+                         'unexpectedly. Issue a RestartServer command to '
+                         'recover.' )
+
 
 
   def Start( self ):
@@ -1374,6 +1379,11 @@ def _PositionToLocationAndDescription( request_data, position ):
     filename = ''
     file_contents = []
   except IOError:
+    # It's possible to receive positions for files which no longer exist (due to
+    # race condition). UriToFilePath doesn't throw IOError, so we can assume
+    # that filename is already set.
+    _logger.exception( "A file could not be found when determining a "
+                       "GoTo location" )
     file_contents = []
 
   return _BuildLocationAndDescription( request_data,
@@ -1411,6 +1421,10 @@ def _BuildRange( request_data, filename, r ):
     file_contents = utils.SplitLines( GetFileContents( request_data,
                                                        filename ) )
   except IOError:
+    # It's possible to receive positions for files which no longer exist (due to
+    # race condition).
+    _logger.exception( "A file could not be found when determining a "
+                       "range location" )
     file_contents = []
 
   return responses.Range( _BuildLocationAndDescription( request_data,
