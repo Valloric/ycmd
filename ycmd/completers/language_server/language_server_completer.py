@@ -47,13 +47,6 @@ REQUEST_TIMEOUT_INITIALISE = 30
 REQUEST_TIMEOUT_COMMAND    = 30
 CONNECTION_TIMEOUT         = 5
 
-SEVERITY_TO_YCM_SEVERITY = {
-  'Error': 'ERROR',
-  'Warning': 'WARNING',
-  'Information': 'WARNING',
-  'Hint': 'WARNING'
-}
-
 
 class ResponseTimeoutException( Exception ):
   """Raised by LanguageServerConnection if a request exceeds the supplied
@@ -1445,7 +1438,7 @@ def _BuildDiagnostic( request_data, uri, diag ):
     location = r.start_,
     location_extent = r,
     text = diag[ 'message' ],
-    kind = SEVERITY_TO_YCM_SEVERITY[ lsp.SEVERITY[ diag[ 'severity' ] ] ] ) )
+    kind = lsp.SEVERITY[ diag[ 'severity' ] ].upper() ) )
 
 
 def TextEditToChunks( request_data, uri, text_edit ):
