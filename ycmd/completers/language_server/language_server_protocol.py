@@ -113,7 +113,7 @@ def Initialize( request_id, project_directory ):
     },
     'capabilities': {
       # We don't currently support any of the client capabilities, so we don't
-      # inlcude anything in here.
+      # include anything in here.
     },
   } )
 
