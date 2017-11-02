@@ -1259,7 +1259,8 @@ def _InsertionTextForItem( request_data, item ):
                           selecting this completion
      - start_codepoint  = the start column at which the text should be inserted
   )"""
-  # We explicitly state that we do not support completion types of "Snippet".
+  # We do not support completion types of "Snippet". This is implicit in that we
+  # don't say it is a "capability" in the intialise request.
   # Abort this request if the server is buggy and ignores us.
   assert lsp.INSERT_TEXT_FORMAT[
     item.get( 'insertTextFormat', 1 ) ] == 'PlainText'
