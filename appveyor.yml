@@ -33,9 +33,9 @@ after_build:
   - if %COVERAGE% == true ( codecov )
 # Disable automatic tests
 test: off
-cache:
-  - '%LOCALAPPDATA%\pip\cache'  # Python packages from pip
-  - '%APPDATA%\npm-cache'  # Node packages from npm
-  - '%USERPROFILE%\.cargo'  # Cargo package deps
-  - '%APPVEYOR_BUILD_FOLDER%\clang_archives'  # Clang downloads
-  - '%APPVEYOR_BUILD_FOLDER%\third_party\racerd\target'  # Racerd compilation
+# cache:
+#   - '%LOCALAPPDATA%\pip\cache'  # Python packages from pip
+#   - '%APPDATA%\npm-cache'  # Node packages from npm
+#   - '%USERPROFILE%\.cargo'  # Cargo package deps
+#   - '%APPVEYOR_BUILD_FOLDER%\clang_archives'  # Clang downloads
+#   - '%APPVEYOR_BUILD_FOLDER%\third_party\racerd\target'  # Racerd compilation
