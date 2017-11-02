@@ -480,12 +480,12 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
 
     if isinstance( hover_response, list ):
       if not len( hover_response ):
-        raise RuntimeError( 'No information' )
+        raise RuntimeError( 'Unknown type' )
 
       try:
         get_type_java = hover_response[ 0 ][ 'value' ]
       except TypeError:
-        raise RuntimeError( 'No information' )
+        raise RuntimeError( 'Unknown type' )
     else:
       get_type_java = hover_response
 
