@@ -453,9 +453,10 @@ class LanguageServerConnection( threading.Thread ):
     LanguageServerCompleter."""
     if 'id' in message:
       with self._response_mutex:
-        assert str( message[ 'id' ] ) in self._responses
-        self._responses[ str( message[ 'id' ] ) ].ResponseReceived( message )
-        del self._responses[ str( message[ 'id' ] ) ]
+        message_id = str( message[ 'id' ] )
+        assert message_id in self._responses
+        self._responses[ message_id ].ResponseReceived( message )
+        del self._responses[ message_id  ]
     else:
       self._notifications.put( message )
 
