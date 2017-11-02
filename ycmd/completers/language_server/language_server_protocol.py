@@ -108,8 +108,13 @@ def Initialize( request_id, project_directory ):
     'processId': os.getpid(),
     'rootPath': project_directory,
     'rootUri': FilePathToUri( project_directory ),
-    'initializationOptions': { },
-    'capabilities': { 'trace': 'verbose' }
+    'initializationOptions': {
+      # We don't currently support any server-specific options.
+    },
+    'capabilities': {
+      # We don't currently support any of the client capabilities, so we don't
+      # inlcude anything in here.
+    },
   } )
 
 
