@@ -130,7 +130,7 @@ def Subcommands_GetDoc_NoDoc_test( app ):
   eq_( response.status_code, requests.codes.internal_server_error )
 
   assert_that( response.json,
-               ErrorMatcher( ValueError, NO_DOCUMENTATION_MESSAGE ) )
+               ErrorMatcher( RuntimeError, NO_DOCUMENTATION_MESSAGE ) )
 
 
 @SharedYcmd
@@ -153,8 +153,8 @@ def Subcommands_GetDoc_Method_test( app ):
   response = app.post_json( '/run_completer_command', event_data ).json
 
   eq_( response, {
-         'message': 'Return runtime debugging info. '
-                    'Useful for finding the actual code which is useful.'
+    'detailed_info': 'Return runtime debugging info. Useful for finding the '
+                     'actual code which is useful.'
   } )
 
 
@@ -178,9 +178,9 @@ def Subcommands_GetDoc_Class_test( app ):
   response = app.post_json( '/run_completer_command', event_data ).json
 
   eq_( response, {
-         'message': 'This is the actual code that matters.'
-                    ' This concrete implementation is the equivalent'
-                    ' of the main function in other languages'
+    'detailed_info': 'This is the actual code that matters. This concrete '
+                     'implementation is the equivalent of the main function in '
+                     'other languages'
   } )
 
 

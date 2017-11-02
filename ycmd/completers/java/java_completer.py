@@ -497,7 +497,7 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
 
     if isinstance( hover_response, list ):
       if not len( hover_response ):
-        raise RuntimeError( 'No information' )
+        raise RuntimeError( NO_DOCUMENTATION_MESSAGE )
 
       get_doc_java = ''
       for docstring in hover_response:
@@ -509,9 +509,9 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
     get_doc_java = get_doc_java.rstrip()
 
     if not get_doc_java:
-      raise ValueError( NO_DOCUMENTATION_MESSAGE )
+      raise RuntimeError( NO_DOCUMENTATION_MESSAGE )
 
-    return responses.BuildDisplayMessageResponse( get_doc_java.rstrip() )
+    return responses.BuildDetailedInfoResponse( get_doc_java )
 
 
   def HandleServerCommand( self, request_data, command ):
