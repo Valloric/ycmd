@@ -484,7 +484,7 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
 
       try:
         get_type_java = hover_response[ 0 ][ 'value' ]
-      except( TypeError ):
+      except TypeError:
         raise RuntimeError( 'No information' )
     else:
       get_type_java = hover_response

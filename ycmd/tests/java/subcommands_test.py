@@ -209,8 +209,7 @@ def Subcommands_GetType_NoKnownType_test( app ):
   eq_( response.status_code, requests.codes.internal_server_error )
 
   assert_that( response.json,
-               ErrorMatcher( RuntimeError,
-                             'No information' ) )
+               ErrorMatcher( RuntimeError, 'No information' ) )
 
 
 @SharedYcmd
@@ -413,8 +412,7 @@ def Subcommands_GetType_LiteralValue_test( app ):
   eq_( response.status_code, requests.codes.internal_server_error )
 
   assert_that( response.json,
-               ErrorMatcher( RuntimeError,
-                             'No information' ) )
+               ErrorMatcher( RuntimeError, 'No information' ) )
 
 
 @IsolatedYcmdInDirectory( PathToTestFile( DEFAULT_PROJECT_DIR  ) )
