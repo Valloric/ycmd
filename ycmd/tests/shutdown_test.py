@@ -27,7 +27,7 @@ from hamcrest import assert_that, equal_to
 from ycmd.tests.client_test import Client_test
 
 # Time to wait for all the servers to shutdown. Tweak for the CI environment.
-# 
+#
 # NOTE: The timeout is 1 minute. That is a long time, but the java sub-server
 # (jdt.ls) takes a _long time_ to finally actually shut down. This is because it
 # is based on eclipse, which must do whatever eclipse must do when it shuts down
