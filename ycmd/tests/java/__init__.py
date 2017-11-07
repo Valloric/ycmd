@@ -24,6 +24,7 @@ from builtins import *  # noqa
 
 import functools
 import os
+import subprocess
 import time
 from pprint import pformat
 
@@ -34,7 +35,7 @@ from ycmd.tests.test_utils import ( BuildRequest,
                                     SetUpApp,
                                     StopCompleterServer )
 from ycmd.tests import test_utils
-from ycmd.utils import GetCurrentDirectory
+from ycmd.utils import GetCurrentDirectory, OnWindows
 
 shared_app = None
 shared_current_dir = None
@@ -69,6 +70,20 @@ def tearDownPackage():
   global shared_app, shared_current_dir
 
   StopCompleterServer( shared_app, 'java' )
+
+  # Annoyingly, the gradle build system uses a daemon process which is started
+  # by jdt.ls and left behind when the server exits. There is _no way_ to
+  # prevent this and it takes 3 hours of inacticvity for it to eventually die.
+  # As our CI system does not exit until all child processes have died, this
+  # leads to timeouts.
+  #
+  # So we manually go in and kill off any remaining gradle daemon started by our
+  # tests.
+  os.chdir( PathToTestFile( 'simple_gradle_project' ) )
+  cmd = 'gradlew.bat' if OnWindows() else './gradlew'
+  subprocess.check_call( [ cmd, '--stop' ] )
+
+  # Return to the original working directory (saved in setUpPackage)
   os.chdir( shared_current_dir )
 
 
