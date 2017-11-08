@@ -199,14 +199,14 @@ def MiscHandlers_DebugInfo_ExtraConfFoundButNotLoaded_test( app ):
   )
 
 
-@IsolatedYcmd()
+@SharedYcmd
 def MiscHandlers_ReceiveMessages_NoCompleter_test( app ):
   request_data = BuildRequest()
   assert_that( app.post_json( '/receive_messages', request_data ).json,
                equal_to( False ) )
 
 
-@IsolatedYcmd()
+@SharedYcmd
 def MiscHandlers_ReceiveMessages_NotSupportedByCompleter_test( app ):
   request_data = BuildRequest( filetype = 'python' )
   assert_that( app.post_json( '/receive_messages', request_data ).json,
