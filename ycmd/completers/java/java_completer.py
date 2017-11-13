@@ -403,9 +403,6 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
       # Tell the server to exit using the shutdown request.
       self._StopServerCleanly()
 
-      # If the server is still running, e.g. due to errors, kill it
-      self._StopServerForcefully()
-
       # Tidy up our internal state
       self._CleanUp()
 
@@ -421,34 +418,22 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
       try:
         self.ShutdownServer()
 
-        utils.WaitUntilProcessIsTerminated( self._server_handle,
-                                            timeout = 15 )
-
+        # By this point, the server should have shut down and terminated. To
+        # ensure that isn't blocked, we close all of our connections and wait
+        # for the process to exit.
+        #
+        # If, after a small delay, the server has not shut down we do NOT kill
+        # it; we expect that it will shut itself down eventually. This is
+        # predominantly due to strange process behaviour on Windows.
         if self._connection:
           self._connection.Close()
+
+        utils.WaitUntilProcessIsTerminated( self._server_handle,
+                                            timeout = 15 )
 
         _logger.info( 'jdt.ls Language server stopped' )
       except Exception:
         _logger.exception( 'Error while stopping jdt.ls server' )
-
-
-  def _StopServerForcefully( self ):
-    if self._ServerIsRunning():
-      _logger.info( 'Killing jdt.ls server with PID {0}'.format(
-                        self._server_handle.pid ) )
-
-      self._server_handle.terminate()
-
-      try:
-        utils.WaitUntilProcessIsTerminated( self._server_handle,
-                                            timeout = 15 )
-
-        if self._connection:
-          self._connection.Close()
-
-        _logger.info( 'jdt.ls Language server killed' )
-      except Exception:
-        _logger.exception( 'Error while killing jdt.ls server' )
 
 
   def HandleNotificationInPollThread( self, notification ):
