@@ -147,6 +147,7 @@ def LineColMatcher( line, col ):
   } )
 
 
+# MockCompleter redirects here...
 @contextlib.contextmanager
 def PatchCompleter( completer, filetype ):
   user_options = handlers._server_state._user_options

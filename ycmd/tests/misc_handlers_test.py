@@ -208,6 +208,7 @@ def MiscHandlers_ReceiveMessages_NoCompleter_test( app ):
 
 @SharedYcmd
 def MiscHandlers_ReceiveMessages_NotSupportedByCompleter_test( app ):
-  request_data = BuildRequest( filetype = 'python' )
-  assert_that( app.post_json( '/receive_messages', request_data ).json,
-               equal_to( False ) )
+  with PatchCompleter( DummyCompleter, filetype = 'dummy_filetype' ):
+    request_data = BuildRequest( filetype = 'dummy_filetype' )
+    assert_that( app.post_json( '/receive_messages', request_data ).json,
+                 equal_to( False ) )
