@@ -159,6 +159,10 @@ def Subcommands_GoTo_test( app ):
 
 @IsolatedYcmd
 def Subcommands_GoTo_RelativePath_test( app ):
+  app.post_json( '/event_notification',
+                 BuildRequest( filepath = PathToTestFile(),
+                               event_name = 'FileReadyToParse',
+                               filetype = 'javascript' ) )
   WaitUntilCompleterServerReady( app, 'javascript' )
   RunTest(
     app,
@@ -397,6 +401,10 @@ def Subcommands_RefactorRename_MultipleFiles_test( app ):
 # an extra file into tern's project memory)
 @IsolatedYcmd
 def Subcommands_RefactorRename_MultipleFiles_OnFileReadyToParse_test( app ):
+  app.post_json( '/event_notification',
+                 BuildRequest( filepath = PathToTestFile(),
+                               event_name = 'FileReadyToParse',
+                               filetype = 'javascript' ) )
   WaitUntilCompleterServerReady( app, 'javascript' )
 
   file1 = PathToTestFile( 'file1.js' )

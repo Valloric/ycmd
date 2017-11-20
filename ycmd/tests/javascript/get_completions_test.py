@@ -28,8 +28,7 @@ from nose.tools import eq_
 from pprint import pformat
 import requests
 
-from ycmd.tests.javascript import ( PathToTestFile, SharedYcmd,
-                                    IsolatedYcmdInDirectory )
+from ycmd.tests.javascript import IsolatedYcmd, PathToTestFile, SharedYcmd
 from ycmd.tests.test_utils import ( BuildRequest, CompletionEntryMatcher,
                                     WaitUntilCompleterServerReady )
 from ycmd.utils import ReadFile
@@ -484,8 +483,12 @@ def GetCompletions_Unicode_InFile_test( app ):
   } )
 
 
-@IsolatedYcmdInDirectory( PathToTestFile( 'node' ) )
+@IsolatedYcmd
 def GetCompletions_ChangeStartColumn_test( app ):
+  app.post_json( '/event_notification',
+                 BuildRequest( filepath = PathToTestFile( 'node' ),
+                               event_name = 'FileReadyToParse',
+                               filetype = 'javascript' ) )
   WaitUntilCompleterServerReady( app, 'javascript' )
   RunTest( app, {
     'description': 'the completion_start_column is updated by tern',
