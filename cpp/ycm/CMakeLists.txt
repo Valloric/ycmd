@@ -283,6 +283,12 @@ if ( EXTERNAL_LIBCLANG_PATH OR USE_SYSTEM_LIBCLANG )
     else ()
       set( ENV_LIB_PATHS "" )
     endif()
+    find_program( LLVM_CONFIG_EXECUTABLE NAMES llvm-config )
+    if ( LLVM_CONFIG_EXECUTABLE )
+      execute_process( COMMAND ${LLVM_CONFIG_EXECUTABLE} --libdir
+                       OUTPUT_VARIABLE LLVM_CONFIG_PATH
+                       OUTPUT_STRIP_TRAILING_WHITESPACE )
+    endif()
     # On Debian-based systems, llvm installs into /usr/lib/llvm-x.y.
     file( GLOB SYS_LLVM_PATHS "/usr/lib/llvm*/lib" )
     # On FreeBSD , llvm install into /usr/local/llvm-xy
@@ -297,6 +303,7 @@ if ( EXTERNAL_LIBCLANG_PATH OR USE_SYSTEM_LIBCLANG )
                   libclang.so.1
                   PATHS
                   ${ENV_LIB_PATHS}
+                  ${LLVM_CONFIG_PATH}
                   /usr/lib
                   /usr/lib/llvm
                   ${SYS_LLVM_PATHS}
