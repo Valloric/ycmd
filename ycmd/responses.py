@@ -201,7 +201,10 @@ class Location( object ):
     absolute path of the file"""
     self.line_number_ = line
     self.column_number_ = column
-    self.filename_ = os.path.realpath( filename )
+    if filename:
+      self.filename_ = os.path.realpath( filename )
+    else:
+      self.filename_ = filename
 
 
 def BuildDiagnosticData( diagnostic ):
