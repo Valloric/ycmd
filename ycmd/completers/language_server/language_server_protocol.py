@@ -130,6 +130,12 @@ def Exit():
   return BuildNotification( 'exit', None )
 
 
+def DidChangeConfiguration( config ):
+  return BuildNotification( 'workspace/didChangeConfiguration', {
+    'settings': config,
+  } )
+
+
 def DidOpenTextDocument( file_name, file_types, file_contents ):
   LAST_VERSION[ file_name ] = LAST_VERSION[ file_name ] + 1
   return BuildNotification( 'textDocument/didOpen', {

@@ -194,7 +194,7 @@ def ServerManagement_ProjectDetection_NoParent_test():
 
 
 @IsolatedYcmd
-@patch( 'ycmd.completers.java.java_completer.JavaCompleter.ShutdownServer',
+@patch( 'ycmd.utils.WaitUntilProcessIsTerminated',
         side_effect = AssertionError )
 def ServerManagement_CloseServer_Unclean_test( app, stop_server_cleanly ):
   StartJavaCompleterServerInDirectory(

@@ -23,14 +23,19 @@ from __future__ import division
 # Not installing aliases from python-future; it's unreliable and slow.
 from builtins import *  # noqa
 
+import time
 from future.utils import iterkeys
-from hamcrest import assert_that, contains, contains_inanyorder, has_entries
+from hamcrest import ( assert_that,
+                       contains,
+                       contains_inanyorder,
+                       has_entries )
 from nose.tools import eq_
 
 from ycmd.tests.java import ( DEFAULT_PROJECT_DIR,
                               IsolatedYcmd,
                               PathToTestFile,
                               PollForMessages,
+                              PollForMessagesTimeoutException,
                               SharedYcmd,
                               StartJavaCompleterServerInDirectory )
 
@@ -55,6 +60,7 @@ def ProjectPath( *args ):
                          *args )
 
 
+InternalNonProjectFile = PathToTestFile( DEFAULT_PROJECT_DIR, 'test.java' )
 TestFactory = ProjectPath( 'TestFactory.java' )
 TestLauncher = ProjectPath( 'TestLauncher.java' )
 TestWidgetImpl = ProjectPath( 'TestWidgetImpl.java' )
@@ -65,6 +71,7 @@ youcompleteme_Test = PathToTestFile( DEFAULT_PROJECT_DIR,
                                      'Test.java' )
 
 DIAG_MATCHERS_PER_FILE = {
+  InternalNonProjectFile: [],
   TestFactory: contains_inanyorder(
     has_entries( {
       'kind': 'WARNING',
@@ -179,12 +186,20 @@ def FileReadyToParse_Diagnostics_Simple_test( app ):
   filepath = ProjectPath( 'TestFactory.java' )
   contents = ReadFile( filepath )
 
-  event_data = BuildRequest( event_name = 'FileReadyToParse',
-                             contents = contents,
-                             filepath = filepath,
-                             filetype = 'java' )
+  # It can take a while for the diagnostics to be ready
+  for tries in range( 0, 10 ):
+    event_data = BuildRequest( event_name = 'FileReadyToParse',
+                               contents = contents,
+                               filepath = filepath,
+                               filetype = 'java' )
 
-  results = app.post_json( '/event_notification', event_data ).json
+    results = app.post_json( '/event_notification', event_data ).json
+
+    if results:
+      break
+
+    time.sleep( 0.5 )
+
 
   print( 'completer response: {0}'.format( pformat( results ) ) )
 
@@ -237,37 +252,52 @@ def FileReadyToParse_Diagnostics_FileNotOnDisk_test( app ):
       break
 
   # Now confirm that we _also_ get these from the FileReadyToParse request
-  results = app.post_json( '/event_notification', event_data ).json
+  for tries in range( 0, 10 ):
+    results = app.post_json( '/event_notification', event_data ).json
+    if results:
+      break
+    time.sleep( 0.5 )
+
   print( 'completer response: {0}'.format( pformat( results ) ) )
 
   assert_that( results, diag_matcher )
 
 
 @SharedYcmd
-def Poll_Diagnostics_ProjectWide_test( app ):
+def Poll_Diagnostics_ProjectWide_Eclipse_test( app ):
   filepath = ProjectPath( 'TestLauncher.java' )
   contents = ReadFile( filepath )
 
   # Poll until we receive _all_ the diags asynchronously
   to_see = sorted( iterkeys( DIAG_MATCHERS_PER_FILE ) )
   seen = dict()
-  for message in PollForMessages( app,
-                                  { 'filepath': filepath,
-                                    'contents': contents } ):
-    print( 'Message {0}'.format( pformat( message ) ) )
-    if 'diagnostics' in message:
-      seen[ message[ 'filepath' ] ] = True
-      if message[ 'filepath' ] not in DIAG_MATCHERS_PER_FILE:
-        raise AssertionError(
-          'Received diagnostics for unexpected file {0}. '
-          'Only expected {1}'.format( message[ 'filepath' ], to_see ) )
-      assert_that( message, has_entries( {
-        'diagnostics': DIAG_MATCHERS_PER_FILE[ message[ 'filepath' ] ],
-        'filepath': message[ 'filepath' ]
-      } ) )
 
-    if sorted( iterkeys( seen ) ) == to_see:
-      break
+  try:
+    for message in PollForMessages( app,
+                                    { 'filepath': filepath,
+                                      'contents': contents } ):
+      print( 'Message {0}'.format( pformat( message ) ) )
+      if 'diagnostics' in message:
+        seen[ message[ 'filepath' ] ] = True
+        if message[ 'filepath' ] not in DIAG_MATCHERS_PER_FILE:
+          raise AssertionError(
+            'Received diagnostics for unexpected file {0}. '
+            'Only expected {1}'.format( message[ 'filepath' ], to_see ) )
+        assert_that( message, has_entries( {
+          'diagnostics': DIAG_MATCHERS_PER_FILE[ message[ 'filepath' ] ],
+          'filepath': message[ 'filepath' ]
+        } ) )
 
-    # Eventually PollForMessages will throw a timeout exception and we'll fail
-    # if we don't see all of the expected diags
+      if sorted( iterkeys( seen ) ) == to_see:
+        break
+
+      # Eventually PollForMessages will throw a timeout exception and we'll fail
+      # if we don't see all of the expected diags
+  except PollForMessagesTimeoutException as e:
+    import json
+    raise AssertionError(
+      str( e ) +
+      'Timeed out waiting for full set of diagnostics. '
+      'Expected to see diags for {0}, but only saw {1}.'.format(
+        json.dumps( to_see, indent=2 ),
+        json.dumps( sorted( iterkeys( seen ) ), indent=2 ) ) )
