@@ -484,6 +484,15 @@ class StandardIOLanguageServerConnection( LanguageServerConnection ):
     self._server_stdin = server_stdin
     self._server_stdout = server_stdout
 
+    # NOTE: All access to the stdin/out objects must be synchronised due to the
+    # long-running `read` operations that are done on stdout, and how our
+    # shutdown request will come from another (arbitrary) thread. It is not
+    # legal in Python to close a stdio file while there is a pending read. This
+    # can lead to IOErrors due to "concurrent operations' on files.
+    # See https://stackoverflow.com/q/29890603/2327209
+    self._stdin_lock = threading.Lock()
+    self._stdout_lock = threading.Lock()
+
 
   def TryServerConnectionBlocking( self ):
     # standard in/out don't need to wait for the server to connect to us
@@ -491,30 +500,36 @@ class StandardIOLanguageServerConnection( LanguageServerConnection ):
 
 
   def Shutdown( self ):
-    if not self._server_stdin.closed:
-      self._server_stdin.close()
+    with self._stdout_lock:
+      if not self._server_stdin.closed:
+        self._server_stdin.close()
 
-    if not self._server_stdout.closed:
-      self._server_stdout.close()
+    with self._stdin_lock:
+      if not self._server_stdout.closed:
+        self._server_stdout.close()
 
 
   def WriteData( self, data ):
-    self._server_stdin.write( data )
-    self._server_stdin.flush()
+    with self._stdin_lock:
+      self._server_stdin.write( data )
+      self._server_stdin.flush()
 
 
   def ReadData( self, size=-1 ):
-    if size > -1:
-      data = self._server_stdout.read( size )
-    else:
-      data = self._server_stdout.readline()
-
-    if self.IsStopped():
-      raise LanguageServerConnectionStopped()
+    data = None
+    with self._stdout_lock:
+      if not self._server_stdout.closed:
+        if size > -1:
+          data = self._server_stdout.read( size )
+        else:
+          data = self._server_stdout.readline()
 
     if not data:
       # No data means the connection was severed. Connection severed when (not
       # self.IsStopped()) means the server died unexpectedly.
+      if self.IsStopped():
+        raise LanguageServerConnectionStopped()
+
       raise RuntimeError( "Connection to server died" )
 
     return data
@@ -1052,10 +1067,17 @@ class LanguageServerCompleter( Completer ):
         _logger.info( 'Language server requires sync type of {0}'.format(
           self._sync_type ) )
 
-      # We must notify the server that we received the initialize response.
-      # There are other things that could happen here, such as loading custom
-      # server configuration, but we don't support that (yet).
+      # We must notify the server that we received the initialize response (for
+      # no apparent reason, other than that's what the protocol says).
       self.GetConnection().SendNotification( lsp.Initialized() )
+
+      # Some language servers require the use of didChangeConfiguration event,
+      # even though it is not clear in the specification that it is mandatory,
+      # nor when it should be sent.  VSCode sends it immediately after
+      # initialized notification, so we do the same. In future, we might
+      # support getting this config from ycm_extra_conf or the client, bur for
+      # now, we send an empty object.
+      self.GetConnection().SendNotification( lsp.DidChangeConfiguration( {} ) )
 
       # Notify the other threads that we have completed the initialize exchange.
       self._initialize_response = None

@@ -106,13 +106,18 @@ def IsolatedYcmd( test ):
   return Wrapper
 
 
+class PollForMessagesTimeoutException( Exception ):
+  pass
+
+
 def PollForMessages( app, request_data ):
   TIMEOUT = 30
   expiration = time.time() + TIMEOUT
   while True:
     if time.time() > expiration:
-      raise RuntimeError( 'Waited for diagnostics to be ready for '
-                          '{0} seconds, aborting.'.format( TIMEOUT ) )
+      raise PollForMessagesTimeoutException(
+        'Waited for diagnostics to be ready for {0} seconds, aborting.'.format(
+          TIMEOUT ) )
 
     default_args = {
       'filetype'  : 'java',
