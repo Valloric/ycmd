@@ -36,6 +36,7 @@ from ycmd.tests.test_utils import ( BuildRequest,
 
 shared_app = None
 DEFAULT_PROJECT_DIR = 'simple_eclipse_project'
+SERVER_STARTUP_TIMEOUT = 60 # seconds
 
 
 def PathToTestFile( *args ):
@@ -71,7 +72,7 @@ def StartJavaCompleterServerInDirectory( app, directory ):
                    filepath = os.path.join( directory, 'test.java' ),
                    event_name = 'FileReadyToParse',
                    filetype = 'java' ) )
-  WaitUntilCompleterServerReady( shared_app, 'java' )
+  WaitUntilCompleterServerReady( shared_app, 'java', SERVER_STARTUP_TIMEOUT )
 
 
 def SharedYcmd( test ):
