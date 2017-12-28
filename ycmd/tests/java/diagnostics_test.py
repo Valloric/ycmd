@@ -24,6 +24,7 @@ from __future__ import division
 from builtins import *  # noqa
 
 import time
+import json
 from future.utils import iterkeys
 from hamcrest import ( assert_that,
                        contains,
@@ -294,10 +295,9 @@ def Poll_Diagnostics_ProjectWide_Eclipse_test( app ):
       # Eventually PollForMessages will throw a timeout exception and we'll fail
       # if we don't see all of the expected diags
   except PollForMessagesTimeoutException as e:
-    import json
     raise AssertionError(
       str( e ) +
-      'Timeed out waiting for full set of diagnostics. '
+      'Timed out waiting for full set of diagnostics. '
       'Expected to see diags for {0}, but only saw {1}.'.format(
         json.dumps( to_see, indent=2 ),
         json.dumps( sorted( iterkeys( seen ) ), indent=2 ) ) )

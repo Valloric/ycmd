@@ -122,7 +122,7 @@ class Response( object ):
 
   def AwaitResponse( self, timeout ):
     """Called by clients to wait synchronously for either a response to be
-    received of for |timeout| seconds to have passed.
+    received or for |timeout| seconds to have passed.
     Returns the message, or:
         - throws ResponseFailedException if the request fails
         - throws ResponseTimeoutException in case of timeout
@@ -1075,7 +1075,7 @@ class LanguageServerCompleter( Completer ):
       # even though it is not clear in the specification that it is mandatory,
       # nor when it should be sent.  VSCode sends it immediately after
       # initialized notification, so we do the same. In future, we might
-      # support getting this config from ycm_extra_conf or the client, bur for
+      # support getting this config from ycm_extra_conf or the client, but for
       # now, we send an empty object.
       self.GetConnection().SendNotification( lsp.DidChangeConfiguration( {} ) )
 

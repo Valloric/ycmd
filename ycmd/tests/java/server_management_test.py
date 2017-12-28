@@ -159,7 +159,7 @@ def ServerManagement_ProjectDetection_MavenParent_test( app ):
                _ProjectDirectoryMatcher( project ) )
 
 
-@TidyJDTProjectFiles( PathToTestFile( 'simple_maven_project' ) )
+@TidyJDTProjectFiles( PathToTestFile( 'simple_gradle_project' ) )
 @IsolatedYcmd
 def ServerManagement_ProjectDetection_GradleParent_test( app ):
   StartJavaCompleterServerInDirectory( app,
@@ -194,8 +194,7 @@ def ServerManagement_ProjectDetection_NoParent_test():
 
 
 @IsolatedYcmd
-@patch( 'ycmd.utils.WaitUntilProcessIsTerminated',
-        side_effect = AssertionError )
+@patch( 'ycmd.utils.WaitUntilProcessIsTerminated', side_effect = RuntimeError )
 def ServerManagement_CloseServer_Unclean_test( app, stop_server_cleanly ):
   StartJavaCompleterServerInDirectory(
     app, PathToTestFile( 'simple_eclipse_project' ) )
