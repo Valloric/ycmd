@@ -311,7 +311,7 @@ def Poll_Diagnostics_ProjectWide_Eclipse_test( app ):
 @patch(
   'ycmd.completers.language_server.language_server_protocol.UriToFilePath',
   side_effect = lsp.InvalidUriException )
-def GetCompletions_InvalidURI_test( app, uri_to_filepath, *args ):
+def FileReadyToParse_Diagnostics_InvalidURI_test( app, uri_to_filepath, *args ):
   StartJavaCompleterServerInDirectory( app,
                                        PathToTestFile( DEFAULT_PROJECT_DIR ) )
 
@@ -328,12 +328,12 @@ def GetCompletions_InvalidURI_test( app, uri_to_filepath, *args ):
     results = app.post_json( '/event_notification', event_data ).json
 
     if results:
-      print( 'got diagnostics on try number {}'.format( tries ) )
+      print( 'got diagnostics on try number {0}'.format( tries ) )
       break
 
     time.sleep( 0.5 )
 
-  print( 'Completer response: {}'.format( json.dumps( results, indent=2 ) ) )
+  print( 'Completer response: {0}'.format( json.dumps( results, indent=2 ) ) )
 
   uri_to_filepath.assert_called()
 

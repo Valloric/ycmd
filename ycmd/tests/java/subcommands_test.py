@@ -23,6 +23,7 @@ from __future__ import division
 # Not installing aliases from python-future; it's unreliable and slow.
 from builtins import *  # noqa
 
+import time
 from hamcrest import ( assert_that,
                        contains,
                        contains_inanyorder,
@@ -1021,91 +1022,61 @@ def Subcommands_FixIt_Unicode_test():
           filepath, 13, 1, fixits )
 
 
-@patch(
-  'ycmd.completers.language_server.language_server_protocol.UriToFilePath',
-  side_effect = lsp.InvalidUriException )
-def Subcommands_FixIt_IvalidURI_test( uri_to_filepath ):
+@SharedYcmd
+def Subcommands_FixIt_InvalidURI_test( app ):
   filepath = PathToTestFile( 'simple_eclipse_project',
                              'src',
                              'com',
                              'test',
                              'TestFactory.java' )
 
-  fixits_for_line = has_entries ( {
-    'fixits': contains_inanyorder(
+  fixits = has_entries ( {
+    'fixits': contains(
       has_entries( {
-        'text': "Import 'Wibble' (com.test.wobble)",
+        'text': "Change type of 'test' to 'boolean'",
         'chunks': contains(
-          # When doing an import, eclipse likes to add two newlines
-          # after the package. I suppose this is config in real eclipse,
-          # but there's no mechanism to configure this in jdtl afaik.
-          ChunkMatcher( '\n\n',
-                        LocationMatcher( '', 1, 18 ),
-                        LocationMatcher( '', 1, 18 ) ),
-          # OK, so it inserts the import
-          ChunkMatcher( 'import com.test.wobble.Wibble;',
-                        LocationMatcher( '', 1, 18 ),
-                        LocationMatcher( '', 1, 18 ) ),
-          # More newlines. Who doesn't like newlines?!
-          ChunkMatcher( '\n\n',
-                        LocationMatcher( '', 1, 18 ),
-                        LocationMatcher( '', 1, 18 ) ),
-          # For reasons known only to the eclipse JDT developers, it
-          # seems to want to delete the lines after the package first.
+          # For some reason, eclipse returns modifies as deletes + adds,
+          # although overlapping ranges aren't allowed.
+          ChunkMatcher( 'boolean',
+                        LocationMatcher( '', 14, 12 ),
+                        LocationMatcher( '', 14, 12 ) ),
           ChunkMatcher( '',
-                        LocationMatcher( '', 1, 18 ),
-                        LocationMatcher( '', 3, 1 ) ),
-        ),
-      } ),
-      has_entries( {
-        'text': "Create field 'Wibble'",
-        'chunks': contains (
-          ChunkMatcher( '\n\n',
-                        LocationMatcher( '', 16, 4 ),
-                        LocationMatcher( '', 16, 4 ) ),
-          ChunkMatcher( 'private Object Wibble;',
-                        LocationMatcher( '', 16, 4 ),
-                        LocationMatcher( '', 16, 4 ) ),
-        ),
-      } ),
-      has_entries( {
-        'text': "Create constant 'Wibble'",
-        'chunks': contains (
-          ChunkMatcher( '\n\n',
-                        LocationMatcher( '', 16, 4 ),
-                        LocationMatcher( '', 16, 4 ) ),
-          ChunkMatcher( 'private static final String Wibble = null;',
-                        LocationMatcher( '', 16, 4 ),
-                        LocationMatcher( '', 16, 4 ) ),
-        ),
-      } ),
-      has_entries( {
-        'text': "Create parameter 'Wibble'",
-        'chunks': contains (
-          ChunkMatcher( ', ',
-                        LocationMatcher( '', 18, 32 ),
-                        LocationMatcher( '', 18, 32 ) ),
-          ChunkMatcher( 'Object Wibble',
-                        LocationMatcher( '', 18, 32 ),
-                        LocationMatcher( '', 18, 32 ) ),
-        ),
-      } ),
-      has_entries( {
-        'text': "Create local variable 'Wibble'",
-        'chunks': contains (
-          ChunkMatcher( 'Object Wibble;',
-                        LocationMatcher( '', 19, 5 ),
-                        LocationMatcher( '', 19, 5 ) ),
-          ChunkMatcher( '\n	',
-                        LocationMatcher( '', 19, 5 ),
-                        LocationMatcher( '', 19, 5 ) ),
+                        LocationMatcher( '', 14, 12 ),
+                        LocationMatcher( '', 14, 15 ) ),
         ),
       } ),
     )
   } )
 
-  yield ( RunFixItTest, 'Ivalid URIs do not make us crash',
-          filepath, 13, 1, fixits_for_line )
+  contents = ReadFile( filepath )
+  # Wait for jdt.ls to have parsed the file and returned some diagnostics
+  for tries in range( 0, 10 ):
+    results = app.post_json( '/event_notification',
+                             BuildRequest( filepath = filepath,
+                                           filetype = 'java',
+                                           contents = contents,
+                                           event_name = 'FileReadyToParse' ) )
+    if results.json:
+      break
+
+    time.sleep( .25 )
+
+  with patch(
+    'ycmd.completers.language_server.language_server_protocol.UriToFilePath',
+    side_effect = lsp.InvalidUriException ):
+    RunTest( app, {
+      'description': 'Invalid URIs do not make us crash',
+      'request': {
+        'command': 'FixIt',
+        'line_num': 27,
+        'column_num': 12,
+        'filepath': filepath,
+      },
+      'expect': {
+        'response': requests.codes.ok,
+        'data': fixits,
+      }
+    } )
 
 
 @SharedYcmd

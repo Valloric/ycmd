@@ -627,7 +627,7 @@ class LanguageServerCompleter( Completer ):
     Implementations are required to call this after disconnection and killing
     the downstream server."""
     with self._server_info_mutex:
-      self._server_file_state = {}
+      self._server_file_state = lsp.ServerFileStateStore()
       self._latest_diagnostics = collections.defaultdict( list )
       self._sync_type = 'Full'
       self._initialize_response = None
@@ -978,38 +978,38 @@ class LanguageServerCompleter( Completer ):
     synchronous operation."""
     with self._server_info_mutex:
       for file_name, file_data in iteritems( request_data[ 'file_data' ] ):
-        file_state = 'New'
-        if file_name in self._server_file_state:
-          file_state = self._server_file_state[ file_name ]
+        file_state = self._server_file_state[ file_name ]
+        action = file_state.GetFileUpdateAction( file_data[ 'contents' ] )
 
-        _logger.debug( 'Refreshing file {0}: State is {1}'.format(
-          file_name, file_state ) )
-        if file_state == 'New' or self._sync_type == 'Full':
-          msg = lsp.DidOpenTextDocument( file_name,
+        _logger.debug( 'Refreshing file {0}: State is {1}/action {2}'.format(
+          file_name, file_state.state, action ) )
+
+        if action == lsp.ServerFileState.OPEN_FILE:
+          msg = lsp.DidOpenTextDocument( file_state,
                                          file_data[ 'filetypes' ],
                                          file_data[ 'contents' ] )
-        else:
+        elif action == lsp.ServerFileState.CHANGE_FILE:
           # FIXME: DidChangeTextDocument doesn't actually do anything different
           # from DidOpenTextDocument other than send the right message, because
-          # we don't actually have a mechanism for generating the diffs or
-          # proper document version or life-cycle management. This isn't
-          # strictly necessary, but might lead to performance problems.
-          msg = lsp.DidChangeTextDocument( file_name,
+          # we don't actually have a mechanism for generating the diffs or This
+          # isn't strictly necessary, but might lead to performance problems.
+          msg = lsp.DidChangeTextDocument( file_state,
                                            file_data[ 'filetypes' ],
                                            file_data[ 'contents' ] )
 
-        self._server_file_state[ file_name ] = 'Open'
         self.GetConnection().SendNotification( msg )
 
       stale_files = list()
-      for file_name in iterkeys( self._server_file_state ):
+      for file_name, file_state in iteritems( self._server_file_state ):
         if file_name not in request_data[ 'file_data' ]:
-          stale_files.append( file_name )
+          stale_files.append( file_state )
 
       # We can't change the dictionary entries while using iterkeys, so we do
       # that in a separate loop.
-      for file_name in stale_files:
-          msg = lsp.DidCloseTextDocument( file_name )
+      for file_state in stale_files:
+        action = file_state.GetFileCloseAction()
+        if action == lsp.ServerFileState.CLOSE_FILE:
+          msg = lsp.DidCloseTextDocument( file_state )
           self.GetConnection().SendNotification( msg )
           del self._server_file_state[ file_name ]
 
