@@ -41,7 +41,7 @@ def ServerFileStateStore_RetrieveDelete_test():
   assert_that( file1_state.checksum, equal_to( None ) )
   assert_that( file1_state.state, equal_to( lsp.ServerFileState.CLOSED ) )
 
-  # Retrieve/create another one
+  # Retrieve/create another one (we don't actually open this one)
   file2_state = store[ 'file2' ]
   assert_that( file2_state.version, equal_to( 0 ) )
   assert_that( file2_state.checksum, equal_to( None ) )

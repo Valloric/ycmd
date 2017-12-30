@@ -970,6 +970,13 @@ class LanguageServerCompleter( Completer ):
     return None
 
 
+  def _AnySupportedFileType( self, file_types ):
+    for supported in self.SupportedFiletypes():
+      if supported in file_types:
+        return True
+    return False
+
+
   def _UpdateServerWithFileContents( self, request_data ):
     """Update the server with the current contents of all open buffers, and
     close any buffers no longer open.
@@ -977,7 +984,16 @@ class LanguageServerCompleter( Completer ):
     This method should be called frequently and in any event before a
     synchronous operation."""
     with self._server_info_mutex:
-      for file_name, file_data in iteritems( request_data[ 'file_data' ] ):
+      self._UpdateOpenFilesUnderLock( request_data )
+      self._PurgeClosedFilesUnderLock( request_data )
+
+
+  def _UpdateOpenFilesUnderLock( self, request_data ):
+    for file_name, file_data in iteritems( request_data[ 'file_data' ] ):
+      if not self._AnySupportedFileType( file_data[ 'filetypes' ] ):
+        continue
+
+      try:
         file_state = self._server_file_state[ file_name ]
         action = file_state.GetFileUpdateAction( file_data[ 'contents' ] )
 
@@ -991,29 +1007,37 @@ class LanguageServerCompleter( Completer ):
 
           self.GetConnection().SendNotification( msg )
         elif action == lsp.ServerFileState.CHANGE_FILE:
-          # FIXME: DidChangeTextDocument doesn't actually do anything different
-          # from DidOpenTextDocument other than send the right message, because
-          # we don't actually have a mechanism for generating the diffs or This
-          # isn't strictly necessary, but might lead to performance problems.
+          # FIXME: DidChangeTextDocument doesn't actually do anything
+          # different from DidOpenTextDocument other than send the right
+          # message, because we don't actually have a mechanism for generating
+          # the diffs. This isn't strictly necessary, but might lead to
+          # performance problems.
           msg = lsp.DidChangeTextDocument( file_state,
                                            file_data[ 'filetypes' ],
                                            file_data[ 'contents' ] )
 
           self.GetConnection().SendNotification( msg )
+      except IOError:
+        _logger.exception( 'Ignoring invalid file path' )
+        pass
 
-      stale_files = list()
-      for file_name, file_state in iteritems( self._server_file_state ):
-        if file_name not in request_data[ 'file_data' ]:
-          stale_files.append( file_state )
 
-      # We can't change the dictionary entries while using iterkeys, so we do
-      # that in a separate loop.
-      for file_state in stale_files:
-        action = file_state.GetFileCloseAction()
-        if action == lsp.ServerFileState.CLOSE_FILE:
-          msg = lsp.DidCloseTextDocument( file_state )
-          self.GetConnection().SendNotification( msg )
-          del self._server_file_state[ file_name ]
+  def _PurgeClosedFilesUnderLock( self, request_data ):
+    # As the name suggests, this method should only be called while holding
+    # self._server_info_mutex
+    stale_files = [ file_state for _, file_state
+                    in iteritems( self._server_file_state )
+                    if file_state.filename not in request_data[ 'file_data' ] ]
+
+    # We can't change the dictionary entries while using iterkeys, so we do
+    # that in a separate loop.
+    for file_state in stale_files:
+      action = file_state.GetFileCloseAction()
+      if action == lsp.ServerFileState.CLOSE_FILE:
+        msg = lsp.DidCloseTextDocument( file_state )
+        self.GetConnection().SendNotification( msg )
+
+      del self._server_file_state[ file_state.filename ]
 
 
   def _GetProjectDirectory( self, request_data ):

@@ -1250,3 +1250,52 @@ def Subcommands_IndexOutOfRange_test( app ):
       'data': has_entries( { 'fixits': empty() } ),
     }
   } )
+
+
+@SharedYcmd
+def Subcommands_DifferntFileTypesUpdate_test( app ):
+  filepath = PathToTestFile( 'simple_eclipse_project',
+                             'src',
+                             'com',
+                             'youcompleteme',
+                             'Test.java' )
+
+  RunTest( app, {
+    'description': 'Request error handles the error',
+    'request': {
+      'command': 'FixIt',
+      'line_num': 99,
+      'column_num': 99,
+      'filepath': filepath,
+      'file_data': {
+        '!/bin/sh': {
+          'filetypes': [ 'terminal' ],
+          'contents': 'this should be ignored by the completer',
+        },
+        '/path/to/non/project/file': {
+          'filetypes': [ 'c' ],
+          'contents': 'this should be ignored by the completer',
+        },
+        PathToTestFile( 'simple_eclipse_project',
+                        'src',
+                        'com',
+                        'test',
+                        'TestLauncher.java' ): {
+          'filetypes': [ 'some', 'java', 'junk', 'also' ],
+          'contents': ReadFile( PathToTestFile( 'simple_eclipse_project',
+                                                'src',
+                                                'com',
+                                                'test',
+                                                'TestLauncher.java' ) ),
+        },
+        '!/usr/bin/sh': {
+          'filetypes': [ 'java' ],
+          'contents': 'invalid filename ignored by completer',
+        },
+      }
+    },
+    'expect': {
+      'response': requests.codes.ok,
+      'data': has_entries( { 'fixits': empty() } ),
+    }
+  } )
