@@ -36,7 +36,7 @@ from ycmd.tests.test_utils import ( BuildRequest,
 
 shared_app = None
 DEFAULT_PROJECT_DIR = 'simple_eclipse_project'
-SERVER_STARTUP_TIMEOUT = 60 # seconds
+SERVER_STARTUP_TIMEOUT = 120 # seconds
 
 
 def PathToTestFile( *args ):

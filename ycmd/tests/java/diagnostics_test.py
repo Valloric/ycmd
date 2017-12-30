@@ -29,7 +29,8 @@ from future.utils import iterkeys
 from hamcrest import ( assert_that,
                        contains,
                        contains_inanyorder,
-                       has_entries )
+                       has_entries,
+                       has_item )
 from nose.tools import eq_
 
 from ycmd.tests.java import ( DEFAULT_PROJECT_DIR,
@@ -44,6 +45,9 @@ from ycmd.tests.test_utils import BuildRequest, LocationMatcher
 from ycmd.utils import ReadFile
 
 from pprint import pformat
+from mock import patch
+from ycmd.completers.language_server import language_server_protocol as lsp
+
 
 
 def RangeMatch( filepath, start, end ):
@@ -301,3 +305,45 @@ def Poll_Diagnostics_ProjectWide_Eclipse_test( app ):
       'Expected to see diags for {0}, but only saw {1}.'.format(
         json.dumps( to_see, indent=2 ),
         json.dumps( sorted( iterkeys( seen ) ), indent=2 ) ) )
+
+
+@IsolatedYcmd
+@patch(
+  'ycmd.completers.language_server.language_server_protocol.UriToFilePath',
+  side_effect = lsp.InvalidUriException )
+def GetCompletions_InvalidURI_test( app, uri_to_filepath, *args ):
+  StartJavaCompleterServerInDirectory( app,
+                                       PathToTestFile( DEFAULT_PROJECT_DIR ) )
+
+  filepath = ProjectPath( 'TestFactory.java' )
+  contents = ReadFile( filepath )
+
+  # It can take a while for the diagnostics to be ready
+  for tries in range( 0, 10 ):
+    event_data = BuildRequest( event_name = 'FileReadyToParse',
+                               contents = contents,
+                               filepath = filepath,
+                               filetype = 'java' )
+
+    results = app.post_json( '/event_notification', event_data ).json
+
+    if results:
+      print( 'got diagnostics on try number {}'.format( tries ) )
+      break
+
+    time.sleep( 0.5 )
+
+  print( 'Completer response: {}'.format( json.dumps( results, indent=2 ) ) )
+
+  uri_to_filepath.assert_called()
+
+  assert_that( results, has_item(
+    has_entries( {
+      'kind': 'WARNING',
+      'text': 'The value of the field TestFactory.Bar.testString is not used',
+      'location': LocationMatcher( '', 15, 19 ),
+      'location_extent': RangeMatch( '', ( 15, 19 ), ( 15, 29 ) ),
+      'ranges': contains( RangeMatch( '', ( 15, 19 ), ( 15, 29 ) ) ),
+      'fixit_available': False
+    } ),
+  ) )

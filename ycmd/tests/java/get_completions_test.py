@@ -38,9 +38,9 @@ from ycmd.tests.java import DEFAULT_PROJECT_DIR, PathToTestFile, SharedYcmd
 from ycmd.tests.test_utils import ( BuildRequest,
                                     ChunkMatcher,
                                     CompletionEntryMatcher,
-                                    ExpectedFailure,
                                     LocationMatcher )
 from ycmd.utils import ReadFile
+from mock import patch
 
 
 def _CombineRequest( request, data ):
@@ -397,51 +397,7 @@ def GetCompletions_RejectMultiLineInsertion_test( app ):
   } )
 
 
-
 @SharedYcmd
-def GetCompletions_UnicodeIdentifier_Incorrect_test( app ):
-  # Please note: This test demonstrates _broken_ behavior in jdt.ls. It is the
-  # same case as GetCompletions_UnicodeIdentifier_test, but demonstrating the
-  # real behavior since jdt.ls was changed/broken.
-  filepath = PathToTestFile( DEFAULT_PROJECT_DIR,
-                             'src',
-                             'com',
-                             'youcompleteme',
-                             'Test.java' )
-  RunTest( app, {
-    'description': 'Completion works for unicode identifier',
-    'request': {
-      'filetype'      : 'java',
-      'filepath'      : filepath,
-      'line_num'      : 16,
-      'column_num'    : 35,
-      'force_semantic': True
-    },
-    'expect': {
-      'response': requests.codes.ok,
-      'data': has_entries( {
-        'completion_start_column': 35,
-        'completions': contains_inanyorder( *WithObjectMethods(
-          CompletionEntryMatcher( 'a_test', 'Test.TéstClass', {
-            'kind': 'Field',
-            'detailed_info': 'a_test : int\n\n',
-          } ),
-          CompletionEntryMatcher( 'testywesty', 'Test.TéstClass', {
-            'kind': 'Field',
-            'detailed_info': 'testywesty : String\n\n',
-          } ),
-        ) ),
-        'errors': empty(),
-      } )
-    },
-  } )
-
-
-@SharedYcmd
-@ExpectedFailure( 'jdt.ls bug seems to cause javadoc to not be provided for '
-                  'the testywesty entry. The commit which broke it is '
-                  'ace8c798933c325dc210d7967eefd83e8ac9e8ba, and we are '
-                  'following up with jdt.ls devs.' )
 def GetCompletions_UnicodeIdentifier_test( app ):
   filepath = PathToTestFile( DEFAULT_PROJECT_DIR,
                              'src',
@@ -468,10 +424,53 @@ def GetCompletions_UnicodeIdentifier_test( app ):
           } ),
           CompletionEntryMatcher( 'testywesty', 'Test.TéstClass', {
             'kind': 'Field',
-            'detailed_info': 'testywesty : String\n\nTest in the west ',
           } ),
         ) ),
         'errors': empty(),
       } )
     },
   } )
+
+
+@SharedYcmd
+def GetCompletions_ResolveFailed_test( app ):
+  filepath = PathToTestFile( DEFAULT_PROJECT_DIR,
+                             'src',
+                             'com',
+                             'youcompleteme',
+                             'Test.java' )
+
+  from ycmd.completers.language_server import language_server_protocol as lsapi
+
+  def BrokenResolveCompletion( request_id, completion ):
+    return lsapi.BuildRequest( request_id, 'completionItem/FAIL', completion )
+
+  with patch( 'ycmd.completers.language_server.language_server_protocol.'
+              'ResolveCompletion',
+              side_effect = BrokenResolveCompletion ):
+    RunTest( app, {
+      'description': 'Completion works for unicode identifier',
+      'request': {
+        'filetype'      : 'java',
+        'filepath'      : filepath,
+        'line_num'      : 16,
+        'column_num'    : 35,
+        'force_semantic': True
+      },
+      'expect': {
+        'response': requests.codes.ok,
+        'data': has_entries( {
+          'completion_start_column': 35,
+          'completions': contains_inanyorder( *WithObjectMethods(
+            CompletionEntryMatcher( 'a_test', 'Test.TéstClass', {
+              'kind': 'Field',
+              'detailed_info': 'a_test : int\n\n',
+            } ),
+            CompletionEntryMatcher( 'testywesty', 'Test.TéstClass', {
+              'kind': 'Field',
+            } ),
+          ) ),
+          'errors': empty(),
+        } )
+      },
+    } )

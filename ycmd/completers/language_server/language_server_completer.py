@@ -1199,6 +1199,11 @@ class LanguageServerCompleter( Completer ):
         REQUEST_TIMEOUT_COMMAND )
 
     else:
+      try:
+        line_value = request_data[ 'line_value' ]
+      except IndexError:
+        line_value = ''
+
       code_actions = self.GetConnection().GetResponse(
         request_id,
         lsp.CodeAction(
@@ -1212,7 +1217,7 @@ class LanguageServerCompleter( Completer ):
             },
             'end': {
               'line': line_num_ls,
-              'character': len( request_data[ 'line_value' ] ) - 1,
+              'character': len( line_value ) - 1,
             }
           },
           [] ),

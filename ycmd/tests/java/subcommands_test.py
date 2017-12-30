@@ -44,6 +44,13 @@ from ycmd.tests.test_utils import ( BuildRequest,
                                     ChunkMatcher,
                                     ErrorMatcher,
                                     LocationMatcher )
+from mock import patch
+from ycmd.completers.language_server import language_server_protocol as lsp
+from ycmd import handlers
+from ycmd.completers.language_server.language_server_completer import (
+  ResponseTimeoutException,
+  ResponseFailedException
+)
 
 
 @SharedYcmd
@@ -59,8 +66,45 @@ def Subcommands_DefinedSubcommands_test( app ):
                  'GoToReferences',
                  'RefactorRename',
                  'RestartServer' ] ),
-       app.post_json( '/defined_subcommands',
-                      subcommands_data ).json )
+       app.post_json( '/defined_subcommands', subcommands_data ).json )
+
+
+def Subcommands_ServerNotReady_test():
+  filepath = PathToTestFile( 'simple_eclipse_project',
+                             'src',
+                             'com',
+                             'test',
+                             'AbstractTestWidget.java' )
+
+  completer = handlers._server_state.GetFiletypeCompleter( [ 'java' ] )
+
+  @SharedYcmd
+  @patch.object( completer, 'ServerIsReady', return_value = False )
+  def Test( app, cmd, arguments, *args ):
+    RunTest( app, {
+      'description': 'Subcommand ' + cmd + ' handles server not ready',
+      'request': {
+        'command': cmd,
+        'line_num': 1,
+        'column_num': 1,
+        'filepath': filepath,
+        'arguments': arguments,
+      },
+      'expect': {
+        'response': requests.codes.internal_server_error,
+        'data': ErrorMatcher( RuntimeError,
+                              'Server is initializing. Please wait.' ),
+      }
+    } )
+
+  yield ( Test, 'GoTo', [] )
+  yield ( Test, 'GoToDeclaration', [] )
+  yield ( Test, 'GoToDefinition', [] )
+  yield ( Test, 'GoToReferences', [] )
+  yield ( Test, 'GetType', [] )
+  yield ( Test, 'GetDoc', [] )
+  yield ( Test, 'FixIt', [] )
+  yield ( Test, 'RefactorRename', [ 'test' ] )
 
 
 def RunTest( app, test, contents = None ):
@@ -977,6 +1021,93 @@ def Subcommands_FixIt_Unicode_test():
           filepath, 13, 1, fixits )
 
 
+@patch(
+  'ycmd.completers.language_server.language_server_protocol.UriToFilePath',
+  side_effect = lsp.InvalidUriException )
+def Subcommands_FixIt_IvalidURI_test( uri_to_filepath ):
+  filepath = PathToTestFile( 'simple_eclipse_project',
+                             'src',
+                             'com',
+                             'test',
+                             'TestFactory.java' )
+
+  fixits_for_line = has_entries ( {
+    'fixits': contains_inanyorder(
+      has_entries( {
+        'text': "Import 'Wibble' (com.test.wobble)",
+        'chunks': contains(
+          # When doing an import, eclipse likes to add two newlines
+          # after the package. I suppose this is config in real eclipse,
+          # but there's no mechanism to configure this in jdtl afaik.
+          ChunkMatcher( '\n\n',
+                        LocationMatcher( '', 1, 18 ),
+                        LocationMatcher( '', 1, 18 ) ),
+          # OK, so it inserts the import
+          ChunkMatcher( 'import com.test.wobble.Wibble;',
+                        LocationMatcher( '', 1, 18 ),
+                        LocationMatcher( '', 1, 18 ) ),
+          # More newlines. Who doesn't like newlines?!
+          ChunkMatcher( '\n\n',
+                        LocationMatcher( '', 1, 18 ),
+                        LocationMatcher( '', 1, 18 ) ),
+          # For reasons known only to the eclipse JDT developers, it
+          # seems to want to delete the lines after the package first.
+          ChunkMatcher( '',
+                        LocationMatcher( '', 1, 18 ),
+                        LocationMatcher( '', 3, 1 ) ),
+        ),
+      } ),
+      has_entries( {
+        'text': "Create field 'Wibble'",
+        'chunks': contains (
+          ChunkMatcher( '\n\n',
+                        LocationMatcher( '', 16, 4 ),
+                        LocationMatcher( '', 16, 4 ) ),
+          ChunkMatcher( 'private Object Wibble;',
+                        LocationMatcher( '', 16, 4 ),
+                        LocationMatcher( '', 16, 4 ) ),
+        ),
+      } ),
+      has_entries( {
+        'text': "Create constant 'Wibble'",
+        'chunks': contains (
+          ChunkMatcher( '\n\n',
+                        LocationMatcher( '', 16, 4 ),
+                        LocationMatcher( '', 16, 4 ) ),
+          ChunkMatcher( 'private static final String Wibble = null;',
+                        LocationMatcher( '', 16, 4 ),
+                        LocationMatcher( '', 16, 4 ) ),
+        ),
+      } ),
+      has_entries( {
+        'text': "Create parameter 'Wibble'",
+        'chunks': contains (
+          ChunkMatcher( ', ',
+                        LocationMatcher( '', 18, 32 ),
+                        LocationMatcher( '', 18, 32 ) ),
+          ChunkMatcher( 'Object Wibble',
+                        LocationMatcher( '', 18, 32 ),
+                        LocationMatcher( '', 18, 32 ) ),
+        ),
+      } ),
+      has_entries( {
+        'text': "Create local variable 'Wibble'",
+        'chunks': contains (
+          ChunkMatcher( 'Object Wibble;',
+                        LocationMatcher( '', 19, 5 ),
+                        LocationMatcher( '', 19, 5 ) ),
+          ChunkMatcher( '\n	',
+                        LocationMatcher( '', 19, 5 ),
+                        LocationMatcher( '', 19, 5 ) ),
+        ),
+      } ),
+    )
+  } )
+
+  yield ( RunFixItTest, 'Ivalid URIs do not make us crash',
+          filepath, 13, 1, fixits_for_line )
+
+
 @SharedYcmd
 def RunGoToTest( app, description, filepath, line, col, cmd, goto_response ):
   RunTest( app, {
@@ -1060,3 +1191,91 @@ def Subcommands_GoTo_test():
               test[ 'request' ][ 'col' ],
               command,
               test[ 'response' ] )
+
+
+@SharedYcmd
+@patch( 'ycmd.completers.language_server.language_server_completer.'
+        'REQUEST_TIMEOUT_COMMAND',
+        5 )
+def Subcommands_RequestTimeout_test( app ):
+  filepath = PathToTestFile( 'simple_eclipse_project',
+                             'src',
+                             'com',
+                             'youcompleteme',
+                             'Test.java' )
+
+  with patch.object(
+    handlers._server_state.GetFiletypeCompleter( [ 'java' ] ).GetConnection(),
+    'WriteData' ):
+    RunTest( app, {
+      'description': 'Request timeout throws an error',
+      'request': {
+        'command': 'FixIt',
+        'line_num': 1,
+        'column_num': 1,
+        'filepath': filepath,
+      },
+      'expect': {
+        'response': requests.codes.internal_server_error,
+        'data': ErrorMatcher( ResponseTimeoutException, 'Response Timeout' )
+      }
+    } )
+
+
+@SharedYcmd
+def Subcommands_RequestFailed_test( app ):
+  filepath = PathToTestFile( 'simple_eclipse_project',
+                             'src',
+                             'com',
+                             'youcompleteme',
+                             'Test.java' )
+
+  connection = handlers._server_state.GetFiletypeCompleter(
+    [ 'java' ] ).GetConnection()
+
+  def WriteJunkToServer( data ):
+    junk = data.replace( bytes( b'textDocument/codeAction' ),
+                         bytes( b'textDocument/codeFAILED' ) )
+
+    with connection._stdin_lock:
+       connection._server_stdin.write( junk )
+       connection._server_stdin.flush()
+
+
+  with patch.object( connection, 'WriteData', side_effect = WriteJunkToServer ):
+    RunTest( app, {
+      'description': 'Response errors propagate to the client',
+      'request': {
+        'command': 'FixIt',
+        'line_num': 1,
+        'column_num': 1,
+        'filepath': filepath,
+      },
+      'expect': {
+        'response': requests.codes.internal_server_error,
+        'data': ErrorMatcher( ResponseFailedException )
+      }
+    } )
+
+
+@SharedYcmd
+def Subcommands_IndexOutOfRange_test( app ):
+  filepath = PathToTestFile( 'simple_eclipse_project',
+                             'src',
+                             'com',
+                             'youcompleteme',
+                             'Test.java' )
+
+  RunTest( app, {
+    'description': 'Request error handles the error',
+    'request': {
+      'command': 'FixIt',
+      'line_num': 99,
+      'column_num': 99,
+      'filepath': filepath,
+    },
+    'expect': {
+      'response': requests.codes.ok,
+      'data': has_entries( { 'fixits': empty() } ),
+    }
+  } )
