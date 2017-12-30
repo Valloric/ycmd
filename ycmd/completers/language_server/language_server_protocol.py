@@ -101,7 +101,7 @@ class ServerFileState( object ):
 
   def __init__( self, filename ):
     self.filename = filename
-    self.version = 1
+    self.version = 0
     self.state = ServerFileState.CLOSED
     self.checksum = None
 
@@ -109,18 +109,19 @@ class ServerFileState( object ):
   def GetFileUpdateAction( self, contents ):
     new_checksum = self._CalculateCheckSum( contents )
 
-    if self.state == ServerFileState.CLOSED:
-      self.checksum = new_checksum
-      self.version = 1
-      self.state = ServerFileState.OPEN
-      return ServerFileState.OPEN_FILE
+    if ( self.state == ServerFileState.OPEN and
+         self.checksum.digest() == new_checksum.digest() ):
+      return ServerFileState.NO_ACTION
+    elif self.state == ServerFileState.CLOSED:
+      action = ServerFileState.OPEN_FILE
+    else:
+      action = ServerFileState.CHANGE_FILE
 
-    if self.checksum != new_checksum:
-      self.checksum = new_checksum
-      self.version = self.version + 1
-      return ServerFileState.CHANGE_FILE
+    self.checksum = new_checksum
+    self.version = self.version + 1
+    self.state = ServerFileState.OPEN
 
-    return ServerFileState.NO_ACTION
+    return action
 
 
   def GetFileCloseAction( self ):

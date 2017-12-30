@@ -988,6 +988,8 @@ class LanguageServerCompleter( Completer ):
           msg = lsp.DidOpenTextDocument( file_state,
                                          file_data[ 'filetypes' ],
                                          file_data[ 'contents' ] )
+
+          self.GetConnection().SendNotification( msg )
         elif action == lsp.ServerFileState.CHANGE_FILE:
           # FIXME: DidChangeTextDocument doesn't actually do anything different
           # from DidOpenTextDocument other than send the right message, because
@@ -997,7 +999,7 @@ class LanguageServerCompleter( Completer ):
                                            file_data[ 'filetypes' ],
                                            file_data[ 'contents' ] )
 
-        self.GetConnection().SendNotification( msg )
+          self.GetConnection().SendNotification( msg )
 
       stale_files = list()
       for file_name, file_state in iteritems( self._server_file_state ):
