@@ -157,4 +157,4 @@ def FilePathToUri_Unix_test():
 @WindowsOnly
 def FilePathToUri_Windows_test():
   assert_that( lsp.FilePathToUri( 'C:\\usr\\local\\test\\test.test' ),
-               equal_to( 'file://C:/usr/local/test/test.test' ) )
+               equal_to( 'file:///C:/usr/local/test/test.test' ) )
