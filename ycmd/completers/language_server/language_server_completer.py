@@ -500,11 +500,11 @@ class StandardIOLanguageServerConnection( LanguageServerConnection ):
 
 
   def Shutdown( self ):
-    with self._stdout_lock:
+    with self._stdin_lock:
       if not self._server_stdin.closed:
         self._server_stdin.close()
 
-    with self._stdin_lock:
+    with self._stdout_lock:
       if not self._server_stdout.closed:
         self._server_stdout.close()
 
