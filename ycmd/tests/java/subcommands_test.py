@@ -98,14 +98,14 @@ def Subcommands_ServerNotReady_test():
       }
     } )
 
-  yield ( Test, 'GoTo', [] )
-  yield ( Test, 'GoToDeclaration', [] )
-  yield ( Test, 'GoToDefinition', [] )
-  yield ( Test, 'GoToReferences', [] )
-  yield ( Test, 'GetType', [] )
-  yield ( Test, 'GetDoc', [] )
-  yield ( Test, 'FixIt', [] )
-  yield ( Test, 'RefactorRename', [ 'test' ] )
+  yield Test, 'GoTo', []
+  yield Test, 'GoToDeclaration', []
+  yield Test, 'GoToDefinition', []
+  yield Test, 'GoToReferences', []
+  yield Test, 'GetType', []
+  yield Test, 'GetDoc', []
+  yield Test, 'FixIt', []
+  yield Test, 'RefactorRename', [ 'test' ]
 
 
 def RunTest( app, test, contents = None ):
