@@ -46,7 +46,8 @@ class RequestWrap( object ):
     # by setter_method) are cached in _cached_computed.  setter_method may be
     # None for read-only items.
     self._computed_key = {
-      # Unicode string representation of the current line
+      # Unicode string representation of the current line. If the line requested
+      # is not in the file, returns ''.
       'line_value': ( self._CurrentLine, None ),
 
       # The calculated start column, as a codepoint offset into the
@@ -119,7 +120,10 @@ class RequestWrap( object ):
     current_file = self._request[ 'filepath' ]
     contents = self._request[ 'file_data' ][ current_file ][ 'contents' ]
 
-    return SplitLines( contents )[ self._request[ 'line_num' ] - 1 ]
+    try:
+      return SplitLines( contents )[ self._request[ 'line_num' ] - 1 ]
+    except IndexError:
+      return ''
 
 
   def _GetCompletionStartColumn( self ):

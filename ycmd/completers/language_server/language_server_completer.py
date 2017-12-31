@@ -1225,10 +1225,7 @@ class LanguageServerCompleter( Completer ):
         REQUEST_TIMEOUT_COMMAND )
 
     else:
-      try:
-        line_value = request_data[ 'line_value' ]
-      except IndexError:
-        line_value = ''
+      line_value = request_data[ 'line_value' ]
 
       code_actions = self.GetConnection().GetResponse(
         request_id,
