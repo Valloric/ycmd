@@ -386,3 +386,60 @@ def FileReadyToParse_ServerNotReady_test( app ):
                                filetype = 'java' )
     results = app.post_json( '/event_notification', event_data ).json
     assert_that( results, empty() )
+
+
+@IsolatedYcmd
+def FileReadyToParse_ChangeFileContents_test( app ):
+  filepath = ProjectPath( 'TestFactory.java' )
+  contents = ReadFile( filepath )
+
+  StartJavaCompleterServerInDirectory( app, ProjectPath() )
+
+  # It can take a while for the diagnostics to be ready
+  for tries in range( 0, 10 ):
+    event_data = BuildRequest( event_name = 'FileReadyToParse',
+                               contents = contents,
+                               filepath = filepath,
+                               filetype = 'java' )
+
+    results = app.post_json( '/event_notification', event_data ).json
+
+    if results:
+      break
+
+    time.sleep( 0.5 )
+
+  # To make the test fair, we make sure there are some results prior to the
+  # 'server not running' call
+  assert results
+
+  # Call the FileReadyToParse handler but pretend that the server isn't running
+  contents = 'package com.test; class TestFactory {}'
+  # It can take a while for the diagnostics to be ready
+  event_data = BuildRequest( event_name = 'FileReadyToParse',
+                             contents = contents,
+                             filepath = filepath,
+                             filetype = 'java' )
+
+  app.post_json( '/event_notification', event_data )
+
+  diags = None
+  try:
+    for message in PollForMessages( app,
+                                    { 'filepath': filepath,
+                                      'contents': contents } ):
+      print( 'Message {0}'.format( pformat( message ) ) )
+      if 'diagnostics' in message and message[ 'filepath' ]  == filepath:
+        diags = message[ 'diagnostics' ]
+        if not diags:
+          break
+
+      # Eventually PollForMessages will throw a timeout exception and we'll fail
+      # if we don't see the diagnostics go empty
+  except PollForMessagesTimeoutException as e:
+    raise AssertionError(
+      str( e ) +
+      'Timed out waiting for diagnostics to clear for upodated file.'
+      'Expected to see none, but diags were: {0}'.format( diags ) )
+
+  assert_that( diags, empty() )
