@@ -27,6 +27,7 @@ import functools
 import os
 import psutil
 import time
+import threading
 
 from mock import patch
 from hamcrest import ( assert_that,
@@ -40,7 +41,7 @@ from ycmd.tests.java import ( PathToTestFile,
 from ycmd.tests.test_utils import ( BuildRequest,
                                     TemporaryTestDir,
                                     WaitUntilCompleterServerReady )
-from ycmd import utils
+from ycmd import utils, handlers
 
 
 def _ProjectDirectoryMatcher( project_directory ):
@@ -290,3 +291,95 @@ def ServerManagement_ServerDies_test( app ):
                    has_entry( 'is_running', False )
                  ) )
                ) )
+
+
+@IsolatedYcmd
+def ServerManagement_ServerDiesWhileShuttingDown_test( app ):
+  StartJavaCompleterServerInDirectory(
+    app,
+    PathToTestFile( 'simple_eclipse_project' ) )
+
+  request_data = BuildRequest( filetype = 'java' )
+  debug_info = app.post_json( '/debug_info', request_data ).json
+  print( 'Debug info: {0}'.format( debug_info ) )
+  pid = debug_info[ 'completer' ][ 'servers' ][ 0 ][ 'pid' ]
+  print( 'pid: {0}'.format( pid ) )
+  process = psutil.Process( pid )
+
+
+  def StopServerInAnotherThread():
+    app.post_json(
+      '/run_completer_command',
+      BuildRequest(
+        filetype = 'java',
+        command_arguments = [ 'StopServer' ],
+      ),
+    )
+
+  completer = handlers._server_state.GetFiletypeCompleter( [ 'java' ] )
+
+  # In this test we mock out the sending method so that we don't actually send
+  # the shutdown request. We then assisted-suicide the downstream server, which
+  # causes the shutdown requuset to be aborted. This is interpreted bu the
+  # shutdown code as a successful shutdown. We need to do the shutdown and
+  # terminate in parallel as the post_json is a blocking call.
+  with patch.object( completer.GetConnection(), 'WriteData' ):
+    stop_server_task = threading.Thread( target=StopServerInAnotherThread )
+    stop_server_task.start()
+    process.terminate()
+    stop_server_task.join()
+
+  request_data = BuildRequest( filetype = 'java' )
+  debug_info = app.post_json( '/debug_info', request_data ).json
+  assert_that( debug_info,
+               has_entry(
+                 'completer',
+                 has_entry( 'servers', contains(
+                   has_entry( 'is_running', False )
+                 ) )
+               ) )
+
+
+@IsolatedYcmd
+def ServerManagement_ConnectionRaisesWhileShuttingDown_test( app ):
+  StartJavaCompleterServerInDirectory(
+    app,
+    PathToTestFile( 'simple_eclipse_project' ) )
+
+  request_data = BuildRequest( filetype = 'java' )
+  debug_info = app.post_json( '/debug_info', request_data ).json
+  print( 'Debug info: {0}'.format( debug_info ) )
+  pid = debug_info[ 'completer' ][ 'servers' ][ 0 ][ 'pid' ]
+  print( 'pid: {0}'.format( pid ) )
+  process = psutil.Process( pid )
+
+  completer = handlers._server_state.GetFiletypeCompleter( [ 'java' ] )
+
+  # In this test we mock out the GetResponse method, which is used to send the
+  # shutdown request. This means we only send the exit notification. It's
+  # possible that the server won't like this, but it seems reasonable for it to
+  # actually exit at that point.
+  with patch.object( completer.GetConnection(),
+                     'GetResponse',
+                     side_effect = RuntimeError ):
+    app.post_json(
+      '/run_completer_command',
+      BuildRequest(
+        filetype = 'java',
+        command_arguments = [ 'StopServer' ],
+      ),
+    )
+
+  request_data = BuildRequest( filetype = 'java' )
+  debug_info = app.post_json( '/debug_info', request_data ).json
+  assert_that( debug_info,
+               has_entry(
+                 'completer',
+                 has_entry( 'servers', contains(
+                   has_entry( 'is_running', False )
+                 ) )
+               ) )
+
+  if process.is_running():
+    process.terminate()
+    raise AssertionError( 'jst.ls process is still running after exit handler' )
