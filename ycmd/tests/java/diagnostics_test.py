@@ -25,11 +25,13 @@ from builtins import *  # noqa
 
 import time
 import json
+import threading
 from future.utils import iterkeys
 from hamcrest import ( assert_that,
                        contains,
                        contains_inanyorder,
                        empty,
+                       equal_to,
                        has_entries,
                        has_item )
 from nose.tools import eq_
@@ -443,3 +445,92 @@ def FileReadyToParse_ChangeFileContents_test( app ):
       'Expected to see none, but diags were: {0}'.format( diags ) )
 
   assert_that( diags, empty() )
+
+
+@IsolatedYcmd
+def PollForMessages_InvalidUri_test( app, *args ):
+  StartJavaCompleterServerInDirectory(
+    app,
+    PathToTestFile( 'simple_eclipse_project' ) )
+
+  filepath = ProjectPath( 'TestFactory.java' )
+  contents = ReadFile( filepath )
+
+  with patch(
+    'ycmd.completers.language_server.language_server_protocol.UriToFilePath',
+    side_effect = lsp.InvalidUriException ):
+    try:
+      for message in PollForMessages( app,
+                                      { 'filepath': filepath,
+                                        'contents': contents },
+                                      timeout = 5 ):
+        print( 'Message {0}'.format( pformat( message ) ) )
+        if 'diagnostics' in message and message[ 'filepath' ] == filepath:
+          raise AssertionError( 'Did not expect diagnostics for file '
+                                'with invalid path' )
+
+        # Eventually PollForMessages will throw a timeout exception and we'll
+        # succeed if we don't see the diagnostics after 5s
+    except PollForMessagesTimeoutException:
+      # This is what we expect to hapen!
+      pass
+
+
+@IsolatedYcmd
+def PollForMessages_ServerNotRunning_test( app ):
+  StartJavaCompleterServerInDirectory(
+    app,
+    PathToTestFile( 'simple_eclipse_project' ) )
+
+  filepath = ProjectPath( 'TestFactory.java' )
+  contents = ReadFile( filepath )
+  app.post_json(
+    '/run_completer_command',
+    BuildRequest(
+      filetype = 'java',
+      command_arguments = [ 'StopServer' ],
+    ),
+  )
+
+  response = app.post_json( '/receive_messages',
+                            BuildRequest(
+                              filetype = 'java',
+                              filepath = filepath,
+                              contents = contents ) ).json
+
+  assert_that( response, equal_to( False ) )
+
+
+@IsolatedYcmd
+def PollForMessages_AbortedWhenServerDies_test( app ):
+  StartJavaCompleterServerInDirectory(
+    app,
+    PathToTestFile( 'simple_eclipse_project' ) )
+
+  filepath = ProjectPath( 'TestFactory.java' )
+  contents = ReadFile( filepath )
+
+  def AwaitMessages():
+    for tries in range( 0, 5 ):
+      response = app.post_json( '/receive_messages',
+                                BuildRequest(
+                                  filetype = 'java',
+                                  filepath = filepath,
+                                  contents = contents ) ).json
+      if response is False:
+        return
+
+    raise AssertionError( 'The poll request was not aborted in 5 tries' )
+
+  message_poll_task = threading.Thread( target=AwaitMessages )
+  message_poll_task.start()
+
+  app.post_json(
+    '/run_completer_command',
+    BuildRequest(
+      filetype = 'java',
+      command_arguments = [ 'StopServer' ],
+    ),
+  )
+
+  message_poll_task.join()

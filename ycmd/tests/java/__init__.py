@@ -111,14 +111,13 @@ class PollForMessagesTimeoutException( Exception ):
   pass
 
 
-def PollForMessages( app, request_data ):
-  TIMEOUT = 30
-  expiration = time.time() + TIMEOUT
+def PollForMessages( app, request_data, timeout = 30 ):
+  expiration = time.time() + timeout
   while True:
     if time.time() > expiration:
       raise PollForMessagesTimeoutException(
         'Waited for diagnostics to be ready for {0} seconds, aborting.'.format(
-          TIMEOUT ) )
+          timeout ) )
 
     default_args = {
       'filetype'  : 'java',
