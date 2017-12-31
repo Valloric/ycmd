@@ -102,3 +102,15 @@ def LanguageServerConnection_RequestAbortAwait_test():
      connection.run()
      assert_that( calling( response.AwaitResponse ).with_args( 10 ),
                   raises( lsc.ResponseAbortedException ) )
+
+
+def LanguageServerConnection_ServerConnectionDies_test():
+   connection = MockConnection()
+
+   return_values = [
+     IOError
+   ]
+
+   with patch.object( connection, 'ReadData', side_effect = return_values  ):
+     # No exception is thrown
+     connection.run()

@@ -25,6 +25,8 @@ from builtins import *  # noqa
 
 import functools
 import os
+import psutil
+import time
 
 from mock import patch
 from hamcrest import ( assert_that,
@@ -209,6 +211,79 @@ def ServerManagement_CloseServer_Unclean_test( app, stop_server_cleanly ):
 
   request_data = BuildRequest( filetype = 'java' )
   assert_that( app.post_json( '/debug_info', request_data ).json,
+               has_entry(
+                 'completer',
+                 has_entry( 'servers', contains(
+                   has_entry( 'is_running', False )
+                 ) )
+               ) )
+
+
+@IsolatedYcmd
+def ServerManagement_StopServerTwice_test( app ):
+  StartJavaCompleterServerInDirectory(
+    app, PathToTestFile( 'simple_eclipse_project' ) )
+
+  app.post_json(
+    '/run_completer_command',
+    BuildRequest(
+      filetype = 'java',
+      command_arguments = [ 'StopServer' ],
+    ),
+  )
+
+  request_data = BuildRequest( filetype = 'java' )
+  assert_that( app.post_json( '/debug_info', request_data ).json,
+               has_entry(
+                 'completer',
+                 has_entry( 'servers', contains(
+                   has_entry( 'is_running', False )
+                 ) )
+               ) )
+
+
+  # Stopping a stopped server is a no-op
+  app.post_json(
+    '/run_completer_command',
+    BuildRequest(
+      filetype = 'java',
+      command_arguments = [ 'StopServer' ],
+    ),
+  )
+
+  request_data = BuildRequest( filetype = 'java' )
+  assert_that( app.post_json( '/debug_info', request_data ).json,
+               has_entry(
+                 'completer',
+                 has_entry( 'servers', contains(
+                   has_entry( 'is_running', False )
+                 ) )
+               ) )
+
+
+@IsolatedYcmd
+def ServerManagement_ServerDies_test( app ):
+  StartJavaCompleterServerInDirectory(
+    app,
+    PathToTestFile( 'simple_eclipse_project' ) )
+
+  request_data = BuildRequest( filetype = 'java' )
+  debug_info = app.post_json( '/debug_info', request_data ).json
+  print( 'Debug info: {0}'.format( debug_info ) )
+  pid = debug_info[ 'completer' ][ 'servers' ][ 0 ][ 'pid' ]
+  print( 'pid: {0}'.format( pid ) )
+  process = psutil.Process( pid )
+  process.terminate()
+
+  for tries in range( 0, 10 ):
+    request_data = BuildRequest( filetype = 'java' )
+    debug_info = app.post_json( '/debug_info', request_data ).json
+    if not debug_info[ 'completer' ][ 'servers' ][ 0 ][ 'is_running' ]:
+      break
+
+    time.sleep( 0.5 )
+
+  assert_that( debug_info,
                has_entry(
                  'completer',
                  has_entry( 'servers', contains(
