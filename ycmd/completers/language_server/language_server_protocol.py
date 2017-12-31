@@ -113,6 +113,7 @@ class ServerFileState( object ):
          self.checksum.digest() == new_checksum.digest() ):
       return ServerFileState.NO_ACTION
     elif self.state == ServerFileState.CLOSED:
+      self.version = 0
       action = ServerFileState.OPEN_FILE
     else:
       action = ServerFileState.CHANGE_FILE

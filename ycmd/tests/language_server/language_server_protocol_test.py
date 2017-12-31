@@ -62,19 +62,61 @@ def ServerFileStateStore_RetrieveDelete_test():
   assert_that( file1_state.checksum, is_not( equal_to( None ) ) )
   assert_that( file1_state.state, equal_to( lsp.ServerFileState.OPEN ) )
 
-  # Replacing the same file is no-op
+  # Changing the file creates a new version
   assert_that( file1_state.GetFileUpdateAction( 'test contents changed' ),
                equal_to( lsp.ServerFileState.CHANGE_FILE ) )
   assert_that( file1_state.version, equal_to( 2 ) )
   assert_that( file1_state.checksum, is_not( equal_to( None ) ) )
   assert_that( file1_state.state, equal_to( lsp.ServerFileState.OPEN ) )
 
+  # Replacing the same file is no-op
+  assert_that( file1_state.GetFileUpdateAction( 'test contents changed' ),
+               equal_to( lsp.ServerFileState.NO_ACTION ) )
+  assert_that( file1_state.version, equal_to( 2 ) )
+  assert_that( file1_state.checksum, is_not( equal_to( None ) ) )
+  assert_that( file1_state.state, equal_to( lsp.ServerFileState.OPEN ) )
+
+  # Changing the same file is a new version
+  assert_that( file1_state.GetFileUpdateAction( 'test contents changed again' ),
+               equal_to( lsp.ServerFileState.CHANGE_FILE ) )
+  assert_that( file1_state.version, equal_to( 3 ) )
+  assert_that( file1_state.checksum, is_not( equal_to( None ) ) )
+  assert_that( file1_state.state, equal_to( lsp.ServerFileState.OPEN ) )
+
   # Closing an open file progressed the state
   assert_that( file1_state.GetFileCloseAction(),
                equal_to( lsp.ServerFileState.CLOSE_FILE ) )
-  assert_that( file1_state.version, equal_to( 2 ) )
+  assert_that( file1_state.version, equal_to( 3 ) )
   assert_that( file1_state.checksum, is_not( equal_to( None ) ) )
   assert_that( file1_state.state, equal_to( lsp.ServerFileState.CLOSED ) )
+
+  # Replacing a closed file opens it
+  assert_that( file1_state.GetFileUpdateAction( 'test contents again2' ),
+               equal_to( lsp.ServerFileState.OPEN_FILE ) )
+  assert_that( file1_state.version, equal_to( 1 ) )
+  assert_that( file1_state.checksum, is_not( equal_to( None ) ) )
+  assert_that( file1_state.state, equal_to( lsp.ServerFileState.OPEN ) )
+
+  # Closing an open file progressed the state
+  assert_that( file1_state.GetFileCloseAction(),
+               equal_to( lsp.ServerFileState.CLOSE_FILE ) )
+  assert_that( file1_state.version, equal_to( 1 ) )
+  assert_that( file1_state.checksum, is_not( equal_to( None ) ) )
+  assert_that( file1_state.state, equal_to( lsp.ServerFileState.CLOSED ) )
+
+  # You can del a closed file
+  del store[ file1_state.filename ]
+
+  # Replacing a del'd file opens it again
+  file1_state = store[ 'file1' ]
+  assert_that( file1_state.GetFileUpdateAction( 'test contents again3' ),
+               equal_to( lsp.ServerFileState.OPEN_FILE ) )
+  assert_that( file1_state.version, equal_to( 1 ) )
+  assert_that( file1_state.checksum, is_not( equal_to( None ) ) )
+  assert_that( file1_state.state, equal_to( lsp.ServerFileState.OPEN ) )
+
+  # You can del an open file (though you probably shouldn't)
+  del store[ file1_state.filename ]
 
   # Closing a closed file is a noop
   assert_that( file2_state.GetFileCloseAction(),
