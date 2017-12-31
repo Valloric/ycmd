@@ -31,6 +31,8 @@ from ycmd.utils import ( ByteOffsetToCodepointOffset,
                          SplitLines )
 from ycmd.identifier_utils import StartOfLongestIdentifierEndingAtIndex
 from ycmd.request_validation import EnsureRequestValid
+import logging
+_logger = logging.getLogger( __name__ )
 
 
 # TODO: Change the custom computed (and other) keys to be actual properties on
@@ -123,6 +125,10 @@ class RequestWrap( object ):
     try:
       return SplitLines( contents )[ self._request[ 'line_num' ] - 1 ]
     except IndexError:
+      _logger.exception( 'Client returned invalid line number {0} '
+                         'for file {1}. Assuming empty.'.format(
+                           self._request[ 'line_num' ],
+                           self._request[ 'filepath' ] ) )
       return ''
 
 
