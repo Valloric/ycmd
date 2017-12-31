@@ -196,7 +196,7 @@ def FileReadyToParse_Diagnostics_Simple_test( app ):
   contents = ReadFile( filepath )
 
   # It can take a while for the diagnostics to be ready
-  for tries in range( 0, 10 ):
+  for tries in range( 0, 60 ):
     event_data = BuildRequest( event_name = 'FileReadyToParse',
                                contents = contents,
                                filepath = filepath,
@@ -261,7 +261,7 @@ def FileReadyToParse_Diagnostics_FileNotOnDisk_test( app ):
       break
 
   # Now confirm that we _also_ get these from the FileReadyToParse request
-  for tries in range( 0, 10 ):
+  for tries in range( 0, 60 ):
     results = app.post_json( '/event_notification', event_data ).json
     if results:
       break
@@ -323,7 +323,7 @@ def FileReadyToParse_Diagnostics_InvalidURI_test( app, uri_to_filepath, *args ):
   contents = ReadFile( filepath )
 
   # It can take a while for the diagnostics to be ready
-  for tries in range( 0, 10 ):
+  for tries in range( 0, 60 ):
     event_data = BuildRequest( event_name = 'FileReadyToParse',
                                contents = contents,
                                filepath = filepath,
@@ -363,7 +363,7 @@ def FileReadyToParse_ServerNotReady_test( app ):
   completer = handlers._server_state.GetFiletypeCompleter( [ 'java' ] )
 
   # It can take a while for the diagnostics to be ready
-  for tries in range( 0, 10 ):
+  for tries in range( 0, 60 ):
     event_data = BuildRequest( event_name = 'FileReadyToParse',
                                contents = contents,
                                filepath = filepath,
@@ -398,7 +398,7 @@ def FileReadyToParse_ChangeFileContents_test( app ):
   StartJavaCompleterServerInDirectory( app, ProjectPath() )
 
   # It can take a while for the diagnostics to be ready
-  for tries in range( 0, 10 ):
+  for tries in range( 0, 60 ):
     event_data = BuildRequest( event_name = 'FileReadyToParse',
                                contents = contents,
                                filepath = filepath,

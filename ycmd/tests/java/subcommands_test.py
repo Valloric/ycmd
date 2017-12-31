@@ -1050,7 +1050,7 @@ def Subcommands_FixIt_InvalidURI_test( app ):
 
   contents = ReadFile( filepath )
   # Wait for jdt.ls to have parsed the file and returned some diagnostics
-  for tries in range( 0, 10 ):
+  for tries in range( 0, 60 ):
     results = app.post_json( '/event_notification',
                              BuildRequest( filepath = filepath,
                                            filetype = 'java',
