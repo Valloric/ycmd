@@ -29,6 +29,7 @@ from future.utils import iterkeys
 from hamcrest import ( assert_that,
                        contains,
                        contains_inanyorder,
+                       empty,
                        has_entries,
                        has_item )
 from nose.tools import eq_
@@ -47,6 +48,7 @@ from ycmd.utils import ReadFile
 from pprint import pformat
 from mock import patch
 from ycmd.completers.language_server import language_server_protocol as lsp
+from ycmd import handlers
 
 
 
@@ -347,3 +349,40 @@ def FileReadyToParse_Diagnostics_InvalidURI_test( app, uri_to_filepath, *args ):
       'fixit_available': False
     } ),
   ) )
+
+
+@IsolatedYcmd
+def FileReadyToParse_ServerNotReady_test( app ):
+  filepath = ProjectPath( 'TestFactory.java' )
+  contents = ReadFile( filepath )
+
+  StartJavaCompleterServerInDirectory( app, ProjectPath() )
+
+  completer = handlers._server_state.GetFiletypeCompleter( [ 'java' ] )
+
+  # It can take a while for the diagnostics to be ready
+  for tries in range( 0, 10 ):
+    event_data = BuildRequest( event_name = 'FileReadyToParse',
+                               contents = contents,
+                               filepath = filepath,
+                               filetype = 'java' )
+
+    results = app.post_json( '/event_notification', event_data ).json
+
+    if results:
+      break
+
+    time.sleep( 0.5 )
+
+  # To make the test fair, we make sure there are some results prior to the
+  # 'server not running' call
+  assert results
+
+  # Call the FileReadyToParse handler but pretend that the server isn't running
+  with patch.object( completer, 'ServerIsHealthy', return_value = False ):
+    event_data = BuildRequest( event_name = 'FileReadyToParse',
+                               contents = contents,
+                               filepath = filepath,
+                               filetype = 'java' )
+    results = app.post_json( '/event_notification', event_data ).json
+    assert_that( results, empty() )
