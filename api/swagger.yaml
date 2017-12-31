@@ -539,7 +539,7 @@ definitions:
         description: If present, this object is a `SimpleDisplayMessage`
       diagnostics:
         $ref: '#/definitions/DiagnosticsMessage'
-        description: If present, this oject is a `DiagnosticsMessage`
+        description: If present, this object is a `DiagnosticsMessage`
 
   SimpleDisplayMessage:
     type: string
@@ -553,7 +553,7 @@ definitions:
     description: |-
       Diagnostics for a particular file. Note: diagnostics may be supplied for
       any arbitrary file. The client is responsible for displaying the
-      diagnotics in an appropriate manner. The server supplies an empty set of
+      diagnostics in an appropriate manner. The server supplies an empty set of
       diagnostics to clear the diagnostics for a particular file.
     required:
       - filepath
@@ -1221,7 +1221,7 @@ paths:
         used by clients in a "long poll" style, and does not return until
         either:
 
-        - A message (or messages) become available, in which case a list of
+        - A message (or messages) becomes available, in which case a list of
           messages is returned, or
         - a timeout occurs (after 60s), in which case `true` is returned and
           the client should re-send this request, or
@@ -1231,8 +1231,8 @@ paths:
           something substantial changes such as a new file type is opened, or
           the completer server is manually restarted.
 
-        The following types of event are delivered asynchrounously for cerain
-        languages:
+        The following types of event are delivered asynchronously for certain
+        filetypes:
 
         - Status messages to be displayed unobtrusively to the user
         - Diagnostics (for Java only)
