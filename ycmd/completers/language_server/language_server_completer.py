@@ -266,6 +266,12 @@ class LanguageServerConnection( threading.Thread ):
 
       _logger.debug( 'Connection was closed cleanly' )
     except Exception:
+      # Abort any outstanding requests
+      with self._response_mutex:
+        for _, response in iteritems( self._responses ):
+          response.Abort()
+        self._responses.clear()
+
       _logger.exception( 'The language server communication channel closed '
                          'unexpectedly. Issue a RestartServer command to '
                          'recover.' )
@@ -1065,7 +1071,7 @@ class LanguageServerCompleter( Completer ):
 
       def response_handler( response, message ):
         if message is None:
-          raise ResponseAbortedException( 'Initialize request aborted' )
+          return
 
         self._HandleInitializeInPollThread( message )
 
@@ -1161,13 +1167,15 @@ class LanguageServerCompleter( Completer ):
 
     if isinstance( response[ 'result' ], list ):
       return _LocationListToGoTo( request_data, response )
-    else:
+    elif response[ 'result' ]:
       position = response[ 'result' ]
       try:
         return responses.BuildGoToResponseFromLocation(
           *_PositionToLocationAndDescription( request_data, position ) )
       except KeyError:
         raise RuntimeError( 'Cannot jump to location' )
+    else:
+      raise RuntimeError( 'Cannot jump to location' )
 
 
   def GoToReferences( self, request_data ):

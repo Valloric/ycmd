@@ -459,21 +459,24 @@ def PollForMessages_InvalidUri_test( app, *args ):
   with patch(
     'ycmd.completers.language_server.language_server_protocol.UriToFilePath',
     side_effect = lsp.InvalidUriException ):
-    try:
-      for message in PollForMessages( app,
-                                      { 'filepath': filepath,
-                                        'contents': contents },
-                                      timeout = 5 ):
-        print( 'Message {0}'.format( pformat( message ) ) )
-        if 'diagnostics' in message and message[ 'filepath' ] == filepath:
-          raise AssertionError( 'Did not expect diagnostics for file '
-                                'with invalid path' )
 
-        # Eventually PollForMessages will throw a timeout exception and we'll
-        # succeed if we don't see the diagnostics after 5s
-    except PollForMessagesTimeoutException:
-      # This is what we expect to hapen!
-      pass
+    for tries in range( 0, 5 ):
+      response = app.post_json( '/receive_messages',
+                                BuildRequest(
+                                  filetype = 'java',
+                                  filepath = filepath,
+                                  contents = contents ) ).json
+      if response is True:
+        break
+      elif response is False:
+        raise AssertionError( 'Message poll was aborted unexpectedly' )
+      elif 'diagnostics' in response:
+        raise AssertionError( 'Did not expect diagnostics when file paths '
+                              'are invalid' )
+
+      time.sleep( 0.5 )
+
+  assert_that( response, equal_to( True ) )
 
 
 @IsolatedYcmd

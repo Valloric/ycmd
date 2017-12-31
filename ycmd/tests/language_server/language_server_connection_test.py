@@ -25,24 +25,7 @@ from builtins import *  # noqa
 from mock import patch, MagicMock
 from ycmd.completers.language_server import language_server_completer as lsc
 from hamcrest import assert_that, calling, raises
-
-
-class MockConnection( lsc.LanguageServerConnection ):
-
-  def TryServerConnectionBlocking( self ):
-    return True
-
-
-  def Shutdown( self ):
-    pass
-
-
-  def WriteData( self, data ):
-    pass
-
-
-  def ReadData( self, size = -1 ):
-    return bytes( b'' )
+from ycmd.tests.language_server import MockConnection
 
 
 def LanguageServerConnection_ReadPartialMessage_test():
