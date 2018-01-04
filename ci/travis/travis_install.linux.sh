@@ -24,3 +24,8 @@ export PYTHON_CONFIGURE_OPTS="--enable-shared"
 
 # Pre-installed Node.js is too old. Install latest Node.js v4 LTS.
 nvm install 4
+
+# Make sure we have the approproate java for jdt.ls
+set +e
+jdk_switcher use oraclejdk8
+set -e
