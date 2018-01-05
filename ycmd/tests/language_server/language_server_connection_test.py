@@ -24,7 +24,7 @@ from builtins import *  # noqa
 
 from mock import patch, MagicMock
 from ycmd.completers.language_server import language_server_completer as lsc
-from hamcrest import assert_that, calling, raises
+from hamcrest import assert_that, calling, equal_to, raises
 from ycmd.tests.language_server import MockConnection
 
 
@@ -97,3 +97,18 @@ def LanguageServerConnection_ServerConnectionDies_test():
    with patch.object( connection, 'ReadData', side_effect = return_values  ):
      # No exception is thrown
      connection.run()
+
+
+@patch( 'ycmd.completers.language_server.language_server_completer.'
+        'CONNECTION_TIMEOUT',
+        0.5 )
+def LanguageServerConnection_ConnectionTimeout_test():
+  connection = MockConnection()
+  with patch.object( connection,
+                     'TryServerConnectionBlocking',
+                     side_effect=RuntimeError ):
+    connection.Start()
+    assert_that( calling( connection.AwaitServerConnection ),
+                 raises( lsc.LanguageServerConnectionTimeout ) )
+
+  assert_that( connection.isAlive(), equal_to( False ) )

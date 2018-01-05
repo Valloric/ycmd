@@ -352,3 +352,17 @@ def LanguageServerCompleter_DelayedInitialization_test():
 
       update.assert_called_with( request_data )
       purge.assert_called_with( 'Test.ycmtest' )
+
+
+def LanguageServerCompleter_ShowMessage_test():
+  completer = MockCompleter()
+  request_data = BuildRequest()
+  notification = {
+    'method': 'window/showMessage',
+    'params': {
+      'message': 'this is a test'
+    }
+  }
+  assert_that( completer.ConvertNotificationToMessage( request_data,
+                                                       notification ),
+               has_entries( { 'message': 'this is a test' } ) )
