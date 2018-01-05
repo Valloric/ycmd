@@ -1269,7 +1269,7 @@ def Subcommands_DifferntFileTypesUpdate_test( app ):
       'filepath': filepath,
       'file_data': {
         '!/bin/sh': {
-          'filetypes': [ 'terminal' ],
+          'filetypes': [],
           'contents': 'this should be ignored by the completer',
         },
         '/path/to/non/project/file': {
@@ -1290,7 +1290,7 @@ def Subcommands_DifferntFileTypesUpdate_test( app ):
         },
         '!/usr/bin/sh': {
           'filetypes': [ 'java' ],
-          'contents': 'invalid filename ignored by completer',
+          'contents': '\n',
         },
       }
     },

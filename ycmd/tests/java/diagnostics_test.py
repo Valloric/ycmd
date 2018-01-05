@@ -445,6 +445,37 @@ def FileReadyToParse_ChangeFileContents_test( app ):
 
   assert_that( diags, empty() )
 
+  # Close the file (ensuring no exception)
+  event_data = BuildRequest( event_name = 'BufferUnload',
+                             contents = contents,
+                             filepath = filepath,
+                             filetype = 'java' )
+  result = app.post_json( '/event_notification', event_data ).json
+  assert_that( result, equal_to( {} ) )
+
+  # Close the file again, someone erroneously (ensuring no exception)
+  event_data = BuildRequest( event_name = 'BufferUnload',
+                             contents = contents,
+                             filepath = filepath,
+                             filetype = 'java' )
+  result = app.post_json( '/event_notification', event_data ).json
+  assert_that( result, equal_to( {} ) )
+
+
+@SharedYcmd
+def OnBufferUnload_ServerNotRunning_test( app ):
+  filepath = ProjectPath( 'TestFactory.java' )
+  contents = ReadFile( filepath )
+  completer = handlers._server_state.GetFiletypeCompleter( [ 'java' ] )
+
+  with patch.object( completer, 'ServerIsHealthy', return_value = False ):
+    event_data = BuildRequest( event_name = 'BufferUnload',
+                               contents = contents,
+                               filepath = filepath,
+                               filetype = 'java' )
+    result = app.post_json( '/event_notification', event_data ).json
+    assert_that( result, equal_to( {}  ) )
+
 
 @IsolatedYcmd
 def PollForMessages_InvalidUri_test( app, *args ):

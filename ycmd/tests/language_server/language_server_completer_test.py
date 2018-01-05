@@ -328,3 +328,27 @@ def WorkspaceEditToFixIt_test():
       } ) )
     } )
   )
+
+
+def LanguageServerCompleter_DelayedInitialization_test():
+  completer = MockCompleter()
+  request_data = RequestWrap( BuildRequest( filepath = 'Test.ycmtest' ) )
+
+  with patch.object( completer, '_UpdateServerWithFileContents' ) as update:
+    with patch.object( completer, '_PurgeFileFromServer' ) as purge:
+      completer.SendInitialize( request_data )
+      completer.OnFileReadyToParse( request_data )
+      completer.OnBufferUnload( request_data )
+      update.assert_not_called()
+      purge.assert_not_called()
+
+      # Simulate recept of response and initialization complete
+      initialize_response = {
+        'result': {
+          'capabilities': {}
+        }
+      }
+      completer._HandleInitializeInPollThread( initialize_response )
+
+      update.assert_called_with( request_data )
+      purge.assert_called_with( 'Test.ycmtest' )

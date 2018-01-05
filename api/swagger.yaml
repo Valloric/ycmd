@@ -167,7 +167,17 @@ definitions:
     type: object
     description: |-
       An object mapping whose keys are the absolute paths to the
-      files and whose values are data relating to dirty buffers.
+      files and whose values are data relating to open or modified buffers.
+
+      A file should be included in `FileDataMap` when it is open in the editor
+      and:
+
+      - it has not previously been sent to the server, or
+      - it has changed since the last time it was sent to the server.
+
+      When a file is closed in the editor, a `BufferUnload` event should be sent
+      and the file should not be included in further `FileDataMap` entries
+      until (or unless) it is opened again.
     additionalProperties:
       $ref: "#/definitions/FileData"
 
@@ -581,9 +591,9 @@ paths:
             believes that it is worthwhile reparsing the current file and
             updating semantic engines'' ASTs and reporting things like updated
             diagnostics.
-          - `BufferUnload` (optional)
+          - `BufferUnload` (recommended)
             Call when the user closes a buffer that was previously known to be
-            open.
+            open. Required for language-server-based protocols, such as Java.
           - `BufferVisit` (optional)
             Call when the user focusses on a buffer that is already known.
             *Note*: The `ultisnips_snippets` property is optional when firing

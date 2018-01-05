@@ -51,36 +51,36 @@ CONNECTION_TIMEOUT         = 5
 class ResponseTimeoutException( Exception ):
   """Raised by LanguageServerConnection if a request exceeds the supplied
   time-to-live."""
-  pass
+  pass # pragma: no cover
 
 
 class ResponseAbortedException( Exception ):
   """Raised by LanguageServerConnection if a request is canceled due to the
   server shutting down."""
-  pass
+  pass # pragma: no cover
 
 
 class ResponseFailedException( Exception ):
   """Raised by LanguageServerConnection if a request returns an error"""
-  pass
+  pass # pragma: no cover
 
 
 class IncompatibleCompletionException( Exception ):
   """Internal exception returned when a completion item is encountered which is
   not supported by ycmd, or where the completion item is invalid."""
-  pass
+  pass # pragma: no cover
 
 
 class LanguageServerConnectionTimeout( Exception ):
   """Raised by LanguageServerConnection if the connection to the server is not
   established with the specified timeout."""
-  pass
+  pass # pragma: no cover
 
 
 class LanguageServerConnectionStopped( Exception ):
   """Internal exception raised by LanguageServerConnection when the server is
   successfully shut down according to user request."""
-  pass
+  pass # pragma: no cover
 
 
 class Response( object ):
@@ -216,22 +216,22 @@ class LanguageServerConnection( threading.Thread ):
   """
   @abc.abstractmethod
   def TryServerConnectionBlocking( self ):
-    pass
+    pass # pragma: no cover
 
 
   @abc.abstractmethod
   def Shutdown( self ):
-    pass
+    pass # pragma: no cover
 
 
   @abc.abstractmethod
   def WriteData( self, data ):
-    pass
+    pass # pragma: no cover
 
 
   @abc.abstractmethod
   def ReadData( self, size=-1 ):
-    pass
+    pass # pragma: no cover
 
 
   def __init__( self, notification_handler = None ):
@@ -602,12 +602,12 @@ class LanguageServerCompleter( Completer ):
     """Method that must be implemented by derived classes to return an instance
     of LanguageServerConnection appropriate for the language server in
     question"""
-    pass
+    pass # pragma: no cover
 
 
   @abc.abstractmethod
   def HandleServerCommand( self, request_data, command ):
-    pass
+    pass # pragma: no cover
 
 
   def __init__( self, user_options):
@@ -993,7 +993,6 @@ class LanguageServerCompleter( Completer ):
     synchronous operation."""
     with self._server_info_mutex:
       self._UpdateOpenFilesUnderLock( request_data )
-      self._PurgeClosedFilesUnderLock( request_data )
 
 
   def _UpdateOpenFilesUnderLock( self, request_data ):
@@ -1001,51 +1000,59 @@ class LanguageServerCompleter( Completer ):
       if not self._AnySupportedFileType( file_data[ 'filetypes' ] ):
         continue
 
-      try:
-        file_state = self._server_file_state[ file_name ]
-        action = file_state.GetFileUpdateAction( file_data[ 'contents' ] )
+      file_state = self._server_file_state[ file_name ]
+      action = file_state.GetFileUpdateAction( file_data[ 'contents' ] )
 
-        _logger.debug( 'Refreshing file {0}: State is {1}/action {2}'.format(
-          file_name, file_state.state, action ) )
+      _logger.debug( 'Refreshing file {0}: State is {1}/action {2}'.format(
+        file_name, file_state.state, action ) )
 
-        if action == lsp.ServerFileState.OPEN_FILE:
-          msg = lsp.DidOpenTextDocument( file_state,
+      if action == lsp.ServerFileState.OPEN_FILE:
+        msg = lsp.DidOpenTextDocument( file_state,
+                                       file_data[ 'filetypes' ],
+                                       file_data[ 'contents' ] )
+
+        self.GetConnection().SendNotification( msg )
+      elif action == lsp.ServerFileState.CHANGE_FILE:
+        # FIXME: DidChangeTextDocument doesn't actually do anything
+        # different from DidOpenTextDocument other than send the right
+        # message, because we don't actually have a mechanism for generating
+        # the diffs. This isn't strictly necessary, but might lead to
+        # performance problems.
+        msg = lsp.DidChangeTextDocument( file_state,
                                          file_data[ 'filetypes' ],
                                          file_data[ 'contents' ] )
 
-          self.GetConnection().SendNotification( msg )
-        elif action == lsp.ServerFileState.CHANGE_FILE:
-          # FIXME: DidChangeTextDocument doesn't actually do anything
-          # different from DidOpenTextDocument other than send the right
-          # message, because we don't actually have a mechanism for generating
-          # the diffs. This isn't strictly necessary, but might lead to
-          # performance problems.
-          msg = lsp.DidChangeTextDocument( file_state,
-                                           file_data[ 'filetypes' ],
-                                           file_data[ 'contents' ] )
-
-          self.GetConnection().SendNotification( msg )
-      except IOError:
-        _logger.exception( 'Ignoring invalid file path' )
-        pass
-
-
-  def _PurgeClosedFilesUnderLock( self, request_data ):
-    # As the name suggests, this method should only be called while holding
-    # self._server_info_mutex
-    stale_files = [ file_state for _, file_state
-                    in iteritems( self._server_file_state )
-                    if file_state.filename not in request_data[ 'file_data' ] ]
-
-    # We can't change the dictionary entries while using iterkeys, so we do
-    # that in a separate loop.
-    for file_state in stale_files:
-      action = file_state.GetFileCloseAction()
-      if action == lsp.ServerFileState.CLOSE_FILE:
-        msg = lsp.DidCloseTextDocument( file_state )
         self.GetConnection().SendNotification( msg )
 
-      del self._server_file_state[ file_state.filename ]
+    # ycmd clients only send buffers which have changed, and are required to
+    # send BufferUnload autocommand when files are closed.
+
+
+  def OnBufferUnload( self, request_data ):
+    if not self.ServerIsHealthy():
+      return
+
+    # If we haven't finished initializing yet, we need to queue up a call to
+    # _PurgeFileFromServer. This ensures that the server is up to date
+    # as soon as we are able to send more messages. This is important because
+    # server start up can be quite slow and we must not block the user, while we
+    # must keep the server synchronized.
+    if not self._initialize_event.is_set():
+      self._OnInitializeComplete(
+        lambda self: self._PurgeFileFromServer( request_data[ 'filepath' ] ) )
+      return
+
+    self._PurgeFileFromServer( request_data[ 'filepath' ] )
+
+
+  def _PurgeFileFromServer( self, file_path ):
+    file_state = self._server_file_state[ file_path ]
+    action = file_state.GetFileCloseAction()
+    if action == lsp.ServerFileState.CLOSE_FILE:
+      msg = lsp.DidCloseTextDocument( file_state )
+      self.GetConnection().SendNotification( msg )
+
+    del self._server_file_state[ file_state.filename ]
 
 
   def _GetProjectDirectory( self, request_data ):

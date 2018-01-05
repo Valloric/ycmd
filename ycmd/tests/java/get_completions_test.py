@@ -34,6 +34,7 @@ from nose.tools import eq_
 from pprint import pformat
 import requests
 
+from ycmd import handlers
 from ycmd.tests.java import DEFAULT_PROJECT_DIR, PathToTestFile, SharedYcmd
 from ycmd.tests.test_utils import ( BuildRequest,
                                     ChunkMatcher,
@@ -473,4 +474,35 @@ def GetCompletions_ResolveFailed_test( app ):
           'errors': empty(),
         } )
       },
+    } )
+
+
+@SharedYcmd
+def Subcommands_ServerNotReady_test( app ):
+  filepath = PathToTestFile( 'simple_eclipse_project',
+                             'src',
+                             'com',
+                             'test',
+                             'AbstractTestWidget.java' )
+
+  completer = handlers._server_state.GetFiletypeCompleter( [ 'java' ] )
+
+  with patch.object( completer, 'ServerIsReady', return_value = False ):
+    RunTest( app, {
+      'description': 'Completion works for unicode identifier',
+      'request': {
+        'filetype'      : 'java',
+        'filepath'      : filepath,
+        'line_num'      : 16,
+        'column_num'    : 35,
+        'force_semantic': True
+      },
+      'expect': {
+        'response': requests.codes.ok,
+        'data': has_entries( {
+          'errors': empty(),
+          'completions': empty(),
+          'completion_start_column': 6
+        } ),
+      }
     } )
