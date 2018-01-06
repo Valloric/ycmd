@@ -44,8 +44,8 @@ public:
 
   YCM_EXPORT unsigned NumStoredCharacters();
 
-  YCM_EXPORT std::vector< const Character * > GetCharactersForTexts(
-    const std::vector< std::string > &texts );
+  YCM_EXPORT std::vector< const Character * > GetCharacters(
+    const std::vector< std::string > &characters );
 
   // This should only be used to isolate tests and benchmarks.
   YCM_EXPORT void ClearCharacters();
@@ -58,8 +58,6 @@ private:
 
   static std::mutex singleton_mutex_;
   static CharacterRepository *instance_;
-
-  const std::string empty_;
 
   // This data structure owns all the Character pointers
   CharacterHolder character_holder_;

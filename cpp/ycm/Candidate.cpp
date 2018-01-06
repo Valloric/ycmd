@@ -34,7 +34,7 @@ void Candidate::ComputeCaseSwappedText() {
 
 
 void Candidate::ComputeWordBoundaryChars() {
-  const std::vector< const Character * > characters = Characters();
+  const std::vector< const Character * > &characters = Characters();
 
   auto character = characters.begin();
   if ( character == characters.end() )
@@ -44,7 +44,7 @@ void Candidate::ComputeWordBoundaryChars() {
     word_boundary_chars_.push_back( *character );
 
   auto previous_character = characters.begin();
-  character++;
+  ++character;
   for ( ; character != characters.end(); ++previous_character, ++character ) {
     if ( ( !( *previous_character )->IsUppercase() &&
            ( *character )->IsUppercase() ) ||
@@ -68,35 +68,45 @@ void Candidate::ComputeTextIsLowercase() {
 
 
 Candidate::Candidate( const std::string &text )
-  : Candidate::Word( text ) {
+  : Word( text ) {
   ComputeCaseSwappedText();
   ComputeWordBoundaryChars();
   ComputeTextIsLowercase();
 }
 
 
-Result Candidate::QueryMatchResult( const Query &query ) const {
-  if ( !query )
+Result Candidate::QueryMatchResult( const Word &query ) const {
+  if ( query.IsEmpty() )
     return Result( this, &query, 0, false );
 
-  unsigned index = 0, query_index = 0, index_sum = 0;
+  unsigned query_index = 0;
+  unsigned candidate_index = 0;
+  unsigned index_sum = 0;
 
   const std::vector< const Character * > &query_characters = query.Characters();
-  const std::vector< const Character * > &characters = Characters();
+  const std::vector< const Character * > &candidate_characters = Characters();
 
-  auto query_character = query_characters.begin();
-  auto character = characters.begin();
+  auto query_character_pos = query_characters.begin();
+  auto candidate_character_pos = candidate_characters.begin();
 
-  for ( ; character != characters.end(); ++character, ++index ) {
-    if ( ( !( *query_character )->IsUppercase() &&
-           ( *query_character )->CaseInsensitivilyEquals( **character ) ) ||
-         **query_character == **character ) {
-      index_sum += index;
+  for ( ; candidate_character_pos != candidate_characters.end();
+          ++candidate_character_pos, ++candidate_index ) {
 
-      if ( ++query_character == query_characters.end() )
-        return Result( this, &query, index_sum, index == query_index );
+    auto candidate_character = *candidate_character_pos;
+    auto query_character = *query_character_pos;
 
-      query_index++;
+    if ( ( !query_character->IsUppercase() &&
+           query_character->CaseInsensitivilyEquals( *candidate_character ) ) ||
+         *query_character == *candidate_character ) {
+      index_sum += candidate_index;
+
+      if ( ++query_character_pos == query_characters.end() )
+        return Result( this,
+                       &query,
+                       index_sum,
+                       candidate_index == query_index );
+
+      ++query_index;
     }
   }
 

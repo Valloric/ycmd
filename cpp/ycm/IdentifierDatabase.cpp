@@ -78,7 +78,7 @@ void IdentifierDatabase::ResultsForQueryAndType(
     if ( it == filetype_candidate_map_.end() )
       return;
   }
-  Query query_object( query );
+  Word query_object( query );
 
   std::unordered_set< const Candidate * > seen_candidates;
   seen_candidates.reserve( candidate_repository_.NumStoredCandidates() );
@@ -93,7 +93,7 @@ void IdentifierDatabase::ResultsForQueryAndType(
         else
           seen_candidates.insert( candidate );
 
-        if ( !*candidate || !candidate->MatchesBytes( query_object ) )
+        if ( candidate->IsEmpty() || !candidate->ContainsBytes( query_object ) )
           continue;
 
         Result result = candidate->QueryMatchResult( query_object );

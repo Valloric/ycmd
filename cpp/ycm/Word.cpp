@@ -49,16 +49,16 @@ void Word::ComputeCharacters() {
   // to handle them.
   // NOTE: for efficiency, we don't check if the number of continuation bytes
   // and the bytes themselves are valid (they must start with bits '10').
-  std::vector< std::string > texts;
+  std::vector< std::string > characters;
   for ( auto iter = text_.begin(); iter != text_.end(); ) {
     unsigned width = GetCodePointWidth( *iter );
     if ( text_.end() - iter < width )
       throw UnicodeDecodeError();
-    texts.push_back( std::string( iter, iter + width ) );
+    characters.push_back( std::string( iter, iter + width ) );
     iter += width;
   }
 
-  characters_ = CharacterRepository::Instance().GetCharactersForTexts( texts );
+  characters_ = CharacterRepository::Instance().GetCharacters( characters );
 }
 
 
@@ -72,8 +72,7 @@ void Word::ComputeBytesPresent() {
 
 
 Word::Word( const std::string &text )
-  :
-  text_( text ) {
+  : text_( text ) {
   ComputeCharacters();
   ComputeBytesPresent();
 }
