@@ -19,7 +19,6 @@
 #define RESULT_H_CZYD2SGN
 
 #include "Candidate.h"
-#include "Query.h"
 
 #include <string>
 
@@ -27,16 +26,17 @@ namespace YouCompleteMe {
 
 class Result {
 public:
-  explicit Result();
+  Result();
+  ~Result() = default;
 
   Result( const Candidate *candidate,
-          const Query *query,
+          const Word *query,
           unsigned char_match_index_sum,
           bool query_is_candidate_prefix_ );
 
   bool operator< ( const Result &other ) const;
 
-  inline const std::string Text() const {
+  inline const std::string &Text() const {
     return candidate_->Text();
   }
 
@@ -60,12 +60,6 @@ private:
   // true when the first character of the query and the candidate match
   bool first_char_same_in_query_and_text_;
 
-  // number of word boundary matches / number of chars in query
-  double ratio_of_word_boundary_chars_in_query_;
-
-  // number of word boundary matches / number of all word boundary chars
-  double word_boundary_char_utilization_;
-
   // true when the query is a prefix of the candidate string, e.g. "foo" query
   // for "foobar" candidate.
   bool query_is_candidate_prefix_;
@@ -76,13 +70,25 @@ private:
   // the char indexes of those letters in the candidate string.
   unsigned char_match_index_sum_;
 
+  // The number of characters in the query that match word boundary characters
+  // in the candidate. Characters must match in the same order of appearance
+  // (i.e. these characters must be a subsequence of the word boundary
+  // characters). Case is ignored. A character is a word boundary character if
+  // one of these is true:
+  //  - this is the first character and not a punctuation;
+  //  - the character is uppercase but not the previous one;
+  //  - the character is a letter and the previous one is a punctuation.
   unsigned num_wb_matches_;
 
-  // points to the candidate
+  // NOTE: we don't use references for the query and the candidate because we
+  // are sorting results through std::partial_sort and this function requires a
+  // move assignments which is not possible with reference members.
+
+  // Points to the candidate.
   const Candidate *candidate_;
 
-  // points to the query
-  const Query *query_;
+  // Points to the query.
+  const Word *query_;
 };
 
 template< class T >

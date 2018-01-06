@@ -26,10 +26,8 @@ unsigned LongestCommonSubsequenceLength(
   const std::vector< const Character * > &first,
   const std::vector< const Character * > &second ) {
 
-  const std::vector< const Character * > &longer =
-    first.size() > second.size() ? first  : second;
-  const std::vector< const Character * > &shorter =
-    first.size() > second.size() ? second : first;
+  const auto &longer = first.size() > second.size() ? first  : second;
+  const auto &shorter = first.size() > second.size() ? second : first;
 
   size_t longer_len  = longer.size();
   size_t shorter_len = shorter.size();
@@ -39,7 +37,7 @@ unsigned LongestCommonSubsequenceLength(
 
   for ( size_t i = 0; i < longer_len; ++i ) {
     for ( size_t j = 0; j < shorter_len; ++j ) {
-      if ( longer[ i ]->CaseInsensitivilyEquals( *( shorter[ j ] ) ) )
+      if ( longer[ i ]->CaseInsensitivilyEquals( *shorter[ j ] ) )
         current[ j + 1 ] = previous[ j ] + 1;
       else
         current[ j + 1 ] = std::max( current[ j ], previous[ j + 1 ] );
@@ -59,8 +57,6 @@ unsigned LongestCommonSubsequenceLength(
 Result::Result()
   : is_subsequence_( false ),
     first_char_same_in_query_and_text_( false ),
-    ratio_of_word_boundary_chars_in_query_( 0 ),
-    word_boundary_char_utilization_( 0 ),
     query_is_candidate_prefix_( false ),
     char_match_index_sum_( 0 ),
     candidate_( nullptr ),
@@ -69,13 +65,11 @@ Result::Result()
 
 
 Result::Result( const Candidate *candidate,
-                const Query *query,
+                const Word *query,
                 unsigned char_match_index_sum,
                 bool query_is_candidate_prefix )
   : is_subsequence_( true ),
     first_char_same_in_query_and_text_( false ),
-    ratio_of_word_boundary_chars_in_query_( 0 ),
-    word_boundary_char_utilization_( 0 ),
     query_is_candidate_prefix_( query_is_candidate_prefix ),
     char_match_index_sum_( char_match_index_sum ),
     candidate_( candidate ),
@@ -89,26 +83,26 @@ bool Result::operator< ( const Result &other ) const {
   // bazillion times, we have to make sure only the required comparisons are
   // made, and no more.
 
-  if ( *query_ ) {
+  if ( !query_->IsEmpty() ) {
     if ( first_char_same_in_query_and_text_ !=
          other.first_char_same_in_query_and_text_ )
       return first_char_same_in_query_and_text_;
 
     bool equal_wb_ratios = num_wb_matches_ == other.num_wb_matches_;
 
-    unsigned ratio =
+    size_t wb_cross_product =
       num_wb_matches_ * other.candidate_->WordBoundaryChars().size();
-    unsigned other_ratio =
+    size_t other_wb_cross_product =
       other.num_wb_matches_ * candidate_->WordBoundaryChars().size();
 
-    bool equal_wb_utilization = ratio == other_ratio;
+    bool equal_wb_utilization = wb_cross_product == other_wb_cross_product;
 
     if ( num_wb_matches_ == query_->Characters().size() ||
          other.num_wb_matches_ == query_->Characters().size() ) {
       if ( !equal_wb_ratios )
         return num_wb_matches_ > other.num_wb_matches_;
       else if ( !equal_wb_utilization )
-        return ratio > other_ratio;
+        return wb_cross_product > other_wb_cross_product;
     }
 
     if ( query_is_candidate_prefix_ != other.query_is_candidate_prefix_ )
@@ -117,7 +111,7 @@ bool Result::operator< ( const Result &other ) const {
     if ( !equal_wb_ratios )
       return num_wb_matches_ > other.num_wb_matches_;
     else if ( !equal_wb_utilization )
-      return ratio > other_ratio;
+      return wb_cross_product > other_wb_cross_product;
 
     if ( char_match_index_sum_ != other.char_match_index_sum_ )
       return char_match_index_sum_ < other.char_match_index_sum_;
@@ -136,12 +130,11 @@ bool Result::operator< ( const Result &other ) const {
 
 
 void Result::SetResultFeaturesFromQuery() {
-  if ( !*query_ || !*candidate_ )
+  if ( query_->IsEmpty() || candidate_->IsEmpty() )
     return;
 
   first_char_same_in_query_and_text_ =
-    Characters()[ 0 ]->CaseInsensitivilyEquals(
-      *( query_->Characters()[ 0 ] ) );
+    Characters()[ 0 ]->CaseInsensitivilyEquals( *query_->Characters()[ 0 ] );
 
   num_wb_matches_ = LongestCommonSubsequenceLength(
     query_->Characters(), candidate_->WordBoundaryChars() );

@@ -18,7 +18,6 @@
 #ifndef CANDIDATE_H_R5LZH6AC
 #define CANDIDATE_H_R5LZH6AC
 
-#include "Query.h"
 #include "Word.h"
 
 #include <memory>
@@ -35,6 +34,7 @@ public:
   // Make class noncopyable
   Candidate( const Candidate& ) = delete;
   Candidate& operator=( const Candidate& ) = delete;
+  ~Candidate() = default;
 
   inline const std::string &CaseSwappedText() const {
     return case_swapped_text_;
@@ -48,7 +48,18 @@ public:
     return text_is_lowercase_;
   }
 
-  YCM_EXPORT Result QueryMatchResult( const Query &query ) const;
+  // Check if the query is a subsequence of the candidate and return a result
+  // accordingly. This is done by simultaneously going through the characters of
+  // the query and the candidate. If both characters match, we move to the next
+  // character in the query and the candidate. Otherwise, we only move to the
+  // next character in the candidate. The matching is case-insensitive if the
+  // character of the query is lowercase. If there is no character left in the
+  // query, the query is not a subsequence and we return an empty result. If
+  // there is no character left in the candidate, the query is a subsequence and
+  // we return a result with the query, the candidate, the sum of indexes of the
+  // candidate where characters matched, and a boolean that is true if the query
+  // is a prefix of the candidate.
+  YCM_EXPORT Result QueryMatchResult( const Word &query ) const;
 
 private:
   void ComputeCaseSwappedText();

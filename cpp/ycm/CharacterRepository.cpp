@@ -44,28 +44,28 @@ unsigned CharacterRepository::NumStoredCharacters() {
 }
 
 
-std::vector< const Character * > CharacterRepository::GetCharactersForTexts(
-  const std::vector< std::string > &texts ) {
-  std::vector< const Character * > characters;
-  characters.reserve( texts.size() );
+std::vector< const Character * > CharacterRepository::GetCharacters(
+  const std::vector< std::string > &characters ) {
+  std::vector< const Character * > character_objects;
+  character_objects.reserve( characters.size() );
 
   {
     std::lock_guard< std::mutex > locker( holder_mutex_ );
 
-    for ( const std::string & text : texts ) {
-      const Character *&character = GetValueElseInsert(
-                                      character_holder_,
-                                      text,
-                                      NULL );
+    for ( const std::string & character : characters ) {
+      const Character *&character_object = GetValueElseInsert(
+                                             character_holder_,
+                                             character,
+                                             nullptr );
 
-      if ( !character )
-        character = new Character( text );
+      if ( !character_object )
+        character_object = new Character( character );
 
-      characters.push_back( character );
+      character_objects.push_back( character_object );
     }
   }
 
-  return characters;
+  return character_objects;
 }
 
 

@@ -34,25 +34,25 @@ TEST( WordTest, ExceptionThrownWhenComputedCodePointWidthIsOutOfBound ) {
 TEST( WordTest, MatchesBytes ) {
   Word word( "f𐍈oβaＡaR" );
 
-  EXPECT_TRUE( word.MatchesBytes( Word( "f𐍈oβaＡar" ) ) );
-  EXPECT_TRUE( word.MatchesBytes( Word( "F𐍈oβaａaR" ) ) );
-  EXPECT_TRUE( word.MatchesBytes( Word( "foΒar"    ) ) );
-  EXPECT_TRUE( word.MatchesBytes( Word( "RＡβof"    ) ) );
-  EXPECT_TRUE( word.MatchesBytes( Word( "βfr𐍈ａ"    ) ) );
-  EXPECT_TRUE( word.MatchesBytes( Word( "fβr"      ) ) );
-  EXPECT_TRUE( word.MatchesBytes( Word( "r"        ) ) );
-  EXPECT_TRUE( word.MatchesBytes( Word( "βββ"      ) ) );
-  EXPECT_TRUE( word.MatchesBytes( Word( ""         ) ) );
+  EXPECT_TRUE( word.ContainsBytes( Word( "f𐍈oβaＡar" ) ) );
+  EXPECT_TRUE( word.ContainsBytes( Word( "F𐍈oβaａaR" ) ) );
+  EXPECT_TRUE( word.ContainsBytes( Word( "foΒar"    ) ) );
+  EXPECT_TRUE( word.ContainsBytes( Word( "RＡβof"    ) ) );
+  EXPECT_TRUE( word.ContainsBytes( Word( "βfr𐍈ａ"    ) ) );
+  EXPECT_TRUE( word.ContainsBytes( Word( "fβr"      ) ) );
+  EXPECT_TRUE( word.ContainsBytes( Word( "r"        ) ) );
+  EXPECT_TRUE( word.ContainsBytes( Word( "βββ"      ) ) );
+  EXPECT_TRUE( word.ContainsBytes( Word( ""         ) ) );
 }
 
 TEST( WordTest, DoesntMatchBytes ) {
   Word word( "Fo𐍈βＡr" );
 
-  EXPECT_FALSE( word.MatchesBytes( Word( "Fo𐍈βＡrε" ) ) );
-  EXPECT_FALSE( word.MatchesBytes( Word( "gggg"    ) ) );
-  EXPECT_FALSE( word.MatchesBytes( Word( "χ"       ) ) );
-  EXPECT_FALSE( word.MatchesBytes( Word( "nfooΒａr" ) ) );
-  EXPECT_FALSE( word.MatchesBytes( Word( "Fβrmmm"  ) ) );
+  EXPECT_FALSE( word.ContainsBytes( Word( "Fo𐍈βＡrε" ) ) );
+  EXPECT_FALSE( word.ContainsBytes( Word( "gggg"    ) ) );
+  EXPECT_FALSE( word.ContainsBytes( Word( "χ"       ) ) );
+  EXPECT_FALSE( word.ContainsBytes( Word( "nfooΒａr" ) ) );
+  EXPECT_FALSE( word.ContainsBytes( Word( "Fβrmmm"  ) ) );
 }
 
 } // namespace YouCompleteMe
