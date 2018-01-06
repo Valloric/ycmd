@@ -73,12 +73,12 @@ boost::python::list FilterAndSortCandidates(
   std::vector< ResultAnd< size_t > > result_and_objects;
   {
     ReleaseGil unlock;
-    Query query_object( query );
+    Word query_object( query );
 
     for ( size_t i = 0; i < num_candidates; ++i ) {
       const Candidate *candidate = repository_candidates[ i ];
 
-      if ( !*candidate || !candidate->MatchesBytes( query_object ) )
+      if ( candidate->IsEmpty() || !candidate->ContainsBytes( query_object ) )
         continue;
 
       Result result = candidate->QueryMatchResult( query_object );

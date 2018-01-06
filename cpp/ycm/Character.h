@@ -27,7 +27,7 @@ typedef std::vector< unsigned char > ByteSequence;
 
 class Character {
 public:
-  YCM_EXPORT Character( const std::string &codepoint );
+  YCM_EXPORT Character( const std::string &character );
   // Make class noncopyable
   Character( const Character& ) = delete;
   Character& operator=( const Character& ) = delete;

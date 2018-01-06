@@ -22,10 +22,10 @@ namespace YouCompleteMe {
 
 namespace {
 
-ByteSequence ConvertTextToByteSequence( const std::string &text ) {
+ByteSequence ConvertStringToByteSequence( const std::string &character ) {
   ByteSequence byte_sequence;
 
-  for ( unsigned char byte : text )
+  for ( unsigned char byte : character )
     byte_sequence.push_back( byte );
 
   return byte_sequence;
@@ -33,17 +33,17 @@ ByteSequence ConvertTextToByteSequence( const std::string &text ) {
 
 } // unnamed namespace
 
-Character::Character( const std::string &text ) {
-  const RawCharacter character = UnicodeTable::Find( text.c_str() );
-  if ( character.original ) {
-    original_ = ConvertTextToByteSequence( character.original );
-    lowercase_ = ConvertTextToByteSequence( character.lowercase );
-    uppercase_ = ConvertTextToByteSequence( character.uppercase );
-    is_letter_ = character.is_letter;
-    is_punctuation_ = character.is_punctuation;
-    is_uppercase_ = character.is_uppercase;
+Character::Character( const std::string &character ) {
+  const RawCharacter raw_character = FindCharacter( character.c_str() );
+  if ( raw_character.original ) {
+    original_ = ConvertStringToByteSequence( raw_character.original );
+    lowercase_ = ConvertStringToByteSequence( raw_character.lowercase );
+    uppercase_ = ConvertStringToByteSequence( raw_character.uppercase );
+    is_letter_ = raw_character.is_letter;
+    is_punctuation_ = raw_character.is_punctuation;
+    is_uppercase_ = raw_character.is_uppercase;
   } else {
-    original_ = ConvertTextToByteSequence( text );
+    original_ = ConvertStringToByteSequence( character );
     lowercase_ = original_;
     uppercase_ = original_;
     is_letter_ = false;
