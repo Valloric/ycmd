@@ -992,10 +992,12 @@ class LanguageServerCompleter( Completer ):
     This method should be called frequently and in any event before a
     synchronous operation."""
     with self._server_info_mutex:
-      self._UpdateOpenFilesUnderLock( request_data )
+      self._UpdateDirtyFilesUnderLock( request_data )
+      files_to_purge = self._UpdateSavedFilesUnderLock( request_data )
+      self._PurgeMissingFilesUnderLock( files_to_purge )
 
 
-  def _UpdateOpenFilesUnderLock( self, request_data ):
+  def _UpdateDirtyFilesUnderLock( self, request_data ):
     for file_name, file_data in iteritems( request_data[ 'file_data' ] ):
       if not self._AnySupportedFileType( file_data[ 'filetypes' ] ):
         continue
@@ -1022,6 +1024,9 @@ class LanguageServerCompleter( Completer ):
 
         self.GetConnection().SendNotification( msg )
 
+
+  def _UpdateSavedFilesUnderLock( self, request_data ):
+    files_to_purge = list()
     for file_name, file_state in iteritems( self._server_file_state ):
       if file_name in request_data[ 'file_data' ]:
         continue
@@ -1044,19 +1049,13 @@ class LanguageServerCompleter( Completer ):
         _logger.exception( 'Error getting contents for open file: {0}'.format(
           file_name ) )
 
-        # FIXME: We should almost certainly call self._PurgeFileFromServer(
-        # file_name ) here. The file no longer exists (it might have been a
-        # temporary file name) or it is no longer accessible, so we should state
-        # that it is closed. If it were still open it would have been in the
-        # request_data.
+        # The file no longer exists (it might have been a temporary file name)
+        # or it is no longer accessible, so we should state that it is closed.
+        # If it were still open it would have been in the request_data.
         #
-        # However, doing so breaks completions for jdt.ls. It seems that for
-        # some timing reason or other, completion requests immediately after a
-        # didClose notification return an empty list. This is of course a bug,
-        # but what you gonna do? We could put a time.sleep(1) in here, but that
-        # would almost certainly be worse than just leaving the file open in
-        # the server. In any legitimate cases we'll eventually receive a
-        # BufferUnload notification anyway.
+        # We have to do this ina separate loop because we can't change
+        # self._server_file_state while iterating it.
+        files_to_purge.append( file_name )
         continue
 
       action = file_state.GetSavedFileAction( contents )
@@ -1064,8 +1063,14 @@ class LanguageServerCompleter( Completer ):
         msg = lsp.DidChangeTextDocument( file_state, contents )
         self.GetConnection().SendNotification( msg )
 
+    return files_to_purge
+
+
+  def _PurgeMissingFilesUnderLock( self, files_to_purge ):
     # ycmd clients only send buffers which have changed, and are required to
     # send BufferUnload autocommand when files are closed.
+    for file_name in files_to_purge:
+      self._PurgeFileFromServer( file_name )
 
 
   def OnBufferUnload( self, request_data ):
