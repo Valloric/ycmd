@@ -39,6 +39,7 @@ public:
   // Make class noncopyable
   Word( const Word& ) = delete;
   Word& operator=( const Word& ) = delete;
+  ~Word() = default;
 
   inline const std::vector< const Character * > &Characters() const {
     return characters_;
@@ -50,13 +51,13 @@ public:
 
   // Returns true if the word contains the bytes from another word (it may also
   // contain other bytes).
-  inline bool MatchesBytes( const Word &other ) const {
+  inline bool ContainsBytes( const Word &other ) const {
     return ( bytes_present_ & other.bytes_present_ ) == other.bytes_present_;
   }
 
-  inline explicit operator bool() const {
-    return !characters_.empty();
-  };
+  inline bool IsEmpty() const {
+    return characters_.empty();
+  }
 
 private:
   void ComputeCharacters();

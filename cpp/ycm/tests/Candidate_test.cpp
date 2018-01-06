@@ -169,7 +169,7 @@ TEST( CandidateTest, QueryMatchResultCaseSensitiveIsSubsequence ) {
   };
 
   for ( const std::string &query : queries ) {
-    Result result = Candidate( candidate ).QueryMatchResult( Query( query ) );
+    Result result = Candidate( candidate ).QueryMatchResult( Word( query ) );
     EXPECT_TRUE( result.IsSubsequence() )
       << query << " is expected to be a subsequence of " << candidate;
   }
@@ -194,7 +194,7 @@ TEST( CandidateTest, QueryMatchResultCaseSensitiveIsntSubsequence ) {
   };
 
   for ( const std::string &query : queries ) {
-    Result result = Candidate( candidate ).QueryMatchResult( Query( query ) );
+    Result result = Candidate( candidate ).QueryMatchResult( Word( query ) );
     EXPECT_FALSE( result.IsSubsequence() )
       << query << " is not expected to be a subsequence of " << candidate;
   }

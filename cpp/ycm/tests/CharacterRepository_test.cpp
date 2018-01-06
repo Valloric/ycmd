@@ -41,14 +41,14 @@ protected:
 };
 
 
-TEST_F( CharacterRepositoryTest, GetCharactersForTexts ) {
-  std::vector< std::string > texts = { "α", "ω" };
+TEST_F( CharacterRepositoryTest, GetCharacters ) {
+  std::vector< std::string > characters = { "α", "ω" };
 
-  std::vector< const Character * > characters =
-    repo_.GetCharactersForTexts( texts );
+  std::vector< const Character * > character_objects = repo_.GetCharacters(
+    characters );
 
   EXPECT_THAT( repo_.NumStoredCharacters(), 2 );
-  EXPECT_THAT( characters, UnorderedElementsAre(
+  EXPECT_THAT( character_objects, UnorderedElementsAre(
     Pointee( Property( &Character::Original, ElementsAre( '\xce', '\xb1' ) ) ),
     Pointee( Property( &Character::Original, ElementsAre( '\xcf', '\x89' ) ) )
   ) );
