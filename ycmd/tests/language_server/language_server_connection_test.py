@@ -112,3 +112,12 @@ def LanguageServerConnection_ConnectionTimeout_test():
                  raises( lsc.LanguageServerConnectionTimeout ) )
 
   assert_that( connection.isAlive(), equal_to( False ) )
+
+
+def LanguageServerConnection_CloseTwice_test():
+  connection = MockConnection()
+  with patch.object( connection,
+                     'TryServerConnectionBlocking',
+                     side_effect=RuntimeError ):
+    connection.Close()
+    connection.Close()

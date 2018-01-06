@@ -28,6 +28,7 @@ from hamcrest import ( assert_that,
                        equal_to,
                        contains,
                        has_entries,
+                       has_items,
                        raises )
 
 from ycmd.completers.language_server import language_server_completer as lsc
@@ -356,7 +357,7 @@ def LanguageServerCompleter_DelayedInitialization_test():
 
 def LanguageServerCompleter_ShowMessage_test():
   completer = MockCompleter()
-  request_data = BuildRequest()
+  request_data = RequestWrap( BuildRequest() )
   notification = {
     'method': 'window/showMessage',
     'params': {
@@ -366,3 +367,22 @@ def LanguageServerCompleter_ShowMessage_test():
   assert_that( completer.ConvertNotificationToMessage( request_data,
                                                        notification ),
                has_entries( { 'message': 'this is a test' } ) )
+
+
+def LanguageServerCompleter_GetCompletions_List_test():
+  completer = MockCompleter()
+  request_data = RequestWrap( BuildRequest() )
+
+  completion_response = { 'result': [ { 'label': 'test' } ] }
+
+  resolve_responses = [
+    { 'result': { 'label': 'test' } },
+  ]
+
+  with patch.object( completer, 'ServerIsReady', return_value = True ):
+    with patch.object( completer.GetConnection(),
+                       'GetResponse',
+                       side_effect = [ completion_response ] +
+                                     resolve_responses ):
+      assert_that( completer.ComputeCandidatesInner( request_data ),
+                   has_items( has_entries( { 'insertion_text': 'test' } ) ) )
