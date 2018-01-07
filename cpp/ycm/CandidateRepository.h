@@ -1,4 +1,4 @@
-// Copyright (C) 2011, 2012 Google Inc.
+// Copyright (C) 2011-2018 ycmd contributors
 //
 // This file is part of ycmd.
 //
@@ -18,17 +18,18 @@
 #ifndef CANDIDATEREPOSITORY_H_K9OVCMHG
 #define CANDIDATEREPOSITORY_H_K9OVCMHG
 
-#include <vector>
+#include "Candidate.h"
+
+#include <memory>
+#include <mutex>
 #include <string>
 #include <unordered_map>
-#include <mutex>
+#include <vector>
 
 namespace YouCompleteMe {
 
-class Candidate;
-
-typedef std::unordered_map< std::string, const Candidate * >
-CandidateHolder;
+using CandidateHolder = std::unordered_map< std::string,
+                                            std::unique_ptr< Candidate > >;
 
 
 // This singleton stores already built Candidate objects for candidate strings
@@ -55,8 +56,8 @@ public:
   YCM_EXPORT void ClearCandidates();
 
 private:
-  CandidateRepository() {};
-  ~CandidateRepository();
+  CandidateRepository() = default;
+  ~CandidateRepository() = default;
 
   const std::string &ValidatedCandidateText( const std::string &text );
 
@@ -65,7 +66,9 @@ private:
   static std::mutex singleton_mutex_;
   static CandidateRepository *instance_;
 
-  const std::string empty_;
+  // MSVC 12 complains that no appropriate default constructor is available if
+  // this property is not initialized.
+  const std::string empty_{};
 
   // This data structure owns all the Candidate pointers
   CandidateHolder candidate_holder_;

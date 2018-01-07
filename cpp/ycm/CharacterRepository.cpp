@@ -53,15 +53,15 @@ std::vector< const Character * > CharacterRepository::GetCharacters(
     std::lock_guard< std::mutex > locker( holder_mutex_ );
 
     for ( const std::string & character : characters ) {
-      const Character *&character_object = GetValueElseInsert(
-                                             character_holder_,
-                                             character,
-                                             nullptr );
+      std::unique_ptr< Character > &character_object = GetValueElseInsert(
+                                                         character_holder_,
+                                                         character,
+                                                         nullptr );
 
       if ( !character_object )
-        character_object = new Character( character );
+        character_object.reset( new Character( character ) );
 
-      character_objects.push_back( character_object );
+      character_objects.push_back( character_object.get() );
     }
   }
 
@@ -70,17 +70,7 @@ std::vector< const Character * > CharacterRepository::GetCharacters(
 
 
 void CharacterRepository::ClearCharacters() {
-  for ( const CharacterHolder::value_type & pair : character_holder_ ) {
-    delete pair.second;
-  }
   character_holder_.clear();
-}
-
-
-CharacterRepository::~CharacterRepository() {
-  for ( const CharacterHolder::value_type & pair : character_holder_ ) {
-    delete pair.second;
-  }
 }
 
 
