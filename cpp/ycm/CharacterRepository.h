@@ -18,16 +18,18 @@
 #ifndef CHARACTER_REPOSITORY_H_36TXTS6C
 #define CHARACTER_REPOSITORY_H_36TXTS6C
 
-#include <vector>
+#include "Character.h"
+
+#include <memory>
+#include <mutex>
 #include <string>
 #include <unordered_map>
-#include <mutex>
+#include <vector>
 
 namespace YouCompleteMe {
 
-class Character;
-
-typedef std::unordered_map< std::string, const Character * > CharacterHolder;
+using CharacterHolder = std::unordered_map< std::string,
+                                            std::unique_ptr< Character > >;
 
 
 // This singleton stores already built Character objects for character strings
@@ -51,8 +53,8 @@ public:
   YCM_EXPORT void ClearCharacters();
 
 private:
-  CharacterRepository() {};
-  ~CharacterRepository();
+  CharacterRepository() = default;
+  ~CharacterRepository() = default;
 
   std::mutex holder_mutex_;
 

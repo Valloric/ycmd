@@ -69,15 +69,15 @@ std::vector< const Candidate * > CandidateRepository::GetCandidatesForStrings(
       const std::string &validated_candidate_text =
         ValidatedCandidateText( candidate_text );
 
-      const Candidate *&candidate = GetValueElseInsert(
-                                      candidate_holder_,
-                                      validated_candidate_text,
-                                      NULL );
+      std::unique_ptr< Candidate > &candidate = GetValueElseInsert(
+                                                  candidate_holder_,
+                                                  validated_candidate_text,
+                                                  nullptr );
 
       if ( !candidate )
-        candidate = new Candidate( validated_candidate_text );
+        candidate.reset( new Candidate( validated_candidate_text ) );
 
-      candidates.push_back( candidate );
+      candidates.push_back( candidate.get() );
     }
   }
 
@@ -86,17 +86,7 @@ std::vector< const Candidate * > CandidateRepository::GetCandidatesForStrings(
 
 
 void CandidateRepository::ClearCandidates() {
-  for ( const CandidateHolder::value_type & pair : candidate_holder_ ) {
-    delete pair.second;
-  }
   candidate_holder_.clear();
-}
-
-
-CandidateRepository::~CandidateRepository() {
-  for ( const CandidateHolder::value_type & pair : candidate_holder_ ) {
-    delete pair.second;
-  }
 }
 
 
