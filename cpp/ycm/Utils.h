@@ -63,8 +63,9 @@ template <class Container, class Key>
 typename Container::mapped_type &
 GetValueElseInsert( Container &container,
                     const Key &key,
-                    const typename Container::mapped_type &value ) {
-  return container.insert( typename Container::value_type( key, value ) )
+                    typename Container::mapped_type &&value ) {
+  return container.insert( typename Container::value_type( key,
+                                                           std::move( value ) ) )
          .first->second;
 }
 
