@@ -1,7 +1,6 @@
 # encoding: utf-8
 #
-# Copyright (C) 2013 Google Inc.
-#               2015-2018 ycmd contributors
+# Copyright (C) 2013-2018 ycmd contributors
 #
 # This file is part of ycmd.
 #
