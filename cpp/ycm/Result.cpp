@@ -90,7 +90,7 @@ bool Result::operator< ( const Result &other ) const {
          other.first_char_same_in_query_and_text_ )
       return first_char_same_in_query_and_text_;
 
-    bool equal_wb_ratios = num_wb_matches_ == other.num_wb_matches_;
+    bool equal_wb_matches = num_wb_matches_ == other.num_wb_matches_;
 
     size_t wb_cross_product =
       num_wb_matches_ * other.candidate_->WordBoundaryChars().size();
@@ -101,18 +101,20 @@ bool Result::operator< ( const Result &other ) const {
 
     if ( num_wb_matches_ == query_->Characters().size() ||
          other.num_wb_matches_ == query_->Characters().size() ) {
-      if ( !equal_wb_ratios )
+      if ( !equal_wb_matches )
         return num_wb_matches_ > other.num_wb_matches_;
-      else if ( !equal_wb_utilization )
+
+      if ( !equal_wb_utilization )
         return wb_cross_product > other_wb_cross_product;
     }
 
     if ( query_is_candidate_prefix_ != other.query_is_candidate_prefix_ )
       return query_is_candidate_prefix_;
 
-    if ( !equal_wb_ratios )
+    if ( !equal_wb_matches )
       return num_wb_matches_ > other.num_wb_matches_;
-    else if ( !equal_wb_utilization )
+
+    if ( !equal_wb_utilization )
       return wb_cross_product > other_wb_cross_product;
 
     if ( char_match_index_sum_ != other.char_match_index_sum_ )
