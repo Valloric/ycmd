@@ -81,8 +81,9 @@ private:
   unsigned num_wb_matches_;
 
   // NOTE: we don't use references for the query and the candidate because we
-  // are sorting results through std::partial_sort and this function requires a
-  // move assignments which is not possible with reference members.
+  // are sorting results through std::sort or std::partial_sort and these
+  // functions require move assignments which is not possible with reference
+  // members.
 
   // Points to the candidate.
   const Candidate *candidate_;
