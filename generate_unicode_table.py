@@ -93,8 +93,8 @@ def GenerateUnicodeTable( header_path, characters ):
   contents = UNICODE_TABLE_TEMPLATE.format( unicode_version = unicode_version,
                                             size = size,
                                             characters = characters )
-  #with open( header_path, 'w', newline = '\n', encoding='utf8' ) as header_file:
-  #  header_file.write( contents )
+  with open( header_path, 'w', newline = '\n', encoding='utf8' ) as header_file:
+    header_file.write( contents )
 
 
 def Main():
