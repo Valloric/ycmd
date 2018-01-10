@@ -23,7 +23,6 @@
 #include <string>
 #include <vector>
 #include <bitset>
-#include <iostream>
 
 #define NUM_BYTES 256
 
