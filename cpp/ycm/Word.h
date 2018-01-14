@@ -48,6 +48,10 @@ public:
     return text_;
   }
 
+  inline size_t Length() const {
+    return characters_.size();
+  }
+
   // Returns true if the word contains the bytes from another word (it may also
   // contain other bytes).
   inline bool ContainsBytes( const Word &other ) const {
