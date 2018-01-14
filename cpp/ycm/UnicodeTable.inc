@@ -1,7 +1,7 @@
 // This file was automatically generated with the generate_unicode_table.py
 // script using version 9.0.0 of the Unicode Character Database.
 
-static const std::array< RawCharacter, 62864 > characters = { {
+static const std::array< const RawCharacter, 62864 > characters = { {
   { "!", "!", "!", 0, 1, 0 },
   { "\"", "\"", "\"", 0, 1, 0 },
   { "#", "#", "#", 0, 1, 0 },
