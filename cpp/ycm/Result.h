@@ -40,8 +40,8 @@ public:
     return candidate_->Text();
   }
 
-  inline const std::vector< const Character * > &Characters() const {
-    return candidate_->Characters();
+  inline size_t NumWordBoundaryChars() const {
+    return candidate_->WordBoundaryChars().size();
   }
 
   inline bool IsSubsequence() const {
