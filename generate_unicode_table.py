@@ -29,6 +29,8 @@ import unicodedata
 
 DIR_OF_THIS_SCRIPT = os.path.dirname( os.path.abspath( __file__ ) )
 DIR_OF_CPP_SOURCES = os.path.join( DIR_OF_THIS_SCRIPT, 'cpp', 'ycm' )
+# See https://docs.python.org/3.6/library/functions.html#chr
+MAX_UNICODE_VALUE = 1114111
 UNICODE_TABLE_TEMPLATE = (
 """// This file was automatically generated with the generate_unicode_table.py
 // script using version {unicode_version} of the Unicode Character Database.
@@ -39,10 +41,8 @@ static const std::array< const RawCharacter, {size} > characters = {{ {{
 
 
 def GetCharacters():
-  # Valid range for chr. See
-  # https://docs.python.org/3.6/library/functions.html#chr
   characters = []
-  for i in range( 114112 ):
+  for i in range( MAX_UNICODE_VALUE + 1 ):
     character = chr( i )
     lower_character = character.lower()
     upper_character = character.upper()
@@ -71,12 +71,6 @@ def CppBool( statement ):
   if statement:
     return '1'
   return '0'
-
-
-def GenerateRandomHeaderHash():
-  return ''.join(
-    [ random.choice( string.ascii_uppercase + string.digits )
-      for i in range( 8 ) ] )
 
 
 def GenerateUnicodeTable( header_path, characters ):

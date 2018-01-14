@@ -31,7 +31,7 @@ namespace {
 
 // We set a reasonable max limit to prevent issues with huge candidate strings
 // entering the database. Such large candidates are almost never desirable.
-const unsigned MAX_CANDIDATE_SIZE = 80;
+const size_t MAX_CANDIDATE_SIZE = 80;
 
 }  // unnamed namespace
 
@@ -53,7 +53,7 @@ CandidateRepository &CandidateRepository::Instance() {
 }
 
 
-unsigned CandidateRepository::NumStoredCandidates() {
+size_t CandidateRepository::NumStoredCandidates() {
   std::lock_guard< std::mutex > locker( holder_mutex_ );
   return candidate_holder_.size();
 }

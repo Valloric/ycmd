@@ -69,8 +69,8 @@ TEST( CharacterTest, LetterCharacter ) {
     Property( &Character::IsPunctuation, false ),
     Property( &Character::IsUppercase,   true ) ) );
 
-  EXPECT_TRUE( Character( "r" ).CaseInsensitivilyEquals( Character( "R" ) ) );
-  EXPECT_TRUE( Character( "R" ).CaseInsensitivilyEquals( Character( "r" ) ) );
+  EXPECT_TRUE( Character( "r" ).EqualsIgnoreCase( Character( "R" ) ) );
+  EXPECT_TRUE( Character( "R" ).EqualsIgnoreCase( Character( "r" ) ) );
 
   // NOTE: there are no Unicode letters coded with one byte (i.e. ASCII letters)
   // without a lowercase or uppercase version.
@@ -95,8 +95,8 @@ TEST( CharacterTest, LetterCharacter ) {
     Property( &Character::IsPunctuation, false ),
     Property( &Character::IsUppercase,   true ) ) );
 
-  EXPECT_TRUE( Character( "é" ).CaseInsensitivilyEquals( Character( "É" ) ) );
-  EXPECT_TRUE( Character( "É" ).CaseInsensitivilyEquals( Character( "é" ) ) );
+  EXPECT_TRUE( Character( "é" ).EqualsIgnoreCase( Character( "É" ) ) );
+  EXPECT_TRUE( Character( "É" ).EqualsIgnoreCase( Character( "é" ) ) );
 
   // No case
   EXPECT_THAT( Character( "ĸ" ), AllOf(
@@ -130,10 +130,10 @@ TEST( CharacterTest, LetterCharacter ) {
     Property( &Character::IsPunctuation, false ),
     Property( &Character::IsUppercase,   true ) ) );
 
-  EXPECT_TRUE( Character( "ⱥ" ).CaseInsensitivilyEquals( Character( "Ⱥ" ) ) );
-  EXPECT_TRUE( Character( "Ⱥ" ).CaseInsensitivilyEquals( Character( "ⱥ" ) ) );
-  EXPECT_TRUE( Character( "Ɐ" ).CaseInsensitivilyEquals( Character( "ɐ" ) ) );
-  EXPECT_TRUE( Character( "ɐ" ).CaseInsensitivilyEquals( Character( "Ɐ" ) ) );
+  EXPECT_TRUE( Character( "ⱥ" ).EqualsIgnoreCase( Character( "Ⱥ" ) ) );
+  EXPECT_TRUE( Character( "Ⱥ" ).EqualsIgnoreCase( Character( "ⱥ" ) ) );
+  EXPECT_TRUE( Character( "Ɐ" ).EqualsIgnoreCase( Character( "ɐ" ) ) );
+  EXPECT_TRUE( Character( "ɐ" ).EqualsIgnoreCase( Character( "Ɐ" ) ) );
 
   // No case
   EXPECT_THAT( Character( "の" ), AllOf(
@@ -170,8 +170,8 @@ TEST( CharacterTest, LetterCharacter ) {
     Property( &Character::IsPunctuation, false ),
     Property( &Character::IsUppercase,   true ) ) );
 
-  EXPECT_TRUE( Character( "𐐫" ).CaseInsensitivilyEquals( Character( "𐐃" ) ) );
-  EXPECT_TRUE( Character( "𐐃" ).CaseInsensitivilyEquals( Character( "𐐫" ) ) );
+  EXPECT_TRUE( Character( "𐐫" ).EqualsIgnoreCase( Character( "𐐃" ) ) );
+  EXPECT_TRUE( Character( "𐐃" ).EqualsIgnoreCase( Character( "𐐫" ) ) );
 
   // No case
   EXPECT_THAT( Character( "𐰬" ), AllOf(

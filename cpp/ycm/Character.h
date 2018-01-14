@@ -18,13 +18,19 @@
 #ifndef CHARACTER_H_YTIET2HZ
 #define CHARACTER_H_YTIET2HZ
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
 namespace YouCompleteMe {
 
-typedef std::vector< unsigned char > ByteSequence;
+using ByteSequence = std::vector< uint8_t >;
 
+// This class represents an abstract character. It takes a UTF-8 encoded string
+// corresponding to a character, converts it to a sequence of bytes and compute
+// the lowercase and uppercase versions of that sequence using a Unicode table.
+// It also holds some properties like if the character is a letter or a
+// punctuation, and if it is uppercase.
 class Character {
 public:
   YCM_EXPORT Character( const std::string &character );
@@ -60,7 +66,7 @@ public:
     return original_ == other.original_;
   };
 
-  inline bool CaseInsensitivilyEquals( const Character &other ) const {
+  inline bool EqualsIgnoreCase( const Character &other ) const {
     return uppercase_ == other.uppercase_;
   };
 

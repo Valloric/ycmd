@@ -44,7 +44,7 @@ public:
   CharacterRepository( const CharacterRepository& ) = delete;
   CharacterRepository& operator=( const CharacterRepository& ) = delete;
 
-  YCM_EXPORT unsigned NumStoredCharacters();
+  YCM_EXPORT size_t NumStoredCharacters();
 
   YCM_EXPORT std::vector< const Character * > GetCharacters(
     const std::vector< std::string > &characters );

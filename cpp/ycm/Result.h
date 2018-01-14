@@ -31,7 +31,7 @@ public:
 
   Result( const Candidate *candidate,
           const Word *query,
-          unsigned char_match_index_sum,
+          size_t char_match_index_sum,
           bool query_is_candidate_prefix_ );
 
   bool operator< ( const Result &other ) const;
@@ -68,7 +68,7 @@ private:
   // text. For instance, the result for the query "abc" in the candidate
   // "012a45bc8" has char_match_index_sum of 3 + 6 + 7 = 16 because those are
   // the char indexes of those letters in the candidate string.
-  unsigned char_match_index_sum_;
+  size_t char_match_index_sum_;
 
   // The number of characters in the query that match word boundary characters
   // in the candidate. Characters must match in the same order of appearance
@@ -78,7 +78,7 @@ private:
   //  - this is the first character and not a punctuation;
   //  - the character is uppercase but not the previous one;
   //  - the character is a letter and the previous one is a punctuation.
-  unsigned num_wb_matches_;
+  size_t num_wb_matches_;
 
   // NOTE: we don't use references for the query and the candidate because we
   // are sorting results through std::sort or std::partial_sort and these
