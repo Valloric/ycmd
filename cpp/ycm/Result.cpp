@@ -22,22 +22,22 @@ namespace YouCompleteMe {
 
 namespace {
 
-unsigned LongestCommonSubsequenceLength(
+size_t LongestCommonSubsequenceLength(
   const std::vector< const Character * > &first,
   const std::vector< const Character * > &second ) {
 
-  const auto &longer = first.size() > second.size() ? first  : second;
+  const auto &longer  = first.size() > second.size() ? first  : second;
   const auto &shorter = first.size() > second.size() ? second : first;
 
   size_t longer_len  = longer.size();
   size_t shorter_len = shorter.size();
 
-  std::vector< unsigned > previous( shorter_len + 1, 0 );
-  std::vector< unsigned > current(  shorter_len + 1, 0 );
+  std::vector< size_t > previous( shorter_len + 1, 0 );
+  std::vector< size_t > current(  shorter_len + 1, 0 );
 
   for ( size_t i = 0; i < longer_len; ++i ) {
     for ( size_t j = 0; j < shorter_len; ++j ) {
-      if ( longer[ i ]->CaseInsensitivilyEquals( *shorter[ j ] ) )
+      if ( longer[ i ]->EqualsIgnoreCase( *shorter[ j ] ) )
         current[ j + 1 ] = previous[ j ] + 1;
       else
         current[ j + 1 ] = std::max( current[ j ], previous[ j + 1 ] );
@@ -66,7 +66,7 @@ Result::Result()
 
 Result::Result( const Candidate *candidate,
                 const Word *query,
-                unsigned char_match_index_sum,
+                size_t char_match_index_sum,
                 bool query_is_candidate_prefix )
   : is_subsequence_( true ),
     first_char_same_in_query_and_text_( false ),
@@ -145,7 +145,7 @@ void Result::SetResultFeaturesFromQuery() {
     return;
 
   first_char_same_in_query_and_text_ =
-    candidate_->Characters()[ 0 ]->CaseInsensitivilyEquals(
+    candidate_->Characters()[ 0 ]->EqualsIgnoreCase(
       *query_->Characters()[ 0 ] );
 
   num_wb_matches_ = LongestCommonSubsequenceLength(

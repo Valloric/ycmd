@@ -40,10 +40,10 @@ const RawCharacter FindCharacter( const char *text ) {
   // character.
   auto first = characters.begin();
   auto last = characters.end();
-  unsigned count = characters.size();
+  size_t count = characters.size();
 
   for ( auto it = first; count > 0; ) {
-    unsigned step = count / 2;
+    size_t step = count / 2;
     it = first + step;
     int cmp = std::strcmp( it->original, text );
     if ( cmp == 0 )

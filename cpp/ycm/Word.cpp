@@ -23,7 +23,7 @@ namespace YouCompleteMe {
 
 namespace {
 
-unsigned GetCodePointWidth( unsigned char leading_byte ) {
+unsigned GetCodePointWidth( uint8_t leading_byte ) {
   // 0xxxxxxx
   if ( ( leading_byte & 0x80 ) == 0x00 )
     return 1;
@@ -64,7 +64,7 @@ void Word::ComputeCharacters() {
 
 void Word::ComputeBytesPresent() {
   for ( const Character *character : characters_ ) {
-    for ( unsigned char byte : character->Uppercase() ) {
+    for ( uint8_t byte : character->Uppercase() ) {
       bytes_present_.set( byte );
     }
   }
