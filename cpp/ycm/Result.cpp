@@ -37,7 +37,7 @@ unsigned LongestCommonSubsequenceLength(
 
   for ( size_t i = 0; i < longer_len; ++i ) {
     for ( size_t j = 0; j < shorter_len; ++j ) {
-      if ( longer[ i ]->CaseInsensitivilyEquals( *shorter[ j ] ) )
+      if ( longer[ i ]->EqualsIgnoreCase( *shorter[ j ] ) )
         current[ j + 1 ] = previous[ j ] + 1;
       else
         current[ j + 1 ] = std::max( current[ j ], previous[ j + 1 ] );
@@ -145,7 +145,7 @@ void Result::SetResultFeaturesFromQuery() {
     return;
 
   first_char_same_in_query_and_text_ =
-    candidate_->Characters()[ 0 ]->CaseInsensitivilyEquals(
+    candidate_->Characters()[ 0 ]->EqualsIgnoreCase(
       *query_->Characters()[ 0 ] );
 
   num_wb_matches_ = LongestCommonSubsequenceLength(
