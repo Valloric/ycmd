@@ -23,10 +23,10 @@ namespace YouCompleteMe {
 void Candidate::ComputeCaseSwappedText() {
   for ( const Character *character : Characters() ) {
     if ( character->IsUppercase() ) {
-      for ( unsigned char byte : character->Lowercase() )
+      for ( uint8_t byte : character->Lowercase() )
         case_swapped_text_.push_back( byte );
     } else {
-      for ( unsigned char byte : character->Uppercase() )
+      for ( uint8_t byte : character->Uppercase() )
         case_swapped_text_.push_back( byte );
     }
   }
@@ -76,12 +76,24 @@ Candidate::Candidate( const std::string &text )
 
 
 Result Candidate::QueryMatchResult( const Word &query ) const {
-  if ( query.IsEmpty() )
+  // Check if the query is a subsequence of the candidate and return a result
+  // accordingly. This is done by simultaneously going through the characters of
+  // the query and the candidate. If both characters match, we move to the next
+  // character in the query and the candidate. Otherwise, we only move to the
+  // next character in the candidate. The matching is case-insensitive if the
+  // character of the query is lowercase. If there is no character left in the
+  // query, the query is not a subsequence and we return an empty result. If
+  // there is no character left in the candidate, the query is a subsequence and
+  // we return a result with the query, the candidate, the sum of indexes of the
+  // candidate where characters matched, and a boolean that is true if the query
+  // is a prefix of the candidate.
+
+  if ( query.IsEmpty() || Length() < query.Length() )
     return Result( this, &query, 0, false );
 
-  unsigned query_index = 0;
-  unsigned candidate_index = 0;
-  unsigned index_sum = 0;
+  size_t query_index = 0;
+  size_t candidate_index = 0;
+  size_t index_sum = 0;
 
   const std::vector< const Character * > &query_characters = query.Characters();
   const std::vector< const Character * > &candidate_characters = Characters();
@@ -96,11 +108,12 @@ Result Candidate::QueryMatchResult( const Word &query ) const {
     auto query_character = *query_character_pos;
 
     if ( ( !query_character->IsUppercase() &&
-           query_character->CaseInsensitivilyEquals( *candidate_character ) ) ||
+           query_character->EqualsIgnoreCase( *candidate_character ) ) ||
          *query_character == *candidate_character ) {
       index_sum += candidate_index;
 
-      if ( ++query_character_pos == query_characters.end() )
+      ++query_character_pos;
+      if ( query_character_pos == query_characters.end() )
         return Result( this,
                        &query,
                        index_sum,

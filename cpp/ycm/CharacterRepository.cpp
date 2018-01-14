@@ -40,7 +40,7 @@ CharacterRepository &CharacterRepository::Instance() {
 }
 
 
-unsigned CharacterRepository::NumStoredCharacters() {
+size_t CharacterRepository::NumStoredCharacters() {
   std::lock_guard< std::mutex > locker( holder_mutex_ );
   return character_holder_.size();
 }

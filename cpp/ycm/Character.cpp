@@ -25,7 +25,7 @@ namespace {
 ByteSequence ConvertStringToByteSequence( const std::string &character ) {
   ByteSequence byte_sequence;
 
-  for ( unsigned char byte : character )
+  for ( uint8_t byte : character )
     byte_sequence.push_back( byte );
 
   return byte_sequence;
