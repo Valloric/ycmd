@@ -27,6 +27,8 @@ std::mutex CharacterRepository::singleton_mutex_;
 CharacterRepository *CharacterRepository::instance_ = NULL;
 
 CharacterRepository &CharacterRepository::Instance() {
+  // This lock is required as magic statics are not thread-safe on MSVC 12.
+  // See https://msdn.microsoft.com/en-us/library/hh567368#concurrencytable
   std::lock_guard< std::mutex > locker( singleton_mutex_ );
 
   if ( !instance_ ) {
