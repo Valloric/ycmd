@@ -84,42 +84,51 @@ bool Result::operator< ( const Result &other ) const {
   // made, and no more.
 
   if ( !query_->IsEmpty() ) {
+    // This is the core of the ranking system. A result has more weight than
+    // another if one of these conditions is satisfied, in that order:
+    //  - it starts with the same character as the query while the other does
+    //    not;
+    //  - one of the results has all its word boundary characters matched and
+    //    it has more word boundary characters matched than the other;
+    //  - both results have all their word boundary characters matched and it
+    //    has less word boundary characters than the other;
+    //  - the query is a prefix of the result but not a prefix of the other;
+    //  - it has more word boundary characters matched than the other;
+    //  - it has less word boundary characters than the other;
+    //  - its sum of indexes of its matched characters is less than the sum of
+    //    indexes of the other result;
+    //  - it has less characters than the other result;
+    //  - all its characters are in lowercase while the other has at least one
+    //    uppercase character;
+    //  - it appears before the other result in lexicographic order.
+
     if ( first_char_same_in_query_and_text_ !=
          other.first_char_same_in_query_and_text_ )
       return first_char_same_in_query_and_text_;
 
-    bool equal_wb_matches = num_wb_matches_ == other.num_wb_matches_;
-
-    size_t wb_cross_product =
-      num_wb_matches_ * other.candidate_->WordBoundaryChars().size();
-    size_t other_wb_cross_product =
-      other.num_wb_matches_ * candidate_->WordBoundaryChars().size();
-
-    bool equal_wb_utilization = wb_cross_product == other_wb_cross_product;
-
-    if ( num_wb_matches_ == query_->Characters().size() ||
-         other.num_wb_matches_ == query_->Characters().size() ) {
-      if ( !equal_wb_matches )
+    if ( num_wb_matches_ == query_->Length() ||
+         other.num_wb_matches_ == query_->Length() ) {
+      if ( num_wb_matches_ != other.num_wb_matches_ )
         return num_wb_matches_ > other.num_wb_matches_;
 
-      if ( !equal_wb_utilization )
-        return wb_cross_product > other_wb_cross_product;
+      if ( NumWordBoundaryChars() != other.NumWordBoundaryChars() )
+        return NumWordBoundaryChars() < other.NumWordBoundaryChars();
     }
 
     if ( query_is_candidate_prefix_ != other.query_is_candidate_prefix_ )
       return query_is_candidate_prefix_;
 
-    if ( !equal_wb_matches )
+    if ( num_wb_matches_ != other.num_wb_matches_ )
       return num_wb_matches_ > other.num_wb_matches_;
 
-    if ( !equal_wb_utilization )
-      return wb_cross_product > other_wb_cross_product;
+    if ( NumWordBoundaryChars() != other.NumWordBoundaryChars() )
+      return NumWordBoundaryChars() < other.NumWordBoundaryChars();
 
     if ( char_match_index_sum_ != other.char_match_index_sum_ )
       return char_match_index_sum_ < other.char_match_index_sum_;
 
-    if ( Characters().size() != other.Characters().size() )
-      return Characters().size() < other.Characters().size();
+    if ( candidate_->Length() != other.candidate_->Length() )
+      return candidate_->Length() < other.candidate_->Length();
 
     if ( candidate_->TextIsLowercase() != other.candidate_->TextIsLowercase() )
       return candidate_->TextIsLowercase();
@@ -136,7 +145,8 @@ void Result::SetResultFeaturesFromQuery() {
     return;
 
   first_char_same_in_query_and_text_ =
-    Characters()[ 0 ]->CaseInsensitivilyEquals( *query_->Characters()[ 0 ] );
+    candidate_->Characters()[ 0 ]->CaseInsensitivilyEquals(
+      *query_->Characters()[ 0 ] );
 
   num_wb_matches_ = LongestCommonSubsequenceLength(
     query_->Characters(), candidate_->WordBoundaryChars() );
