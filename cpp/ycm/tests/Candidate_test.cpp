@@ -23,6 +23,7 @@
 #include <iostream>
 
 using ::testing::ContainerEq;
+using ::testing::Not;
 
 namespace YouCompleteMe {
 
@@ -32,172 +33,167 @@ void WordBoundaryCharsTest( const std::string &candidate,
                ContainerEq( Word( boundary_chars ).Characters() ) );
 }
 
+MATCHER_P( HasWordBoundaryCharacters,
+           boundary_chars,
+           std::string( negation ? "has not" : "has" ) +
+           " word boundary characters " + boundary_chars ) {
+  return Candidate( arg ).WordBoundaryChars() ==
+         Word( boundary_chars ).Characters();
+}
+
 TEST( WordBoundaryCharsTest, SimpleOneWord ) {
-  WordBoundaryCharsTest( "simple", "s" );
+  EXPECT_THAT( "simple", HasWordBoundaryCharacters( "s" ) );
 }
 
 TEST( WordBoundaryCharsTest, PunctuationInMiddle ) {
-  WordBoundaryCharsTest( "simple_foo", "sf" );
+  EXPECT_THAT( "simple_foo", HasWordBoundaryCharacters( "sf" ) );
 }
 
 TEST( WordBoundaryCharsTest, PunctuationStart ) {
-  WordBoundaryCharsTest( "_simple", "s" );
-  WordBoundaryCharsTest( ".simple", "s" );
-  WordBoundaryCharsTest( "/simple", "s" );
-  WordBoundaryCharsTest( ":simple", "s" );
-  WordBoundaryCharsTest( "-simple", "s" );
-  WordBoundaryCharsTest( "«simple", "s" );
-  WordBoundaryCharsTest( "…simple", "s" );
-  WordBoundaryCharsTest( "𐬺simple", "s" );
+  EXPECT_THAT( "_simple", HasWordBoundaryCharacters( "s" ) );
+  EXPECT_THAT( ".simple", HasWordBoundaryCharacters( "s" ) );
+  EXPECT_THAT( "/simple", HasWordBoundaryCharacters( "s" ) );
+  EXPECT_THAT( ":simple", HasWordBoundaryCharacters( "s" ) );
+  EXPECT_THAT( "-simple", HasWordBoundaryCharacters( "s" ) );
+  EXPECT_THAT( "«simple", HasWordBoundaryCharacters( "s" ) );
+  EXPECT_THAT( "…simple", HasWordBoundaryCharacters( "s" ) );
+  EXPECT_THAT( "𐬺simple", HasWordBoundaryCharacters( "s" ) );
 }
 
 TEST( WordBoundaryCharsTest, PunctuationStartButFirstDigit ) {
-  WordBoundaryCharsTest( "_1simple", "" );
-  WordBoundaryCharsTest( "_1simPle", "P" );
-  WordBoundaryCharsTest( "…𝟝simple", "" );
-  WordBoundaryCharsTest( "…𝟝simPle", "P" );
+  EXPECT_THAT( "_1simple", HasWordBoundaryCharacters( ""  ) );
+  EXPECT_THAT( "_1simPle", HasWordBoundaryCharacters( "P" ) );
+  EXPECT_THAT( "…𝟝simple", HasWordBoundaryCharacters( ""  ) );
+  EXPECT_THAT( "…𝟝simPle", HasWordBoundaryCharacters( "P" ) );
 }
 
 TEST( WordBoundaryCharsTest, ManyPunctuationStart ) {
-  WordBoundaryCharsTest( "___simple", "s" );
-  WordBoundaryCharsTest( ".;/simple", "s" );
-  WordBoundaryCharsTest( "«…𐬺simple", "s" );
+  EXPECT_THAT( "___simple", HasWordBoundaryCharacters( "s" ) );
+  EXPECT_THAT( ".;/simple", HasWordBoundaryCharacters( "s" ) );
+  EXPECT_THAT( "«…𐬺simple", HasWordBoundaryCharacters( "s" ) );
 }
 
 TEST( WordBoundaryCharsTest, PunctuationStartAndInMiddle ) {
-  WordBoundaryCharsTest( "_simple_foo", "sf" );
-  WordBoundaryCharsTest( "/simple.foo", "sf" );
-  WordBoundaryCharsTest( "𐬺simple—foo", "sf" );
+  EXPECT_THAT( "_simple_foo", HasWordBoundaryCharacters( "sf" ) );
+  EXPECT_THAT( "/simple.foo", HasWordBoundaryCharacters( "sf" ) );
+  EXPECT_THAT( "𐬺simple—foo", HasWordBoundaryCharacters( "sf" ) );
 }
 
 TEST( WordBoundaryCharsTest, ManyPunctuationStartAndInMiddle ) {
-  WordBoundaryCharsTest( "___simple__foo", "sf" );
-  WordBoundaryCharsTest( "./;:simple..foo", "sf" );
-  WordBoundaryCharsTest( "«𐬺…simple——foo", "sf" );
+  EXPECT_THAT( "___simple__foo",  HasWordBoundaryCharacters( "sf" ) );
+  EXPECT_THAT( "./;:simple..foo", HasWordBoundaryCharacters( "sf" ) );
+  EXPECT_THAT( "«𐬺…simple——foo",  HasWordBoundaryCharacters( "sf" ) );
 }
 
 TEST( WordBoundaryCharsTest, SimpleCapitalStart ) {
-  WordBoundaryCharsTest( "Simple", "S" );
-  WordBoundaryCharsTest( "Σimple", "Σ" );
+  EXPECT_THAT( "Simple", HasWordBoundaryCharacters( "S" ) );
+  EXPECT_THAT( "Σimple", HasWordBoundaryCharacters( "Σ" ) );
 }
 
 TEST( WordBoundaryCharsTest, SimpleCapitalTwoWord ) {
-  WordBoundaryCharsTest( "SimpleStuff", "SS" );
-  WordBoundaryCharsTest( "ΣimpleΣtuff", "ΣΣ" );
+  EXPECT_THAT( "SimpleStuff", HasWordBoundaryCharacters( "SS" ) );
+  EXPECT_THAT( "ΣimpleΣtuff", HasWordBoundaryCharacters( "ΣΣ" ) );
 }
 
 TEST( WordBoundaryCharsTest, SimpleCapitalTwoWordPunctuationMiddle ) {
-  WordBoundaryCharsTest( "Simple_Stuff", "SS" );
-  WordBoundaryCharsTest( "Σimple…Σtuff", "ΣΣ" );
+  EXPECT_THAT( "Simple_Stuff", HasWordBoundaryCharacters( "SS" ) );
+  EXPECT_THAT( "Σimple…Σtuff", HasWordBoundaryCharacters( "ΣΣ" ) );
 }
 
 TEST( WordBoundaryCharsTest, JavaCase ) {
-  WordBoundaryCharsTest( "simpleStuffFoo", "sSF" );
-  WordBoundaryCharsTest( "σimpleΣtuffΦoo", "σΣΦ" );
+  EXPECT_THAT( "simpleStuffFoo", HasWordBoundaryCharacters( "sSF" ) );
+  EXPECT_THAT( "σimpleΣtuffΦoo", HasWordBoundaryCharacters( "σΣΦ" ) );
 }
 
 TEST( WordBoundaryCharsTest, UppercaseSequence ) {
-  WordBoundaryCharsTest( "simpleSTUFF", "sS" );
-  WordBoundaryCharsTest( "σimpleΣTUFF", "σΣ" );
+  EXPECT_THAT( "simpleSTUFF", HasWordBoundaryCharacters( "sS" ) );
+  EXPECT_THAT( "σimpleΣTUFF", HasWordBoundaryCharacters( "σΣ" ) );
 }
 
 TEST( WordBoundaryCharsTest, UppercaseSequenceInMiddle ) {
-  WordBoundaryCharsTest( "simpleSTUFFfoo", "sS" );
-  WordBoundaryCharsTest( "σimpleΣTUFFφoo", "σΣ" );
+  EXPECT_THAT( "simpleSTUFFfoo", HasWordBoundaryCharacters( "sS" ) );
+  EXPECT_THAT( "σimpleΣTUFFφoo", HasWordBoundaryCharacters( "σΣ" ) );
 }
 
 TEST( WordBoundaryCharsTest, UppercaseSequenceInMiddlePunctuation ) {
-  WordBoundaryCharsTest( "simpleSTUFF_Foo", "sSF" );
-  WordBoundaryCharsTest( "σimpleΣTUFF…Φoo", "σΣΦ" );
+  EXPECT_THAT( "simpleSTUFF_Foo", HasWordBoundaryCharacters( "sSF" ) );
+  EXPECT_THAT( "σimpleΣTUFF…Φoo", HasWordBoundaryCharacters( "σΣΦ" ) );
 }
 
 TEST( WordBoundaryCharsTest, UppercaseSequenceInMiddlePunctuationLowercase ) {
-  WordBoundaryCharsTest( "simpleSTUFF_foo", "sSf" );
-  WordBoundaryCharsTest( "simpleSTUFF.foo", "sSf" );
-  WordBoundaryCharsTest( "σimpleΣTUFF…φoo", "σΣφ" );
+  EXPECT_THAT( "simpleSTUFF_foo", HasWordBoundaryCharacters( "sSf" ) );
+  EXPECT_THAT( "simpleSTUFF.foo", HasWordBoundaryCharacters( "sSf" ) );
+  EXPECT_THAT( "σimpleΣTUFF…φoo", HasWordBoundaryCharacters( "σΣφ" ) );
 }
 
 TEST( WordBoundaryCharsTest, AllCapsSimple ) {
-  WordBoundaryCharsTest( "SIMPLE", "S" );
-  WordBoundaryCharsTest( "ΣIMPLE", "Σ" );
+  EXPECT_THAT( "SIMPLE", HasWordBoundaryCharacters( "S" ) );
+  EXPECT_THAT( "ΣIMPLE", HasWordBoundaryCharacters( "Σ" ) );
 }
 
 TEST( GetWordBoundaryCharsTest, AllCapsPunctuationStart ) {
-  WordBoundaryCharsTest( "_SIMPLE", "S" );
-  WordBoundaryCharsTest( ".SIMPLE", "S" );
-  WordBoundaryCharsTest( "«ΣIMPLE", "Σ" );
-  WordBoundaryCharsTest( "…ΣIMPLE", "Σ" );
+  EXPECT_THAT( "_SIMPLE", HasWordBoundaryCharacters( "S" ) );
+  EXPECT_THAT( ".SIMPLE", HasWordBoundaryCharacters( "S" ) );
+  EXPECT_THAT( "«ΣIMPLE", HasWordBoundaryCharacters( "Σ" ) );
+  EXPECT_THAT( "…ΣIMPLE", HasWordBoundaryCharacters( "Σ" ) );
 }
 
 TEST( WordBoundaryCharsTest, AllCapsPunctuationMiddle ) {
-  WordBoundaryCharsTest( "SIMPLE_STUFF", "SS" );
-  WordBoundaryCharsTest( "SIMPLE/STUFF", "SS" );
-  WordBoundaryCharsTest( "SIMPLE—ΣTUFF", "SΣ" );
-  WordBoundaryCharsTest( "ΣIMPLE…STUFF", "ΣS" );
+  EXPECT_THAT( "SIMPLE_STUFF", HasWordBoundaryCharacters( "SS" ) );
+  EXPECT_THAT( "SIMPLE/STUFF", HasWordBoundaryCharacters( "SS" ) );
+  EXPECT_THAT( "SIMPLE—ΣTUFF", HasWordBoundaryCharacters( "SΣ" ) );
+  EXPECT_THAT( "ΣIMPLE…STUFF", HasWordBoundaryCharacters( "ΣS" ) );
 }
 
 TEST( WordBoundaryCharsTest, AllCapsPunctuationMiddleAndStart ) {
-  WordBoundaryCharsTest( "_SIMPLE_STUFF", "SS" );
-  WordBoundaryCharsTest( ":SIMPLE.STUFF", "SS" );
-  WordBoundaryCharsTest( "«ΣIMPLE—ΣTUFF", "ΣΣ" );
-  WordBoundaryCharsTest( "𐬺SIMPLE—ΣTUFF", "SΣ" );
+  EXPECT_THAT( "_SIMPLE_STUFF", HasWordBoundaryCharacters( "SS" ) );
+  EXPECT_THAT( ":SIMPLE.STUFF", HasWordBoundaryCharacters( "SS" ) );
+  EXPECT_THAT( "«ΣIMPLE—ΣTUFF", HasWordBoundaryCharacters( "ΣΣ" ) );
+  EXPECT_THAT( "𐬺SIMPLE—ΣTUFF", HasWordBoundaryCharacters( "SΣ" ) );
 }
 
 TEST( CandidateTest, TextValid ) {
-  std::string text = "foo";
-  Candidate candidate( text );
-
-  EXPECT_EQ( text, candidate.Text() );
+  EXPECT_EQ( "foo", Candidate( "foo" ).Text() );
 }
 
-TEST( CandidateTest, QueryMatchResultCaseSensitiveIsSubsequence ) {
-  std::string candidate = "F𐍈oβaＡAr";
-  std::vector< std::string > queries = {
-    "F𐍈oβaＡAr",
-    "FβＡA",
-    "F",
-    "ＡA",
-    "A",
-    "β",
-    "f𐍈oβaａar",
-    "f𐍈oβaＡAr",
-    "fβＡA",
-    "fβaa",
-    "β",
-    "f",
-    "fβａr"
-  };
-
-  for ( const std::string &query : queries ) {
-    Result result = Candidate( candidate ).QueryMatchResult( Word( query ) );
-    EXPECT_TRUE( result.IsSubsequence() )
-      << query << " is expected to be a subsequence of " << candidate;
-  }
+MATCHER_P( IsSubsequence,
+           candidate,
+           std::string( negation ? "is not" : "is" ) + " a subsequence of " +
+           candidate ) {
+  Result result = Candidate( candidate ).QueryMatchResult( Word( arg ) );
+  return result.IsSubsequence();
 }
 
-TEST( CandidateTest, QueryMatchResultCaseSensitiveIsntSubsequence ) {
-  std::string candidate = "F𐍈oβaＡAr";
-  std::vector< std::string > queries = {
-    "g𐍈o",
-    "R",
-    "O",
-    "𐍈O",
-    "OβA",
-    "FβAR",
-    "FβＡAR",
-    "Oar",
-    "F𐍈oβaＡＡr",
-    "F𐍈OβaＡAr",
-    "F𐍈Oβaａar",
-    "f𐍈Oβaａar",
-    "f𐍈oβaａaR"
-  };
+TEST( CandidateTest, QueryMatchResultIsSubsequence ) {
+  EXPECT_THAT( "F𐍈oβaＡAr", IsSubsequence( "F𐍈oβaＡAr" ) );
+  EXPECT_THAT( "FβＡA",     IsSubsequence( "F𐍈oβaＡAr" ) );
+  EXPECT_THAT( "F",         IsSubsequence( "F𐍈oβaＡAr" ) );
+  EXPECT_THAT( "ＡA",       IsSubsequence( "F𐍈oβaＡAr" ) );
+  EXPECT_THAT( "A",         IsSubsequence( "F𐍈oβaＡAr" ) );
+  EXPECT_THAT( "β",         IsSubsequence( "F𐍈oβaＡAr" ) );
+  EXPECT_THAT( "f𐍈oβaａar", IsSubsequence( "F𐍈oβaＡAr" ) );
+  EXPECT_THAT( "f𐍈oβaＡAr", IsSubsequence( "F𐍈oβaＡAr" ) );
+  EXPECT_THAT( "fβＡA",     IsSubsequence( "F𐍈oβaＡAr" ) );
+  EXPECT_THAT( "fβaa",      IsSubsequence( "F𐍈oβaＡAr" ) );
+  EXPECT_THAT( "β",         IsSubsequence( "F𐍈oβaＡAr" ) );
+  EXPECT_THAT( "f",         IsSubsequence( "F𐍈oβaＡAr" ) );
+  EXPECT_THAT( "fβａr",     IsSubsequence( "F𐍈oβaＡAr" ) );
+}
 
-  for ( const std::string &query : queries ) {
-    Result result = Candidate( candidate ).QueryMatchResult( Word( query ) );
-    EXPECT_FALSE( result.IsSubsequence() )
-      << query << " is not expected to be a subsequence of " << candidate;
-  }
+TEST( CandidateTest, QueryMatchResultIsNotSubsequence ) {
+  EXPECT_THAT( "g𐍈o",        Not( IsSubsequence( "F𐍈oβaＡAr" ) ) );
+  EXPECT_THAT( "R",          Not( IsSubsequence( "F𐍈oβaＡAr" ) ) );
+  EXPECT_THAT( "O",          Not( IsSubsequence( "F𐍈oβaＡAr" ) ) );
+  EXPECT_THAT( "𐍈O",         Not( IsSubsequence( "F𐍈oβaＡAr" ) ) );
+  EXPECT_THAT( "OβA",        Not( IsSubsequence( "F𐍈oβaＡAr" ) ) );
+  EXPECT_THAT( "FβAR",       Not( IsSubsequence( "F𐍈oβaＡAr" ) ) );
+  EXPECT_THAT( "FβＡAR",     Not( IsSubsequence( "F𐍈oβaＡAr" ) ) );
+  EXPECT_THAT( "Oar",        Not( IsSubsequence( "F𐍈oβaＡAr" ) ) );
+  EXPECT_THAT( "F𐍈oβaＡＡr", Not( IsSubsequence( "F𐍈oβaＡAr" ) ) );
+  EXPECT_THAT( "F𐍈OβaＡAr",  Not( IsSubsequence( "F𐍈oβaＡAr" ) ) );
+  EXPECT_THAT( "F𐍈Oβaａar",  Not( IsSubsequence( "F𐍈oβaＡAr" ) ) );
+  EXPECT_THAT( "f𐍈Oβaａar",  Not( IsSubsequence( "F𐍈oβaＡAr" ) ) );
+  EXPECT_THAT( "f𐍈oβaａaR",  Not( IsSubsequence( "F𐍈oβaＡAr" ) ) );
 }
 
 } // namespace YouCompleteMe

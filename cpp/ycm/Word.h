@@ -28,7 +28,7 @@
 
 namespace YouCompleteMe {
 
-typedef std::bitset< NUM_BYTES > Bitset;
+using Bitset = std::bitset< NUM_BYTES >;
 
 
 class Word {
