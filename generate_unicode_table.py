@@ -33,7 +33,7 @@ UNICODE_TABLE_TEMPLATE = (
 """// This file was automatically generated with the generate_unicode_table.py
 // script using version {unicode_version} of the Unicode Character Database.
 
-static const std::array< RawCharacter, {size} > characters = {{ {{
+static const std::array< const RawCharacter, {size} > characters = {{ {{
 {characters}
 }} }};""" )
 
