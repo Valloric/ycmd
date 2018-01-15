@@ -81,7 +81,7 @@ def OnWindows():
   return platform.system() == 'Windows'
 
 
-def OnTravisOrAppVeyor():
+def OnCiService():
   return 'CI' in os.environ
 
 
@@ -447,7 +447,7 @@ def BuildYcmdLib( args ):
     if args.build_dir:
       print( 'The build files are in: ' + build_dir )
     else:
-      rmtree( build_dir, ignore_errors = OnTravisOrAppVeyor() )
+      rmtree( build_dir, ignore_errors = OnCiService() )
 
 
 def EnableCsCompleter():
@@ -483,7 +483,7 @@ def EnableRustCompleter():
   args = [ 'cargo', 'build' ]
   # We don't use the --release flag on Travis/AppVeyor because it makes building
   # racerd 2.5x slower and we don't care about the speed of the produced racerd.
-  if not OnTravisOrAppVeyor():
+  if not OnCiService():
     args.append( '--release' )
   CheckCall( args )
 
