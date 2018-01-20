@@ -45,7 +45,6 @@ LANGUAGE_SERVER_HOME = os.path.abspath( os.path.join(
   '..',
   'third_party',
   'eclipse.jdt.ls',
-  'org.eclipse.jdt.ls.product',
   'target',
   'repository' ) )
 
@@ -63,7 +62,8 @@ WORKSPACE_ROOT_PATH = os.path.abspath( os.path.join(
   '..',
   '..',
   'third_party',
-  'eclipse.jdt.ls-workspace' ) )
+  'eclipse.jdt.ls',
+  'workspace' ) )
 
 # The authors of jdt.ls say that we should re-use workspaces. They also say that
 # occasionally, the workspace becomes corrupt, and has to be deleted. This is
