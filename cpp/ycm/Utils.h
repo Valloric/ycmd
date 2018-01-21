@@ -28,24 +28,24 @@ namespace fs = boost::filesystem;
 
 namespace YouCompleteMe {
 
-YCM_EXPORT inline bool IsUppercase( unsigned char letter ) {
-  return 'A' <= letter && letter <= 'Z';
+YCM_EXPORT inline bool IsUppercase( uint8_t ascii_character ) {
+  return 'A' <= ascii_character && ascii_character <= 'Z';
 }
 
 
 // An uppercase ASCII character can be converted to lowercase and vice versa by
 // flipping its third most significant bit.
-YCM_EXPORT inline unsigned char Lowercase( unsigned char letter ) {
-  if ( IsUppercase( letter ) )
-    return letter ^ 0x20;
-  return letter;
+YCM_EXPORT inline uint8_t Lowercase( uint8_t ascii_character ) {
+  if ( IsUppercase( ascii_character ) )
+    return ascii_character ^ 0x20;
+  return ascii_character;
 }
 
 
 YCM_EXPORT inline std::string Lowercase( const std::string &text ) {
   std::string result;
-  for ( char letter : text )
-    result.push_back( Lowercase( letter ) );
+  for ( uint8_t ascii_character : text )
+    result.push_back( Lowercase( ascii_character ) );
   return result;
 }
 
