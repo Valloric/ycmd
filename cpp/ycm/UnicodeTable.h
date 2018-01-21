@@ -57,7 +57,7 @@ const RawCharacter FindCharacter( const char *text ) {
 
   if ( first != last && std::strcmp( first->original, text ) == 0 )
     return *first;
-  return { nullptr, nullptr, nullptr, 0, 0, 0 };
+  return { nullptr, nullptr, nullptr, false, false, false };
 }
 
 } // namespace YouCompleteMe

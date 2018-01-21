@@ -22,10 +22,8 @@ namespace YouCompleteMe {
 
 namespace {
 
-size_t LongestCommonSubsequenceLength(
-  const std::vector< const Character * > &first,
-  const std::vector< const Character * > &second ) {
-
+size_t LongestCommonSubsequenceLength( const CharacterSequence &first,
+                                       const CharacterSequence &second ) {
   const auto &longer  = first.size() > second.size() ? first  : second;
   const auto &shorter = first.size() > second.size() ? second : first;
 

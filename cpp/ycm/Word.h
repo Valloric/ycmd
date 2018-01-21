@@ -40,7 +40,7 @@ public:
   Word& operator=( const Word& ) = delete;
   ~Word() = default;
 
-  inline const std::vector< const Character * > &Characters() const {
+  inline const CharacterSequence &Characters() const {
     return characters_;
   }
 
@@ -67,7 +67,7 @@ private:
   void ComputeBytesPresent();
 
   std::string text_;
-  std::vector< const Character * > characters_;
+  CharacterSequence characters_;
   Bitset bytes_present_;
 };
 

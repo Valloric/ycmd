@@ -21,7 +21,7 @@
 namespace YouCompleteMe {
 
 void Candidate::ComputeCaseSwappedText() {
-  for ( const Character *character : Characters() ) {
+  for ( const auto &character : Characters() ) {
     if ( character->IsUppercase() ) {
       for ( uint8_t byte : character->Lowercase() )
         case_swapped_text_.push_back( byte );
@@ -34,7 +34,7 @@ void Candidate::ComputeCaseSwappedText() {
 
 
 void Candidate::ComputeWordBoundaryChars() {
-  const std::vector< const Character * > &characters = Characters();
+  const CharacterSequence &characters = Characters();
 
   auto character = characters.begin();
   if ( character == characters.end() )
@@ -56,7 +56,7 @@ void Candidate::ComputeWordBoundaryChars() {
 
 
 void Candidate::ComputeTextIsLowercase() {
-  for ( const Character *character : Characters() ) {
+  for ( const auto &character : Characters() ) {
     if ( character->IsUppercase() ) {
       text_is_lowercase_ = false;
       return;
@@ -95,8 +95,8 @@ Result Candidate::QueryMatchResult( const Word &query ) const {
   size_t candidate_index = 0;
   size_t index_sum = 0;
 
-  const std::vector< const Character * > &query_characters = query.Characters();
-  const std::vector< const Character * > &candidate_characters = Characters();
+  const CharacterSequence &query_characters = query.Characters();
+  const CharacterSequence &candidate_characters = Characters();
 
   auto query_character_pos = query_characters.begin();
   auto candidate_character_pos = candidate_characters.begin();

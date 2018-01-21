@@ -44,8 +44,7 @@ protected:
 TEST_F( CharacterRepositoryTest, GetCharacters ) {
   std::vector< std::string > characters = { "α", "ω" };
 
-  std::vector< const Character * > character_objects = repo_.GetCharacters(
-    characters );
+  CharacterSequence character_objects = repo_.GetCharacters( characters );
 
   EXPECT_THAT( repo_.NumStoredCharacters(), 2 );
   EXPECT_THAT( character_objects, UnorderedElementsAre(

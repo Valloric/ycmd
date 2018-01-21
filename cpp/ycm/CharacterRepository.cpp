@@ -46,9 +46,9 @@ size_t CharacterRepository::NumStoredCharacters() {
 }
 
 
-std::vector< const Character * > CharacterRepository::GetCharacters(
+CharacterSequence CharacterRepository::GetCharacters(
   const std::vector< std::string > &characters ) {
-  std::vector< const Character * > character_objects;
+  CharacterSequence character_objects;
   character_objects.reserve( characters.size() );
 
   {
