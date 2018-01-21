@@ -34,7 +34,6 @@ MAX_UNICODE_VALUE = 1114111
 UNICODE_TABLE_TEMPLATE = (
 """// This file was automatically generated with the generate_unicode_table.py
 // script using version {unicode_version} of the Unicode Character Database.
-
 static const std::array< const RawCharacter, {size} > characters = {{ {{
 {characters}
 }} }};""" )
@@ -77,12 +76,12 @@ def GenerateUnicodeTable( header_path, characters ):
   unicode_version = unicodedata.unidata_version
   size = len( characters )
   characters = '\n'.join( [
-    ( '  { ' + CppChar( character[ 'original' ] ) + ', ' +
-               CppChar( character[ 'lowercase' ] ) + ', ' +
-               CppChar( character[ 'uppercase' ] ) + ', ' +
-               CppBool( character[ 'is_letter' ] ) + ', ' +
-               CppBool( character[ 'is_punctuation' ] ) + ', ' +
-               CppBool( character[ 'is_uppercase' ] ) + ' },' )
+    ( '{' + CppChar( character[ 'original' ] ) + ',' +
+            CppChar( character[ 'lowercase' ] ) + ',' +
+            CppChar( character[ 'uppercase' ] ) + ',' +
+            CppBool( character[ 'is_letter' ] ) + ',' +
+            CppBool( character[ 'is_punctuation' ] ) + ',' +
+            CppBool( character[ 'is_uppercase' ] ) + '},' )
     for character in characters ] )
   contents = UNICODE_TABLE_TEMPLATE.format( unicode_version = unicode_version,
                                             size = size,
