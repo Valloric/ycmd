@@ -80,6 +80,9 @@ private:
   bool is_uppercase_;
 };
 
+
+using CharacterSequence = std::vector< const Character * >;
+
 } // namespace YouCompleteMe
 
 #endif /* end of include guard: CHARACTER_H_YTIET2HZ */

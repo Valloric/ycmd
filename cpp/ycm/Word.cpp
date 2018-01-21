@@ -63,7 +63,7 @@ void Word::ComputeCharacters() {
 
 
 void Word::ComputeBytesPresent() {
-  for ( const Character *character : characters_ ) {
+  for ( const auto &character : characters_ ) {
     for ( uint8_t byte : character->Uppercase() ) {
       bytes_present_.set( byte );
     }
