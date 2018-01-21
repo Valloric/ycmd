@@ -40,7 +40,7 @@ public:
     return case_swapped_text_;
   }
 
-  inline const std::vector< const Character * > &WordBoundaryChars() const {
+  inline const CharacterSequence &WordBoundaryChars() const {
     return word_boundary_chars_;
   }
 
@@ -56,7 +56,7 @@ private:
   void ComputeWordBoundaryChars();
 
   std::string case_swapped_text_;
-  std::vector< const Character * > word_boundary_chars_;
+  CharacterSequence word_boundary_chars_;
   bool text_is_lowercase_;
 };
 

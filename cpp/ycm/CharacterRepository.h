@@ -46,7 +46,7 @@ public:
 
   YCM_EXPORT size_t NumStoredCharacters();
 
-  YCM_EXPORT std::vector< const Character * > GetCharacters(
+  YCM_EXPORT CharacterSequence GetCharacters(
     const std::vector< std::string > &characters );
 
   // This should only be used to isolate tests and benchmarks.
