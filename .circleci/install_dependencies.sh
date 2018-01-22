@@ -54,7 +54,7 @@ if [ "${YCMD_PYTHON_VERSION}" == "2.7" ]; then
   # when installing the psutil dependency for our tests.
   PYENV_VERSION="2.7.8"
 else
-  PYENV_VERSION="3.3.6"
+  PYENV_VERSION="3.4.5"
 fi
 
 # In order to work with ycmd, python *must* be built as a shared library. The
