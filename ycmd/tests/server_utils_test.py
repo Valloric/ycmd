@@ -38,7 +38,6 @@ from ycmd.tests import PathToTestFile
 DIR_OF_THIRD_PARTY = os.path.abspath(
   os.path.join( os.path.dirname( __file__ ), '..', '..', 'third_party' ) )
 THIRD_PARTY_FOLDERS = (
-  os.path.join( DIR_OF_THIRD_PARTY, 'argparse' ),
   os.path.join( DIR_OF_THIRD_PARTY, 'bottle' ),
   os.path.join( DIR_OF_THIRD_PARTY, 'frozendict' ),
   os.path.join( DIR_OF_THIRD_PARTY, 'godef' ),
