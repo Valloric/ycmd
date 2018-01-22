@@ -39,7 +39,6 @@ const RawCharacter FindCharacter( const char *text ) {
   // corresponding to the text. If no character is found, return an empty raw
   // character.
   auto first = characters.begin();
-  auto last = characters.end();
   size_t count = characters.size();
 
   for ( auto it = first; count > 0; ) {
@@ -55,8 +54,6 @@ const RawCharacter FindCharacter( const char *text ) {
       count = step;
   }
 
-  if ( first != last && std::strcmp( first->original, text ) == 0 )
-    return *first;
   return { nullptr, nullptr, nullptr, false, false, false };
 }
 
