@@ -24,10 +24,10 @@ import shutil
 import hashlib
 
 PY_MAJOR, PY_MINOR = sys.version_info[ 0 : 2 ]
-if not ( ( PY_MAJOR == 2 and PY_MINOR >= 6 ) or
-         ( PY_MAJOR == 3 and PY_MINOR >= 3 ) or
+if not ( ( PY_MAJOR == 2 and PY_MINOR == 7 ) or
+         ( PY_MAJOR == 3 and PY_MINOR >= 4 ) or
          PY_MAJOR > 3 ):
-  sys.exit( 'ycmd requires Python >= 2.6 or >= 3.3; '
+  sys.exit( 'ycmd requires Python 2.7 or >= 3.4; '
             'your version of Python is ' + sys.version )
 
 DIR_OF_THIS_SCRIPT = p.dirname( p.abspath( __file__ ) )
