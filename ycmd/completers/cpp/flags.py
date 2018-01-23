@@ -373,7 +373,6 @@ def _RemoveUnusedFlags( flags, filename ):
       skip_next = True
       continue
 
-    logger.debug( flag )
     if os.path.realpath( flag ) == os.path.realpath( filename )
       continue
 
