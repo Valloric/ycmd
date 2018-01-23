@@ -32,7 +32,6 @@ from ycmd.utils import ( ToCppStringCompatible, OnMac, OnWindows, ToUnicode,
                          ToBytes, PathsToAllParentFolders )
 from ycmd.responses import NoExtraConfDetected
 
-
 # -include-pch and --sysroot= must be listed before -include and --sysroot
 # respectively because the latter is a prefix of the former (and the algorithm
 # checks prefixes).
@@ -374,7 +373,8 @@ def _RemoveUnusedFlags( flags, filename ):
       skip_next = True
       continue
 
-    if flag == filename or os.path.realpath( flag ) == filename:
+    logger.debug( flag )
+    if os.path.realpath( flag ) == os.path.realpath( filename )
       continue
 
     # We want to make sure that we don't have any stray filenames in our flags;
