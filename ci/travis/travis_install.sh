@@ -42,7 +42,7 @@ if [ ! -d "${PYENV_ROOT}/.git" ]; then
 fi
 pushd ${PYENV_ROOT}
 git fetch --tags
-git checkout v1.0.8
+git checkout v1.2.1
 popd
 
 export PATH="${PYENV_ROOT}/bin:${PATH}"
