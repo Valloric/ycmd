@@ -358,6 +358,7 @@ def _RemoveUnusedFlags( flags, filename ):
   previous_flag_starts_with_dash = False
   current_flag_starts_with_dash = False
 
+  filename = os.path.realpath( filename )
   for flag in flags:
     previous_flag_starts_with_dash = current_flag_starts_with_dash
     current_flag_starts_with_dash = flag.startswith( '-' )
@@ -373,8 +374,7 @@ def _RemoveUnusedFlags( flags, filename ):
       skip_next = True
       continue
 
-    logger.debug( flag )
-    if os.path.realpath( flag ) == os.path.realpath( filename )
+    if os.path.realpath( flag ) == filename:
       continue
 
     # We want to make sure that we don't have any stray filenames in our flags;
