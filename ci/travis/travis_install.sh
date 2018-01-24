@@ -50,7 +50,7 @@ export PATH="${PYENV_ROOT}/bin:${PATH}"
 eval "$(pyenv init -)"
 
 if [ "${YCMD_PYTHON_VERSION}" == "2.7" ]; then
-  PYENV_VERSION="2.7.8"
+  PYENV_VERSION="2.7.14"
 else
   PYENV_VERSION="3.4.7"
 fi

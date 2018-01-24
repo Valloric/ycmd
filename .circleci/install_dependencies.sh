@@ -52,7 +52,7 @@ eval "$(pyenv init -)"
 if [ "${YCMD_PYTHON_VERSION}" == "2.7" ]; then
   # We need a recent enough version of Python 2.7 on macOS or an error occurs
   # when installing the psutil dependency for our tests.
-  PYENV_VERSION="2.7.8"
+  PYENV_VERSION="2.7.14"
 else
   PYENV_VERSION="3.4.7"
 fi
