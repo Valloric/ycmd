@@ -300,8 +300,6 @@ def GetGenerator( args ):
     return 'Visual Studio {version}{arch}'.format(
         version = args.msvc,
         arch = ' Win64' if platform.architecture()[ 0 ] == '64bit' else '' )
-  if PathToFirstExistingExecutable( ['ninja'] ):
-    return 'Ninja'
   return 'Unix Makefiles'
 
 
