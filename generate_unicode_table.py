@@ -45,13 +45,17 @@ def GetCharacters():
     character = chr( i )
     lower_character = character.lower()
     upper_character = character.upper()
+    swapped_character = character.swapcase()
     category = unicodedata.category( character )
-    if ( character != lower_character or character != upper_character or
-         category.startswith( 'L' ) or category.startswith( 'P' ) ):
+    if ( character != lower_character or
+         character != upper_character or
+         character != swapped_character or
+         category.startswith( 'L' ) or
+         category.startswith( 'P' ) ):
       characters.append( {
         'original': character,
-        'lowercase': lower_character,
         'uppercase': upper_character,
+        'swapped_case': swapped_character,
         'is_letter': category.startswith( 'L' ),
         'is_punctuation': category.startswith( 'P' ),
         'is_uppercase': character != lower_character
@@ -77,8 +81,8 @@ def GenerateUnicodeTable( header_path, characters ):
   size = len( characters )
   characters = '\n'.join( [
     ( '{' + CppChar( character[ 'original' ] ) + ',' +
-            CppChar( character[ 'lowercase' ] ) + ',' +
             CppChar( character[ 'uppercase' ] ) + ',' +
+            CppChar( character[ 'swapped_case' ] ) + ',' +
             CppBool( character[ 'is_letter' ] ) + ',' +
             CppBool( character[ 'is_punctuation' ] ) + ',' +
             CppBool( character[ 'is_uppercase' ] ) + '},' )

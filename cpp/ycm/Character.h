@@ -43,12 +43,12 @@ public:
     return original_;
   }
 
-  inline ByteSequence Lowercase() const {
-    return lowercase_;
-  }
-
   inline ByteSequence Uppercase() const {
     return uppercase_;
+  }
+
+  inline ByteSequence SwappedCase() const {
+    return swapped_case_;
   }
 
   inline bool IsLetter() const {
@@ -73,8 +73,8 @@ public:
 
 private:
   ByteSequence original_;
-  ByteSequence lowercase_;
   ByteSequence uppercase_;
+  ByteSequence swapped_case_;
   bool is_letter_;
   bool is_punctuation_;
   bool is_uppercase_;

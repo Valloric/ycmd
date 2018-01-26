@@ -25,8 +25,8 @@ namespace YouCompleteMe {
 
 struct RawCharacter {
   const char *original;
-  const char *lowercase;
   const char *uppercase;
+  const char *swapped_case;
   bool is_letter;
   bool is_punctuation;
   bool is_uppercase;

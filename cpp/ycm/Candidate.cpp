@@ -22,14 +22,8 @@ namespace YouCompleteMe {
 
 void Candidate::ComputeCaseSwappedText() {
   for ( const auto &character : Characters() ) {
-    if ( character->IsUppercase() ) {
-      for ( uint8_t byte : character->Lowercase() ) {
-        case_swapped_text_.push_back( byte );
-      }
-    } else {
-      for ( uint8_t byte : character->Uppercase() ) {
-        case_swapped_text_.push_back( byte );
-      }
+    for ( uint8_t byte : character->SwappedCase() ) {
+      case_swapped_text_.push_back( byte );
     }
   }
 }

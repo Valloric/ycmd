@@ -39,9 +39,9 @@ TEST( CharacterTest, InvalidCharacter ) {
   EXPECT_THAT( Character( "\xce\x9a\xb4\xae" ), AllOf(
     Property( &Character::Original,
               ElementsAre( '\xce', '\x9a', '\xb4', '\xae' ) ),
-    Property( &Character::Lowercase,
-              ElementsAre( '\xce', '\x9a', '\xb4', '\xae' ) ),
     Property( &Character::Uppercase,
+              ElementsAre( '\xce', '\x9a', '\xb4', '\xae' ) ),
+    Property( &Character::SwappedCase,
               ElementsAre( '\xce', '\x9a', '\xb4', '\xae' ) ),
     Property( &Character::IsLetter,      false ),
     Property( &Character::IsPunctuation, false ),
@@ -54,8 +54,8 @@ TEST( CharacterTest, LetterCharacter ) {
   // Lowercase
   EXPECT_THAT( Character( "r" ), AllOf(
     Property( &Character::Original,      ElementsAre( '\x72' ) ),
-    Property( &Character::Lowercase,     ElementsAre( '\x72' ) ),
     Property( &Character::Uppercase,     ElementsAre( '\x52' ) ),
+    Property( &Character::SwappedCase,   ElementsAre( '\x52' ) ),
     Property( &Character::IsLetter,      true ),
     Property( &Character::IsPunctuation, false ),
     Property( &Character::IsUppercase,   false ) ) );
@@ -63,8 +63,8 @@ TEST( CharacterTest, LetterCharacter ) {
   // Uppercase
   EXPECT_THAT( Character( "R" ), AllOf(
     Property( &Character::Original,      ElementsAre( '\x52' ) ),
-    Property( &Character::Lowercase,     ElementsAre( '\x72' ) ),
     Property( &Character::Uppercase,     ElementsAre( '\x52' ) ),
+    Property( &Character::SwappedCase,   ElementsAre( '\x72' ) ),
     Property( &Character::IsLetter,      true ),
     Property( &Character::IsPunctuation, false ),
     Property( &Character::IsUppercase,   true ) ) );
@@ -79,18 +79,18 @@ TEST( CharacterTest, LetterCharacter ) {
 
   // Lowercase
   EXPECT_THAT( Character( "é" ), AllOf(
-    Property( &Character::Original,  ElementsAre( '\xc3', '\xa9' ) ),
-    Property( &Character::Lowercase, ElementsAre( '\xc3', '\xa9' ) ),
-    Property( &Character::Uppercase, ElementsAre( '\xc3', '\x89' ) ),
+    Property( &Character::Original,    ElementsAre( '\xc3', '\xa9' ) ),
+    Property( &Character::Uppercase,   ElementsAre( '\xc3', '\x89' ) ),
+    Property( &Character::SwappedCase, ElementsAre( '\xc3', '\x89' ) ),
     Property( &Character::IsLetter,      true ),
     Property( &Character::IsPunctuation, false ),
     Property( &Character::IsUppercase,   false ) ) );
 
   // Uppercase
   EXPECT_THAT( Character( "É" ), AllOf(
-    Property( &Character::Original,  ElementsAre( '\xc3', '\x89' ) ),
-    Property( &Character::Lowercase, ElementsAre( '\xc3', '\xa9' ) ),
-    Property( &Character::Uppercase, ElementsAre( '\xc3', '\x89' ) ),
+    Property( &Character::Original,    ElementsAre( '\xc3', '\x89' ) ),
+    Property( &Character::Uppercase,   ElementsAre( '\xc3', '\x89' ) ),
+    Property( &Character::SwappedCase, ElementsAre( '\xc3', '\xa9' ) ),
     Property( &Character::IsLetter,      true ),
     Property( &Character::IsPunctuation, false ),
     Property( &Character::IsUppercase,   true ) ) );
@@ -100,9 +100,9 @@ TEST( CharacterTest, LetterCharacter ) {
 
   // No case
   EXPECT_THAT( Character( "ĸ" ), AllOf(
-    Property( &Character::Original,  ElementsAre( '\xc4', '\xb8' ) ),
-    Property( &Character::Lowercase, ElementsAre( '\xc4', '\xb8' ) ),
-    Property( &Character::Uppercase, ElementsAre( '\xc4', '\xb8' ) ),
+    Property( &Character::Original,    ElementsAre( '\xc4', '\xb8' ) ),
+    Property( &Character::Uppercase,   ElementsAre( '\xc4', '\xb8' ) ),
+    Property( &Character::SwappedCase, ElementsAre( '\xc4', '\xb8' ) ),
     Property( &Character::IsLetter,      true ),
     Property( &Character::IsPunctuation, false ),
     Property( &Character::IsUppercase,   false ) ) );
@@ -114,18 +114,18 @@ TEST( CharacterTest, LetterCharacter ) {
 
   // Lowercase
   EXPECT_THAT( Character( "ⱥ" ), AllOf(
-    Property( &Character::Original,  ElementsAre( '\xe2', '\xb1', '\xa5' ) ),
-    Property( &Character::Lowercase, ElementsAre( '\xe2', '\xb1', '\xa5' ) ),
-    Property( &Character::Uppercase, ElementsAre( '\xc8', '\xba' ) ),
+    Property( &Character::Original,    ElementsAre( '\xe2', '\xb1', '\xa5' ) ),
+    Property( &Character::Uppercase,   ElementsAre( '\xc8', '\xba' ) ),
+    Property( &Character::SwappedCase, ElementsAre( '\xc8', '\xba' ) ),
     Property( &Character::IsLetter,      true ),
     Property( &Character::IsPunctuation, false ),
     Property( &Character::IsUppercase,   false ) ) );
 
   // Uppercase
   EXPECT_THAT( Character( "Ɐ" ), AllOf(
-    Property( &Character::Original,  ElementsAre( '\xe2', '\xb1', '\xaf' ) ),
-    Property( &Character::Lowercase, ElementsAre( '\xc9', '\x90' ) ),
-    Property( &Character::Uppercase, ElementsAre( '\xe2', '\xb1', '\xaf' ) ),
+    Property( &Character::Original,    ElementsAre( '\xe2', '\xb1', '\xaf' ) ),
+    Property( &Character::Uppercase,   ElementsAre( '\xe2', '\xb1', '\xaf' ) ),
+    Property( &Character::SwappedCase, ElementsAre( '\xc9', '\x90' ) ),
     Property( &Character::IsLetter,      true ),
     Property( &Character::IsPunctuation, false ),
     Property( &Character::IsUppercase,   true ) ) );
@@ -137,9 +137,9 @@ TEST( CharacterTest, LetterCharacter ) {
 
   // No case
   EXPECT_THAT( Character( "の" ), AllOf(
-    Property( &Character::Original,  ElementsAre( '\xe3', '\x81', '\xae' ) ),
-    Property( &Character::Lowercase, ElementsAre( '\xe3', '\x81', '\xae' ) ),
-    Property( &Character::Uppercase, ElementsAre( '\xe3', '\x81', '\xae' ) ),
+    Property( &Character::Original,    ElementsAre( '\xe3', '\x81', '\xae' ) ),
+    Property( &Character::Uppercase,   ElementsAre( '\xe3', '\x81', '\xae' ) ),
+    Property( &Character::SwappedCase, ElementsAre( '\xe3', '\x81', '\xae' ) ),
     Property( &Character::IsLetter,      true ),
     Property( &Character::IsPunctuation, false ),
     Property( &Character::IsUppercase,   false ) ) );
@@ -150,9 +150,9 @@ TEST( CharacterTest, LetterCharacter ) {
   EXPECT_THAT( Character( "𐐫" ), AllOf(
     Property( &Character::Original,
               ElementsAre( '\xf0', '\x90', '\x90', '\xab' ) ),
-    Property( &Character::Lowercase,
-              ElementsAre( '\xf0', '\x90', '\x90', '\xab' ) ),
     Property( &Character::Uppercase,
+              ElementsAre( '\xf0', '\x90', '\x90', '\x83' ) ),
+    Property( &Character::SwappedCase,
               ElementsAre( '\xf0', '\x90', '\x90', '\x83' ) ),
     Property( &Character::IsLetter,      true ),
     Property( &Character::IsPunctuation, false ),
@@ -162,10 +162,10 @@ TEST( CharacterTest, LetterCharacter ) {
   EXPECT_THAT( Character( "𐐃" ), AllOf(
     Property( &Character::Original,
               ElementsAre( '\xf0', '\x90', '\x90', '\x83' ) ),
-    Property( &Character::Lowercase,
-              ElementsAre( '\xf0', '\x90', '\x90', '\xab' ) ),
     Property( &Character::Uppercase,
               ElementsAre( '\xf0', '\x90', '\x90', '\x83' ) ),
+    Property( &Character::SwappedCase,
+              ElementsAre( '\xf0', '\x90', '\x90', '\xab' ) ),
     Property( &Character::IsLetter,      true ),
     Property( &Character::IsPunctuation, false ),
     Property( &Character::IsUppercase,   true ) ) );
@@ -177,9 +177,9 @@ TEST( CharacterTest, LetterCharacter ) {
   EXPECT_THAT( Character( "𐰬" ), AllOf(
     Property( &Character::Original,
               ElementsAre( '\xf0', '\x90', '\xb0', '\xac' ) ),
-    Property( &Character::Lowercase,
-              ElementsAre( '\xf0', '\x90', '\xb0', '\xac' ) ),
     Property( &Character::Uppercase,
+              ElementsAre( '\xf0', '\x90', '\xb0', '\xac' ) ),
+    Property( &Character::SwappedCase,
               ElementsAre( '\xf0', '\x90', '\xb0', '\xac' ) ),
     Property( &Character::IsLetter,      true ),
     Property( &Character::IsPunctuation, false ),
@@ -189,27 +189,27 @@ TEST( CharacterTest, LetterCharacter ) {
 TEST( CharacterTest, PunctuationCharacter ) {
   // One byte character
   EXPECT_THAT( Character( "'" ), AllOf(
-    Property( &Character::Original,  ElementsAre( '\x27' ) ),
-    Property( &Character::Lowercase, ElementsAre( '\x27' ) ),
-    Property( &Character::Uppercase, ElementsAre( '\x27' ) ),
+    Property( &Character::Original,    ElementsAre( '\x27' ) ),
+    Property( &Character::Uppercase,   ElementsAre( '\x27' ) ),
+    Property( &Character::SwappedCase, ElementsAre( '\x27' ) ),
     Property( &Character::IsLetter,      false ),
     Property( &Character::IsPunctuation, true ),
     Property( &Character::IsUppercase,   false ) ) );
 
   // Two bytes character
   EXPECT_THAT( Character( "»" ), AllOf(
-    Property( &Character::Original,  ElementsAre( '\xc2', '\xbb' ) ),
-    Property( &Character::Lowercase, ElementsAre( '\xc2', '\xbb' ) ),
-    Property( &Character::Uppercase, ElementsAre( '\xc2', '\xbb' ) ),
+    Property( &Character::Original,    ElementsAre( '\xc2', '\xbb' ) ),
+    Property( &Character::Uppercase,   ElementsAre( '\xc2', '\xbb' ) ),
+    Property( &Character::SwappedCase, ElementsAre( '\xc2', '\xbb' ) ),
     Property( &Character::IsLetter,      false ),
     Property( &Character::IsPunctuation, true ),
     Property( &Character::IsUppercase,   false ) ) );
 
   // Three bytes character
   EXPECT_THAT( Character( "•" ), AllOf(
-    Property( &Character::Original,  ElementsAre( '\xe2', '\x80', '\xa2' ) ),
-    Property( &Character::Lowercase, ElementsAre( '\xe2', '\x80', '\xa2' ) ),
-    Property( &Character::Uppercase, ElementsAre( '\xe2', '\x80', '\xa2' ) ),
+    Property( &Character::Original,    ElementsAre( '\xe2', '\x80', '\xa2' ) ),
+    Property( &Character::Uppercase,   ElementsAre( '\xe2', '\x80', '\xa2' ) ),
+    Property( &Character::SwappedCase, ElementsAre( '\xe2', '\x80', '\xa2' ) ),
     Property( &Character::IsLetter,      false ),
     Property( &Character::IsPunctuation, true ),
     Property( &Character::IsUppercase,   false ) ) );
@@ -218,9 +218,9 @@ TEST( CharacterTest, PunctuationCharacter ) {
   EXPECT_THAT( Character( "𐬿" ), AllOf(
     Property( &Character::Original,
               ElementsAre( '\xf0', '\x90', '\xac', '\xbf' ) ),
-    Property( &Character::Lowercase,
-              ElementsAre( '\xf0', '\x90', '\xac', '\xbf' ) ),
     Property( &Character::Uppercase,
+              ElementsAre( '\xf0', '\x90', '\xac', '\xbf' ) ),
+    Property( &Character::SwappedCase,
               ElementsAre( '\xf0', '\x90', '\xac', '\xbf' ) ),
     Property( &Character::IsLetter,      false ),
     Property( &Character::IsPunctuation, true ),
@@ -230,27 +230,27 @@ TEST( CharacterTest, PunctuationCharacter ) {
 TEST( CharacterTest, OtherCharacter ) {
   // One byte character
   EXPECT_THAT( Character( "=" ), AllOf(
-    Property( &Character::Original,  ElementsAre( '\x3d' ) ),
-    Property( &Character::Lowercase, ElementsAre( '\x3d' ) ),
-    Property( &Character::Uppercase, ElementsAre( '\x3d' ) ),
+    Property( &Character::Original,    ElementsAre( '\x3d' ) ),
+    Property( &Character::Uppercase,   ElementsAre( '\x3d' ) ),
+    Property( &Character::SwappedCase, ElementsAre( '\x3d' ) ),
     Property( &Character::IsLetter,      false ),
     Property( &Character::IsPunctuation, false ),
     Property( &Character::IsUppercase,   false ) ) );
 
   // Two bytes character
   EXPECT_THAT( Character( "©" ), AllOf(
-    Property( &Character::Original,  ElementsAre( '\xc2', '\xa9' ) ),
-    Property( &Character::Lowercase, ElementsAre( '\xc2', '\xa9' ) ),
-    Property( &Character::Uppercase, ElementsAre( '\xc2', '\xa9' ) ),
+    Property( &Character::Original,    ElementsAre( '\xc2', '\xa9' ) ),
+    Property( &Character::Uppercase,   ElementsAre( '\xc2', '\xa9' ) ),
+    Property( &Character::SwappedCase, ElementsAre( '\xc2', '\xa9' ) ),
     Property( &Character::IsLetter,      false ),
     Property( &Character::IsPunctuation, false ),
     Property( &Character::IsUppercase,   false ) ) );
 
   // Three bytes character
   EXPECT_THAT( Character( "∅" ), AllOf(
-    Property( &Character::Original,  ElementsAre( '\xe2', '\x88', '\x85' ) ),
-    Property( &Character::Lowercase, ElementsAre( '\xe2', '\x88', '\x85' ) ),
-    Property( &Character::Uppercase, ElementsAre( '\xe2', '\x88', '\x85' ) ),
+    Property( &Character::Original,    ElementsAre( '\xe2', '\x88', '\x85' ) ),
+    Property( &Character::Uppercase,   ElementsAre( '\xe2', '\x88', '\x85' ) ),
+    Property( &Character::SwappedCase, ElementsAre( '\xe2', '\x88', '\x85' ) ),
     Property( &Character::IsLetter,      false ),
     Property( &Character::IsPunctuation, false ),
     Property( &Character::IsUppercase,   false ) ) );
@@ -259,9 +259,9 @@ TEST( CharacterTest, OtherCharacter ) {
   EXPECT_THAT( Character( "𝛁" ), AllOf(
     Property( &Character::Original,
               ElementsAre( '\xf0', '\x9d', '\x9b', '\x81' ) ),
-    Property( &Character::Lowercase,
-              ElementsAre( '\xf0', '\x9d', '\x9b', '\x81' ) ),
     Property( &Character::Uppercase,
+              ElementsAre( '\xf0', '\x9d', '\x9b', '\x81' ) ),
+    Property( &Character::SwappedCase,
               ElementsAre( '\xf0', '\x9d', '\x9b', '\x81' ) ),
     Property( &Character::IsLetter,      false ),
     Property( &Character::IsPunctuation, false ),
@@ -272,9 +272,9 @@ TEST( CharacterTest, SameCharacterDifferentCodePoints ) {
   // The Greek capital letter Omega
   Character omega( "Ω" );
   EXPECT_THAT( omega, AllOf(
-    Property( &Character::Original,  ElementsAre( '\xce', '\xa9' ) ),
-    Property( &Character::Lowercase, ElementsAre( '\xcf', '\x89' ) ),
-    Property( &Character::Uppercase, ElementsAre( '\xce', '\xa9' ) ),
+    Property( &Character::Original,    ElementsAre( '\xce', '\xa9' ) ),
+    Property( &Character::Uppercase,   ElementsAre( '\xce', '\xa9' ) ),
+    Property( &Character::SwappedCase, ElementsAre( '\xcf', '\x89' ) ),
     Property( &Character::IsLetter,      true ),
     Property( &Character::IsPunctuation, false ),
     Property( &Character::IsUppercase,   true ) ) );
@@ -282,9 +282,9 @@ TEST( CharacterTest, SameCharacterDifferentCodePoints ) {
   // The ohm symbol
   Character ohm( "Ω" );
   EXPECT_THAT( ohm, AllOf(
-    Property( &Character::Original,  ElementsAre( '\xe2', '\x84', '\xa6' ) ),
-    Property( &Character::Lowercase, ElementsAre( '\xcf', '\x89' ) ),
-    Property( &Character::Uppercase, ElementsAre( '\xe2', '\x84', '\xa6' ) ),
+    Property( &Character::Original,    ElementsAre( '\xe2', '\x84', '\xa6' ) ),
+    Property( &Character::Uppercase,   ElementsAre( '\xe2', '\x84', '\xa6' ) ),
+    Property( &Character::SwappedCase, ElementsAre( '\xcf', '\x89' ) ),
     Property( &Character::IsLetter,      true ),
     Property( &Character::IsPunctuation, false ),
     Property( &Character::IsUppercase,   true ) ) );

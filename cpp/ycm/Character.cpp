@@ -38,15 +38,15 @@ Character::Character( const std::string &character ) {
   const RawCharacter raw_character = FindCharacter( character.c_str() );
   if ( raw_character.original ) {
     original_ = ConvertStringToByteSequence( raw_character.original );
-    lowercase_ = ConvertStringToByteSequence( raw_character.lowercase );
     uppercase_ = ConvertStringToByteSequence( raw_character.uppercase );
+    swapped_case_ = ConvertStringToByteSequence( raw_character.swapped_case );
     is_letter_ = raw_character.is_letter;
     is_punctuation_ = raw_character.is_punctuation;
     is_uppercase_ = raw_character.is_uppercase;
   } else {
     original_ = ConvertStringToByteSequence( character );
-    lowercase_ = original_;
     uppercase_ = original_;
+    swapped_case_ = original_;
     is_letter_ = false;
     is_punctuation_ = false;
     is_uppercase_ = false;
