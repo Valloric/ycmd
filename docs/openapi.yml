@@ -104,7 +104,7 @@ info:
     YCM README.md for the list of filetypes recognized by ycmd for semantic
     completion.
 
-  version: 0.1.0
+  version: 0.2.0
 
 externalDocs:
   description: ycmd GitHub page
@@ -763,6 +763,27 @@ paths:
                   `GoTo`).
                 items:
                   type: string
+              range:
+                description: |-
+                  The range to which the command is applied (only used by the
+                  *Format* command).
+                $ref: "#/definitions/Range"
+              options:
+                type: object
+                description: |-
+                  A set of editor-related options for the current buffer (only
+                  used by the *Format* command).
+                properties:
+                  tab_size:
+                    description: |-
+                      The size of a tabulation in spaces.
+                    type: integer
+                    default: 4
+                  insert_spaces:
+                    description: |-
+                      Use spaces to represent tabulations.
+                    type: boolean
+                    default: true
             example:
                 line_num: 10
                 column_num: 20

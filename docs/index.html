@@ -10,7 +10,7 @@
     <h1>ycmd</h1>
     <p class="sw-info">
         
-        Version: <span class="sw-info-version">0.1.0</span>,     <a href="https://github.com/Valloric/ycmd" class="sw-external-doc">ycmd GitHub page</a>
+        Version: <span class="sw-info-version">0.2.0</span>,     <a href="https://github.com/Valloric/ycmd" class="sw-external-doc">ycmd GitHub page</a>
     
     </p>
     <p><p>ycmd is a code-completion &amp; code-comprehension server.</p>
@@ -1866,6 +1866,71 @@
                                                                                             
                                                                                         </div>
                                                                                     </section>                </div>
+                                                            </dd>
+                                                            <dt data-property-name="range">
+                                                                <span class="json-property-name">range:</span>
+                                                                
+                                                                <span class="json-property-type">    <a class="json-schema-ref" href="#/definitions/Range">Range</a>
+                                                                </span>
+                                                                <span class="json-property-range" title="Value limits"></span>
+                                                                
+                                                            </dt>
+                                                            <dd>
+                                                                <p>The range to which the command is applied (only used by the
+                                                <em>Format</em> command).</p>
+                                                
+                                                                <div class="json-inner-schema">
+                                                                    
+                                                                </div>
+                                                            </dd>
+                                                            <dt data-property-name="options">
+                                                                <span class="json-property-name">options:</span>
+                                                                
+                                                                <span class="json-property-type">object</span>
+                                                                <span class="json-property-range" title="Value limits"></span>
+                                                                
+                                                            </dt>
+                                                            <dd>
+                                                                <p>A set of editor-related options for the current buffer (only
+                                                used by the <em>Format</em> command).</p>
+                                                
+                                                                <div class="json-inner-schema">
+                                                                    
+                                                                            <section class="json-schema-properties">
+                                                                                <dl>
+                                                                                        <dt data-property-name="tab_size">
+                                                                                            <span class="json-property-name">tab_size:</span>
+                                                                                            
+                                                                                            <span class="json-property-type">integer</span>
+                                                                                            <span class="json-property-range" title="Value limits"></span>
+                                                                                            
+                                                                                                    <span class="json-property-default-value">4</span>
+                                                                                        </dt>
+                                                                                        <dd>
+                                                                                            <p>The size of a tabulation in spaces.</p>
+                                                                            
+                                                                                            <div class="json-inner-schema">
+                                                                                                
+                                                                                            </div>
+                                                                                        </dd>
+                                                                                        <dt data-property-name="insert_spaces">
+                                                                                            <span class="json-property-name">insert_spaces:</span>
+                                                                                            
+                                                                                            <span class="json-property-type">boolean</span>
+                                                                                            <span class="json-property-range" title="Value limits"></span>
+                                                                                            
+                                                                                                    <span class="json-property-default-value">true</span>
+                                                                                        </dt>
+                                                                                        <dd>
+                                                                                            <p>Use spaces to represent tabulations.</p>
+                                                                            
+                                                                                            <div class="json-inner-schema">
+                                                                                                
+                                                                                            </div>
+                                                                                        </dd>
+                                                                                </dl>
+                                                                            </section>
+                                                                </div>
                                                             </dd>
                                                     </dl>
                                                 </section>
