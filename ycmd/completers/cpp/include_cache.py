@@ -45,8 +45,12 @@ class IncludeEntry( object ):
 
 
 class IncludeList( object ):
-  """ Helper class fo combining include completion candidates from
-  several include paths. """
+  """
+  Helper class for combining include completion candidates from
+  several include paths.
+  slef._includes is a dictionary whose keys are
+  IncludeEntry `name`s and values are IncludeEntry `entry_type`s.
+  """
 
   def __init__( self ):
     self._includes = defaultdict( int )
@@ -66,6 +70,13 @@ class IncludeList( object ):
 
 
 class IncludeCache( object ):
+  """
+  Holds a dictionary representing the include path cache.
+  Dictionary keys are the include path directories.
+  Dictionary values are tupples whose first object
+  represents `mtime` of the dictionary key and the other
+  object is an IncludeList.
+  """
 
   def __init__( self ):
     self._cache = {}
@@ -75,14 +86,14 @@ class IncludeCache( object ):
     self._cache = {}
 
 
-  def GetIncludes( self, path, cache ):
+  def GetIncludes( self, path, use_cache ):
     includes = None
-    if cache:
+    if use_cache:
       includes = self._GetCached( path )
 
     if includes is None:
       includes = self._ListIncludes( path )
-      if cache:
+      if use_cache:
         self._AddToCache( path, includes )
 
     return includes
@@ -109,16 +120,16 @@ class IncludeCache( object ):
   def _ListIncludes( self, path ):
     try:
       names = os.listdir( path )
-    except Exception:
+    except OSError:
       return []
 
     includes = []
     for name in names:
-      inc_path = os.path.join(path, name)
+      inc_path = os.path.join( path, name )
       try:
         entry_type = GetPathType( inc_path )
         includes.append( IncludeEntry( name, entry_type ) )
-      except Exception:
+      except OSError:
         pass
 
     return includes
@@ -127,5 +138,5 @@ class IncludeCache( object ):
 def _GetModificationTime( path ):
   try:
     return os.path.getmtime( path )
-  except Exception:
+  except OSError:
     return 0

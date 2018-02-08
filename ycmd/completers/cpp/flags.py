@@ -665,6 +665,17 @@ def _GetCompilationInfoForFile( database, file_name, file_extension ):
 
 
 def UserIncludePaths( user_flags, filename ):
+  """
+  Returns a tupple ( quoted_include_paths, include_paths )
+
+  quoted_include_paths is a list of tupples. Each tupple in the list contains:
+    - A string representing include path directory specified with `-iquote`.
+    - A boolean specifying if the include path contents should be cached.
+  include_paths is a list of tupples. Each tupple in the list contains:
+    - A string representing include path directory
+      specified with `-I`, `-isystem` or, if we're in CL driver mode, `/I`.
+    - A boolean specifying if the include path contents should be cached.
+  """
   quoted_include_paths = [ ( ToUnicode( os.path.dirname( filename ) ), False ) ]
   include_paths = []
 
@@ -672,8 +683,8 @@ def UserIncludePaths( user_flags, filename ):
     include_flags = { '-iquote':  ( quoted_include_paths, False ),
                       '-I':       ( include_paths, False ),
                       '-isystem': ( include_paths, True ) }
-    if _ShouldAllowWinStyleFlags( flags ):
-      include_flags[ '/I' ] = False
+    if _ShouldAllowWinStyleFlags( user_flags ):
+      include_flags[ '/I' ] = ( include_paths, False )
 
     try:
       it = iter( user_flags )

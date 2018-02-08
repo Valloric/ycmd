@@ -124,9 +124,11 @@ class ClangCompleter( Completer ):
 
     includes = IncludeList()
     for include in include_paths:
-      unicode_path = ToUnicode( os.path.join( include[ 0 ], path_dir ) )
+      include_value = include[ 0 ]
+      should_use_cache = include[ 1 ]
+      unicode_path = ToUnicode( os.path.join( include_value, path_dir ) )
       includes.AddIncludes(
-        self._include_cache.GetIncludes( unicode_path, include[ 1 ] ) )
+        self._include_cache.GetIncludes( unicode_path, should_use_cache ) )
 
     return includes.GetIncludes()
 
@@ -573,7 +575,8 @@ def _BuildGetDocResponse( doc_data ):
 
 def _GetAbsolutePath( include_file_name, includes ):
   for include in includes:
-    include_file_path = os.path.join( include[ 0 ], include_file_name )
+    include_value = include[ 0 ]
+    include_file_path = os.path.join( include_value, include_file_name )
     if os.path.isfile( include_file_path ):
       return include_file_path
   return None
