@@ -80,9 +80,12 @@ def RunCompleterCommand():
   request_data = RequestWrap( request.json )
   completer = _GetCompleterForRequestData( request_data )
 
-  return _JsonResponse( completer.OnUserCommand(
-      request_data[ 'command_arguments' ],
-      request_data ) )
+  response = completer.OnUserCommand( request_data[ 'command_arguments' ],
+                                      request_data )
+  import pprint
+  _logger.debug( pprint.pformat( response ) )
+
+  return _JsonResponse( response )
 
 
 @app.post( '/completions' )
