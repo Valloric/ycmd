@@ -1,4 +1,4 @@
-// Copyright (C) 2011, 2012 Google Inc.
+// Copyright (C) 2011-2018 ycmd contributors
 //
 // This file is part of ycmd.
 //
@@ -27,10 +27,8 @@ struct UnsavedFile {
   std::string contents_;
   unsigned long length_;
 
-  // We need this to be able to export this struct to Python via Boost.Python's
+  // We need this to be able to export this struct to Python via pybind11
   // methods. I have no clue why, but it won't compile without it.
-  // TODO: report this problem on the Boost bug tracker, the default equality
-  // operator should be more than adequate here
   bool operator== ( const UnsavedFile &other ) const {
     return
       filename_ == other.filename_ &&
