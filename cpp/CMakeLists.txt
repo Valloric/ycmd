@@ -182,12 +182,6 @@ if ( MSVC )
   set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP" )
 endif()
 
-# Solves the conflict in names of hypot in python sources and boost::python
-if ( MINGW )
-  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -include cmath")
-endif()
-
-
 if( MSVC OR CYGWIN OR MSYS)
   # BOOST_ALL_NO_LIB turns off MSVC library autolinking
   add_definitions( -DBOOST_ALL_NO_LIB )
@@ -195,7 +189,7 @@ endif()
 
 if( WIN32 OR CYGWIN OR MSYS)
   # BOOST_PYTHON_SOURCE makes boost use the correct __declspec
-  add_definitions( -DBOOST_PYTHON_SOURCE -DBOOST_THREAD_USE_LIB )
+  add_definitions( -DBOOST_THREAD_USE_LIB )
   if ( NOT MSVC AND 64_BIT_PLATFORM )
       # Enables Python compilation for 64-bit Windows. Already defined by Python
       # headers when compiling with MSVC.

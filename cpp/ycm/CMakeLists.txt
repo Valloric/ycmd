@@ -244,14 +244,6 @@ endif()
 
 if ( USE_SYSTEM_BOOST )
   set( Boost_COMPONENTS filesystem regex system )
-  # Gentoo allows a very convenient system-wide python version switching
-  # that handles symlinks of everything needed, including Boost.Python.
-  # Thus, on Gentoo, we want to always link against boost_python.
-  if( USE_PYTHON2 OR DISTRIBUTION STREQUAL "Gentoo" )
-    list( APPEND Boost_COMPONENTS python )
-  else()
-    list( APPEND Boost_COMPONENTS python3 )
-  endif()
   find_package( Boost REQUIRED COMPONENTS ${Boost_COMPONENTS} )
 else()
   set( Boost_INCLUDE_DIR ${BoostParts_SOURCE_DIR} )
@@ -290,9 +282,11 @@ endif()
 # Since there is no -isystem flag equivalent on Windows, headers from external
 # projects may conflict with our headers and override them. We prevent that by
 # including these directories after ours.
+set( PYBIND11_INCLUDES_DIR "${CMAKE_SOURCE_DIR}/pybind11" )
 include_directories(
   SYSTEM
   ${Boost_INCLUDE_DIR}
+  ${PYBIND11_INCLUDES_DIR}
   ${PYTHON_INCLUDE_DIRS}
   ${CLANG_INCLUDES_DIR}
   )
