@@ -1,4 +1,4 @@
-# Copyright (C) 2016-2017 ycmd contributors
+# Copyright (C) 2016-2018 ycmd contributors
 #
 # This file is part of ycmd.
 #
@@ -49,7 +49,7 @@ def DebugInfo_FlagsWhenExtraConfLoadedAndNoCompilationDatabase_test( app ):
         } ),
         has_entries( {
           'key': 'flags',
-          'value': matches_regexp( "\['-x', 'c\+\+', .*\]" )
+          'value': matches_regexp( "\[u?'-x', u?'c\+\+', .*\]" )
         } ),
         has_entries( {
           'key': 'translation unit',
@@ -166,7 +166,7 @@ def DebugInfo_FlagsWhenNoExtraConfAndCompilationDatabaseLoaded_test( app ):
             has_entries( {
               'key': 'flags',
               'value': matches_regexp(
-                  "\['clang\+\+', '-x', 'c\+\+', .*, '-Wall', .*\]" )
+                  "\[u?'clang\+\+', u?'-x', u?'c\+\+', .*, u?'-Wall', .*\]" )
             } ),
             has_entries( {
               'key': 'translation unit',
@@ -210,7 +210,7 @@ def DebugInfo_FlagsWhenNoExtraConfAndInvalidCompilationDatabase_test( app ):
 
 
 @SharedYcmd
-def DebugInfo_Unity( app ):
+def DebugInfo_Unity_test( app ):
   # Main TU
   app.post_json( '/load_extra_conf_file',
                  { 'filepath': PathToTestFile( '.ycm_extra_conf.py' ) } )
@@ -230,11 +230,11 @@ def DebugInfo_Unity( app ):
           } ),
           has_entries( {
             'key': 'flags',
-            'value': matches_regexp( "\['-x', 'c\+\+', .*\]" )
+            'value': matches_regexp( "\[u?'-x', u?'c\+\+', .*\]" )
           } ),
           has_entries( {
             'key': 'translation unit',
-            'value': PathToTestFile( 'unity.cpp' )
+            'value': PathToTestFile( 'unity.cc' )
           } )
         )
       } ) )
