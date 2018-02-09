@@ -71,10 +71,10 @@ PYBIND11_MODULE(ycm_core, m)
 
   m.def( "FilterAndSortCandidates",
          &FilterAndSortCandidates,
-	 arg("candidates"),
-	 arg("candidate_property"),
-	 arg("query"),
-	 arg("max_candidates") = 0 );
+         arg("candidates"),
+         arg("candidate_property"),
+         arg("query"),
+         arg("max_candidates") = 0 );
 
   m.def( "YcmCoreVersion", &YcmCoreVersion );
 
@@ -83,9 +83,9 @@ PYBIND11_MODULE(ycm_core, m)
   m.def( "GetUtf8String", &GetUtf8String );
 #else
   m.def( "GetUtf8String",
-	 []( const object &value ) {
-	   return bytes( GetUtf8String( value ) );
-	 } );
+         []( const object &value ) {
+           return bytes( GetUtf8String( value ) );
+         } );
 #endif
 
   class_< IdentifierCompleter >( m, "IdentifierCompleter" )
@@ -98,9 +98,9 @@ PYBIND11_MODULE(ycm_core, m)
           &IdentifierCompleter::AddIdentifiersToDatabaseFromTagFiles )
     .def( "CandidatesForQueryAndType",
           &IdentifierCompleter::CandidatesForQueryAndType,
-	  arg( "query" ),
-	  arg( "filetype" ),
-	  arg( "max_candidates" ) = 0 );
+          arg( "query" ),
+          arg( "filetype" ),
+          arg( "max_candidates" ) = 0 );
 
   bind_vector< std::vector< std::string > >( m, "StringVector" );
 
