@@ -468,7 +468,7 @@ def ConvertCompletionData( completion_data ):
     insertion_text = completion_data.TextToInsertInBuffer(),
     menu_text = completion_data.MainCompletionText(),
     extra_menu_info = completion_data.ExtraMenuInfo(),
-    kind = completion_data.kind_.name,
+    kind = completion_data.kind_,
     detailed_info = completion_data.DetailedInfoForPreviewWindow(),
     extra_data = ( { 'doc_string': completion_data.DocString() }
                    if completion_data.DocString() else None ) )

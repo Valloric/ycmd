@@ -18,7 +18,7 @@
 #ifndef RELEASEGIL_H_RDIEBSQ1
 #define RELEASEGIL_H_RDIEBSQ1
 
-#include <boost/python.hpp>
+#include <Python.h>
 
 namespace YouCompleteMe {
 

@@ -19,7 +19,7 @@
 // iostream is included because of a bug with Python earlier than 2.7.12
 // and 3.5.3 on OSX and FreeBSD.
 #include <iostream>
-#include <boost/python.hpp>
+#include <Python.h>
 
 
 int main( int argc, char** argv ) {

@@ -1,6 +1,6 @@
 #include "gtest/gtest.h"
 #include "gmock/gmock.h"
-#include <boost/python.hpp>
+#include <Python.h>
 
 int main( int argc, char **argv ) {
   Py_Initialize();
