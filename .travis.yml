@@ -37,8 +37,10 @@ addons:
      - cmake
      # 4.8 is the first version of GCC with good enough C++11 support.
      - g++-4.8
-     # Install Clang 3.4 and its standard library.
-     - clang
+     # Install Clang 3.5 and its standard library.
+     # Clang 3.3 and 3.4 hit a pybind11 bug with our code.
+     # The same bug is not exposed by their tests.
+     - clang-3.5
      - libc++-dev
      # Required to build the OmniSharp server.
      - mono-devel
