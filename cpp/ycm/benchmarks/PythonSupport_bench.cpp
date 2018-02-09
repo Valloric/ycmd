@@ -45,9 +45,9 @@ BENCHMARK_DEFINE_F( PythonSupportFixture,
   raw_candidates = GenerateCandidatesWithCommonPrefix( "a_A_a_",
                                                        state.range( 0 ) );
 
-  boost::python::list candidates;
+  pybind11::list candidates;
   for ( auto insertion_text : raw_candidates ) {
-    boost::python::dict candidate;
+    pybind11::dict candidate;
     candidate[ "insertion_text" ] = insertion_text;
     candidates.append( candidate );
   }
@@ -73,9 +73,9 @@ BENCHMARK_DEFINE_F( PythonSupportFixture,
   raw_candidates = GenerateCandidatesWithCommonPrefix( "a_A_a_",
                                                        state.range( 0 ) );
 
-  boost::python::list candidates;
+  pybind11::list candidates;
   for ( auto insertion_text : raw_candidates ) {
-    boost::python::dict candidate;
+    pybind11::dict candidate;
     candidate[ "insertion_text" ] = insertion_text;
     candidates.append( candidate );
   }

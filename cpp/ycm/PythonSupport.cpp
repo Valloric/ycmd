@@ -25,11 +25,10 @@
 #include <vector>
 #include <utility>
 
-using boost::python::len;
-using boost::python::str;
-using boost::python::extract;
-using boost::python::object;
-using pylist = boost::python::list;
+using pybind11::len;
+using pybind11::str;
+using pybind11::object;
+using pylist = pybind11::list;
 
 namespace YouCompleteMe {
 
@@ -46,7 +45,7 @@ std::vector< const Candidate * > CandidatesFromObjectList(
     if ( candidate_property.empty() ) {
       candidate_strings.push_back( GetUtf8String( candidates[ i ] ) );
     } else {
-      object holder = extract< object >( candidates[ i ] );
+      object holder = candidates[ i ].cast< object >();
       candidate_strings.push_back( GetUtf8String(
                                      holder[ candidate_property.c_str() ] ) );
     }
@@ -59,8 +58,8 @@ std::vector< const Candidate * > CandidatesFromObjectList(
 } // unnamed namespace
 
 
-boost::python::list FilterAndSortCandidates(
-  const boost::python::list &candidates,
+pylist FilterAndSortCandidates(
+  const pylist &candidates,
   const std::string &candidate_property,
   const std::string &query,
   const size_t max_candidates ) {
@@ -101,43 +100,43 @@ boost::python::list FilterAndSortCandidates(
 }
 
 
-std::string GetUtf8String( const boost::python::object &value ) {
+std::string GetUtf8String( const object &value ) {
+  std::string type = value.attr( "__class__" )
+                          .attr( "__name__" )
+                          .cast< std::string >();
+
 #if PY_MAJOR_VERSION >= 3
   // While strings are internally represented in UCS-2 or UCS-4 on Python 3,
   // they are UTF-8 encoded when converted to std::string.
-  extract< std::string > to_string( value );
-
-  if ( to_string.check() ) {
-    return to_string();
+  if ( type == "str" || type == "bytes" ) {
+    return value.cast< std::string >();
   }
 #else
-  std::string type = extract< std::string >( value.attr( "__class__" )
-                                                  .attr( "__name__" ) );
-
   if ( type == "str" ) {
-    return extract< std::string >( value );
+    return value.cast< std::string >();
   }
 
   if ( type == "unicode" ) {
     // unicode -> str
-    return extract< std::string >( value.attr( "encode" )( "utf8" ) );
+    return value.attr( "encode" )( "utf8" ).cast< std::string >();
   }
 
   // newstr and newbytes have a __native__ method that convert them
   // respectively to unicode and str.
   if ( type == "newstr" ) {
     // newstr -> unicode -> str
-    return extract< std::string >( value.attr( "__native__" )()
-                                        .attr( "encode" )( "utf8" ) );
+    return value.attr( "__native__" )()
+                .attr( "encode" )( "utf8" )
+                .cast< std::string >();
   }
 
   if ( type == "newbytes" ) {
     // newbytes -> str
-    return extract< std::string >( value.attr( "__native__" )() );
+    return value.attr( "__native__" )().cast< std::string >();
   }
 #endif
 
-  return extract< std::string >( str( value ).encode( "utf8" ) );
+  return str( value ).attr( "encode" )( "utf8" ) .cast< std::string >();
 }
 
 } // namespace YouCompleteMe
