@@ -79,14 +79,7 @@ PYBIND11_MODULE(ycm_core, m)
   m.def( "YcmCoreVersion", &YcmCoreVersion );
 
   // This is exposed so that we can test it.
-#if PY_MAJOR_VERSION >= 3
   m.def( "GetUtf8String", &GetUtf8String );
-#else
-  m.def( "GetUtf8String",
-         []( const object &value ) {
-           return bytes( GetUtf8String( value ) );
-         } );
-#endif
 
   class_< IdentifierCompleter >( m, "IdentifierCompleter" )
     .def( init<>() )

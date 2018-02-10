@@ -1155,7 +1155,11 @@ template <typename StringType, bool IsView = false> struct string_caster {
     static handle cast(const StringType &src, return_value_policy /* policy */, handle /* parent */) {
         const char *buffer = reinterpret_cast<const char *>(src.data());
         ssize_t nbytes = ssize_t(src.size() * sizeof(CharT));
+#if PY_MAJOR_VERSION >= 3
         handle s = decode_utfN(buffer, nbytes);
+#else
+	handle s = PyString_FromStringAndSize(buffer, nbytes);
+#endif
         if (!s) throw error_already_set();
         return s;
     }
