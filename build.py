@@ -351,7 +351,7 @@ def GetCmakeArgs( parsed_args ):
     cmake_args.append( '-DUSE_SYSTEM_BOOST=ON' )
 
   if parsed_args.enable_debug:
-    cmake_args.append( '-DCMAKE_BUILD_TYPE=Debug' )
+    cmake_args.append( '-DCMAKE_BUILD_TYPE=Release' )
     cmake_args.append( '-DUSE_DEV_FLAGS=ON' )
 
   # coverage is not supported for c++ on MSVC
@@ -455,8 +455,8 @@ def BuildYcmdLib( args ):
       build_targets.append( 'ycm_core_benchmarks' )
 
     if OnWindows():
-      config = 'Debug' if args.enable_debug else 'Release'
-      build_config = [ '--config', config ]
+      #config = 'Debug' if args.enable_debug else 'Release'
+      build_config = [ '--config', 'Release' ]
     else:
       build_config = [ '--', '-j', str( NumCores() ) ]
 

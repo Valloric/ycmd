@@ -179,7 +179,7 @@ endif()
 # For MSVC enable UNICODE and compilation on multiple processors
 if ( MSVC )
   add_definitions( /DUNICODE /D_UNICODE /Zc:wchar_t- )
-  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP" )
+  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP /bigobj" )
 endif()
 
 if( MSVC OR CYGWIN OR MSYS)
