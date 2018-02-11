@@ -161,11 +161,8 @@ def _GetPathCompletionCandidates( path_dir, use_working_dir,
     relative_paths = []
 
   for rel_path in relative_paths:
-    try:
-      absolute_path = os.path.join( unicode_path, rel_path )
-      entries.append( ( rel_path, GetPathType( absolute_path ) ) )
-    except Exception:
-      pass
+    absolute_path = os.path.join( unicode_path, rel_path )
+    entries.append( ( rel_path, GetPathType( absolute_path ) ) )
 
   return entries
 
