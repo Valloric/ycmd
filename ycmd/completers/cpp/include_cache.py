@@ -126,11 +126,8 @@ class IncludeCache( object ):
     includes = []
     for name in names:
       inc_path = os.path.join( path, name )
-      try:
-        entry_type = GetPathType( inc_path )
-        includes.append( IncludeEntry( name, entry_type ) )
-      except OSError:
-        pass
+      entry_type = GetPathType( inc_path )
+      includes.append( IncludeEntry( name, entry_type ) )
 
     return includes
 
