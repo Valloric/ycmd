@@ -388,7 +388,7 @@ public class Test {
                              filetype = 'java' )
   app.post_json( '/event_notification', event_data ).json
 
-  expiration = time.time() + 5
+  expiration = time.time() + 10
   while True:
     try:
       assert_that(
