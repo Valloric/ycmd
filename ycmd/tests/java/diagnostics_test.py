@@ -44,7 +44,7 @@ from ycmd.tests.java import ( DEFAULT_PROJECT_DIR,
                               SharedYcmd,
                               StartJavaCompleterServerInDirectory )
 
-from ycmd.tests.test_utils import BuildRequest, LocationMatcher
+from ycmd.tests.test_utils import BuildRequest, LocationMatcher, WithRetry
 from ycmd.utils import ReadFile
 from ycmd.completers import completer
 
@@ -241,6 +241,7 @@ def _WaitForDiagnosticsToBeReady( app, filepath, contents, **kwargs ):
   return results
 
 
+@WithRetry
 @SharedYcmd
 def FileReadyToParse_Diagnostics_Simple_test( app ):
   filepath = ProjectPath( 'TestFactory.java' )
@@ -310,6 +311,7 @@ def FileReadyToParse_Diagnostics_FileNotOnDisk_test( app ):
   assert_that( results, diag_matcher )
 
 
+@WithRetry
 @SharedYcmd
 def Poll_Diagnostics_ProjectWide_Eclipse_test( app ):
   filepath = TestLauncher
@@ -443,21 +445,30 @@ def FileReadyToParse_Diagnostics_InvalidURI_test( app, uri_to_filepath, *args ):
   contents = ReadFile( filepath )
 
   # It can take a while for the diagnostics to be ready
-  results = _WaitForDiagnosticsToBeReady( app, filepath, contents )
-  print( 'Completer response: {0}'.format( json.dumps( results, indent=2 ) ) )
+  expiration = time.time() + 10
+  while True:
+    try:
+      results = _WaitForDiagnosticsToBeReady( app, filepath, contents )
+      print( 'Completer response: {0}'.format( json.dumps( results, indent=2 ) ) )
 
-  uri_to_filepath.assert_called()
+      uri_to_filepath.assert_called()
 
-  assert_that( results, has_item(
-    has_entries( {
-      'kind': 'WARNING',
-      'text': 'The value of the field TestFactory.Bar.testString is not used',
-      'location': LocationMatcher( '', 15, 19 ),
-      'location_extent': RangeMatch( '', ( 15, 19 ), ( 15, 29 ) ),
-      'ranges': contains( RangeMatch( '', ( 15, 19 ), ( 15, 29 ) ) ),
-      'fixit_available': False
-    } ),
-  ) )
+      assert_that( results, has_item(
+        has_entries( {
+          'kind': 'WARNING',
+          'text': 'The value of the field TestFactory.Bar.testString is not used',
+          'location': LocationMatcher( '', 15, 19 ),
+          'location_extent': RangeMatch( '', ( 15, 19 ), ( 15, 29 ) ),
+          'ranges': contains( RangeMatch( '', ( 15, 19 ), ( 15, 29 ) ) ),
+          'fixit_available': False
+        } ),
+      ) )
+
+      return
+    except AssertionError:
+      if time.time() > expiration:
+        raise
+      time.sleep( 0.25 )
 
 
 @IsolatedYcmd
@@ -631,6 +642,7 @@ def FileReadyToParse_ChangeFileContentsFileData_test( app ):
   assert_that( diags, DIAG_MATCHERS_PER_FILE[ unsaved_buffer_path ] )
 
 
+@WithRetry
 @SharedYcmd
 def OnBufferUnload_ServerNotRunning_test( app ):
   filepath = TestFactory
