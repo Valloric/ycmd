@@ -50,7 +50,7 @@ void foo() {
   assert_that( results,
                contains(
                   has_entries( {
-                    'kind': equal_to( 'DiagnosticKind.ERROR' ),
+                    'kind': equal_to( 'ERROR' ),
                     'text': contains_string( 'cannot initialize' ),
                     'ranges': contains( has_entries( {
                       'start': has_entries( {
@@ -237,13 +237,13 @@ def Diagnostics_MultipleMissingIncludes_test( app ):
 
   assert_that( response, has_items(
     has_entries( {
-      'kind': equal_to( 'DiagnosticKind.ERROR' ),
+      'kind': equal_to( 'ERROR' ),
       'location': has_entries( { 'line_num': 1, 'column_num': 10 } ),
       'text': equal_to( "'first_missing_include' file not found" ),
       'fixit_available': False
     } ),
     has_entries( {
-      'kind': equal_to( 'DiagnosticKind.ERROR' ),
+      'kind': equal_to( 'ERROR' ),
       'location': has_entries( { 'line_num': 2, 'column_num': 10 } ),
       'text': equal_to( "'second_missing_include' file not found" ),
       'fixit_available': False
@@ -266,7 +266,7 @@ def Diagnostics_LocationExtent_MissingSemicolon_test( app ):
 
   assert_that( response, contains(
     has_entries( {
-      'kind': equal_to( 'DiagnosticKind.ERROR' ),
+      'kind': equal_to( 'ERROR' ),
       'location': has_entries( {
         'line_num': 2,
         'column_num': 9,
@@ -289,7 +289,7 @@ def Diagnostics_LocationExtent_MissingSemicolon_test( app ):
       'fixit_available': True
     } ),
     has_entries( {
-      'kind': equal_to( 'DiagnosticKind.ERROR' ),
+      'kind': equal_to( 'ERROR' ),
       'location': has_entries( {
         'line_num': 5,
         'column_num': 1,
@@ -312,7 +312,7 @@ def Diagnostics_LocationExtent_MissingSemicolon_test( app ):
       'fixit_available': False
     } ),
     has_entries( {
-      'kind': equal_to( 'DiagnosticKind.ERROR' ),
+      'kind': equal_to( 'ERROR' ),
       'location': has_entries( {
         'line_num': 8,
         'column_num': 7,

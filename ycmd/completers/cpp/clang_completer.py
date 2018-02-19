@@ -464,11 +464,17 @@ class ClangCompleter( Completer ):
 
 
 def ConvertCompletionData( completion_data ):
+  completion_kind = client_data.kind_
+  for key, value in iteritems( completion_kind.__members__ ):
+    if completion_kind == value:
+      kind = key
+      break
+
   return responses.BuildCompletionData(
     insertion_text = completion_data.TextToInsertInBuffer(),
     menu_text = completion_data.MainCompletionText(),
     extra_menu_info = completion_data.ExtraMenuInfo(),
-    kind = completion_data.kind_,
+    kind = kind,
     detailed_info = completion_data.DetailedInfoForPreviewWindow(),
     extra_data = ( { 'doc_string': completion_data.DocString() }
                    if completion_data.DocString() else None ) )

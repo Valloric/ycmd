@@ -24,6 +24,7 @@ from __future__ import absolute_import
 from builtins import *  # noqa
 
 import os
+from future.utils import iteritems
 from ycmd.utils import ProcessIsRunning
 
 
@@ -217,8 +218,11 @@ class Location( object ):
 
 
 def BuildDiagnosticData( diagnostic ):
-  kind = ( diagnostic.kind_.name if hasattr( diagnostic.kind_, 'name' )
-           else diagnostic.kind_ )
+  diag_kind = diagnostic.kind_
+  for key, value in iteritems( diag_kind.__members__ ):
+    if diag_kind == value:
+      kind = key
+      break
 
   fixits = ( diagnostic.fixits_ if hasattr( diagnostic, 'fixits_' ) else [] )
 
