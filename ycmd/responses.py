@@ -219,10 +219,17 @@ class Location( object ):
 
 def BuildDiagnosticData( diagnostic ):
   diag_kind = diagnostic.kind_
-  for key, value in iteritems( diag_kind.__members__ ):
-    if diag_kind == value:
-      kind = key
-      break
+  # Boost.Python has `name` for its enum_ class.
+  # Pybind11 has `__members__`, which is equivalent to Boost.Python's `names`.
+  if hasattr( diag_kind, 'name' ):
+    kind = diag_kind.name
+  elif hasattr( diag_kind, '__members__' ):
+    for key, value in iteritems( diag_kind.__members__ ):
+      if diag_kind == value:
+        kind = key
+        break
+  else:
+    kind = diag_kind
 
   fixits = ( diagnostic.fixits_ if hasattr( diagnostic, 'fixits_' ) else [] )
 

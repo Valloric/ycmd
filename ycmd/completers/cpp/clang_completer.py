@@ -464,7 +464,7 @@ class ClangCompleter( Completer ):
 
 
 def ConvertCompletionData( completion_data ):
-  completion_kind = client_data.kind_
+  completion_kind = completion_data.kind_
   for key, value in iteritems( completion_kind.__members__ ):
     if completion_kind == value:
       kind = key
