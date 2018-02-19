@@ -108,8 +108,8 @@ PYBIND11_MODULE(ycm_core, m)
   // outlive our UnsavedFile objects.
   class_< UnsavedFile >( m, "UnsavedFile" )
     .def( init<>() )
-    .def_readwrite( "filename_", &UnsavedFile::filename_, return_value_policy::take_ownership )
-    .def_readwrite( "contents_", &UnsavedFile::contents_, return_value_policy::take_ownership )
+    .def_readwrite( "filename_", &UnsavedFile::filename_, return_value_policy::take_ownership, keep_alive<0,1> )
+    .def_readwrite( "contents_", &UnsavedFile::contents_, return_value_policy::take_ownership, keep_alive<0,1> )
     .def_readwrite( "length_", &UnsavedFile::length_ );
 
   bind_vector< std::vector< UnsavedFile > >( m, "UnsavedFileVector" );
