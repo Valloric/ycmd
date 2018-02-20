@@ -56,13 +56,12 @@ private:
   CharacterRepository() = default;
   ~CharacterRepository() = default;
 
-  std::mutex holder_mutex_;
-
-  static std::mutex singleton_mutex_;
   static CharacterRepository *instance_;
+  static std::mutex instance_mutex_;
 
   // This data structure owns all the Character pointers
   CharacterHolder character_holder_;
+  std::mutex character_holder_mutex_;
 };
 
 } // namespace YouCompleteMe

@@ -23,13 +23,13 @@
 
 namespace YouCompleteMe {
 
-std::mutex CharacterRepository::singleton_mutex_;
-CharacterRepository *CharacterRepository::instance_ = NULL;
+CharacterRepository *CharacterRepository::instance_ = nullptr;
+std::mutex CharacterRepository::instance_mutex_;
 
 CharacterRepository &CharacterRepository::Instance() {
   // This lock is required as magic statics are not thread-safe on MSVC 12.
   // See https://msdn.microsoft.com/en-us/library/hh567368#concurrencytable
-  std::lock_guard< std::mutex > locker( singleton_mutex_ );
+  std::lock_guard< std::mutex > locker( instance_mutex_ );
 
   if ( !instance_ ) {
     static CharacterRepository repo;
@@ -41,7 +41,7 @@ CharacterRepository &CharacterRepository::Instance() {
 
 
 size_t CharacterRepository::NumStoredCharacters() {
-  std::lock_guard< std::mutex > locker( holder_mutex_ );
+  std::lock_guard< std::mutex > locker( character_holder_mutex_ );
   return character_holder_.size();
 }
 
@@ -52,7 +52,7 @@ CharacterSequence CharacterRepository::GetCharacters(
   character_objects.reserve( characters.size() );
 
   {
-    std::lock_guard< std::mutex > locker( holder_mutex_ );
+    std::lock_guard< std::mutex > locker( character_holder_mutex_ );
 
     for ( const std::string & character : characters ) {
       std::unique_ptr< Character > &character_object = GetValueElseInsert(

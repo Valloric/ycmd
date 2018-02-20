@@ -61,10 +61,8 @@ private:
 
   const std::string &ValidatedCandidateText( const std::string &text );
 
-  std::mutex holder_mutex_;
-
-  static std::mutex singleton_mutex_;
   static CandidateRepository *instance_;
+  static std::mutex instance_mutex_;
 
   // MSVC 12 complains that no appropriate default constructor is available if
   // this property is not initialized.
@@ -72,6 +70,7 @@ private:
 
   // This data structure owns all the Candidate pointers
   CandidateHolder candidate_holder_;
+  std::mutex candidate_holder_mutex_;
 };
 
 } // namespace YouCompleteMe

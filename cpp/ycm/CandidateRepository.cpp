@@ -36,13 +36,13 @@ const size_t MAX_CANDIDATE_SIZE = 80;
 }  // unnamed namespace
 
 
-std::mutex CandidateRepository::singleton_mutex_;
 CandidateRepository *CandidateRepository::instance_ = nullptr;
+std::mutex CandidateRepository::instance_mutex_;
 
 CandidateRepository &CandidateRepository::Instance() {
   // This lock is required as magic statics are not thread-safe on MSVC 12.
   // See https://msdn.microsoft.com/en-us/library/hh567368#concurrencytable
-  std::lock_guard< std::mutex > locker( singleton_mutex_ );
+  std::lock_guard< std::mutex > locker( instance_mutex_ );
 
   if ( !instance_ ) {
     static CandidateRepository repo;
@@ -54,7 +54,7 @@ CandidateRepository &CandidateRepository::Instance() {
 
 
 size_t CandidateRepository::NumStoredCandidates() {
-  std::lock_guard< std::mutex > locker( holder_mutex_ );
+  std::lock_guard< std::mutex > locker( candidate_holder_mutex_ );
   return candidate_holder_.size();
 }
 
@@ -65,7 +65,7 @@ std::vector< const Candidate * > CandidateRepository::GetCandidatesForStrings(
   candidates.reserve( strings.size() );
 
   {
-    std::lock_guard< std::mutex > locker( holder_mutex_ );
+    std::lock_guard< std::mutex > locker( candidate_holder_mutex_ );
 
     for ( const std::string & candidate_text : strings ) {
       const std::string &validated_candidate_text =
