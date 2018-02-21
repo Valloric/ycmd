@@ -244,9 +244,16 @@ def _ExtractFlagsList( flags_for_file_output ):
 def _ShouldAllowWinStyleFlags( flags ):
   enable_windows_style_flags = False
   if OnWindows():
-    for flag in flags:
+    # clang-cl implies --driver-mode=cl
+    enable_windows_style_flags = 'clang-cl' in flags[ 0 ]
+    # Iterate in reverse because we only care
+    # about the last occurance of --driver-mode flag.
+    # Even with clang-cl, if the last --driver-mode is not cl
+    # we shouldn't enable win flags.
+    for flag in reversed( flags ):
       if flag.startswith( '--driver-mode' ):
-        enable_windows_style_flags = ( flag == '--driver-mode=cl' )
+        enable_windows_style_flags = flag == '--driver-mode=cl'
+        break
 
   return enable_windows_style_flags
 
