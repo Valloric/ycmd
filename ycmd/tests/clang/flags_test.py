@@ -454,6 +454,24 @@ def RemoveUnusedFlags_RemoveStrayFilenames_CLDriver_test():
                                  ) ) )
 
 
+  # cl path with Windows separators
+  expected = [ 'path\\to\\cl.EXE', '-foo', '-xc++', '-bar', 'include_dir' ]
+  to_remove = [ '-c', 'path\\to\\unrelated_file' ]
+  filename = 'file'
+
+  eq_( expected,
+       flags._RemoveUnusedFlags( expected + to_remove,
+                                 filename,
+                                 _ShouldAllowWinStyleFlags(
+                                   expected + to_remove ) ) )
+  eq_( expected,
+       flags._RemoveUnusedFlags( expected[ :1 ] + to_remove + expected[ 1: ],
+                                 filename,
+                                 _ShouldAllowWinStyleFlags(
+                                   expected[ :1 ] + to_remove + expected[ 1: ]
+                                 ) ) )
+
+
 
 @WindowsOnly
 def RemoveUnusedFlags_MultipleDriverModeFlagsWindows_test():
