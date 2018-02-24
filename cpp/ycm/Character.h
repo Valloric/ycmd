@@ -18,20 +18,24 @@
 #ifndef CHARACTER_H_YTIET2HZ
 #define CHARACTER_H_YTIET2HZ
 
-// This header is required on MSVC 12 for the uint8_t type.
-#include <cstdint>
 #include <string>
 #include <vector>
 
 namespace YouCompleteMe {
 
-using ByteSequence = std::vector< uint8_t >;
+struct RawCharacter {
+  const char *original;
+  const char *uppercase;
+  const char *swapped_case;
+  bool is_letter;
+  bool is_punctuation;
+  bool is_uppercase;
+};
 
 // This class represents an abstract character. It takes a UTF-8 encoded string
-// corresponding to a character, converts it to a sequence of bytes and compute
-// the lowercase and uppercase versions of that sequence using a Unicode table.
-// It also holds some properties like if the character is a letter or a
-// punctuation, and if it is uppercase.
+// corresponding to a character and compute the uppercase and the swapped case
+// versions of that string using a Unicode table. It also holds some properties
+// like if the character is a letter or a punctuation, and if it is uppercase.
 class Character {
 public:
   YCM_EXPORT Character( const std::string &character );
@@ -39,15 +43,15 @@ public:
   Character( const Character& ) = delete;
   Character& operator=( const Character& ) = delete;
 
-  inline ByteSequence Original() const {
+  inline std::string Original() const {
     return original_;
   }
 
-  inline ByteSequence Uppercase() const {
+  inline std::string Uppercase() const {
     return uppercase_;
   }
 
-  inline ByteSequence SwappedCase() const {
+  inline std::string SwappedCase() const {
     return swapped_case_;
   }
 
@@ -72,9 +76,11 @@ public:
   };
 
 private:
-  ByteSequence original_;
-  ByteSequence uppercase_;
-  ByteSequence swapped_case_;
+  Character( const RawCharacter &character );
+
+  std::string original_;
+  std::string uppercase_;
+  std::string swapped_case_;
   bool is_letter_;
   bool is_punctuation_;
   bool is_uppercase_;

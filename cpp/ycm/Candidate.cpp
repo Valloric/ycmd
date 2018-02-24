@@ -22,9 +22,7 @@ namespace YouCompleteMe {
 
 void Candidate::ComputeCaseSwappedText() {
   for ( const auto &character : Characters() ) {
-    for ( uint8_t byte : character->SwappedCase() ) {
-      case_swapped_text_.push_back( byte );
-    }
+    case_swapped_text_.append( character->SwappedCase() );
   }
 }
 
