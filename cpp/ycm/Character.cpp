@@ -16,41 +16,53 @@
 // along with ycmd.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "Character.h"
-#include "UnicodeTable.h"
+
+#include <array>
+#include <cstring>
 
 namespace YouCompleteMe {
 
 namespace {
 
-ByteSequence ConvertStringToByteSequence( const std::string &character ) {
-  ByteSequence byte_sequence;
+const RawCharacter FindCharacter( const char *text ) {
+#include "UnicodeTable.inc"
 
-  for ( uint8_t byte : character ) {
-    byte_sequence.push_back( byte );
+  // Do a binary search on the array of characters to find the raw character
+  // corresponding to the text. If no character is found, return the default raw
+  // character for that text.
+  auto first = characters.begin();
+  size_t count = characters.size();
+
+  for ( auto it = first; count > 0; ) {
+    size_t step = count / 2;
+    it = first + step;
+    int cmp = std::strcmp( it->original, text );
+    if ( cmp == 0 )
+      return *it;
+    if ( cmp < 0 ) {
+      first = ++it;
+      count -= step + 1;
+    } else
+      count = step;
   }
 
-  return byte_sequence;
-};
+  return { text, text, text, false, false, false };
+}
 
 } // unnamed namespace
 
-Character::Character( const std::string &character ) {
-  const RawCharacter raw_character = FindCharacter( character.c_str() );
-  if ( raw_character.original ) {
-    original_ = ConvertStringToByteSequence( raw_character.original );
-    uppercase_ = ConvertStringToByteSequence( raw_character.uppercase );
-    swapped_case_ = ConvertStringToByteSequence( raw_character.swapped_case );
-    is_letter_ = raw_character.is_letter;
-    is_punctuation_ = raw_character.is_punctuation;
-    is_uppercase_ = raw_character.is_uppercase;
-  } else {
-    original_ = ConvertStringToByteSequence( character );
-    uppercase_ = original_;
-    swapped_case_ = original_;
-    is_letter_ = false;
-    is_punctuation_ = false;
-    is_uppercase_ = false;
-  }
+Character::Character( const std::string &character )
+  : Character( FindCharacter( character.c_str() ) ) {
+}
+
+
+Character::Character( const RawCharacter &character )
+  : original_( character.original ),
+    uppercase_( character.uppercase ),
+    swapped_case_( character.swapped_case ),
+    is_letter_( character.is_letter ),
+    is_punctuation_( character.is_punctuation ),
+    is_uppercase_( character.is_uppercase ) {
 }
 
 } // namespace YouCompleteMe
