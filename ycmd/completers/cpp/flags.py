@@ -668,23 +668,20 @@ def UserIncludePaths( user_flags, filename ):
   """
   Returns a tupple ( quoted_include_paths, include_paths )
 
-  quoted_include_paths is a list of tupples. Each tupple in the list contains:
-    - A string representing include path directory specified with `-iquote`.
-    - A boolean specifying if the include path contents should be cached.
-  include_paths is a list of tupples. Each tupple in the list contains:
-    - A string representing include path directory
-      specified with `-I`, `-isystem` or, if we're in CL driver mode, `/I`.
-    - A boolean specifying if the include path contents should be cached.
+  quoted_include_paths is a list of include paths that are only suitable for
+  quoted include statement.
+  include_paths is a list of include paths that can be used for angle bracked
+  and quoted include statement.
   """
-  quoted_include_paths = [ ( ToUnicode( os.path.dirname( filename ) ), False ) ]
+  quoted_include_paths = [ ToUnicode( os.path.dirname( filename ) ) ]
   include_paths = []
 
   if user_flags:
-    include_flags = { '-iquote':  ( quoted_include_paths, False ),
-                      '-I':       ( include_paths, False ),
-                      '-isystem': ( include_paths, True ) }
+    include_flags = { '-iquote':  quoted_include_paths,
+                      '-I':       include_paths,
+                      '-isystem': include_paths }
     if _ShouldAllowWinStyleFlags( user_flags ):
-      include_flags[ '/I' ] = ( include_paths, False )
+      include_flags[ '/I' ] = include_paths
 
     try:
       it = iter( user_flags )
@@ -697,8 +694,7 @@ def UserIncludePaths( user_flags, filename ):
                              user_flag[ flag_len: ] )
             if include_path:
               container = include_flags[ flag ]
-              container[ 0 ].append( ( ToUnicode( include_path ),
-                                       container[ 1 ] ) )
+              container.append( ToUnicode( include_path ) )
             break
     except StopIteration:
       pass

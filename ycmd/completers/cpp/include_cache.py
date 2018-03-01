@@ -82,25 +82,19 @@ class IncludeCache( object ):
     self._cache = {}
 
 
-  def Clear( self ):
-    self._cache = {}
-
-
-  def GetIncludes( self, path, use_cache ):
-    includes = None
-    if use_cache:
-      includes = self._GetCached( path )
+  def GetIncludes( self, path ):
+    includes = self._GetCached( path )
 
     if includes is None:
       includes = self._ListIncludes( path )
-      if use_cache:
-        self._AddToCache( path, includes )
+      self._AddToCache( path, includes )
 
     return includes
 
 
-  def _AddToCache( self, path, includes ):
-    mtime = _GetModificationTime( path )
+  def _AddToCache( self, path, includes, mtime = None ):
+    if not mtime:
+      mtime = _GetModificationTime( path )
     self._cache[ path ] = ( mtime, includes )
 
 
@@ -110,7 +104,7 @@ class IncludeCache( object ):
     if cache_entry:
       mtime = _GetModificationTime( path )
       if mtime > cache_entry[ 0 ]:
-        del self._cache[ path ]
+        self._AddToCache( path, self._ListIncludes( path ), mtime )
       else:
         includes = cache_entry[ 1 ]
 
