@@ -123,12 +123,9 @@ class ClangCompleter( Completer ):
       include_paths.extend( quoted_include_paths )
 
     includes = IncludeList()
-    for include in include_paths:
-      include_value = include[ 0 ]
-      should_use_cache = include[ 1 ]
-      unicode_path = ToUnicode( os.path.join( include_value, path_dir ) )
-      includes.AddIncludes(
-        self._include_cache.GetIncludes( unicode_path, should_use_cache ) )
+    for include_path in include_paths:
+      unicode_path = ToUnicode( os.path.join( include_path, path_dir ) )
+      includes.AddIncludes( self._include_cache.GetIncludes( unicode_path ) )
 
     return includes.GetIncludes()
 
@@ -181,8 +178,6 @@ class ClangCompleter( Completer ):
          self._GoToInclude( request_data ) ),
       'ClearCompilationFlagCache': ( lambda self, request_data, args:
          self._ClearCompilationFlagCache() ),
-      'ClearIncludeCache'        : ( lambda self, request_data, args:
-         self._ClearIncludeCache() ),
       'GetType'                  : ( lambda self, request_data, args:
          self._GetSemanticInfo( request_data, func = 'GetTypeAtLocation' ) ),
       'GetTypeImprecise'         : ( lambda self, request_data, args:
@@ -344,6 +339,7 @@ class ClangCompleter( Completer ):
   def _ClearCompilationFlagCache( self ):
     self._flags.Clear()
 
+
   def _FixIt( self, request_data ):
     filename = request_data[ 'filepath' ]
     if not filename:
@@ -369,10 +365,6 @@ class ClangCompleter( Completer ):
     # in a nice way
 
     return responses.BuildFixItResponse( fixits )
-
-
-  def _ClearIncludeCache( self ):
-    self._include_cache.Clear()
 
 
   def OnFileReadyToParse( self, request_data ):
@@ -573,10 +565,9 @@ def _BuildGetDocResponse( doc_data ):
       ToUnicode( _FormatRawComment( doc_data.raw_comment ) ) ) )
 
 
-def _GetAbsolutePath( include_file_name, includes ):
-  for include in includes:
-    include_value = include[ 0 ]
-    include_file_path = os.path.join( include_value, include_file_name )
+def _GetAbsolutePath( include_file_name, include_paths ):
+  for path in include_paths:
+    include_file_path = os.path.join( path, include_file_name )
     if os.path.isfile( include_file_path ):
       return include_file_path
   return None
