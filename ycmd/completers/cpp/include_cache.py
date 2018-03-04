@@ -95,7 +95,8 @@ class IncludeCache( object ):
   def _AddToCache( self, path, includes, mtime = None ):
     if not mtime:
       mtime = _GetModificationTime( path )
-    self._cache[ path ] = ( mtime, includes )
+    if mtime:
+      self._cache[ path ] = { 'mtime': mtime, 'includes': includes }
 
 
   def _GetCached( self, path ):
@@ -103,10 +104,10 @@ class IncludeCache( object ):
     cache_entry = self._cache.get( path )
     if cache_entry:
       mtime = _GetModificationTime( path )
-      if mtime > cache_entry[ 0 ]:
+      if mtime > cache_entry[ 'mtime' ]:
         self._AddToCache( path, self._ListIncludes( path ), mtime )
       else:
-        includes = cache_entry[ 1 ]
+        includes = cache_entry[ 'includes' ]
 
     return includes
 
@@ -130,4 +131,4 @@ def _GetModificationTime( path ):
   try:
     return os.path.getmtime( path )
   except OSError:
-    return 0
+    return None
