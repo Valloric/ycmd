@@ -26,13 +26,12 @@ from builtins import *  # noqa
 import os
 
 from nose.tools import eq_
-from hamcrest import  ( assert_that,
-                        contains,
-                        has_entries,
-                        has_entry,
-                        has_properties )
+from hamcrest import ( assert_that,
+                       contains,
+                       has_entries,
+                       has_entry,
+                       has_properties )
 
-from ycmd.completers.cpp.clang_completer import ClangCompleter
 from ycmd.completers.cpp.include_cache import IncludeCache
 from ycmd.tests.clang import PathToTestFile
 
@@ -56,12 +55,11 @@ def GetCache_NotCached_DirAccessible_test():
                                    } ) ) )
   assert_that( include_cache._cache,
                has_entry( PathToTestFile( 'cache_test' ),
-                          has_entries( { 'mtime': mtime, 
+                          has_entries( { 'mtime': mtime,
                             'includes': contains( has_properties( {
                                                     'name': 'foo.h',
                                                     'entry_type': 1
-                                                  } ) )
-                                       } ) ) )
+                                                  } ) ) } ) ) )
 
 
 def GetCache_Cached_NoNewMtime_test():
@@ -69,8 +67,6 @@ def GetCache_Cached_NoNewMtime_test():
   eq_( include_cache._cache, {} )
   old_includes = include_cache.GetIncludes( PathToTestFile( 'cache_test' ) )
   old_mtime = os.path.getmtime( PathToTestFile( 'cache_test' ) )
-  # Access time is needed when using os.utime to update mtime.
-  old_atime = os.path.getatime( PathToTestFile( 'cache_test' ) )
 
   assert_that( old_includes, contains( has_properties( {
                                          'name': 'foo.h',
@@ -78,12 +74,11 @@ def GetCache_Cached_NoNewMtime_test():
                                        } ) ) )
   assert_that( include_cache._cache,
                has_entry( PathToTestFile( 'cache_test' ),
-                          has_entries( { 'mtime': old_mtime, 
+                          has_entries( { 'mtime': old_mtime,
                             'includes': contains( has_properties( {
                                                     'name': 'foo.h',
                                                     'entry_type': 1
-                                                  } ) )
-                                       } ) ) )
+                                                  } ) ) } ) ) )
 
   new_includes = include_cache.GetIncludes( PathToTestFile( 'cache_test' ) )
   new_mtime = os.path.getmtime( PathToTestFile( 'cache_test' ) )
@@ -95,12 +90,11 @@ def GetCache_Cached_NoNewMtime_test():
                                        } ) ) )
   assert_that( include_cache._cache,
                has_entry( PathToTestFile( 'cache_test' ),
-                          has_entries( { 'mtime': new_mtime, 
+                          has_entries( { 'mtime': new_mtime,
                             'includes': contains( has_properties( {
                                                     'name': 'foo.h',
                                                     'entry_type': 1
-                                                  } ) )
-                                       } ) ) )
+                                                  } ) ) } ) ) )
 
 
 def GetCache_Cached_NewMtime_test():
@@ -117,12 +111,11 @@ def GetCache_Cached_NewMtime_test():
                                        } ) ) )
   assert_that( include_cache._cache,
                has_entry( PathToTestFile( 'cache_test' ),
-                          has_entries( { 'mtime': old_mtime, 
+                          has_entries( { 'mtime': old_mtime,
                             'includes': contains( has_properties( {
                                                     'name': 'foo.h',
                                                     'entry_type': 1
-                                                  } ) )
-                                       } ) ) )
+                                                  } ) ) } ) ) )
 
   # Modify the modification time
   os.utime( PathToTestFile( 'cache_test' ), ( old_atime, old_mtime + 1 ) )
@@ -137,9 +130,8 @@ def GetCache_Cached_NewMtime_test():
                                        } ) ) )
   assert_that( include_cache._cache,
                has_entry( PathToTestFile( 'cache_test' ),
-                          has_entries( { 'mtime': new_mtime, 
+                          has_entries( { 'mtime': new_mtime,
                             'includes': contains( has_properties( {
                                                     'name': 'foo.h',
                                                     'entry_type': 1
-                                                  } ) )
-                                       } ) ) )
+                                                  } ) ) } ) ) )
