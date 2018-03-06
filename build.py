@@ -530,6 +530,20 @@ def BuildYcmdLib( args ):
       rmtree( build_dir, ignore_errors = OnCiService() )
 
 
+def BuildRegexModule( args ):
+  regex_dir = p.join( DIR_OF_THIRD_PARTY, 'regex', 'py{}'.format( PY_MAJOR ) )
+  pip_command = [ sys.executable, '-m', 'pip', 'install', '--upgrade',
+                  'regex==2018.02.21', '-t', regex_dir ]
+  # We need to add the --system option on Debian-like distributions. See
+  # https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=830892
+  pip_help_output = subprocess.check_output( pip_command + [ '--help' ] )
+  if '--system' in pip_help_output.decode( 'utf8' ):
+    pip_command.append( '--system' )
+  CheckCall( pip_command,
+             quiet = args.quiet,
+             status_message = 'Building regex module' )
+
+
 def EnableCsCompleter( args ):
   build_command = PathToFirstExistingExecutable(
     [ 'msbuild', 'msbuild.exe', 'xbuild' ] )
@@ -678,6 +692,7 @@ def Main():
   if not args.skip_build:
     ExitIfYcmdLibInUseOnWindows()
     BuildYcmdLib( args )
+    BuildRegexModule( args )
     WritePythonUsedDuringBuild()
   if args.cs_completer or args.omnisharp_completer or args.all_completers:
     EnableCsCompleter( args )
