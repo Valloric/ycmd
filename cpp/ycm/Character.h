@@ -41,12 +41,20 @@ public:
     return normal_;
   }
 
+  inline std::string Base() const {
+    return base_;
+  }
+
   inline std::string FoldedCase() const {
     return folded_case_;
   }
 
   inline std::string SwappedCase() const {
     return swapped_case_;
+  }
+
+  inline bool IsBase() const {
+    return is_base_;
   }
 
   inline bool IsLetter() const {
@@ -65,14 +73,20 @@ public:
     return normal_ == other.normal_;
   };
 
+  inline bool EqualsBase( const Character &other ) const {
+    return base_ == other.base_;
+  }
+
   inline bool EqualsIgnoreCase( const Character &other ) const {
     return folded_case_ == other.folded_case_;
   };
 
 private:
   std::string normal_;
+  std::string base_;
   std::string folded_case_;
   std::string swapped_case_;
+  bool is_base_;
   bool is_letter_;
   bool is_punctuation_;
   bool is_uppercase_;

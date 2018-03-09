@@ -112,7 +112,11 @@ Result Candidate::QueryMatchResult( const Word &query ) const {
     const auto &candidate_character = *candidate_character_pos;
     const auto &query_character = *query_character_pos;
 
-    if ( ( !query_character->IsUppercase() &&
+    if ( ( query_character->IsBase() &&
+           query_character->EqualsBase( *candidate_character ) &&
+           ( !query_character->IsUppercase() ||
+             candidate_character->IsUppercase() ) ) ||
+         ( !query_character->IsUppercase() &&
            query_character->EqualsIgnoreCase( *candidate_character ) ) ||
          *query_character == *candidate_character ) {
       index_sum += candidate_index;
