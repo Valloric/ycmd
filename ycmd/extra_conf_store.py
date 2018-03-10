@@ -191,15 +191,16 @@ def Load( module_file, force = False ):
 
 
 def _MatchesGlobPattern( filename, glob ):
-  """Returns true if a filename matches a given pattern. A '~' in glob will be
-  expanded to the home directory and checking will be performed using absolute
-  paths with symlinks resolved (except on Windows). See the documentation of
-  fnmatch for the supported patterns."""
+  """Returns true if a filename matches a given pattern. Environment variables
+  and a '~' in glob will be expanded and checking will be performed using
+  absolute paths with symlinks resolved (except on Windows). See the
+  documentation of fnmatch for the supported patterns."""
 
   # NOTE: os.path.realpath does not resolve symlinks on Windows.
   # See https://bugs.python.org/issue9949
   realpath = os.path.realpath( filename )
-  return fnmatch( realpath, os.path.realpath( os.path.expanduser( glob ) ) )
+  return fnmatch( realpath, os.path.realpath(
+    os.path.expanduser( os.path.expandvars( glob ) ) ) )
 
 
 def _ExtraConfModuleSourceFilesForFile( filename ):
@@ -233,5 +234,5 @@ def _RandomName():
 
 
 def _GlobalYcmExtraConfFileLocation():
-  return os.path.expanduser(
-    user_options_store.Value( 'global_ycm_extra_conf' ) )
+  return os.path.expandvars( os.path.expanduser(
+    user_options_store.Value( 'global_ycm_extra_conf' ) ) )
