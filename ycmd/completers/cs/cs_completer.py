@@ -104,10 +104,6 @@ class CsharpCompleter( Completer ):
     return True
 
 
-  def CompletionType( self, request_data ):
-    return request_data[ 'force_semantic' ]
-
-
   def ComputeCandidatesInner( self, request_data ):
     solutioncompleter = self._GetSolutionCompleter( request_data )
     return [ responses.BuildCompletionData(
@@ -429,10 +425,6 @@ class CsharpSolutionCompleter( object ):
     """ Reloads the solutions in the OmniSharp server """
     self._logger.info( 'Reloading Solution in OmniSharp server' )
     return self._GetResponse( '/reloadsolution' )
-
-
-  def CompletionType( self, request_data ):
-    return request_data[ 'force_semantic' ]
 
 
   def _GetCompletions( self, request_data ):
