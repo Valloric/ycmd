@@ -69,6 +69,8 @@ def Subcommands_DefinedSubcommands_test( app ):
                  'GetDoc',
                  'GetType',
                  'GoToReferences',
+                 'OrganizeImports',
+                 'OrganizeProjectImports',
                  'RefactorRename',
                  'RestartServer' ] ),
        app.post_json( '/defined_subcommands', subcommands_data ).json )
@@ -111,6 +113,8 @@ def Subcommands_ServerNotReady_test():
   yield Test, 'GetDoc', []
   yield Test, 'FixIt', []
   yield Test, 'Format', []
+  yield Test, 'OrganizeImports', []
+  yield Test, 'OrganizeProjectImports', []
   yield Test, 'RefactorRename', [ 'test' ]
 
 
@@ -1496,6 +1500,110 @@ def Subcommands_GoTo_test():
               test[ 'request' ][ 'col' ],
               command,
               has_entries( test[ 'response' ] ) )
+
+
+@WithRetry
+@SharedYcmd
+def Subcommands_OrganizeImports_test( app ):
+  filepath = PathToTestFile( 'simple_eclipse_project',
+                             'src',
+                             'com',
+                             'test',
+                             'TestLauncher.java' )
+  RunTest( app, {
+    'description': 'Imports in the current file are resolved and sorted, and '
+                   'unused ones are removed',
+    'request': {
+      'command': 'OrganizeImports',
+      'filepath': filepath
+    },
+    'expect': {
+      'response': requests.codes.ok,
+      'data': has_entries( {
+        'fixits': contains( has_entries( {
+          'chunks': contains(
+            ChunkMatcher( 'import com.youcompleteme.Test;',
+                          LocationMatcher( filepath, 3,  1 ),
+                          LocationMatcher( filepath, 3,  1 ) ),
+            ChunkMatcher( '\n',
+                          LocationMatcher( filepath, 3,  1 ),
+                          LocationMatcher( filepath, 3,  1 ) ),
+            ChunkMatcher( '',
+                          LocationMatcher( filepath, 3, 39 ),
+                          LocationMatcher( filepath, 4, 54 ) ),
+          )
+        } ) )
+      } )
+    }
+  } )
+
+
+@WithRetry
+@SharedYcmd
+def Subcommands_OrganizeProjectImports_test( app ):
+  TestFactory = PathToTestFile( 'simple_eclipse_project',
+                                'src',
+                                'com',
+                                'test',
+                                'TestFactory.java' )
+  TestLauncher = PathToTestFile( 'simple_eclipse_project',
+                                 'src',
+                                 'com',
+                                 'test',
+                                 'TestLauncher.java' )
+  Tset = PathToTestFile( 'simple_eclipse_project',
+                         'src',
+                         'com',
+                         'youcompleteme',
+                         'testing',
+                         'Tset.java' )
+  RunTest( app, {
+    'description': 'Imports in the current project are resolved and sorted, '
+                   'and unused ones are removed',
+    'request': {
+      'command': 'OrganizeProjectImports',
+      'filepath': TestLauncher
+    },
+    'expect': {
+      'response': requests.codes.ok,
+      'data': has_entries( {
+        'fixits': contains( has_entries( {
+          'chunks': contains(
+            ChunkMatcher( '\n\n',
+                          LocationMatcher( TestFactory,  1, 18 ),
+                          LocationMatcher( TestFactory,  1, 18 ) ),
+            ChunkMatcher( 'import com.test.wobble.Wibble;',
+                          LocationMatcher( TestFactory,  1, 18 ),
+                          LocationMatcher( TestFactory,  1, 18 ) ),
+            ChunkMatcher( '\n\n',
+                          LocationMatcher( TestFactory,  1, 18 ),
+                          LocationMatcher( TestFactory,  1, 18 ) ),
+            ChunkMatcher( '',
+                          LocationMatcher( TestFactory,  1, 18 ),
+                          LocationMatcher( TestFactory,  3,  1 ) ),
+            ChunkMatcher( 'import com.youcompleteme.Test;',
+                          LocationMatcher( TestLauncher, 3,  1 ),
+                          LocationMatcher( TestLauncher, 3,  1 ) ),
+            ChunkMatcher( '\n',
+                          LocationMatcher( TestLauncher, 3,  1 ),
+                          LocationMatcher( TestLauncher, 3,  1 ) ),
+            ChunkMatcher( '',
+                          LocationMatcher( TestLauncher, 3, 39 ),
+                          LocationMatcher( TestLauncher, 4, 54 ) ),
+            ChunkMatcher( '\n\n',
+                          LocationMatcher( Tset,         3, 22 ),
+                          LocationMatcher( Tset,         3, 22 ) ),
+            ChunkMatcher( 'import com.youcompleteme.Test;',
+                          LocationMatcher( Tset,         3, 22 ),
+                          LocationMatcher( Tset,         3, 22 ) ),
+            ChunkMatcher( '',
+                          LocationMatcher( Tset,         3, 22 ),
+                          LocationMatcher( Tset,         4, 28 ) ),
+          )
+        } ) )
+      } )
+    }
+  } )
 
 
 @WithRetry
