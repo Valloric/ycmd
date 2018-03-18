@@ -37,7 +37,6 @@ import requests
 from ycmd.utils import ReadFile
 from ycmd.completers.java.java_completer import NO_DOCUMENTATION_MESSAGE
 from ycmd.tests.java import ( DEFAULT_PROJECT_DIR,
-                              IsolatedYcmd,
                               PathToTestFile,
                               SharedYcmd,
                               StartJavaCompleterServerInDirectory )
@@ -166,7 +165,7 @@ def RunTest( app, test, contents = None ):
 
 
 @WithRetry
-@IsolatedYcmd
+@SharedYcmd
 def Subcommands_GetDoc_NoDoc_test( app ):
   StartJavaCompleterServerInDirectory( app,
                                        PathToTestFile( DEFAULT_PROJECT_DIR ) )
@@ -248,7 +247,8 @@ def Subcommands_GetDoc_Class_test( app ):
   } )
 
 
-@IsolatedYcmd
+@WithRetry
+@SharedYcmd
 def Subcommands_GetType_NoKnownType_test( app ):
   StartJavaCompleterServerInDirectory( app,
                                        PathToTestFile( DEFAULT_PROJECT_DIR ) )
@@ -488,7 +488,8 @@ def Subcommands_GetType_LiteralValue_test( app ):
                ErrorMatcher( RuntimeError, 'Unknown type' ) )
 
 
-@IsolatedYcmd
+@WithRetry
+@SharedYcmd
 def Subcommands_GoTo_NoLocation_test( app ):
   StartJavaCompleterServerInDirectory( app,
                                        PathToTestFile( DEFAULT_PROJECT_DIR ) )
@@ -517,7 +518,8 @@ def Subcommands_GoTo_NoLocation_test( app ):
                ErrorMatcher( RuntimeError, 'Cannot jump to location' ) )
 
 
-@IsolatedYcmd
+@WithRetry
+@SharedYcmd
 def Subcommands_GoToReferences_NoReferences_test( app ):
   StartJavaCompleterServerInDirectory( app,
                                        PathToTestFile( DEFAULT_PROJECT_DIR ) )
