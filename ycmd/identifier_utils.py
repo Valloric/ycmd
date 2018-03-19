@@ -149,6 +149,16 @@ FILETYPE_TO_IDENTIFIER_REGEX = {
 
     # Spec: http://doc.perl6.org/language/syntax
     'perl6': re.compile( r"[_a-zA-Z](?:\w|[-'](?=[_a-zA-Z]))*", re.UNICODE ),
+
+    # https://www.scheme.com/tspl4/grammar.html#grammar:symbols
+    # TODO:⟨any character whose Unicode scalar value is greater than
+    # 127 and whose category is Lu, Ll, Lt, Lm, Lo, Mn,
+    # Nl, No, Pd, Pc, Po, Sc, Sm, Sk, So, or Co⟩
+    # eg. λ (U+03BB) is vailed identifier
+    'scheme': re.compile(r"\+|\-|\.\.\.|"
+                         r"(?:->|(:?\\x[0-9A-Fa-f]+;|[!$%&*/:<=>?~_^A-Za-z]))"
+                         r"(?:\\x[0-9A-Fa-f]+;|[-+.@!$%&*/:<=>?~_^\d\w])*",
+                         re.UNICODE),
 }
 
 FILETYPE_TO_IDENTIFIER_REGEX[ 'typescript' ] = (
@@ -188,7 +198,7 @@ def IsIdentifier( text, filetype = None ):
   if not text:
     return False
   regex = IdentifierRegexForFiletype( filetype )
-  match = regex.match( text )
+  match = regex.fullmatch( text )
   return match and match.end() == len( text )
 
 
