@@ -198,7 +198,7 @@ def IsIdentifier( text, filetype = None ):
   if not text:
     return False
   regex = IdentifierRegexForFiletype( filetype )
-  match = regex.fullmatch( text )
+  match = regex.match( text )
   return match and match.end() == len( text )
 
 
