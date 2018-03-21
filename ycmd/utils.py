@@ -335,11 +335,6 @@ def PathsToAllParentFolders( path ):
     yield folder
 
 
-def ForceSemanticCompletion( request_data ):
-  return ( 'force_semantic' in request_data and
-           bool( request_data[ 'force_semantic' ] ) )
-
-
 # A wrapper for subprocess.Popen that fixes quirks on Windows.
 def SafePopen( args, **kwargs ):
   if OnWindows():
