@@ -156,8 +156,8 @@ FILETYPE_TO_IDENTIFIER_REGEX = {
     # Nl, No, Pd, Pc, Po, Sc, Sm, Sk, So, or Co⟩
     # eg. λ (U+03BB) is vailed identifier
     'scheme': re.compile(r"\+|\-|\.\.\.|"
-                         r"(?:->|(:?\\x[0-9A-Fa-f]+;|[!$%&*/:<=>?~_^A-Za-z]))"
-                         r"(?:\\x[0-9A-Fa-f]+;|[-+.@!$%&*/:<=>?~_^\d\w])*",
+                         r"(?:->|(:?\\x[0-9A-Fa-f]+;|[!$%&*/:<=>?~^]|[^\W\d]))"
+                         r"(?:\\x[0-9A-Fa-f]+;|[-+.@!$%&*/:<=>?~^\w])*",
                          re.UNICODE),
 }
 
