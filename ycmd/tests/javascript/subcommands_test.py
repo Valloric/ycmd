@@ -32,6 +32,7 @@ from ycmd.tests.javascript import ( IsolatedYcmd, PathToTestFile, SharedYcmd,
                                     StartJavaScriptCompleterServerInDirectory )
 from ycmd.tests.test_utils import ( BuildRequest,
                                     ChunkMatcher,
+                                    CombineRequest,
                                     ErrorMatcher,
                                     LocationMatcher )
 from ycmd.utils import ReadFile
@@ -55,11 +56,6 @@ def Subcommands_DefinedSubcommands_test( app ):
 def RunTest( app, test, contents = None ):
   if not contents:
     contents = ReadFile( test[ 'request' ][ 'filepath' ] )
-
-  def CombineRequest( request, data ):
-    kw = request
-    request.update( data )
-    return BuildRequest( **kw )
 
   # Because we aren't testing this command, we *always* ignore errors. This
   # is mainly because we (may) want to test scenarios where the completer
