@@ -63,13 +63,34 @@ def GetCompletions_Basic_test( app ):
     'expect': {
       'data': has_entries( {
         'completions': contains_inanyorder(
-          CompletionEntryMatcher( 'methodA', extra_params = {
-            'menu_text': 'methodA (method) Foo.methodA(): void' } ),
-          CompletionEntryMatcher( 'methodB', extra_params = {
-            'menu_text': 'methodB (method) Foo.methodB(): void' } ),
-          CompletionEntryMatcher( 'methodC', extra_params = {
-            'menu_text': ( 'methodC (method) Foo.methodC(a: '
-                           '{ foo: string; bar: number; }): void' ) } ),
+          CompletionEntryMatcher(
+            'methodA',
+            '(method) Foo.methodA(): void',
+            extra_params = {
+              'kind': 'method',
+              'detailed_info': '(method) Foo.methodA(): void\n\n'
+                               'Unicode string: 说话'
+            }
+          ),
+          CompletionEntryMatcher(
+            'methodB',
+            '(method) Foo.methodB(): void',
+            extra_params = {
+              'kind': 'method',
+              'detailed_info': '(method) Foo.methodB(): void'
+            }
+          ),
+          CompletionEntryMatcher(
+            'methodC',
+            '(method) Foo.methodC(a: { foo: string; bar: number; }): void',
+            extra_params = {
+              'kind': 'method',
+              'detailed_info': '(method) Foo.methodC(a: {\n'
+                               '    foo: string;\n'
+                               '    bar: number;\n'
+                               '}): void'
+            }
+          )
         )
       } )
     }
@@ -92,15 +113,23 @@ def GetCompletions_MaxDetailedCompletion_test( app ):
           ),
           is_not( any_of(
             has_item(
-              CompletionEntryMatcher( 'methodA', extra_params = {
-                'menu_text': 'methodA (method) Foo.methodA(): void' } ) ),
+              CompletionEntryMatcher(
+                'methodA',
+                '(method) Foo.methodA(): void'
+              )
+            ),
             has_item(
-              CompletionEntryMatcher( 'methodB', extra_params = {
-                'menu_text': 'methodB (method) Foo.methodB(): void' } ) ),
+              CompletionEntryMatcher(
+                'methodB',
+                '(method) Foo.methodB(): void'
+              )
+            ),
             has_item(
-              CompletionEntryMatcher( 'methodC', extra_params = {
-                'menu_text': ( 'methodC (method) Foo.methodC(a: '
-                               '{ foo: string; bar: number; }): void' ) } ) )
+              CompletionEntryMatcher(
+                'methodC',
+                '(method) Foo.methodC(a: { foo: string; bar: number; }): void'
+              )
+            )
           ) )
         )
       } )
@@ -125,18 +154,37 @@ def GetCompletions_AfterRestart_test( app ):
                                   line_num = 17,
                                   column_num = 6 )
 
-  response = app.post_json( '/completions', completion_data )
-  assert_that( response.json, has_entries( {
-        'completions': contains_inanyorder(
-          CompletionEntryMatcher( 'methodA', extra_params = {
-            'menu_text': 'methodA (method) Foo.methodA(): void' } ),
-          CompletionEntryMatcher( 'methodB', extra_params = {
-            'menu_text': 'methodB (method) Foo.methodB(): void' } ),
-          CompletionEntryMatcher( 'methodC', extra_params = {
-            'menu_text': ( 'methodC (method) Foo.methodC(a: '
-                           '{ foo: string; bar: number; }): void' ) } ),
+  assert_that(
+    app.post_json( '/completions', completion_data ).json,
+    has_entries( {
+      'completions': contains_inanyorder(
+        CompletionEntryMatcher(
+          'methodA',
+          '(method) Foo.methodA(): void',
+          extra_params = { 'kind': 'method' }
+        ),
+        CompletionEntryMatcher(
+          'methodB',
+          '(method) Foo.methodB(): void',
+          extra_params = {
+            'kind': 'method',
+            'detailed_info': '(method) Foo.methodB(): void'
+          }
+        ),
+        CompletionEntryMatcher(
+          'methodC',
+          '(method) Foo.methodC(a: { foo: string; bar: number; }): void',
+          extra_params = {
+            'kind': 'method',
+            'detailed_info': '(method) Foo.methodC(a: {\n'
+                             '    foo: string;\n'
+                             '    bar: number;\n'
+                             '}): void'
+          }
         )
-      } ) )
+      )
+    } )
+  )
 
 
 @IsolatedYcmd
