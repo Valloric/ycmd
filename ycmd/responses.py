@@ -1,5 +1,4 @@
-# Copyright (C) 2013 Google Inc.
-#               2017 ycmd contributors
+# Copyright (C) 2013-2018 ycmd contributors
 #
 # This file is part of ycmd.
 #
@@ -152,12 +151,19 @@ def BuildRangeData( source_range ):
 
 
 class Diagnostic( object ):
-  def __init__ ( self, ranges, location, location_extent, text, kind ):
+  def __init__( self,
+                ranges,
+                location,
+                location_extent,
+                text,
+                kind,
+                fixits = [] ):
     self.ranges_ = ranges
     self.location_ = location
     self.location_extent_ = location_extent
     self.text_ = text
     self.kind_ = kind
+    self.fixits_ = fixits
 
 
 class FixIt( object ):
@@ -221,15 +227,13 @@ def BuildDiagnosticData( diagnostic ):
   kind = ( diagnostic.kind_.name if hasattr( diagnostic.kind_, 'name' )
            else diagnostic.kind_ )
 
-  fixits = ( diagnostic.fixits_ if hasattr( diagnostic, 'fixits_' ) else [] )
-
   return {
     'ranges': [ BuildRangeData( x ) for x in diagnostic.ranges_ ],
     'location': BuildLocationData( diagnostic.location_ ),
     'location_extent': BuildRangeData( diagnostic.location_extent_ ),
     'text': diagnostic.text_,
     'kind': kind,
-    'fixit_available': len( fixits ) > 0,
+    'fixit_available': len( diagnostic.fixits_ ) > 0,
   }
 
 
