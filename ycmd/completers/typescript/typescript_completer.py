@@ -1,5 +1,4 @@
-# Copyright (C) 2015-2016 Google Inc.
-#               2016-2017 ycmd contributors
+# Copyright (C) 2015-2018 ycmd contributors
 #
 # This file is part of ycmd.
 #
@@ -442,6 +441,8 @@ class TypeScriptCompleter( Completer ):
                            self._GetType( request_data ) ),
       'GetDoc'         : ( lambda self, request_data, args:
                            self._GetDoc( request_data ) ),
+      'OrganizeImports': ( lambda self, request_data, args:
+                           self._OrganizeImports( request_data ) ),
       'RefactorRename' : ( lambda self, request_data, args:
                            self._RefactorRename( request_data, args ) ),
     }
@@ -617,6 +618,28 @@ class TypeScriptCompleter( Completer ):
     return responses.BuildDetailedInfoResponse( message )
 
 
+  def _OrganizeImports( self, request_data ):
+    self._Reload( request_data )
+
+    filepath = request_data[ 'filepath' ]
+    changes = self._SendRequest( 'organizeImports', {
+      'scope': {
+        'type': 'file',
+        'args': {
+          'file': filepath
+        }
+      }
+    } )
+
+    location = responses.Location( request_data[ 'line_num' ],
+                                   request_data[ 'column_num' ],
+                                   filepath )
+    return responses.BuildFixItResponse( [
+      responses.FixIt( location,
+                       _BuildFixItForChanges( request_data, changes ) )
+    ] )
+
+
   def _RefactorRename( self, request_data, args ):
     if len( args ) != 1:
       raise ValueError( 'Please specify a new name to rename it to.\n'
@@ -770,7 +793,7 @@ def _BuildFixItChunkForRange( new_name,
                               file_contents,
                               file_name,
                               source_range ):
-  """ returns list FixItChunk for a tsserver source range """
+  """Returns list FixItChunk for a tsserver source range."""
   return responses.FixItChunk(
       new_name,
       responses.Range(
@@ -785,10 +808,9 @@ def _BuildFixItChunkForRange( new_name,
 
 
 def _BuildFixItChunksForFile( request_data, new_name, file_replacement ):
-  """ returns a list of FixItChunk for each replacement range for the
-  supplied file"""
-
-  # On windows, tsserver annoyingly returns file path as C:/blah/blah,
+  """Returns a list of FixItChunk for each replacement range for the supplied
+  file."""
+  # On Windows, TSServer annoyingly returns file path as C:/blah/blah,
   # whereas all other paths in Python are of the C:\\blah\\blah form. We use
   # normpath to have python do the conversion for us.
   file_path = os.path.normpath( file_replacement[ 'file' ] )
@@ -797,11 +819,29 @@ def _BuildFixItChunksForFile( request_data, new_name, file_replacement ):
            for r in file_replacement[ 'locs' ] ]
 
 
+def _BuildFixItForChanges( request_data, changes ):
+  """Returns a list of FixItChunk given a list of TSServer changes."""
+  chunks = []
+  for change in changes:
+    # On Windows, TSServer annoyingly returns file path as C:/blah/blah,
+    # whereas all other paths in Python are of the C:\\blah\\blah form. We use
+    # normpath to have python do the conversion for us.
+    file_path = os.path.normpath( change[ 'fileName' ] )
+    file_contents = GetFileLines( request_data, file_path )
+    for text_change in change[ 'textChanges' ]:
+      chunks.append( _BuildFixItChunkForRange(
+        text_change[ 'newText' ],
+        file_contents,
+        file_path,
+        text_change ) )
+  return chunks
+
+
 def _BuildLocation( file_contents, filename, line, offset ):
   return responses.Location(
     line = line,
-    # tsserver returns codepoint offsets, but we need byte offsets, so we must
-    # convert
+    # TSServer returns codepoint offsets, but we need byte offsets, so we must
+    # convert.
     column = utils.CodepointOffsetToByteOffset( file_contents[ line - 1 ],
                                                 offset ),
     filename = filename )
