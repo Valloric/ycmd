@@ -1,6 +1,6 @@
 # encoding: utf-8
 #
-# Copyright (C) 2015 ycmd contributors
+# Copyright (C) 2015-2018 ycmd contributors
 #
 # This file is part of ycmd.
 #
@@ -24,7 +24,8 @@ from __future__ import division
 # Not installing aliases from python-future; it's unreliable and slow.
 from builtins import *  # noqa
 
-from hamcrest import assert_that, contains, contains_inanyorder, has_entries
+from hamcrest import ( assert_that, contains, contains_inanyorder, has_entries,
+                       matches_regexp )
 from nose.tools import eq_
 import requests
 import pprint
@@ -89,6 +90,7 @@ def Subcommands_DefinedSubcommands_test( app ):
       'GetDoc',
       'GetType',
       'GoToReferences',
+      'OrganizeImports',
       'RefactorRename',
       'RestartServer'
     )
@@ -358,6 +360,42 @@ def Subcommands_GoToType_Fail_test( app ):
     'expect': {
       'response': requests.codes.internal_server_error,
       'data': ErrorMatcher( RuntimeError, 'Could not find type definition.' )
+    }
+  } )
+
+
+@SharedYcmd
+def Subcommands_OrganizeImports_test( app ):
+  filepath = PathToTestFile( 'imports.ts' )
+  RunTest( app, {
+    'description': 'OrganizeImports removes unused imports, '
+                   'coalesces imports from the same module, and sorts them',
+    'request': {
+      'command': 'OrganizeImports',
+      'filepath': filepath,
+    },
+    'expect': {
+      'response': requests.codes.ok,
+      'data': has_entries( {
+        'fixits': contains( has_entries( {
+          'chunks': contains(
+            ChunkMatcher(
+              matches_regexp(
+                'import \* as namespace from "library";\r?\n'
+                'import func, { func1, func2 } from "library";\r?\n' ),
+              LocationMatcher( filepath,  1, 1 ),
+              LocationMatcher( filepath,  2, 1 ) ),
+            ChunkMatcher(
+              '',
+              LocationMatcher( filepath,  5, 1 ),
+              LocationMatcher( filepath,  6, 1 ) ),
+            ChunkMatcher(
+              '',
+              LocationMatcher( filepath,  9, 1 ),
+              LocationMatcher( filepath, 10, 1 ) ),
+          )
+        } ) )
+      } )
     }
   } )
 
