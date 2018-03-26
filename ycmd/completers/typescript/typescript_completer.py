@@ -382,11 +382,6 @@ class TypeScriptCompleter( Completer ):
       'offset': request_data[ 'start_codepoint' ]
     } )
 
-    # A less detailed version of the completion data is returned
-    # if there are too many entries. This improves responsiveness.
-    if len( entries ) > MAX_DETAILED_COMPLETIONS:
-      return [ _ConvertCompletionData(e) for e in entries ]
-
     detailed_entries = self._SendRequest( 'completionEntryDetails', {
       'file':       request_data[ 'filepath' ],
       'line':       request_data[ 'line_num' ],
