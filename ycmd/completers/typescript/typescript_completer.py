@@ -182,11 +182,12 @@ class TypeScriptCompleter( Completer ):
 
     self._logfile = None
 
+    self._tsserver_lock = threading.RLock()
     self._tsserver_binary_path = FindTsserverBinary()
-
     self._tsserver_handle = None
-    self._tsserver_version_lock = threading.Lock()
     self._tsserver_version = None
+    # Used to read response only if TSServer is running.
+    self._tsserver_is_running = threading.Event()
 
     # Used to prevent threads from concurrently writing to
     # the tsserver process' stdin
@@ -198,11 +199,6 @@ class TypeScriptCompleter( Completer ):
 
     # Used to prevent threads from concurrently accessing the sequence counter
     self._sequenceid_lock = threading.Lock()
-
-    self._server_lock = threading.RLock()
-
-    # Used to read response only if TSServer is running.
-    self._tsserver_is_running = threading.Event()
 
     # Start a thread to read response from TSServer.
     utils.StartThread( self._ReaderLoop )
@@ -224,12 +220,13 @@ class TypeScriptCompleter( Completer ):
 
 
   def _SetServerVersion( self ):
-    with self._tsserver_version_lock:
-      self._tsserver_version = self._SendRequest( 'status' )[ 'version' ]
+    version = self._SendRequest( 'status' )[ 'version' ]
+    with self._tsserver_lock:
+      self._tsserver_version = version
 
 
   def _StartServer( self ):
-    with self._server_lock:
+    with self._tsserver_lock:
       if self._ServerIsRunning():
         return
 
@@ -395,7 +392,7 @@ class TypeScriptCompleter( Completer ):
 
 
   def _ServerIsRunning( self ):
-    with self._server_lock:
+    with self._tsserver_lock:
       return utils.ProcessIsRunning( self._tsserver_handle )
 
 
@@ -691,7 +688,7 @@ class TypeScriptCompleter( Completer ):
 
 
   def _RestartServer( self, request_data ):
-    with self._server_lock:
+    with self._tsserver_lock:
       self._StopServer()
       self._StartServer()
       # This is needed because after we restart the TSServer it would lose all
@@ -704,7 +701,7 @@ class TypeScriptCompleter( Completer ):
 
 
   def _StopServer( self ):
-    with self._server_lock:
+    with self._tsserver_lock:
       if self._ServerIsRunning():
         _logger.info( 'Stopping TSServer with PID {0}'.format(
                           self._tsserver_handle.pid ) )
@@ -732,10 +729,9 @@ class TypeScriptCompleter( Completer ):
 
 
   def DebugInfo( self, request_data ):
-    with self._server_lock:
-      with self._tsserver_version_lock:
-        item_version = responses.DebugInfoItem( 'version',
-                                                self._tsserver_version )
+    with self._tsserver_lock:
+      item_version = responses.DebugInfoItem( 'version',
+                                              self._tsserver_version )
       tsserver = responses.DebugInfoServer(
           name = 'TSServer',
           handle = self._tsserver_handle,
