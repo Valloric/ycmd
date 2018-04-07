@@ -61,7 +61,7 @@ TEST_P( WordTest, BreakIntoCharacters ) {
 
 // Tests generated from
 // ftp://ftp.unicode.org/Public/UCD/latest/ucd/auxiliary/GraphemeBreakTest.txt
-const std::array< WordTuple, 878 > tests = { {
+const std::array< WordTuple, 822 > tests = { {
   { "  ", { " ", " " } },
   { " ̈ ", { " ̈", " " } },
   { " \r", { " ", "\r" } },
