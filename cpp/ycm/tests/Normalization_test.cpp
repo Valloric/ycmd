@@ -74,7 +74,7 @@ TEST_P( NormalizationTest, NormalizationFormDecompositionIsConform ) {
 }
 
 
-const std::array< NormalizationTuple, 18746 > tests = { {
+NormalizationTuple tests[] = {
   { "Ḋ", "Ḋ", "Ḋ", "Ḋ", "Ḋ" },
   { "Ḍ", "Ḍ", "Ḍ", "Ḍ", "Ḍ" },
   { "Ḍ̇", "Ḍ̇", "Ḍ̇", "Ḍ̇", "Ḍ̇" },
@@ -18821,7 +18821,7 @@ const std::array< NormalizationTuple, 18746 > tests = { {
   { "𑒹̴𑒽", "𑒹̴𑒽", "𑒹̴𑒽", "𑒹̴𑒽", "𑒹̴𑒽" },
   { "𑖸̴𑖯", "𑖸̴𑖯", "𑖸̴𑖯", "𑖸̴𑖯", "𑖸̴𑖯" },
   { "𑖹̴𑖯", "𑖹̴𑖯", "𑖹̴𑖯", "𑖹̴𑖯", "𑖹̴𑖯" },
-} };
+};
 
 
 INSTANTIATE_TEST_CASE_P( UnicodeTest, NormalizationTest, ValuesIn( tests ) );
