@@ -148,15 +148,15 @@ struct WordTuple {
   }
 
   WordTuple( const Word &word ) {
-    std::vector< std::string > strings;
-    for ( auto character : word.Characters() ) {
+    std::vector< const char* > strings;
+    for ( const auto &character : word.Characters() ) {
       strings.push_back( character->Normal().c_str() );
     }
-    WordTuple( word.Text(), strings );
+    WordTuple( word.Text().c_str(), strings );
   }
 
-  WordTuple( const std::string &text,
-             const std::vector< std::string > &characters )
+  WordTuple( const char* text,
+             const std::vector< const char* > &characters )
     : text_( text ),
       characters_( characters ) {
   }
@@ -167,8 +167,8 @@ struct WordTuple {
            characters_ == other.characters_;
   };
 
-  std::string text_;
-  std::vector< std::string > characters_;
+  const char* text_;
+  std::vector< const char* > characters_;
 };
 
 
