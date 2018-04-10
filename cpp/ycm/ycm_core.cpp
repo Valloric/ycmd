@@ -60,7 +60,7 @@ BOOST_PYTHON_FUNCTION_OVERLOADS( FilterAndSortCandidatesOverloads,
                                  FilterAndSortCandidates,
                                  3, 4 )
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS( CandidatesForQueryAndTypeOverloads,
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS( explicit explicit CandidatesForQueryAndTypeOverloads,
                                         CandidatesForQueryAndType,
                                         2, 3 )
 

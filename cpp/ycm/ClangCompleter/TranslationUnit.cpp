@@ -481,7 +481,7 @@ namespace {
 ///
 /// PreCondition: All FixIts in the container are on the same line.
 struct sort_by_location {
-  sort_by_location( int column ) : column_( column ) { }
+  explicit sort_by_location( int column ) : column_( column ) { }
 
   bool operator()( const FixIt &a, const FixIt &b ) {
     int a_distance = a.location.column_number_ - column_;
@@ -493,7 +493,8 @@ struct sort_by_location {
 private:
   int column_;
 };
-}
+
+}  // namespace
 
 std::vector< FixIt > TranslationUnit::GetFixItsForLocationInFile(
   const std::string &filename,
