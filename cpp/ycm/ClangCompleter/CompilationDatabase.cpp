@@ -17,8 +17,8 @@
 
 #include "CompilationDatabase.h"
 #include "ClangUtils.h"
-#include "ReleaseGil.h"
 #include "PythonSupport.h"
+#include "ReleaseGil.h"
 
 #include <memory>
 

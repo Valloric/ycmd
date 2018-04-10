@@ -19,9 +19,9 @@
 
 #include "Candidate.h"
 #include "IdentifierUtils.h"
+#include "ReleaseGil.h"
 #include "Result.h"
 #include "Utils.h"
-#include "ReleaseGil.h"
 
 namespace YouCompleteMe {
 

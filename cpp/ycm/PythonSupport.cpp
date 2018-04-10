@@ -22,8 +22,8 @@
 #include "ReleaseGil.h"
 #include "Utils.h"
 
-#include <vector>
 #include <utility>
+#include <vector>
 
 using boost::python::len;
 using boost::python::str;
