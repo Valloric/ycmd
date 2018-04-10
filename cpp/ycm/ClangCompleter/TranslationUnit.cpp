@@ -90,7 +90,7 @@ TranslationUnit::TranslationUnit(
 
   std::vector< CXUnsavedFile > cxunsaved_files =
     ToCXUnsavedFiles( unsaved_files );
-  const CXUnsavedFile *unsaved = cxunsaved_files.size() > 0
+  const CXUnsavedFile *unsaved = !cxunsaved_files.empty()
                                  ? &cxunsaved_files[ 0 ] : nullptr;
 
   // Actually parse the translation unit.
@@ -116,7 +116,7 @@ TranslationUnit::~TranslationUnit() {
 void TranslationUnit::Destroy() {
   unique_lock< mutex > lock( clang_access_mutex_ );
 
-  if ( clang_translation_unit_ ) {
+  if ( clang_translation_unit_ != nullptr ) {
     clang_disposeTranslationUnit( clang_translation_unit_ );
     clang_translation_unit_ = nullptr;
   }
@@ -126,7 +126,7 @@ void TranslationUnit::Destroy() {
 bool TranslationUnit::IsCurrentlyUpdating() const {
   // We return true when the TU is invalid; an invalid TU also acts a sentinel,
   // preventing other threads from trying to use it.
-  if ( !clang_translation_unit_ ) {
+  if ( clang_translation_unit_ == nullptr ) {
     return true;
   }
 
@@ -154,13 +154,13 @@ std::vector< CompletionData > TranslationUnit::CandidatesForLocation(
   const std::vector< UnsavedFile > &unsaved_files ) {
   unique_lock< mutex > lock( clang_access_mutex_ );
 
-  if ( !clang_translation_unit_ ) {
+  if ( clang_translation_unit_ == nullptr ) {
     return std::vector< CompletionData >();
   }
 
   std::vector< CXUnsavedFile > cxunsaved_files =
     ToCXUnsavedFiles( unsaved_files );
-  const CXUnsavedFile *unsaved = cxunsaved_files.size() > 0
+  const CXUnsavedFile *unsaved = !cxunsaved_files.empty()
                                  ? &cxunsaved_files[ 0 ] : nullptr;
 
   // codeCompleteAt reparses the TU if the underlying source file has changed on
@@ -216,7 +216,7 @@ Location TranslationUnit::GetDeclarationLocation(
 
   unique_lock< mutex > lock( clang_access_mutex_ );
 
-  if ( !clang_translation_unit_ ) {
+  if ( clang_translation_unit_ == nullptr ) {
     return Location();
   }
 
@@ -251,7 +251,7 @@ Location TranslationUnit::GetDefinitionLocation(
 
   unique_lock< mutex > lock( clang_access_mutex_ );
 
-  if ( !clang_translation_unit_ ) {
+  if ( clang_translation_unit_ == nullptr ) {
     return Location();
   }
 
@@ -276,7 +276,7 @@ Location TranslationUnit::GetDefinitionOrDeclarationLocation(
 
   unique_lock< mutex > lock( clang_access_mutex_ );
 
-  if ( !clang_translation_unit_ ) {
+  if ( clang_translation_unit_ == nullptr ) {
     return Location();
   }
 
@@ -292,7 +292,7 @@ Location TranslationUnit::GetDefinitionOrDeclarationLocation(
   //    declaration;
   //  - otherwise, search for the definition and return its location;
   //  - if no definition is found, return the location of the declaration.
-  if ( clang_isCursorDefinition( cursor ) ) {
+  if ( clang_isCursorDefinition( cursor ) != 0u ) {
     return GetDeclarationLocationForCursor( cursor );
   }
 
@@ -318,7 +318,7 @@ std::string TranslationUnit::GetTypeAtLocation(
 
   unique_lock< mutex > lock( clang_access_mutex_ );
 
-  if ( !clang_translation_unit_ ) {
+  if ( clang_translation_unit_ == nullptr ) {
     return "Internal error: no translation unit";
   }
 
@@ -358,7 +358,7 @@ std::string TranslationUnit::GetTypeAtLocation(
 
   CXType canonical_type = clang_getCanonicalType( type );
 
-  if ( !clang_equalTypes( type, canonical_type ) ) {
+  if ( clang_equalTypes( type, canonical_type ) == 0u ) {
     std::string canonical_type_description = CXStringToString(
       clang_getTypeSpelling( canonical_type ) );
 
@@ -386,7 +386,7 @@ std::string TranslationUnit::GetEnclosingFunctionAtLocation(
 
   unique_lock< mutex > lock( clang_access_mutex_ );
 
-  if ( !clang_translation_unit_ ) {
+  if ( clang_translation_unit_ == nullptr ) {
     return "Internal error: no translation unit";
   }
 
@@ -413,7 +413,7 @@ std::string TranslationUnit::GetEnclosingFunctionAtLocation(
 // param though.
 void TranslationUnit::Reparse(
   std::vector< CXUnsavedFile > &unsaved_files ) {
-  unsigned options = ( clang_translation_unit_
+  unsigned options = ( clang_translation_unit_ != nullptr
                        ? ReparseOptions( clang_translation_unit_ )
                        : static_cast<unsigned>( CXReparse_None ) );
 
@@ -430,11 +430,11 @@ void TranslationUnit::Reparse( std::vector< CXUnsavedFile > &unsaved_files,
   {
     unique_lock< mutex > lock( clang_access_mutex_ );
 
-    if ( !clang_translation_unit_ ) {
+    if ( clang_translation_unit_ == nullptr ) {
       return;
     }
 
-    CXUnsavedFile *unsaved = unsaved_files.size() > 0
+    CXUnsavedFile *unsaved = !unsaved_files.empty()
                              ? &unsaved_files[ 0 ] : nullptr;
 
     // This function should technically return a CXErrorCode enum but return an
@@ -554,7 +554,7 @@ DocumentationData TranslationUnit::GetDocsForLocationInFile(
 
   unique_lock< mutex > lock( clang_access_mutex_ );
 
-  if ( !clang_translation_unit_ ) {
+  if ( clang_translation_unit_ == nullptr ) {
     return DocumentationData();
   }
 
@@ -586,7 +586,7 @@ CXCursor TranslationUnit::GetCursor( const std::string &filename,
                                      int line,
                                      int column ) {
   // ASSUMES A LOCK IS ALREADY HELD ON clang_access_mutex_!
-  if ( !clang_translation_unit_ ) {
+  if ( clang_translation_unit_ == nullptr ) {
     return clang_getNullCursor();
   }
 

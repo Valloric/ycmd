@@ -22,7 +22,7 @@ namespace YouCompleteMe {
 std::string CXStringToString( CXString text ) {
   std::string final_string;
 
-  if ( !text.data ) {
+  if ( text.data == nullptr ) {
     return final_string;
   }
 
@@ -32,8 +32,8 @@ std::string CXStringToString( CXString text ) {
 }
 
 bool CursorIsValid( CXCursor cursor ) {
-  return !clang_Cursor_isNull( cursor ) &&
-         !clang_isInvalid( clang_getCursorKind( cursor ) );
+  return (clang_Cursor_isNull( cursor ) == 0) &&
+         (clang_isInvalid( clang_getCursorKind( cursor ) ) == 0u);
 }
 
 std::string CXFileToFilepath( CXFile file ) {

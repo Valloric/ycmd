@@ -104,7 +104,7 @@ bool IsMainCompletionTextInfo( CXCompletionChunkKind kind ) {
 
 std::string ChunkToString( CXCompletionString completion_string,
                            size_t chunk_num ) {
-  if ( !completion_string ) {
+  if ( completion_string == nullptr ) {
     return std::string();
   }
 
@@ -117,14 +117,14 @@ std::string OptionalChunkToString( CXCompletionString completion_string,
                                    size_t chunk_num ) {
   std::string final_string;
 
-  if ( !completion_string ) {
+  if ( completion_string == nullptr ) {
     return final_string;
   }
 
   CXCompletionString optional_completion_string =
     clang_getCompletionChunkCompletionString( completion_string, chunk_num );
 
-  if ( !optional_completion_string ) {
+  if ( optional_completion_string == nullptr ) {
     return final_string;
   }
 
@@ -177,7 +177,7 @@ std::string RemoveTrailingParens( std::string text ) {
 CompletionData::CompletionData( const CXCompletionResult &completion_result ) {
   CXCompletionString completion_string = completion_result.CompletionString;
 
-  if ( !completion_string ) {
+  if ( completion_string == nullptr ) {
     return;
   }
 
