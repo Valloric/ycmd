@@ -86,7 +86,7 @@ boost::python::list FilterAndSortCandidates(
 
       if ( result.IsSubsequence() ) {
         ResultAnd< size_t > result_and_object( result, i );
-        result_and_objects.push_back( std::move( result_and_object ) );
+        result_and_objects.push_back( result_and_object );
       }
     }
 

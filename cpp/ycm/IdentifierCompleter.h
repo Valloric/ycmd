@@ -32,6 +32,7 @@ class Candidate;
 class IdentifierCompleter {
 public:
 
+  IdentifierCompleter::IdentifierCompleter() = default;
   IdentifierCompleter( const IdentifierCompleter& ) = delete;
   IdentifierCompleter& operator=( const IdentifierCompleter ) = delete;
 
