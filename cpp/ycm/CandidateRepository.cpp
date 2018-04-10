@@ -19,6 +19,7 @@
 #include "Candidate.h"
 #include "Utils.h"
 
+#include <memory>
 #include <mutex>
 
 #ifdef USE_CLANG_COMPLETER
@@ -77,7 +78,7 @@ std::vector< const Candidate * > CandidateRepository::GetCandidatesForStrings(
                                                   nullptr );
 
       if ( !candidate ) {
-        candidate.reset( new Candidate( validated_candidate_text ) );
+        candidate = std::make_unique<Candidate>( validated_candidate_text );
       }
 
       candidates.push_back( candidate.get() );
