@@ -90,7 +90,7 @@ TranslationUnit::TranslationUnit(
 
   std::vector< CXUnsavedFile > cxunsaved_files =
     ToCXUnsavedFiles( unsaved_files );
-  const CXUnsavedFile *unsaved = cxunsaved_files.size() > 0
+  const CXUnsavedFile *unsaved = !cxunsaved_files.empty()
                                  ? &cxunsaved_files[ 0 ] : nullptr;
 
   // Actually parse the translation unit.
@@ -160,7 +160,7 @@ std::vector< CompletionData > TranslationUnit::CandidatesForLocation(
 
   std::vector< CXUnsavedFile > cxunsaved_files =
     ToCXUnsavedFiles( unsaved_files );
-  const CXUnsavedFile *unsaved = cxunsaved_files.size() > 0
+  const CXUnsavedFile *unsaved = !cxunsaved_files.empty()
                                  ? &cxunsaved_files[ 0 ] : nullptr;
 
   // codeCompleteAt reparses the TU if the underlying source file has changed on
@@ -434,7 +434,7 @@ void TranslationUnit::Reparse( std::vector< CXUnsavedFile > &unsaved_files,
       return;
     }
 
-    CXUnsavedFile *unsaved = unsaved_files.size() > 0
+    CXUnsavedFile *unsaved = !unsaved_files.empty()
                              ? &unsaved_files[ 0 ] : nullptr;
 
     // This function should technically return a CXErrorCode enum but return an
