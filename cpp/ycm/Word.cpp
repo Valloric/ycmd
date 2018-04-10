@@ -297,4 +297,11 @@ Word::Word( const std::string &text )
   ComputeBytesPresent();
 }
 
+
+Word::Word( std::string &&text )
+  : text_( text ) {
+  BreakIntoCharacters();
+  ComputeBytesPresent();
+}
+
 } // namespace YouCompleteMe
