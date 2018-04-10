@@ -15,15 +15,15 @@
 // You should have received a copy of the GNU General Public License
 // along with ycmd.  If not, see <http://www.gnu.org/licenses/>.
 
-#include "ClangCompleter.h"
-#include "Result.h"
 #include "Candidate.h"
-#include "TranslationUnit.h"
 #include "CandidateRepository.h"
-#include "CompletionData.h"
-#include "Utils.h"
+#include "ClangCompleter.h"
 #include "ClangUtils.h"
+#include "CompletionData.h"
 #include "ReleaseGil.h"
+#include "Result.h"
+#include "TranslationUnit.h"
+#include "Utils.h"
 
 #include <clang-c/Index.h>
 #include <memory>

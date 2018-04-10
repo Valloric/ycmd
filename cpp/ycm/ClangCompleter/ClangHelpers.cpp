@@ -17,14 +17,14 @@
 
 #include "ClangHelpers.h"
 #include "ClangUtils.h"
-#include "Utils.h"
-#include "UnsavedFile.h"
 #include "Location.h"
-#include "Range.h"
 #include "PythonSupport.h"
+#include "Range.h"
+#include "UnsavedFile.h"
+#include "Utils.h"
 
-#include <unordered_map>
 #include <iostream>
+#include <unordered_map>
 #include <utility>
 
 using std::unordered_map;

@@ -15,8 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with ycmd.  If not, see <http://www.gnu.org/licenses/>.
 
-#include "CodePoint.h"
 #include "CodePointRepository.h"
+#include "CodePoint.h"
 
 #include <array>
 #include <cstring>

@@ -15,15 +15,15 @@
 // You should have received a copy of the GNU General Public License
 // along with ycmd.  If not, see <http://www.gnu.org/licenses/>.
 
-#include "PythonSupport.h"
-#include "Result.h"
 #include "Candidate.h"
 #include "CandidateRepository.h"
+#include "PythonSupport.h"
 #include "ReleaseGil.h"
+#include "Result.h"
 #include "Utils.h"
 
-#include <vector>
 #include <utility>
+#include <vector>
 
 using boost::python::len;
 using boost::python::str;
