@@ -56,11 +56,11 @@ bool HasClangSupport() {
 }
 
 
-BOOST_PYTHON_FUNCTION_OVERLOADS( FilterAndSortCandidatesOverloads,
+BOOST_PYTHON_FUNCTION_OVERLOADS( explicit explicit FilterAndSortCandidatesOverloads,
                                  FilterAndSortCandidates,
                                  3, 4 )
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS( CandidatesForQueryAndTypeOverloads,
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS( explicit explicit CandidatesForQueryAndTypeOverloads,
                                         CandidatesForQueryAndType,
                                         2, 3 )
 

@@ -26,7 +26,7 @@
 namespace YouCompleteMe {
 
 
-IdentifierCompleter::IdentifierCompleter() {}
+IdentifierCompleter::IdentifierCompleter() = default;
 
 
 IdentifierCompleter::IdentifierCompleter(
