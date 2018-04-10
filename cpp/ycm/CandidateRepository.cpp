@@ -44,7 +44,7 @@ CandidateRepository &CandidateRepository::Instance() {
   // See https://msdn.microsoft.com/en-us/library/hh567368#concurrencytable
   std::lock_guard< std::mutex > locker( instance_mutex_ );
 
-  if ( !instance_ ) {
+  if ( instance_ == nullptr ) {
     static CandidateRepository repo;
     instance_ = &repo;
   }

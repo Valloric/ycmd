@@ -53,7 +53,7 @@ FixIt BuildFixIt( const std::string& text,
   FixIt fixit;
 
   size_t num_chunks = clang_getDiagnosticNumFixIts( diagnostic );
-  if ( !num_chunks ) {
+  if ( num_chunks == 0 ) {
     return fixit;
   }
 
@@ -96,7 +96,7 @@ void BuildFullDiagnosticDataFromChildren(
 
   // Populate any fixit attached to this diagnostic.
   FixIt fixit = BuildFixIt( diag_text, diagnostic );
-  if ( fixit.chunks.size() > 0 ) {
+  if ( !fixit.chunks.empty() ) {
     fixits.push_back( fixit );
   }
 
@@ -105,20 +105,20 @@ void BuildFullDiagnosticDataFromChildren(
   // clang_diposeDiagnosticSet
   CXDiagnosticSet diag_set = clang_getChildDiagnostics( diagnostic );
 
-  if ( !diag_set ) {
+  if ( diag_set == nullptr ) {
     return;
   }
 
   size_t num_child_diagnostics = clang_getNumDiagnosticsInSet( diag_set );
 
-  if ( !num_child_diagnostics ) {
+  if ( num_child_diagnostics == 0 ) {
     return;
   }
 
   for ( size_t i = 0; i < num_child_diagnostics; ++i ) {
     CXDiagnostic child_diag = clang_getDiagnosticInSet( diag_set, i );
 
-    if( !child_diag ) {
+    if( child_diag == nullptr ) {
       continue;
     }
 
@@ -135,7 +135,7 @@ void BuildFullDiagnosticDataFromChildren(
 // unavailable completion strings refer to entities that are private/protected,
 // deprecated etc.
 bool CompletionStringAvailable( CXCompletionString completion_string ) {
-  if ( !completion_string ) {
+  if ( completion_string == nullptr ) {
     return false;
   }
 
@@ -215,7 +215,7 @@ std::vector< CompletionData > ToCompletionDataVector(
   CXCodeCompleteResults *results ) {
   std::vector< CompletionData > completions;
 
-  if ( !results || !results->Results ) {
+  if ( results == nullptr || results->Results == nullptr) {
     return completions;
   }
 
