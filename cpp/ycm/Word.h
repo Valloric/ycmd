@@ -37,6 +37,7 @@ using Bitset = std::bitset< NUM_BYTES >;
 class Word {
 public:
   YCM_EXPORT explicit Word( const std::string &text );
+  YCM_EXPORT explicit Word( std::string &&text );
   // Make class noncopyable
   Word( const Word& ) = delete;
   Word& operator=( const Word& ) = delete;
