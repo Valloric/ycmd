@@ -24,6 +24,7 @@
  * before anything python related.
  */
 #include <iostream>
+
 #include "CodePoint.h"
 #include "IdentifierCompleter.h"
 #include "PythonSupport.h"
@@ -32,13 +33,13 @@
 #ifdef USE_CLANG_COMPLETER
 #  include "ClangCompleter.h"
 #  include "ClangUtils.h"
+#  include "CompilationDatabase.h"
 #  include "CompletionData.h"
 #  include "Diagnostic.h"
+#  include "Documentation.h"
 #  include "Location.h"
 #  include "Range.h"
 #  include "UnsavedFile.h"
-#  include "CompilationDatabase.h"
-#  include "Documentation.h"
 #endif // USE_CLANG_COMPLETER
 
 #include <boost/python.hpp>
