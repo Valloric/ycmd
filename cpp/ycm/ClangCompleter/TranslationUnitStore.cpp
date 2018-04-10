@@ -43,7 +43,7 @@ std::size_t HashForFlags( const std::vector< std::string > &flags ) {
    * return std::hash< std::vector< std::string > >()( flags );
    */
   size_t seed = 0;
-  for ( auto flag : flags ) {
+  for ( const auto &flag : flags ) {
     seed ^= std::hash< std::string >()( flag ) + ( seed<<6 ) + ( seed>>2 );
   }
   return seed;
