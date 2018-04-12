@@ -1,4 +1,4 @@
-// Copyright (C) 2011, 2012 Google Inc.
+// Copyright (C) 2011-2018 ycmd contributors
 //
 // This file is part of ycmd.
 //
@@ -18,18 +18,11 @@
 #ifndef COMPILATIONDATABASE_H_ZT7MQXPG
 #define COMPILATIONDATABASE_H_ZT7MQXPG
 
-/*
- * iostream is included because there's a bug with python
- * earlier than 2.7.12 and 3.5.3 on OSX and FreeBSD.
- * When either no one else is using earlier versions of python
- * or ycmd drops support for those, this include statement can be removed.
- */
-#include <iostream>
-#include <vector>
-#include <string>
+#include <clang-c/CXCompilationDatabase.h>
 #include <mutex>
 #include <pybind11/pybind11.h>
-#include <clang-c/CXCompilationDatabase.h>
+#include <string>
+#include <vector>
 
 namespace YouCompleteMe {
 
