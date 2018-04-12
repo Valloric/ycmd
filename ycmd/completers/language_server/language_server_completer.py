@@ -486,20 +486,18 @@ class LanguageServerConnection( threading.Thread ):
       try:
         self._notifications.put_nowait( message )
         return
-      except queue.Full:
-        pass
-
-      # The queue (ring buffer) is full.  This indicates either a slow
-      # consumer or the message poll is not running. In any case, rather than
-      # infinitely queueing, discard the oldest message and try again.
-      try:
-        self._notifications.get_nowait()
-      except queue.Empty:
-        # This is only a theoretical possibility to prevent this thread
-        # blocking in the unlikely event that all elements are removed from
-        # the queue between put_nowait and get_nowait. Unfortunately, this
-        # isn't testable without a debugger, so coverage will show up red.
-        pass # pragma: no cover
+      except queue.Full: # pragma: no cover
+        # The queue (ring buffer) is full.  This indicates either a slow
+        # consumer or the message poll is not running. In any case, rather than
+        # infinitely queueing, discard the oldest message and try again.
+        try:
+          self._notifications.get_nowait()
+        except queue.Empty:
+          # This is only a theoretical possibility to prevent this thread
+          # blocking in the unlikely event that all elements are removed from
+          # the queue between put_nowait and get_nowait. Unfortunately, this
+          # isn't testable without a debugger, so coverage will show up red.
+          pass
 
 
 class StandardIOLanguageServerConnection( LanguageServerConnection ):
