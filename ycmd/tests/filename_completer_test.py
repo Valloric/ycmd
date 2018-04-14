@@ -25,7 +25,7 @@ from __future__ import absolute_import
 from builtins import *  # noqa
 
 import os
-from hamcrest import assert_that, contains_inanyorder, empty
+from hamcrest import assert_that, contains_inanyorder, empty, is_not
 from nose.tools import eq_, ok_
 from ycmd.completers.general.filename_completer import FilenameCompleter
 from ycmd.request_wrap import RequestWrap
@@ -370,3 +370,33 @@ def WorkingDir_UseClientWorkingDirectory_test( app ):
     ( 'Qt',    '[Dir]' ),
     ( 'QtGui', '[Dir]' )
   ) )
+
+
+@IsolatedYcmd( { 'filepath_blacklist': {} } )
+def FilenameCompleter_NoFiletypeDisabled_test( app ):
+  completion_data = BuildRequest( filetype = 'test',
+                                  contents = './',
+                                  column_num = 3 )
+  results = app.post_json( '/completions',
+                           completion_data ).json[ 'completions' ]
+  assert_that( results, is_not( empty() ) )
+
+
+@IsolatedYcmd( { 'filepath_blacklist': { 'test': 1 } } )
+def FilenameCompleter_FiletypeDisabled_test( app ):
+  completion_data = BuildRequest( filetype = 'test',
+                                  contents = './',
+                                  column_num = 3 )
+  results = app.post_json( '/completions',
+                           completion_data ).json[ 'completions' ]
+  assert_that( results, empty() )
+
+
+@IsolatedYcmd( { 'filepath_blacklist': { '*': 1 } } )
+def FilenameCompleter_AllFiletypesDisabled_test( app ):
+  completion_data = BuildRequest( filetype = 'test',
+                                  contents = './',
+                                  column_num = 3 )
+  results = app.post_json( '/completions',
+                           completion_data ).json[ 'completions' ]
+  assert_that( results, empty() )
