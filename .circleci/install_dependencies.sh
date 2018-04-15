@@ -75,7 +75,6 @@ echo '  eval "$(pyenv init -)"' >> $BASH_ENV
 echo '  unset PYENV_LOADING' >> $BASH_ENV
 echo 'fi' >> $BASH_ENV
 
-pip install -U pip wheel setuptools
 pip install -r test_requirements.txt
 
 # Enable coverage for Python subprocesses. See:
