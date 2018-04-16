@@ -53,7 +53,10 @@ if [ "${YCMD_PYTHON_VERSION}" == "2.7" ]; then
   # Tests are failing on Python 2.7.0 with the exception "TypeError: argument
   # can't be <type 'unicode'>" and importing the coverage module fails on Python
   # 2.7.1.
-  PYENV_VERSION="2.7.2"
+  # FIXME: pip 10 fails to install the regex package from its cache for Python
+  # 2.7.3 or older. See https://github.com/pypa/pip/issues/5231 for the error.
+  # Revert to 2.7.2 once this is fixed in pip.
+  PYENV_VERSION="2.7.4"
 else
   PYENV_VERSION="3.4.0"
 fi
