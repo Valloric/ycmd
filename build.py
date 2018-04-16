@@ -551,7 +551,7 @@ def InstallRegexModule( args ):
                quiet = args.quiet,
                status_message = 'Installing regex module' )
   except SystemExit:
-    raise
+    pass
 
 
 def EnableCsCompleter( args ):

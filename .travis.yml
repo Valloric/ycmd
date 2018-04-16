@@ -17,11 +17,11 @@ env:
     - COVERAGE=true
     - USE_CLANG_COMPLETER=true
   matrix:
-      #- YCMD_PYTHON_VERSION=2.7 USE_CLANG_COMPLETER=false
+    - YCMD_PYTHON_VERSION=2.7 USE_CLANG_COMPLETER=false
     - YCMD_PYTHON_VERSION=2.7
-      #- YCMD_PYTHON_VERSION=3.4
-      #- YCMD_PYTHON_VERSION=3.4 YCM_COMPILER=clang
-      #- YCMD_PYTHON_VERSION=3.4 YCM_BENCHMARK=true COVERAGE=false
+    - YCMD_PYTHON_VERSION=3.4
+    - YCMD_PYTHON_VERSION=3.4 YCM_COMPILER=clang
+    - YCMD_PYTHON_VERSION=3.4 YCM_BENCHMARK=true COVERAGE=false
 addons:
   # If this doesn't make much sense to you, see the travis docs:
   #    https://docs.travis-ci.com/user/migrating-from-legacy/
@@ -56,7 +56,10 @@ addons:
      - libncursesw5-dev
 cache:
   directories:
-    - $HOME/.cache/pip  # Python packages from pip
+    # FIXME: pip 10 fails to install the regex package from its cache for Python
+    # 2.7.3 or older. See https://github.com/pypa/pip/issues/5231 for the error.
+    # Cache the folder once this is fixed in pip.
+    # - $HOME/.cache/pip
     - $HOME/.npm  # Node packages from npm
     - $HOME/.cargo  # Cargo package deps
     - $HOME/.pyenv  # pyenv
