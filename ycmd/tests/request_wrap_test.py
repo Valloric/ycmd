@@ -24,7 +24,7 @@ from __future__ import absolute_import
 # Not installing aliases from python-future; it's unreliable and slow.
 from builtins import *  # noqa
 
-from hamcrest import assert_that, calling, equal_to, raises
+from hamcrest import assert_that, calling, empty, equal_to, has_entry, raises
 from nose.tools import eq_
 
 from ycmd.utils import ToBytes
@@ -35,7 +35,8 @@ def PrepareJson( contents = '',
                  line_num = 1,
                  column_num = 1,
                  filetype = '',
-                 force_semantic = None ):
+                 force_semantic = None,
+                 extra_conf_data = None ):
   message = {
     'line_num': line_num,
     'column_num': column_num,
@@ -49,6 +50,8 @@ def PrepareJson( contents = '',
   }
   if force_semantic is not None:
     message[ 'force_semantic' ] = force_semantic
+  if extra_conf_data is not None:
+    message[ 'extra_conf_data' ] = extra_conf_data
 
   return message
 
@@ -372,3 +375,15 @@ def ForceSemanticCompletion_test():
 
   wrap = RequestWrap( PrepareJson( force_semantic = 'No' ) )
   assert_that( wrap[ 'force_semantic' ], equal_to( True ) )
+
+
+def ExtraConfData_test():
+  wrap = RequestWrap( PrepareJson() )
+  assert_that( wrap[ 'extra_conf_data' ], empty() )
+
+  wrap = RequestWrap( PrepareJson( extra_conf_data = { 'key': 'value' } ) )
+  extra_conf_data = wrap[ 'extra_conf_data' ]
+  assert_that( extra_conf_data, has_entry( 'key', 'value' ) )
+  # Check that extra_conf_data can be used as a dictionary's key.
+  assert_that( { extra_conf_data: 'extra conf data' },
+               has_entry( extra_conf_data, 'extra conf data' ) )
