@@ -51,7 +51,7 @@ std::vector< std::string > BreakCodePointsIntoCharacters(
     return characters;
   }
 
-  int regional_indicator_nb = 0;
+  unsigned regional_indicator_nb = 0;
   bool within_emoji_modifier = false;
 
   for ( ; code_point_pos != code_points.end() ; ++previous_code_point_pos,
