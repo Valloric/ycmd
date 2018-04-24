@@ -237,7 +237,7 @@ std::vector< std::string > BreakCodePointsIntoCharacters(
           // is, do not break between regional indicator (RI) symbols if there
           // is an odd number of RI characters before the break point.
           case BreakProperty::REGIONAL_INDICATOR:
-            if ( regional_indicator_nb % 2 == 1 ) {
+            if ( regional_indicator_nb % 2 != 0 ) {
               character.append( code_point );
             } else {
               characters.push_back( character );
