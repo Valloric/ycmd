@@ -360,6 +360,9 @@ def ParseArguments():
   parser.add_argument( '--skip-build',
                        action = 'store_true',
                        help = "Don't build ycm_core lib, just install deps" )
+  parser.add_argument( '--no-regex',
+                       action = 'store_true',
+                       help = "Don't build the regex module" )
 
 
   # These options are deprecated.
@@ -711,13 +714,14 @@ def WritePythonUsedDuringBuild():
 
 def Main():
   args = ParseArguments()
+  cmake = FindCmake()
+  cmake_common_args = GetCmakeCommonArgs( args )
   if not args.skip_build:
     ExitIfYcmdLibInUseOnWindows()
-    cmake = FindCmake()
-    cmake_common_args = GetCmakeCommonArgs( args )
     BuildYcmdLib( cmake, cmake_common_args, args )
-    BuildRegexModule( cmake, cmake_common_args, args )
     WritePythonUsedDuringBuild()
+  if not args.no_regex:
+    BuildRegexModule( cmake, cmake_common_args, args )
   if args.cs_completer or args.omnisharp_completer or args.all_completers:
     EnableCsCompleter( args )
   if args.go_completer or args.gocode_completer or args.all_completers:
