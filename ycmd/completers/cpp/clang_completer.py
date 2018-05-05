@@ -50,7 +50,7 @@ NO_DIAGNOSTIC_MESSAGE = 'No diagnostic for current line!'
 PRAGMA_DIAG_TEXT_TO_IGNORE = '#pragma once in main file'
 TOO_MANY_ERRORS_DIAG_TEXT_TO_IGNORE = 'too many errors emitted, stopping now'
 NO_DOCUMENTATION_MESSAGE = 'No documentation available for current context'
-INCLUDE_REGEX = re.compile( '(\s*#\s*(?:include|import)\s*)(:?"[^"]*|<[^>]*)' )
+INCLUDE_REGEX = re.compile( '(\s*#\s*(?:include|import)\s*)(?:"[^"]*|<[^>]*)' )
 
 
 class ClangCompleter( Completer ):
