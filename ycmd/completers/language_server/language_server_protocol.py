@@ -396,7 +396,7 @@ def FilePathToUri( file_name ):
 
 
 def UriToFilePath( uri ):
-  filepath = ParseSourcefileFromJdtUri(uri)
+  filepath = ParseSourcefileFromJdtUri( uri )
   if filepath != "":
     return filepath
   if uri [ : 5 ] != "file:":

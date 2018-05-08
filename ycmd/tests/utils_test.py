@@ -585,18 +585,17 @@ def GetCurrentDirectory_Py3NoCurrentDirectory_test():
 
 
 def ParseSourcefileFromJdtUri_test():
-  lcd = utils.GetCurrentDirectory()
-  jarPath = lcd + "/ycmd/tests/testdata/java/spring-boot-autoconfigure-1.5.8" \
-      ".RELEASE.jar<org.springframework.boot.autoconfigure(SpringBootApplica" \
-      "tion.class"
+  jap = PathToTestFile( "java", "spring-boot-autoconfigure-1.5.8.RELEASE.jar" )
+  jap += "<org.springframework.boot.autoconfigure(SpringBootApplication.class"
 
-  jarPath = utils.quote(jarPath.replace("/", "\\/"))
-  jdtPath = "jdt://contents/spring-boot-autoconfigure-1.5.8.RELEASE.jar/org." \
-      "springframework.boot.autoconfigure/SpringBootApplication.class?=demo/"
-  jdtPath += jarPath
-  zipPath = "zipfile:" + lcd + "/ycmd/tests/testdata/java/spring-boot-autoco" \
-      "nfigure-1.5.8.RELEASE-sources.jar::org/springframework/boot/autoconfi" \
-      "gure/SpringBootApplication.java"
-  eq_( utils.ParseSourcefileFromJdtUri(jdtPath), zipPath )
+  jap = utils.quote( jap.replace( "/", "\\/" ) )
+  jdtPath = ( "jdt://contents/spring-boot-autoconfigure-1.5.8.RELEASE.jar/org."
+      "springframework.boot.autoconfigure/SpringBootApplication.class?=demo/" )
+  jdtPath += jap
+
+  zpp = "zipfile:" + PathToTestFile( "java",
+          "spring-boot-autoconfigure-1.5.8.RELEASE-sources.jar" )
+  zpp += "::org/springframework/boot/autoconfigure/SpringBootApplication.java"
+  eq_( utils.ParseSourcefileFromJdtUri(jdtPath), zpp )
 
   eq_( utils.ParseSourcefileFromJdtUri("Main.java"), "" )

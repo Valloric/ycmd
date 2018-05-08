@@ -209,7 +209,7 @@ class Location( object ):
     self.line_number_ = line
     self.column_number_ = column
     if filename:
-      if filename[:8] == "zipfile:":
+      if filename[ :8 ] == "zipfile:":
         self.filename_ = filename
       else:
         self.filename_ = os.path.realpath( filename )

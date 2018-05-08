@@ -504,23 +504,25 @@ def StartThread( func, *args ):
 
 
 def ParseSourcefileFromJdtUri( jdtUri ):
-  if jdtUri[:15] != "jdt://contents/":
+  if jdtUri[ :15 ] != "jdt://contents/":
     return ""
 
-  o = urlparse(jdtUri)
-  query = unquote(o.query)
+  o = urlparse( jdtUri )
+  query = unquote( o.query )
   if not query:
     return ""
 
-  pstart = query.index('/')
-  jarEnd = query.index('<', pstart)
-  fileStart = query.index('(', jarEnd)
+  pstart = query.index( '/' )
+  jarEnd = query.index( '<', pstart )
+  fileStart = query.index( '(', jarEnd )
   if pstart > 0 and jarEnd > pstart and fileStart > jarEnd:
-    filePath = query[pstart + 1:jarEnd].replace('\\', '')
-    filePath = filePath.replace('.RELEASE.jar', '.RELEASE-sources.jar')
-    if os.path.isfile(filePath):
+    filePath = query[ pstart + 1:jarEnd ]
+    if os.name != 'nt':
+      filePath = filePath.replace( '\\', '' )
+    filePath = filePath.replace( '.RELEASE.jar', '.RELEASE-sources.jar' )
+    if os.path.isfile( filePath ):
       filePath = 'zipfile:' + filePath + '::'
-      filePath += query[jarEnd + 1:fileStart].replace('.', '/')
-      filePath += '/' + query[fileStart + 1:].replace('.class', '.java')
+      filePath += query[ jarEnd + 1:fileStart ].replace( '.', '/' )
+      filePath += '/' + query[ fileStart + 1: ].replace( '.class', '.java' )
       return filePath
   return ""
