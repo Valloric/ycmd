@@ -582,3 +582,21 @@ def GetCurrentDirectory_Py2NoCurrentDirectory_test():
 def GetCurrentDirectory_Py3NoCurrentDirectory_test():
   with patch( 'os.getcwd', side_effect = FileNotFoundError ): # noqa
     eq_( utils.GetCurrentDirectory(), tempfile.gettempdir() )
+
+
+def ParseSourcefileFromJdtUri_test():
+  lcd = utils.GetCurrentDirectory()
+  jarPath = lcd + "/ycmd/tests/testdata/java/spring-boot-autoconfigure-1.5.8" \
+      ".RELEASE.jar<org.springframework.boot.autoconfigure(SpringBootApplica" \
+      "tion.class"
+
+  jarPath = utils.quote(jarPath.replace("/", "\\/"))
+  jdtPath = "jdt://contents/spring-boot-autoconfigure-1.5.8.RELEASE.jar/org." \
+      "springframework.boot.autoconfigure/SpringBootApplication.class?=demo/"
+  jdtPath += jarPath
+  zipPath = "zipfile:" + lcd + "/ycmd/tests/testdata/java/spring-boot-autoco" \
+      "nfigure-1.5.8.RELEASE-sources.jar::org/springframework/boot/autoconfi" \
+      "gure/SpringBootApplication.java"
+  eq_( utils.ParseSourcefileFromJdtUri(jdtPath), zipPath )
+
+  eq_( utils.ParseSourcefileFromJdtUri("Main.java"), "" )

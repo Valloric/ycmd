@@ -42,10 +42,10 @@ import threading
 #
 if PY2:
   from urlparse import urljoin, urlparse
-  from urllib import pathname2url, url2pathname
+  from urllib import pathname2url, url2pathname, unquote, quote
 else:
   from urllib.parse import urljoin, urlparse  # noqa
-  from urllib.request import pathname2url, url2pathname  # noqa
+  from urllib.request import pathname2url, url2pathname, unquote, quote  # noqa
 
 
 # We replace the re module with regex as it has better support for characters on
@@ -70,6 +70,11 @@ EXECUTABLE_FILE_MASK = os.F_OK | os.X_OK
 # doesn't get closed. So, a helper func.
 # Also, all files we read are UTF-8.
 def ReadFile( filepath ):
+  if filepath[:8] == "zipfile:":
+    import zipfile
+    paths = filepath[8:].split("::")
+    archive = zipfile.ZipFile(paths[0], 'r')
+    return archive.read(paths[1])
   with open( filepath, encoding = 'utf8' ) as f:
     return f.read()
 
@@ -496,3 +501,26 @@ def StartThread( func, *args ):
   thread.daemon = True
   thread.start()
   return thread
+
+
+def ParseSourcefileFromJdtUri( jdtUri ):
+  if jdtUri[:15] != "jdt://contents/":
+    return ""
+
+  o = urlparse(jdtUri)
+  query = unquote(o.query)
+  if not query:
+    return ""
+
+  pstart = query.index('/')
+  jarEnd = query.index('<', pstart)
+  fileStart = query.index('(', jarEnd)
+  if pstart > 0 and jarEnd > pstart and fileStart > jarEnd:
+    filePath = query[pstart + 1:jarEnd].replace('\\', '')
+    filePath = filePath.replace('.RELEASE.jar', '.RELEASE-sources.jar')
+    if os.path.isfile(filePath):
+      filePath = 'zipfile:' + filePath + '::'
+      filePath += query[jarEnd + 1:fileStart].replace('.', '/')
+      filePath += '/' + query[fileStart + 1:].replace('.class', '.java')
+      return filePath
+  return ""

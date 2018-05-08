@@ -209,7 +209,10 @@ class Location( object ):
     self.line_number_ = line
     self.column_number_ = column
     if filename:
-      self.filename_ = os.path.realpath( filename )
+      if filename[:8] == "zipfile:":
+        self.filename_ = filename
+      else:
+        self.filename_ = os.path.realpath( filename )
     else:
       # When the filename passed (e.g. by a server) can't be recognized or
       # parsed, we send an empty filename. This at least allows the client to

@@ -27,6 +27,7 @@ import json
 import hashlib
 
 from ycmd.utils import ( ByteOffsetToCodepointOffset,
+                         ParseSourcefileFromJdtUri,
                          pathname2url,
                          ToBytes,
                          ToUnicode,
@@ -395,6 +396,9 @@ def FilePathToUri( file_name ):
 
 
 def UriToFilePath( uri ):
+  filepath = ParseSourcefileFromJdtUri(uri)
+  if filepath != "":
+    return filepath
   if uri [ : 5 ] != "file:":
     raise InvalidUriException( uri )
 
