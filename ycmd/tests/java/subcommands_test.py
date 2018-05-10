@@ -59,7 +59,8 @@ from ycmd.completers.language_server.language_server_completer import (
 def Subcommands_DefinedSubcommands_test( app ):
   subcommands_data = BuildRequest( completer_target = 'java' )
 
-  eq_( sorted( [ 'FixIt',
+  eq_( sorted( [ 'ClassFileContents',
+                 'FixIt',
                  'Format',
                  'GoToDeclaration',
                  'GoToDefinition',
