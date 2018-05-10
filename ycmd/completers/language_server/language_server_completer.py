@@ -1329,6 +1329,19 @@ class LanguageServerCompleter( Completer ):
       raise RuntimeError( 'Cannot jump to location' )
 
 
+  def ClassFileContents( self, request_data ):
+    """Issues the classFileContents request and returns the result as
+    response."""
+    if not self.ServerIsReady():
+      raise RuntimeError( 'Server is initializing. Please wait.' )
+
+    request_id = self.GetConnection().NextRequestId()
+    return self.GetConnection().GetResponse(
+      request_id,
+      lsp.ClassFileContents( request_id, request_data ),
+      REQUEST_TIMEOUT_COMMAND )
+
+
   def GoToReferences( self, request_data ):
     """Issues the references request and returns the result as a GoTo
     response."""
@@ -1738,8 +1751,12 @@ def _LocationListToGoTo( request_data, response ):
 def _PositionToLocationAndDescription( request_data, position ):
   """Convert a LSP position to a ycmd location."""
   try:
-    filename = lsp.UriToFilePath( position[ 'uri' ] )
-    file_contents = GetFileLines( request_data, filename )
+    if responses.IsJdtContentUri( position[ 'uri' ] ):
+      filename = position[ 'uri' ]
+      file_contents = []
+    else:
+      filename = lsp.UriToFilePath( position[ 'uri' ] )
+      file_contents = GetFileLines( request_data, filename )
   except lsp.InvalidUriException:
     _logger.debug( "Invalid URI, file contents not available in GoTo" )
     filename = ''

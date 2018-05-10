@@ -35,6 +35,7 @@ from pprint import pformat
 import requests
 
 from ycmd.utils import ReadFile
+from ycmd.responses import IsJdtContentUri
 from ycmd.completers.java.java_completer import NO_DOCUMENTATION_MESSAGE
 from ycmd.tests.java import ( DEFAULT_PROJECT_DIR,
                               PathToTestFile,
@@ -59,7 +60,8 @@ from ycmd.completers.language_server.language_server_completer import (
 def Subcommands_DefinedSubcommands_test( app ):
   subcommands_data = BuildRequest( completer_target = 'java' )
 
-  eq_( sorted( [ 'FixIt',
+  eq_( sorted( [ 'ClassFileContents',
+                 'FixIt',
                  'Format',
                  'GoToDeclaration',
                  'GoToDefinition',
@@ -192,6 +194,45 @@ def Subcommands_GetDoc_NoDoc_test( app ):
 
   assert_that( response.json,
                ErrorMatcher( RuntimeError, NO_DOCUMENTATION_MESSAGE ) )
+
+
+@WithRetry
+@SharedYcmd
+def Subcommands_ClassFileContents_test( app ):
+  filepath = PathToTestFile( 'simple_eclipse_project',
+                             'src',
+                             'com',
+                             'youcompleteme',
+                             'testing',
+                             'Tset.java' )
+  contents = ReadFile( filepath )
+
+  event_data = BuildRequest( filepath = filepath,
+                             filetype = 'java',
+                             line_num = 3,
+                             column_num = 18,
+                             contents = contents,
+                             command_arguments = [ 'GoToDefinition' ],
+                             completer_target = 'filetype_default' )
+
+  response = app.post_json( '/run_completer_command',
+                            event_data,
+                            expect_errors = True )
+
+  eq_( response.status_code, requests.codes.ok )
+  eq_( IsJdtContentUri( response.json[ 'filepath' ] ), True)
+
+  jdtUri = response.json[ 'filepath' ]
+  event_data = BuildRequest( filepath = jdtUri,
+                             filetype = 'java',
+                             command_arguments = [ 'ClassFileContents' ],
+                             completer_target = 'filetype_default' )
+
+  response = app.post_json( '/run_completer_command',
+                            event_data,
+                            expect_errors = True )
+
+  eq_( response.status_code, requests.codes.ok )
 
 
 @WithRetry
