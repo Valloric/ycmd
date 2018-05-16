@@ -177,6 +177,46 @@ def DebugInfo_FlagsWhenNoExtraConfAndCompilationDatabaseLoaded_test( app ):
       )
 
 
+@IsolatedYcmd(
+  { 'global_ycm_extra_conf': PathToTestFile( '.ycm_extra_conf.py' ) } )
+def DebugInfo_PrioritizeCompilationDatabaseOverGlobalExtraConf_test( app ):
+  with TemporaryTestDir() as tmp_dir:
+    compile_commands = [
+      {
+        'directory': tmp_dir,
+        'command': 'clang++ -I. -I/absolute/path -Wall',
+        'file': os.path.join( tmp_dir, 'test.cc' ),
+      },
+    ]
+    with TemporaryClangProject( tmp_dir, compile_commands ):
+      request_data = BuildRequest(
+        filepath = os.path.join( tmp_dir, 'test.cc' ),
+        filetype = 'cpp' )
+
+      assert_that(
+        app.post_json( '/debug_info', request_data ).json,
+        has_entry( 'completer', has_entries( {
+          'name': 'C-family',
+          'servers': empty(),
+          'items': contains(
+            has_entries( {
+              'key': 'compilation database path',
+              'value': instance_of( str )
+            } ),
+            has_entries( {
+              'key': 'flags',
+              'value': matches_regexp(
+                  "\[u?'clang\+\+', u?'-x', u?'c\+\+', .*, u?'-Wall', .*\]" )
+            } ),
+            has_entries( {
+              'key': 'translation unit',
+              'value': os.path.join( tmp_dir, 'test.cc' ),
+            } )
+          )
+        } ) )
+      )
+
+
 @IsolatedYcmd()
 def DebugInfo_FlagsWhenNoExtraConfAndInvalidCompilationDatabase_test( app ):
   with TemporaryTestDir() as tmp_dir:
