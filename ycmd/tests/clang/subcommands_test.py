@@ -82,6 +82,27 @@ def Subcommands_GoTo_ZeroBasedLineAndColumn_test( app ):
 
 
 @SharedYcmd
+def Subcommands_GoTo_cuda_test( app ):
+  filepath = PathToTestFile( 'cuda', 'GoTo_cuda_test.cu' )
+  contents = ReadFile( filepath )
+
+  goto_data = BuildRequest( completer_target = 'filetype_default',
+                            command_arguments = ['GoToDefinition'],
+                            compilation_flags = ['-x', 'cuda'],
+                            line_num = 6,
+                            column_num = 3,
+                            filepath = filepath,
+                            contents = contents,
+                            filetype = 'cuda' )
+
+  eq_( {
+    'filepath': filepath,
+    'line_num': 3,
+    'column_num': 17
+  }, app.post_json( '/run_completer_command', goto_data ).json )
+
+
+@SharedYcmd
 def RunGoToTest_all( app, filename, command, test ):
   contents = ReadFile( PathToTestFile( filename ) )
   common_request = {
@@ -381,8 +402,8 @@ def Subcommands_GoTo_Unity_test():
 
 
 @SharedYcmd
-def RunGetSemanticTest( app, filename, test, command):
-  contents = ReadFile( PathToTestFile( filename ) )
+def RunGetSemanticTest( app, filepath, test, command):
+  contents = ReadFile( filepath )
 
   # We use the -fno-delayed-template-parsing flag to not delay
   # parsing of templates on Windows.  This is the default on
@@ -398,7 +419,7 @@ def RunGetSemanticTest( app, filename, test, command):
                            '-fno-delayed-template-parsing' ],
     'line_num'         : 10,
     'column_num'       : 3,
-    'filepath'         : PathToTestFile( filename ),
+    'filepath'         : filepath,
     'contents'         : contents,
     'filetype'         : 'cpp'
   }
@@ -498,7 +519,7 @@ def Subcommands_GetType_test():
 
   for test in tests:
     yield ( RunGetSemanticTest,
-            'GetType_Clang_test.cc',
+            PathToTestFile( 'GetType_Clang_test.cc' ),
             test,
             [ 'GetType' ] )
 
@@ -506,9 +527,24 @@ def Subcommands_GetType_test():
   # just skips the reparse)
   for test in tests:
     yield ( RunGetSemanticTest,
-            'GetType_Clang_test.cc',
+            PathToTestFile( 'GetType_Clang_test.cc' ),
             test,
             [ 'GetTypeImprecise' ] )
+
+
+def SubCommands_GetType_CUDA_test():
+  test = [
+    {
+      'line_num': 8,
+      'column_num': 3,
+      'extra_conf': [ PathToTestFile( 'cuda', '.ycm_extra_conf.py' ) ]
+    },
+    'void ()'
+  ]
+  yield ( RunGetSemanticTest,
+          PathToTestFile( 'cuda', 'basic.cu' ),
+          test,
+          [ 'GetType' ] )
 
 
 def SubCommands_GetType_Unity_test():
@@ -520,7 +556,7 @@ def SubCommands_GetType_Unity_test():
     },
     'int'
   ]
-  yield RunGetSemanticTest, 'unitya.cc', test, [ 'GetType' ]
+  yield RunGetSemanticTest, PathToTestFile( 'unitya.cc' ), test, [ 'GetType' ]
 
 
 def Subcommands_GetParent_test():
@@ -555,14 +591,14 @@ def Subcommands_GetParent_test():
 
   for test in tests:
     yield ( RunGetSemanticTest,
-            'GetParent_Clang_test.cc',
+            PathToTestFile( 'GetParent_Clang_test.cc' ),
             test,
             [ 'GetParent' ] )
 
 
 @SharedYcmd
-def RunFixItTest( app, line, column, lang, file_name, check ):
-  contents = ReadFile( PathToTestFile( file_name ) )
+def RunFixItTest( app, line, column, lang, file_path, check ):
+  contents = ReadFile( file_path )
 
   language_options = {
     'cpp11': {
@@ -573,6 +609,15 @@ def RunFixItTest( app, line, column, lang, file_name, check ):
                              '-Wextra',
                              '-pedantic' ],
       'filetype'         : 'cpp',
+    },
+    'cuda': {
+      'compilation_flags': [ '-x',
+                             'cuda',
+                             '-std=c++11',
+                             '-Wall',
+                             '-Wextra',
+                             '-pedantic' ],
+      'filetype'         : 'cuda',
     },
     'objective-c': {
       'compilation_flags': [ '-x',
@@ -588,7 +633,7 @@ def RunFixItTest( app, line, column, lang, file_name, check ):
   args = {
     'completer_target' : 'filetype_default',
     'contents'         : contents,
-    'filepath'         : PathToTestFile( file_name ),
+    'filepath'         : file_path,
     'command_arguments': [ 'FixIt' ],
     'line_num'         : line,
     'column_num'       : column,
@@ -881,10 +926,27 @@ def FixIt_Check_cpp11_SpellCheck( results ):
   } ) )
 
 
+def FixIt_Check_cuda( results ):
+  assert_that( results, has_entries( {
+    'fixits': contains(
+      has_entries( {
+        'text': contains_string(
+           "error: kernel function type 'int ()' must have void " ),
+        'chunks': contains(
+          ChunkMatcher( 'void',
+                        LineColMatcher( 3, 12 ),
+                        LineColMatcher( 3, 15 ) )
+        ),
+        'location': LineColMatcher( 3, 12 ),
+      } ) )
+  } ) )
+
+
 def Subcommands_FixIt_all_test():
-  cfile = 'FixIt_Clang_cpp11.cpp'
-  mfile = 'FixIt_Clang_objc.m'
-  ufile = 'unicode.cc'
+  cfile = PathToTestFile( 'FixIt_Clang_cpp11.cpp' )
+  mfile = PathToTestFile( 'FixIt_Clang_objc.m' )
+  cufile = PathToTestFile( 'cuda', 'fixit_test.cu' )
+  ufile = PathToTestFile( 'unicode.cc' )
 
   tests = [
     # L
@@ -902,6 +964,8 @@ def Subcommands_FixIt_all_test():
 
     [ 5, 3,   'objective-c', mfile, FixIt_Check_objc ],
     [ 7, 1,   'objective-c', mfile, FixIt_Check_objc_NoFixIt ],
+
+    [ 3, 12,  'cuda', cufile, FixIt_Check_cuda ],
 
     # multiple errors on a single line; both with fixits
     [ 54, 15, 'cpp11', cfile, FixIt_Check_cpp11_MultiFirst ],
@@ -1372,3 +1436,31 @@ Name: member_with_å_unicøde
 
 This method has unicøde in it
 """ } )
+
+
+@SharedYcmd
+def Subcommands_GetDoc_CUDA_test( app ):
+  filepath = PathToTestFile( 'cuda', 'basic.cu' )
+  contents = ReadFile( filepath )
+
+  event_data = BuildRequest( filepath = filepath,
+                             filetype = 'cuda',
+                             compilation_flags = [ '-x', 'cuda' ],
+                             line_num = 8,
+                             column_num = 3,
+                             contents = contents,
+                             command_arguments = [ 'GetDoc' ],
+                             completer_target = 'filetype_default' )
+
+  response = app.post_json( '/run_completer_command', event_data ).json
+
+  pprint( response )
+
+  eq_( response, {
+    'detailed_info': """\
+void kernel()
+This is a test kernel
+Type: void ()
+Name: kernel
+---
+This is a test kernel""" } )
