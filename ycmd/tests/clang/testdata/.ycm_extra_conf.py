@@ -7,6 +7,11 @@ unity_files = [
   'unity.h',
 ]
 
+cuda_files = [
+  'cuda.h',
+  'cuda.cu',
+]
+
 
 def FlagsForFile( filename ):
   if os.path.basename( filename ) in unity_files:
@@ -16,5 +21,11 @@ def FlagsForFile( filename ):
                                          'unity.cc' ),
       'include_paths_relative_to_dir': os.path.dirname( filename ),
     }
+  elif os.path.basename( filename ) in cuda_files:
+    return {
+      'flags': [ '-x', 'cuda', '-I', '.' ],
+      'include_paths_relative_to_dir': os.path.dirname( filename ),
+    }
+
 
   return { 'flags': ['-x', 'c++', '-I', '.'] }

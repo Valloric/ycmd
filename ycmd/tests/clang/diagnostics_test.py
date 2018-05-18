@@ -436,3 +436,20 @@ def Diagnostics_Unity_test( app ):
         'fixit_available': True
       } ),
     ) )
+
+
+@SharedYcmd
+def Diagnostics_CUDA_Kernel_test( app ):
+  app.post_json( '/load_extra_conf_file',
+                 { 'filepath': PathToTestFile( '.ycm_extra_conf.py' ) } )
+
+  for filename in [ 'cuda.cu', 'cuda.h' ]:
+    contents = ReadFile( PathToTestFile( filename ) )
+
+    event_data = BuildRequest( filepath = PathToTestFile( filename ),
+                               contents = contents,
+                               event_name = 'FileReadyToParse',
+                               filetype = 'cuda' )
+
+    response = app.post_json( '/event_notification', event_data ).json
+    assert_that( response, empty() )

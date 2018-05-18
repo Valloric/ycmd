@@ -70,11 +70,11 @@ CL_COMPILER_REGEX = re.compile( r'(?:cl|clang-cl)(.exe)?$', re.IGNORECASE )
 # List of file extensions to be considered "header" files and thus not present
 # in the compilation database. The logic will try and find an associated
 # "source" file (see SOURCE_EXTENSIONS below) and use the flags for that.
-HEADER_EXTENSIONS = [ '.h', '.hxx', '.hpp', '.hh' ]
+HEADER_EXTENSIONS = [ '.h', '.hxx', '.hpp', '.hh', '.cuh' ]
 
 # List of file extensions which are considered "source" files for the purposes
 # of heuristically locating the flags for a header file.
-SOURCE_EXTENSIONS = [ '.cpp', '.cxx', '.cc', '.c', '.m', '.mm' ]
+SOURCE_EXTENSIONS = [ '.cpp', '.cxx', '.cc', '.c', '.cu', '.m', '.mm' ]
 
 EMPTY_FLAGS = {
   'flags': [],
