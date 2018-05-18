@@ -854,8 +854,6 @@ def CompilationDatabase_UseFlagsFromDatabase_test():
         contains( 'clang++',
                   '-x',
                   'c++',
-                  '-x',
-                  'c++',
                   '-I' + os.path.normpath( tmp_dir ),
                   '-I' + os.path.normpath( '/absolute/path' ),
                   '-Wall' ) )
@@ -890,8 +888,6 @@ def CompilationDatabase_UseFlagsFromSameDir_test():
         contains( 'clang++',
                   '-x',
                   'c++',
-                  '-x',
-                  'c++',
                   '-Wall' ) )
 
       # If we now ask for a file _not_ in the DB, but in the same dir, we should
@@ -901,8 +897,6 @@ def CompilationDatabase_UseFlagsFromSameDir_test():
           os.path.join( tmp_dir, 'test2.cc' ),
           add_extra_clang_flags = False )[ 0 ],
         contains( 'clang++',
-                  '-x',
-                  'c++',
                   '-x',
                   'c++',
                   '-Wall' ) )
@@ -925,8 +919,6 @@ def CompilationDatabase_HeaderFileHeuristic_test():
           os.path.join( tmp_dir, 'test.h' ),
           add_extra_clang_flags = False )[ 0 ],
         contains( 'clang++',
-                  '-x',
-                  'c++',
                   '-x',
                   'c++',
                   '-Wall' ) )
@@ -977,6 +969,28 @@ def CompilationDatabase_ExplicitHeaderFileEntry_test():
                   '-x',
                   'c++',
                   '-I' + os.path.normpath( '/absolute/path' ),
+                  '-Wall' ) )
+
+
+def CompilationDatabase_CUDALanguageFlags_test():
+  with TemporaryTestDir() as tmp_dir:
+    compile_commands = [
+      {
+        'directory': tmp_dir,
+        'command': 'clang++ -Wall {}'.format( './test.cu' ),
+        'file': os.path.join( tmp_dir, 'test.cu' ),
+      },
+    ]
+
+    with TemporaryClangProject( tmp_dir, compile_commands ):
+      # If we ask for a header file, it returns the equivalent cu file
+      assert_that(
+        flags.Flags().FlagsForFile(
+          os.path.join( tmp_dir, 'test.h' ),
+          add_extra_clang_flags = False )[ 0 ],
+        contains( 'clang++',
+                  '-x',
+                  'cuda',
                   '-Wall' ) )
 
 
