@@ -70,11 +70,11 @@ CL_COMPILER_REGEX = re.compile( r'(?:cl|clang-cl)(.exe)?$', re.IGNORECASE )
 # List of file extensions to be considered "header" files and thus not present
 # in the compilation database. The logic will try and find an associated
 # "source" file (see SOURCE_EXTENSIONS below) and use the flags for that.
-HEADER_EXTENSIONS = [ '.h', '.hxx', '.hpp', '.hh' ]
+HEADER_EXTENSIONS = [ '.h', '.hxx', '.hpp', '.hh', '.cuh' ]
 
 # List of file extensions which are considered "source" files for the purposes
 # of heuristically locating the flags for a header file.
-SOURCE_EXTENSIONS = [ '.cpp', '.cxx', '.cc', '.c', '.m', '.mm' ]
+SOURCE_EXTENSIONS = [ '.cpp', '.cxx', '.cc', '.c', '.cu', '.m', '.mm' ]
 
 EMPTY_FLAGS = {
   'flags': [],
@@ -396,7 +396,10 @@ def _AddLanguageFlagWhenAppropriate( flags, enable_windows_style_flags ):
   #     and cleaned properly.
   #   If the flag starts with anything else (i.e. not a '-' or a '/'), the flag
   #   is a stray file path and shall be gotten rid of in _RemoveUnusedFlags().
-  if ( not first_flag.startswith( '-' ) and
+  skip_cpp = any( fl == '-x' or fl.endswith('.cu') or fl.endswith('.cuh')
+                  for fl in flags )
+  if ( not skip_cpp and
+       not first_flag.startswith( '-' ) and
        CPP_COMPILER_REGEX.search( first_flag ) ):
     return [ first_flag, '-x', 'c++' ] + flags[ 1: ]
   return flags
