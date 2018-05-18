@@ -82,6 +82,27 @@ def Subcommands_GoTo_ZeroBasedLineAndColumn_test( app ):
 
 
 @SharedYcmd
+def Subcommands_GoTo_cuda_test( app ):
+  filepath = PathToTestFile( 'cuda', 'GoTo_cuda_test.cu' )
+  contents = ReadFile( filepath )
+
+  goto_data = BuildRequest( completer_target = 'filetype_default',
+                            command_arguments = ['GoToDefinition'],
+                            compilation_flags = ['-x', 'cuda'],
+                            line_num = 6,
+                            column_num = 3,
+                            filepath = filepath,
+                            contents = contents,
+                            filetype = 'cuda' )
+
+  eq_( {
+    'filepath': filepath,
+    'line_num': 3,
+    'column_num': 17
+  }, app.post_json( '/run_completer_command', goto_data ).json )
+
+
+@SharedYcmd
 def RunGoToTest_all( app, filename, command, test ):
   contents = ReadFile( PathToTestFile( filename ) )
   common_request = {
