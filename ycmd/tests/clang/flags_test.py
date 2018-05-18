@@ -854,8 +854,6 @@ def CompilationDatabase_UseFlagsFromDatabase_test():
         contains( 'clang++',
                   '-x',
                   'c++',
-                  '-x',
-                  'c++',
                   '-I' + os.path.normpath( tmp_dir ),
                   '-I' + os.path.normpath( '/absolute/path' ),
                   '-Wall' ) )
@@ -890,8 +888,6 @@ def CompilationDatabase_UseFlagsFromSameDir_test():
         contains( 'clang++',
                   '-x',
                   'c++',
-                  '-x',
-                  'c++',
                   '-Wall' ) )
 
       # If we now ask for a file _not_ in the DB, but in the same dir, we should
@@ -901,8 +897,6 @@ def CompilationDatabase_UseFlagsFromSameDir_test():
           os.path.join( tmp_dir, 'test2.cc' ),
           add_extra_clang_flags = False )[ 0 ],
         contains( 'clang++',
-                  '-x',
-                  'c++',
                   '-x',
                   'c++',
                   '-Wall' ) )
@@ -925,8 +919,6 @@ def CompilationDatabase_HeaderFileHeuristic_test():
           os.path.join( tmp_dir, 'test.h' ),
           add_extra_clang_flags = False )[ 0 ],
         contains( 'clang++',
-                  '-x',
-                  'c++',
                   '-x',
                   'c++',
                   '-Wall' ) )
