@@ -18,8 +18,8 @@
 #include "ClangHelpers.h"
 #include "ClangUtils.h"
 #include "Location.h"
-#include "Range.h"
 #include "PythonSupport.h"
+#include "Range.h"
 #include "UnsavedFile.h"
 #include "Utils.h"
 
@@ -62,7 +62,7 @@ FixIt BuildFixIt( const std::string& text,
 
   for ( size_t idx = 0; idx < num_chunks; ++idx ) {
     FixItChunk chunk;
-    CXSourceRange sourceRange;
+    CXSourceRange sourceRange{};
     chunk.replacement_text = CXStringToString(
                                clang_getDiagnosticFixIt( diagnostic,
                                                          idx,

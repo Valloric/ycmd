@@ -57,7 +57,7 @@ private:
 
   std::string case_swapped_text_;
   CharacterSequence word_boundary_chars_;
-  bool text_is_lowercase_;
+  bool text_is_lowercase_{};
 };
 
 } // namespace YouCompleteMe
