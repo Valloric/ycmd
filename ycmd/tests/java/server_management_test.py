@@ -1,4 +1,4 @@
-# Copyright (C) 2017 ycmd contributors
+# Copyright (C) 2017-2018 ycmd contributors
 # encoding: utf-8
 #
 # This file is part of ycmd.
@@ -42,6 +42,7 @@ from ycmd.tests.java import ( PathToTestFile,
                               StartJavaCompleterServerInDirectory )
 from ycmd.tests.test_utils import ( BuildRequest,
                                     ErrorMatcher,
+                                    MockProcessTerminationTimingOut,
                                     TemporaryTestDir,
                                     WaitUntilCompleterServerReady )
 from ycmd import utils, handlers
@@ -342,8 +343,9 @@ def ServerManagement_ProjectDetection_NoParent_test():
 
 
 @IsolatedYcmd
-@patch( 'ycmd.utils.WaitUntilProcessIsTerminated', side_effect = RuntimeError )
-def ServerManagement_CloseServer_Unclean_test( app, stop_server_cleanly ):
+@patch( 'ycmd.utils.WaitUntilProcessIsTerminated',
+        MockProcessTerminationTimingOut )
+def ServerManagement_StopServer_Timeout_test( app ):
   StartJavaCompleterServerInDirectory(
     app, PathToTestFile( 'simple_eclipse_project' ) )
 
