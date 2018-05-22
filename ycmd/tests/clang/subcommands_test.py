@@ -25,7 +25,7 @@ from __future__ import division
 from builtins import *  # noqa
 
 from hamcrest import ( assert_that, calling, contains, contains_string,
-                       empty, equal_to, has_entries, raises )
+                       empty, equal_to, has_entry, has_entries, raises )
 from nose.tools import eq_
 from pprint import pprint
 from webtest import AppError
@@ -1131,6 +1131,37 @@ def Subcommands_GetDoc_NoCursor_test( app ):
 
   assert_that( response.json,
                ErrorMatcher( ValueError, NO_DOCUMENTATION_MESSAGE ) )
+
+
+@SharedYcmd
+def Subcommands_GetDoc_SystemHeaders_test( app ):
+  app.post_json( '/load_extra_conf_file', {
+    'filepath': PathToTestFile( 'get_doc', '.ycm_extra_conf.py' ) } )
+
+  filepath = PathToTestFile( 'get_doc', 'test.cpp' )
+  contents = ReadFile( filepath )
+
+  event_data = BuildRequest( filepath = filepath,
+                             filetype = 'cpp',
+                             line_num = 4,
+                             column_num = 7,
+                             contents = contents,
+                             command_arguments = [ 'GetDoc' ] )
+
+  response = app.post_json( '/run_completer_command', event_data ).json
+
+  assert_that( response,
+               has_entry( 'detailed_info', """\
+int test()
+This is a function.
+Type: int ()
+Name: test
+---
+
+\\brief This is a function.
+
+This function is defined in a system header.
+""" ) )
 
 
 # Following tests repeat the tests above, but without re-parsing the file

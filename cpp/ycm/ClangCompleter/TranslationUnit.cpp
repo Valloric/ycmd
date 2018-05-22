@@ -542,10 +542,8 @@ std::vector< FixIt > TranslationUnit::GetFixItsForLocationInFile(
   return fixits;
 }
 
-DocumentationData TranslationUnit::GetDocsForLocationInFile(
-  const std::string &filename,
-  int line,
-  int column,
+DocumentationData TranslationUnit::GetDocsForLocation(
+  const Location &location,
   const std::vector< UnsavedFile > &unsaved_files,
   bool reparse ) {
 
@@ -559,28 +557,15 @@ DocumentationData TranslationUnit::GetDocsForLocationInFile(
     return DocumentationData();
   }
 
-  CXCursor cursor = GetCursor( filename, line, column );
+  CXCursor cursor = GetCursor( location.filename_,
+                               location.line_number_,
+                               location.column_number_ );
 
   if ( !CursorIsValid( cursor ) ) {
     return DocumentationData();
   }
 
-  // If the original cursor is a reference, then we return the documentation
-  // for the type/method/etc. that is referenced
-  CXCursor referenced_cursor = clang_getCursorReferenced( cursor );
-
-  if ( CursorIsValid( referenced_cursor ) ) {
-    cursor = referenced_cursor;
-  }
-
-  // We always want the documentation associated with the canonical declaration
-  CXCursor canonical_cursor = clang_getCanonicalCursor( cursor );
-
-  if ( !CursorIsValid( canonical_cursor ) ) {
-    return DocumentationData();
-  }
-
-  return DocumentationData( canonical_cursor );
+  return DocumentationData( cursor );
 }
 
 CXCursor TranslationUnit::GetCursor( const std::string &filename,
@@ -599,6 +584,17 @@ CXCursor TranslationUnit::GetCursor( const std::string &filename,
                                        column );
 
   return clang_getCursor( clang_translation_unit_, source_location );
+}
+
+bool TranslationUnit::LocationIsInSystemHeader( const Location &location ) {
+  CXFile file = clang_getFile( clang_translation_unit_,
+                               location.filename_.c_str() );
+  CXSourceLocation source_location = clang_getLocation(
+                                       clang_translation_unit_,
+                                       file,
+                                       location.line_number_,
+                                       location.column_number_ );
+  return clang_Location_isInSystemHeader( source_location );
 }
 
 } // namespace YouCompleteMe

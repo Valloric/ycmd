@@ -106,12 +106,12 @@ public:
     const std::vector< UnsavedFile > &unsaved_files,
     bool reparse = true );
 
-  YCM_EXPORT DocumentationData GetDocsForLocationInFile(
-    const std::string &filename,
-    int line,
-    int column,
+  YCM_EXPORT DocumentationData GetDocsForLocation(
+    const Location &location,
     const std::vector< UnsavedFile > &unsaved_files,
     bool reparse = true );
+
+  bool LocationIsInSystemHeader( const Location &location );
 
 private:
   void Reparse( std::vector< CXUnsavedFile > &unsaved_files );
