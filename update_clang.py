@@ -47,6 +47,7 @@ def OnMac():
 
 LLVM_DOWNLOAD_DATA = {
   'win32': {
+    'url': 'https://releases.llvm.org/{llvm_version}/{llvm_package}',
     'format': 'nsis',
     'llvm_package': 'LLVM-{llvm_version}-{os_name}.exe',
     'ycmd_package': 'libclang-{llvm_version}-{os_name}.tar.bz2',
@@ -56,6 +57,7 @@ LLVM_DOWNLOAD_DATA = {
     ]
   },
   'win64': {
+    'url': 'https://releases.llvm.org/{llvm_version}/{llvm_package}',
     'format': 'nsis',
     'llvm_package': 'LLVM-{llvm_version}-{os_name}.exe',
     'ycmd_package': 'libclang-{llvm_version}-{os_name}.tar.bz2',
@@ -65,6 +67,7 @@ LLVM_DOWNLOAD_DATA = {
     ]
   },
   'x86_64-apple-darwin': {
+    'url': 'https://releases.llvm.org/{llvm_version}/{llvm_package}',
     'format': 'lzma',
     'llvm_package': 'clang+llvm-{llvm_version}-{os_name}.tar.xz',
     'ycmd_package': 'libclang-{llvm_version}-{os_name}.tar.bz2',
@@ -72,54 +75,55 @@ LLVM_DOWNLOAD_DATA = {
       os.path.join( 'lib', 'libclang.dylib' )
     ]
   },
-  'x86_64-linux-gnu-ubuntu-14.04': {
+  'x86_64-unknown-linux-gnu': {
+    'url': ( 'https://github.com/micbou/llvm/releases/download/{llvm_version}/'
+             '{llvm_package}' ),
     'format': 'lzma',
     'llvm_package': 'clang+llvm-{llvm_version}-{os_name}.tar.xz',
     'ycmd_package': 'libclang-{llvm_version}-{os_name}.tar.bz2',
     'files_to_copy': [
       os.path.join( 'lib', 'libclang.so' ),
-      os.path.join( 'lib', 'libclang.so.{llvm_version:.1}' ),
-      os.path.join( 'lib', 'libclang.so.{llvm_version:.3}' )
+      os.path.join( 'lib', 'libclang.so.{llvm_version:.1}' )
     ]
   },
-  'i386-unknown-freebsd-10': {
+  'i386-unknown-freebsd11': {
+    'url': 'https://releases.llvm.org/{llvm_version}/{llvm_package}',
     'format': 'lzma',
     'llvm_package': 'clang+llvm-{llvm_version}-{os_name}.tar.xz',
     'ycmd_package': 'libclang-{llvm_version}-{os_name}.tar.bz2',
     'files_to_copy': [
       os.path.join( 'lib', 'libclang.so' ),
-      os.path.join( 'lib', 'libclang.so.{llvm_version:.1}' ),
-      os.path.join( 'lib', 'libclang.so.{llvm_version:.3}' )
+      os.path.join( 'lib', 'libclang.so.{llvm_version:.1}' )
     ]
   },
-  'amd64-unknown-freebsd-10': {
+  'amd64-unknown-freebsd11': {
+    'url': 'https://releases.llvm.org/{llvm_version}/{llvm_package}',
     'format': 'lzma',
     'llvm_package': 'clang+llvm-{llvm_version}-{os_name}.tar.xz',
     'ycmd_package': 'libclang-{llvm_version}-{os_name}.tar.bz2',
     'files_to_copy': [
       os.path.join( 'lib', 'libclang.so' ),
-      os.path.join( 'lib', 'libclang.so.{llvm_version:.1}' ),
-      os.path.join( 'lib', 'libclang.so.{llvm_version:.3}' )
+      os.path.join( 'lib', 'libclang.so.{llvm_version:.1}' )
     ]
   },
   'aarch64-linux-gnu': {
+    'url': 'https://releases.llvm.org/{llvm_version}/{llvm_package}',
     'format': 'lzma',
     'llvm_package': 'clang+llvm-{llvm_version}-{os_name}.tar.xz',
     'ycmd_package': 'libclang-{llvm_version}-{os_name}.tar.bz2',
     'files_to_copy': [
       os.path.join( 'lib', 'libclang.so' ),
-      os.path.join( 'lib', 'libclang.so.{llvm_version:.1}' ),
-      os.path.join( 'lib', 'libclang.so.{llvm_version:.3}' )
+      os.path.join( 'lib', 'libclang.so.{llvm_version:.1}' )
     ]
   },
   'armv7a-linux-gnueabihf': {
+    'url': 'https://releases.llvm.org/{llvm_version}/{llvm_package}',
     'format': 'lzma',
     'llvm_package': 'clang+llvm-{llvm_version}-{os_name}.tar.xz',
     'ycmd_package': 'libclang-{llvm_version}-{os_name}.tar.bz2',
     'files_to_copy': [
       os.path.join( 'lib', 'libclang.so' ),
-      os.path.join( 'lib', 'libclang.so.{llvm_version:.1}' ),
-      os.path.join( 'lib', 'libclang.so.{llvm_version:.3}' )
+      os.path.join( 'lib', 'libclang.so.{llvm_version:.1}' )
     ]
   },
 }
@@ -167,8 +171,7 @@ def ExtractLZMA( compressed_data, destination ):
     tar_file.extractall( destination )
 
   # Determine the directory name
-  return os.path.join( destination,
-                       a_member.name.split( os.path.sep )[ 0 ] )
+  return os.path.join( destination, a_member.name.split( '/' )[ 0 ] )
 
 
 def Extract7Z( llvm_package, archive, destination ):
@@ -328,26 +331,30 @@ def BundleAndUpload( args, temp_dir, output_dir, os_name, download_data,
   ycmd_package = download_data[ 'ycmd_package' ].format(
     os_name = os_name,
     llvm_version = args.version )
-  download_url = (
-    'https://releases.llvm.org/{llvm_version}/{llvm_package}'.format(
-      llvm_version = args.version,
-      llvm_package = llvm_package ) )
+  download_url = download_data[ 'url' ].format( llvm_version = args.version,
+                                                llvm_package = llvm_package )
 
   ycmd_package_file = os.path.join( output_dir, ycmd_package )
 
-  if download_data[ 'format' ] == 'lzma':
-    package_dir = PrepareBundleLZMA( args.from_cache,
-                                     llvm_package,
-                                     download_url,
-                                     temp_dir )
-  elif download_data[ 'format' ] == 'nsis':
-    package_dir = PrepareBundleNSIS( args.from_cache,
-                                     llvm_package,
-                                     download_url,
-                                     temp_dir )
-  else:
-    raise AssertionError( 'Format not yet implemented: {}'.format(
-      download_data[ 'format' ] ) )
+  try:
+    if download_data[ 'format' ] == 'lzma':
+      package_dir = PrepareBundleLZMA( args.from_cache,
+                                       llvm_package,
+                                       download_url,
+                                       temp_dir )
+    elif download_data[ 'format' ] == 'nsis':
+      package_dir = PrepareBundleNSIS( args.from_cache,
+                                       llvm_package,
+                                       download_url,
+                                       temp_dir )
+    else:
+      raise AssertionError( 'Format not yet implemented: {}'.format(
+        download_data[ 'format' ] ) )
+  except requests.exceptions.HTTPError as error:
+    if error.response.status_code != 404:
+      raise
+    print( 'Cannot download {}'.format( llvm_package ) )
+    return
 
   MakeBundle( download_data[ 'files_to_copy' ],
               license_file_name,

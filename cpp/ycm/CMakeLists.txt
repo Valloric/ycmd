@@ -30,48 +30,50 @@ if ( USE_CLANG_COMPLETER AND
      NOT PATH_TO_LLVM_ROOT AND
      NOT EXTERNAL_LIBCLANG_PATH )
 
-  set( CLANG_VERSION 6.0.0 )
+  set( CLANG_VERSION 7.0.0 )
 
   if ( APPLE )
     set( LIBCLANG_DIRNAME "libclang-${CLANG_VERSION}-x86_64-apple-darwin" )
     set( LIBCLANG_SHA256
-         "fd12532e3eb7b67cfede097134fc0a5b478c63759bcbe144ae6897f412ce2fe6" )
+         "b6479de66cd93136e0b8fbae3b64aeec41e9c442828bc78e52b1052752e6b0cd" )
   elseif ( WIN32 )
     if( 64_BIT_PLATFORM )
       set( LIBCLANG_DIRNAME "libclang-${CLANG_VERSION}-win64" )
       set( LIBCLANG_SHA256
-           "48c83977d582b31b879d3ee5db200c06cec33ee8136cc72fa1e99db10572a6ca" )
+           "5652694d5b3f3023a7f65634bb8fd83733ef284036cdaff617c2677105ca648f" )
     else()
       set( LIBCLANG_DIRNAME "libclang-${CLANG_VERSION}-win32" )
       set( LIBCLANG_SHA256
-           "f9c50ad64405ba19b62cd8951d339cc978f306c6138512790c6e2b005084960c" )
+           "971ddce8028d815b2b853370b621a22f33f97605d8e8a2b4d140f50f651c017d" )
     endif()
   elseif ( SYSTEM_IS_FREEBSD )
     if ( 64_BIT_PLATFORM )
       set( LIBCLANG_DIRNAME
-           "libclang-${CLANG_VERSION}-amd64-unknown-freebsd-10" )
+           "libclang-${CLANG_VERSION}-amd64-unknown-freebsd11" )
       set( LIBCLANG_SHA256
-           "8283b3e03a820ab1411eec3ef3527e703df47732205241ae3efbe63261f300f3" )
+           "f1d1701cbd4e9f805929427146a7637f1606ecbe6b11186ee602fd6d1de4f8f9" )
     else()
       set( LIBCLANG_DIRNAME
-           "libclang-${CLANG_VERSION}-i386-unknown-freebsd-10" )
+           "libclang-${CLANG_VERSION}-i386-unknown-freebsd11" )
       set( LIBCLANG_SHA256
-           "e358f9ffa2356c24b61b41570abd9ad58e84a1f037c24b01d51b87dfaac422be" )
+           "bddf9270206ead93033ff0db7ee73fc5795239848bca76acf1d9deeb953cba5e" )
     endif()
   elseif ( CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64.*|AARCH64.*)" )
-    set( LIBCLANG_DIRNAME "libclang-${CLANG_VERSION}-aarch64-linux-gnu" )
-    set( LIBCLANG_SHA256
-         "92a1c45af3ba9479cca6803594c4ba267a41e4200c4d95269e976832b9288f9d" )
+    message( FATAL_ERROR
+      "No prebuilt Clang ${CLANG_VERSION} binaries for AArch64. "
+      "You'll have to compile Clang ${CLANG_VERSION} from source. "
+      "See the YCM docs for details on how to use a user-compiled libclang." )
   elseif ( CMAKE_SYSTEM_PROCESSOR MATCHES "^(arm.*|ARM.*)" )
-    set( LIBCLANG_DIRNAME "libclang-${CLANG_VERSION}-armv7a-linux-gnueabihf" )
-    set( LIBCLANG_SHA256
-         "68b14033d95be3bd74da3181145d09eeb2614aaa07f8df5dd60da8d173d3d15d" )
+    message( FATAL_ERROR
+      "No prebuilt Clang ${CLANG_VERSION} binaries for ARM. "
+      "You'll have to compile Clang ${CLANG_VERSION} from source. "
+      "See the YCM docs for details on how to use a user-compiled libclang." )
   else()
     if ( 64_BIT_PLATFORM )
       set( LIBCLANG_DIRNAME
-           "libclang-${CLANG_VERSION}-x86_64-linux-gnu-ubuntu-14.04" )
+           "libclang-${CLANG_VERSION}-x86_64-unknown-linux-gnu" )
       set( LIBCLANG_SHA256
-           "a2f198aec6a6ea42b7ca2712295f73e1e3f912ca7579181f6d0339c04e8f9a0e" )
+           "287beea1bd3185673772573b8cd896c4809fe8a132a843994ffac251ac52fb0e" )
     else()
       message( FATAL_ERROR
         "No prebuilt Clang ${CLANG_VERSION} binaries for 32-bit Linux. "
@@ -353,22 +355,6 @@ if( LIBCLANG_TARGET )
       POST_BUILD
       COMMAND ${CMAKE_COMMAND} -E copy "${LIBCLANG_TARGET}" "$<TARGET_FILE_DIR:${PROJECT_NAME}>"
     )
-
-    if( NOT APPLE AND NOT WIN32 )
-      # When loading our library, the dynamic linker may look for
-      # libclang.so.x instead of libclang.so.x.y. Create the corresponding
-      # symlink.
-      get_filename_component( LIBCLANG_NAME ${LIBCLANG_TARGET} NAME )
-      string( REGEX REPLACE "([^.]+).([0-9]+).([0-9]+)$" "\\1.\\2"
-              LIBCLANG_SONAME ${LIBCLANG_NAME} )
-      add_custom_command(
-        TARGET ${PROJECT_NAME}
-        POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E create_symlink
-        "${LIBCLANG_NAME}"
-        "$<TARGET_FILE_DIR:${PROJECT_NAME}>/${LIBCLANG_SONAME}"
-      )
-    endif()
   endif()
 endif()
 
