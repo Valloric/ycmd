@@ -41,4 +41,27 @@ std::string ReadUtf8File( const fs::path &filepath ) {
   return std::string();
 }
 
+
+fs::path NormalizePath( const fs::path &filepath, const fs::path &base ) {
+  fs::path absolute_path = fs::absolute( filepath, base );
+  fs::path::iterator component = absolute_path.begin();
+  fs::path normalized_path = *component++;
+
+  for ( ; exists( normalized_path / *component ) &&
+          component != absolute_path.end(); ++component ) {
+    normalized_path /= *component;
+  }
+  normalized_path = fs::canonical( normalized_path );
+
+  for ( ; component != absolute_path.end(); ++component ) {
+    if ( *component == ".." ) {
+      normalized_path = normalized_path.parent_path();
+    } else if ( *component != "." ) {
+      normalized_path /= *component;
+    }
+  }
+
+  return normalized_path.make_preferred();
+}
+
 } // namespace YouCompleteMe
