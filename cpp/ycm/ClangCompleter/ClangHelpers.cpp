@@ -47,8 +47,7 @@ DiagnosticKind DiagnosticSeverityToType( CXDiagnosticSeverity severity ) {
   }
 }
 
-FixIt BuildFixIt( const std::string& text,
-                  CXDiagnostic diagnostic ) {
+FixIt BuildDiagnosticFixIt( const std::string& text, CXDiagnostic diagnostic ) {
   FixIt fixit;
 
   size_t num_chunks = clang_getDiagnosticNumFixIts( diagnostic );
@@ -62,13 +61,13 @@ FixIt BuildFixIt( const std::string& text,
 
   for ( size_t idx = 0; idx < num_chunks; ++idx ) {
     FixItChunk chunk;
-    CXSourceRange sourceRange;
+    CXSourceRange range;
     chunk.replacement_text = CXStringToString(
                                clang_getDiagnosticFixIt( diagnostic,
                                                          idx,
-                                                         &sourceRange ) );
+                                                         &range ) );
 
-    chunk.range = sourceRange;
+    chunk.range = range;
     fixit.chunks.push_back( chunk );
   }
 
@@ -94,7 +93,7 @@ void BuildFullDiagnosticDataFromChildren(
   full_diagnostic_text.append( diag_text );
 
   // Populate any fixit attached to this diagnostic.
-  FixIt fixit = BuildFixIt( diag_text, diagnostic );
+  FixIt fixit = BuildDiagnosticFixIt( diag_text, diagnostic );
   if ( !fixit.chunks.empty() ) {
     fixits.push_back( fixit );
   }
@@ -209,6 +208,34 @@ std::vector< CXUnsavedFile > ToCXUnsavedFiles(
 }
 
 
+FixIt BuildCompletionFixIt( CXCodeCompleteResults *results,
+                            unsigned completion_index ) {
+  FixIt fixit;
+
+  size_t num_chunks = clang_getCompletionNumFixIts( results, completion_index );
+  if ( !num_chunks ) {
+    return fixit;
+  }
+
+  fixit.chunks.reserve( num_chunks );
+
+  for ( size_t chunk_index = 0; chunk_index < num_chunks; ++chunk_index ) {
+    FixItChunk chunk;
+    CXSourceRange range;
+    chunk.replacement_text = CXStringToString(
+                               clang_getCompletionFixIt( results,
+                                                         completion_index,
+                                                         chunk_index,
+                                                         &range ) );
+
+    chunk.range = range;
+    fixit.chunks.push_back( chunk );
+  }
+
+  return fixit;
+}
+
+
 std::vector< CompletionData > ToCompletionDataVector(
   CXCodeCompleteResults *results ) {
   std::vector< CompletionData > completions;
@@ -231,6 +258,11 @@ std::vector< CompletionData > ToCompletionDataVector(
     size_t index = GetValueElseInsert( seen_data,
                                      data.original_string_,
                                      completions.size() );
+
+    FixIt fixit = BuildCompletionFixIt( results, i );
+    if ( !fixit.chunks.empty() ) {
+      data.fixits_.push_back( fixit );
+    }
 
     if ( index == completions.size() ) {
       completions.push_back( std::move( data ) );

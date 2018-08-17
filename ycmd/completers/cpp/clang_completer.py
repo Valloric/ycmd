@@ -481,14 +481,16 @@ class ClangCompleter( Completer ):
 
 
 def ConvertCompletionData( completion_data ):
+  extra_data = responses.BuildFixItResponse( completion_data.fixits_ )
+  if completion_data.DocString():
+    extra_data[ 'doc_string' ] = completion_data.DocString()
   return responses.BuildCompletionData(
     insertion_text = completion_data.TextToInsertInBuffer(),
     menu_text = completion_data.MainCompletionText(),
     extra_menu_info = completion_data.ExtraMenuInfo(),
     kind = completion_data.kind_.name,
     detailed_info = completion_data.DetailedInfoForPreviewWindow(),
-    extra_data = ( { 'doc_string': completion_data.DocString() }
-                   if completion_data.DocString() else None ) )
+    extra_data = extra_data )
 
 
 def DiagnosticsToDiagStructure( diagnostics ):

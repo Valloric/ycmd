@@ -1,4 +1,4 @@
-// Copyright (C) 2011, 2012 Google Inc.
+// Copyright (C) 2011-2018 ycmd contributors
 //
 // This file is part of ycmd.
 //
@@ -18,8 +18,7 @@
 #ifndef COMPLETIONDATA_H_2JCTF1NU
 #define COMPLETIONDATA_H_2JCTF1NU
 
-#include <string>
-#include <clang-c/Index.h>
+#include "FixIt.h"
 
 namespace YouCompleteMe {
 
@@ -102,6 +101,8 @@ struct CompletionData {
   std::string everything_except_return_type_;
 
   std::string doc_string_;
+
+  std::vector< FixIt > fixits_;
 
 private:
 
