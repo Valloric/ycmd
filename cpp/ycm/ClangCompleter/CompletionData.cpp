@@ -108,7 +108,7 @@ std::string ChunkToString( CXCompletionString completion_string,
     return std::string();
   }
 
-  return YouCompleteMe::CXStringToString(
+  return CXStringToString(
            clang_getCompletionChunkText( completion_string, chunk_num ) );
 }
 
@@ -171,10 +171,31 @@ std::string RemoveTrailingParens( std::string text ) {
   return text;
 }
 
+
+// Returns true when the provided completion string is available to the user;
+// unavailable completion strings refer to entities that are private/protected,
+// deprecated etc.
+bool CompletionStringAvailable( CXCompletionString completion_string ) {
+  if ( !completion_string ) {
+    return false;
+  }
+
+  return clang_getCompletionAvailability( completion_string ) ==
+         CXAvailability_Available;
+}
+
+
 } // unnamed namespace
 
 
-CompletionData::CompletionData( const CXCompletionResult &completion_result ) {
+CompletionData::CompletionData( CXCodeCompleteResults *results,
+                                size_t index ) {
+  CXCompletionResult completion_result = results->Results[ index ];
+
+  if ( !CompletionStringAvailable( completion_result.CompletionString ) ) {
+    return;
+  }
+
   CXCompletionString completion_string = completion_result.CompletionString;
 
   if ( !completion_string ) {
@@ -202,8 +223,10 @@ CompletionData::CompletionData( const CXCompletionResult &completion_result ) {
   .append( everything_except_return_type_ )
   .append( "\n" );
 
-  doc_string_ = YouCompleteMe::CXStringToString(
-                  clang_getCompletionBriefComment( completion_string ) );
+  doc_string_ = CXStringToString(
+    clang_getCompletionBriefComment( completion_string ) );
+
+  BuildCompletionFixIt( results, index );
 }
 
 
@@ -262,6 +285,30 @@ void CompletionData::ExtractDataFromChunk( CXCompletionString completion_string,
 
     default:
       break;
+  }
+}
+
+
+void CompletionData::BuildCompletionFixIt( CXCodeCompleteResults *results,
+                                           size_t index ) {
+  size_t num_chunks = clang_getCompletionNumFixIts( results, index );
+  if ( !num_chunks ) {
+    return;
+  }
+
+  fixit_.chunks.reserve( num_chunks );
+
+  for ( size_t chunk_index = 0; chunk_index < num_chunks; ++chunk_index ) {
+    FixItChunk chunk;
+    CXSourceRange range;
+    chunk.replacement_text = CXStringToString(
+                               clang_getCompletionFixIt( results,
+                                                         index,
+                                                         chunk_index,
+                                                         &range ) );
+
+    chunk.range = range;
+    fixit_.chunks.push_back( chunk );
   }
 }
 
