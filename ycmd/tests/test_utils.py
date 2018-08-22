@@ -40,7 +40,11 @@ import shutil
 from ycmd import extra_conf_store, handlers, user_options_store
 from ycmd.completers.completer import Completer
 from ycmd.responses import BuildCompletionData
-from ycmd.utils import ( GetCurrentDirectory, OnMac, OnWindows, ToUnicode,
+from ycmd.utils import ( GetCurrentDirectory,
+                         PathsToAllParentFolders,
+                         OnMac,
+                         OnWindows,
+                         ToUnicode,
                          WaitUntilProcessIsTerminated )
 import ycm_core
 
@@ -49,9 +53,7 @@ try:
 except ImportError:
   from unittest2 import skipIf
 
-DIR_OF_THIS_SCRIPT = os.path.abspath( os.path.dirname( __file__ ) )
-YCMD_EXTRA_CONF = os.path.normpath(
-    os.path.join( DIR_OF_THIS_SCRIPT, '..', '..', '.ycm_extra_conf.py' ) )
+TESTS_DIR = os.path.abspath( os.path.dirname( __file__ ) )
 
 Py2Only = skipIf( not PY2, 'Python 2 only' )
 Py3Only = skipIf( PY2, 'Python 3 only' )
@@ -210,13 +212,33 @@ def SetUpApp( custom_options = {} ):
   return TestApp( handlers.app )
 
 
+def MockPathsToAllParentFolders( path ):
+  dirname = os.path.dirname
+
+  def MockDirname( path ):
+    if path == TESTS_DIR:
+      return path
+    return dirname( path )
+
+  with patch( 'os.path.dirname', MockDirname ):
+    return list( PathsToAllParentFolders( path ) )
+
+
+@contextlib.contextmanager
+def IgnoreExtraConfOutsideTestsFolder():
+  with patch( 'ycmd.extra_conf_store.PathsToAllParentFolders',
+              MockPathsToAllParentFolders ):
+    yield
+
+
 @contextlib.contextmanager
 def IsolatedApp( custom_options = {} ):
   old_server_state = handlers._server_state
   old_extra_conf_store_state = extra_conf_store.Get()
   old_options = user_options_store.GetAll()
   try:
-    yield SetUpApp( custom_options )
+    with IgnoreExtraConfOutsideTestsFolder():
+      yield SetUpApp( custom_options )
   finally:
     handlers._server_state = old_server_state
     extra_conf_store.Set( old_extra_conf_store_state )
