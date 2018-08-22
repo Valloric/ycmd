@@ -49,9 +49,7 @@ try:
 except ImportError:
   from unittest2 import skipIf
 
-DIR_OF_THIS_SCRIPT = os.path.abspath( os.path.dirname( __file__ ) )
-YCMD_EXTRA_CONF = os.path.normpath(
-    os.path.join( DIR_OF_THIS_SCRIPT, '..', '..', '.ycm_extra_conf.py' ) )
+TESTS_DIR = os.path.abspath( os.path.dirname( __file__ ) )
 
 Py2Only = skipIf( not PY2, 'Python 2 only' )
 Py3Only = skipIf( PY2, 'Python 3 only' )
@@ -210,13 +208,35 @@ def SetUpApp( custom_options = {} ):
   return TestApp( handlers.app )
 
 
+def MockPathsToAllParentFolders( path ):
+  folder = os.path.normpath( path )
+  if os.path.isdir( folder ):
+    yield folder
+  while True:
+    if folder == TESTS_DIR:
+      break
+    parent = os.path.dirname( folder )
+    if parent == folder:
+      break
+    folder = parent
+    yield folder
+
+
+@contextlib.contextmanager
+def IgnoreExtraConfOutsideTestsFolder():
+  with patch( 'ycmd.extra_conf_store.PathsToAllParentFolders',
+              MockPathsToAllParentFolders ):
+    yield
+
+
 @contextlib.contextmanager
 def IsolatedApp( custom_options = {} ):
   old_server_state = handlers._server_state
   old_extra_conf_store_state = extra_conf_store.Get()
   old_options = user_options_store.GetAll()
   try:
-    yield SetUpApp( custom_options )
+    with IgnoreExtraConfOutsideTestsFolder():
+      yield SetUpApp( custom_options )
   finally:
     handlers._server_state = old_server_state
     extra_conf_store.Set( old_extra_conf_store_state )
