@@ -18,7 +18,7 @@ brew update || brew update
 # with CS7027 signing errors.
 REQUIREMENTS="cmake
               node.js
-              go
+              go@1.10
               readline
               autoconf
               pkg-config
@@ -29,6 +29,10 @@ for pkg in $REQUIREMENTS; do
   # Install package, or upgrade it if it is already installed.
   brew install $pkg || brew outdated $pkg || brew upgrade $pkg
 done
+
+# See
+# https://circleci.com/docs/2.0/env-vars/#using-bash_env-to-set-environment-variables
+echo 'export PATH="/usr/local/opt/go@1.10/bin:$PATH"' >> $BASH_ENV
 
 ##############
 # Python setup
@@ -69,9 +73,7 @@ pyenv install --skip-existing ${PYENV_VERSION}
 pyenv rehash
 pyenv global ${PYENV_VERSION}
 
-# Initialize pyenv in other steps. See
-# https://circleci.com/docs/2.0/env-vars/#interpolating-environment-variables-to-set-other-environment-variables
-# and https://github.com/pyenv/pyenv/issues/264
+# Initialize pyenv in other steps. See https://github.com/pyenv/pyenv/issues/264
 echo "export PATH=${PYENV_ROOT}/bin:\$PATH" >> $BASH_ENV
 echo 'if [ -z "${PYENV_LOADING}" ]; then' >> $BASH_ENV
 echo '  export PYENV_LOADING=true' >> $BASH_ENV
