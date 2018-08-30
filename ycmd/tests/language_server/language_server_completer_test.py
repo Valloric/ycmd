@@ -23,6 +23,7 @@ from __future__ import absolute_import
 from builtins import *  # noqa
 
 from mock import patch
+from nose.tools import eq_
 from hamcrest import ( all_of,
                        assert_that,
                        calling,
@@ -35,7 +36,6 @@ from hamcrest import ( all_of,
                        has_key,
                        is_not,
                        raises )
-from nose.tools import eq_
 
 from ycmd.completers.language_server import language_server_completer as lsc
 from ycmd.completers.language_server.language_server_completer import (
@@ -48,6 +48,7 @@ from ycmd.tests.test_utils import ( BuildRequest,
                                     DummyCompleter,
                                     LocationMatcher,
                                     RangeMatcher )
+from ycmd.tests.language_server import IsolatedYcmd, PathToTestFile
 from ycmd import handlers, utils, responses
 import os
 
@@ -58,6 +59,14 @@ class MockCompleter( lsc.LanguageServerCompleter, DummyCompleter ):
     user_options = handlers._server_state._user_options.copy()
     user_options.update( custom_options )
     super( MockCompleter, self ).__init__( user_options )
+
+
+  def Language( self ):
+    return 'foo'
+
+
+  def StartServer( self, request_data, **kwargs ):
+    pass
 
 
   def GetConnection( self ):
@@ -71,6 +80,70 @@ class MockCompleter( lsc.LanguageServerCompleter, DummyCompleter ):
 
   def ServerIsHealthy( self ):
     return True
+
+
+@IsolatedYcmd( { 'global_ycm_extra_conf':
+                 PathToTestFile( 'extra_confs', 'empty_extra_conf.py' ) } )
+def LanguageServerCompleter_ExtraConf_FileEmpty_test( app ):
+  filepath = PathToTestFile( 'extra_confs', 'foo' )
+  app.post_json( '/event_notification',
+                 BuildRequest( filepath = filepath,
+                               filetype = 'foo',
+                               contents = '',
+                               event_name = 'FileReadyToParse' ) )
+
+  completer = MockCompleter()
+  request_data = RequestWrap( BuildRequest() )
+  completer.OnFileReadyToParse( request_data )
+  eq_( {}, completer._settings )
+
+
+@IsolatedYcmd( { 'global_ycm_extra_conf':
+                 PathToTestFile( 'extra_confs',
+                                 'settings_none_extra_conf.py' ) } )
+def LanguageServerCompleter_ExtraConf_SettingsReturnsNone_test( app ):
+  filepath = PathToTestFile( 'extra_confs', 'foo' )
+  app.post_json( '/event_notification',
+                 BuildRequest( filepath = filepath,
+                               filetype = 'foo',
+                               contents = '',
+                               event_name = 'FileReadyToParse' ) )
+
+  completer = MockCompleter()
+  request_data = RequestWrap( BuildRequest() )
+  completer.OnFileReadyToParse( request_data )
+  eq_( {}, completer._settings )
+
+
+@IsolatedYcmd( { 'global_ycm_extra_conf':
+                 PathToTestFile( 'extra_confs', 'settings_extra_conf.py' ) } )
+def LanguageServerCompleter_ExtraConf_SettingValid_test( app ):
+  filepath = PathToTestFile( 'extra_confs', 'foo' )
+  app.post_json( '/event_notification',
+                 BuildRequest( filepath = filepath,
+                               filetype = 'foo',
+                               contents = '',
+                               event_name = 'FileReadyToParse' ) )
+
+  completer = MockCompleter()
+  request_data = RequestWrap( BuildRequest() )
+  completer.OnFileReadyToParse( request_data )
+  eq_( { 'java.rename.enabled' : False }, completer._settings )
+
+
+@IsolatedYcmd( { 'extra_conf_globlist': [ '!*' ] } )
+def LanguageServerCompleter_ExtraConf_NoExtraConf_test( app ):
+  filepath = PathToTestFile( 'extra_confs', 'foo' )
+  app.post_json( '/event_notification',
+                 BuildRequest( filepath = filepath,
+                               filetype = 'foo',
+                               contents = '',
+                               event_name = 'FileReadyToParse' ) )
+
+  completer = MockCompleter()
+  request_data = RequestWrap( BuildRequest() )
+  completer.OnFileReadyToParse( request_data )
+  eq_( {}, completer._settings )
 
 
 def LanguageServerCompleter_Initialise_Aborted_test():
@@ -340,7 +413,8 @@ def WorkspaceEditToFixIt_test():
   )
 
 
-def LanguageServerCompleter_DelayedInitialization_test():
+@IsolatedYcmd( { 'extra_conf_globlist': [ '!*' ] } )
+def LanguageServerCompleter_DelayedInitialization_test( app ):
   completer = MockCompleter()
   request_data = RequestWrap( BuildRequest( filepath = 'Test.ycmtest' ) )
 
