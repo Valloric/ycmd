@@ -32,7 +32,8 @@ from ycmd.tests.test_utils import ( BuildRequest,
                                     IsolatedApp,
                                     SetUpApp,
                                     StopCompleterServer,
-                                    WaitUntilCompleterServerReady )
+                                    WaitUntilCompleterServerReady,
+                                    YCMD_EXTRA_CONF )
 
 shared_app = None
 DEFAULT_PROJECT_DIR = 'simple_eclipse_project'
@@ -52,6 +53,8 @@ def setUpPackage():
   global shared_app
 
   shared_app = SetUpApp()
+  shared_app.post_json( '/ignore_extra_conf_file',
+                        { 'filepath': YCMD_EXTRA_CONF } )
   # By default, we use the eclipse project for convenience. This means we don't
   # have to @IsolatedYcmdInDirectory( DEFAULT_PROJECT_DIR ) for every test
   StartJavaCompleterServerInDirectory( shared_app,
@@ -89,7 +92,7 @@ def SharedYcmd( test ):
   return Wrapper
 
 
-def IsolatedYcmd( test ):
+def IsolatedYcmd( custom_options = {} ):
   """Defines a decorator to be attached to tests of this package. This decorator
   passes a unique ycmd application as a parameter. It should be used on tests
   that change the server state in a irreversible way (ex: a semantic subserver
@@ -97,14 +100,18 @@ def IsolatedYcmd( test ):
   started, no .ycm_extra_conf.py loaded, etc).
 
   Do NOT attach it to test generators but directly to the yielded tests."""
-  @functools.wraps( test )
-  def Wrapper( *args, **kwargs ):
-    with IsolatedApp() as app:
-      try:
-        test( app, *args, **kwargs )
-      finally:
-        StopCompleterServer( app, 'java' )
-  return Wrapper
+  def Decorator( test ):
+    @functools.wraps( test )
+    def Wrapper( *args, **kwargs ):
+      with IsolatedApp( custom_options ) as app:
+        app.post_json( '/ignore_extra_conf_file',
+                       { 'filepath': YCMD_EXTRA_CONF } )
+        try:
+          test( app, *args, **kwargs )
+        finally:
+          StopCompleterServer( app, 'java' )
+    return Wrapper
+  return Decorator
 
 
 class PollForMessagesTimeoutException( Exception ):
