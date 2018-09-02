@@ -45,11 +45,9 @@ class GeneralCompleterStore( Completer ):
     self._non_filename_completers = [ self._identifier_completer ]
     if user_options.get( 'use_ultisnips_completer', True ):
       self._non_filename_completers.append( self._ultisnips_completer )
-
     self._all_completers = [ self._identifier_completer,
                              self._filename_completer,
                              self._ultisnips_completer ]
-    self._current_query_completers = []
 
 
   def SupportedFiletypes( self ):
@@ -61,32 +59,20 @@ class GeneralCompleterStore( Completer ):
 
 
   def ShouldUseNow( self, request_data ):
-    self._current_query_completers = []
-
-    if self._filename_completer.ShouldUseNow( request_data ):
-      self._current_query_completers = [ self._filename_completer ]
-      return True
-
-    should_use_now = False
-
-    for completer in self._non_filename_completers:
-      should_use_this_completer = completer.ShouldUseNow( request_data )
-      should_use_now = should_use_now or should_use_this_completer
-
-      if should_use_this_completer:
-        self._current_query_completers.append( completer )
-
-    return should_use_now
+    return True
 
 
   def ComputeCandidates( self, request_data ):
-    if not self.ShouldUseNow( request_data ):
-      return []
+    start_column = request_data[ 'start_column' ]
 
-    candidates = []
-    for completer in self._current_query_completers:
+    candidates = self._filename_completer.ComputeCandidates( request_data )
+    if candidates:
+      return candidates
+
+    # The filename completer may have changed the start column. Reset it.
+    request_data[ 'start_column' ] = start_column
+    for completer in self._non_filename_completers:
       candidates += completer.ComputeCandidates( request_data )
-
     return candidates
 
 
