@@ -1,5 +1,4 @@
-# Copyright (C) 2013 Stanislav Golovanov <stgolovanov@gmail.com>
-#                    Google Inc.
+# Copyright (C) 2013-2018 ycmd contributors
 #
 # This file is part of ycmd.
 #
@@ -23,12 +22,16 @@ from __future__ import absolute_import
 # Not installing aliases from python-future; it's unreliable and slow.
 from builtins import *  # noqa
 
-import logging
 import os
 
 from ycmd.completers.completer import Completer
-from ycmd.utils import ( ExpandVariablesInPath, GetCurrentDirectory, OnWindows,
-                         re, ToUnicode )
+from ycmd.utils import ( ExpandVariablesInPath,
+                         GetCurrentDirectory,
+                         GetModificationTime,
+                         ListDirectory,
+                         OnWindows,
+                         re,
+                         ToUnicode )
 from ycmd import responses
 
 FILE = 1
@@ -38,7 +41,11 @@ DIR = 2
 # both a file and a directory.
 EXTRA_INFO_MAP = { FILE : '[File]', DIR : '[Dir]', 3 : '[File&Dir]' }
 
-_logger = logging.getLogger( __name__ )
+PATH_SEPARATORS_PATTERN_UNIX = '(/[^/]+|/$)'
+PATH_SEPARATORS_PATTERN_WINDOWS = r'([/\\][^/\\]+|[/\\]$)'
+
+HEAD_PATH_PATTERN_UNIX = '\.{1,2}|~|\$[^$]+'
+HEAD_PATH_PATTERN_WINDOWS = '[A-z]+:|\.{1,2}|~|\$[^$]+|%[^%]+%'
 
 
 class FilenameCompleter( Completer ):
@@ -49,34 +56,14 @@ class FilenameCompleter( Completer ):
   def __init__( self, user_options ):
     super( FilenameCompleter, self ).__init__( user_options )
 
-    # On Windows, backslashes are also valid path separators.
-    self._triggers = [ '/', '\\' ] if OnWindows() else [ '/' ]
-
-    self._path_regex = re.compile( """
-      # Head part
-      (?:
-        # 'D:/'-like token
-        [A-z]+:[%(sep)s]|
-
-        # '/', './', '../', or '~'
-        \.{0,2}[%(sep)s]|~|
-
-        # '$var/'
-        \$[A-Za-z0-9{}_]+[%(sep)s]
-      )+
-
-      # Tail part
-      (?:
-        # any alphanumeric, symbol or space literal
-        [ %(sep)sa-zA-Z0-9(){}$+_~.\x80-\xff-\[\]]|
-
-        # skip any special symbols
-        [^\x20-\x7E]|
-
-        # backslash and 1 char after it
-        \\.
-      )*$
-      """ % { 'sep': '/\\\\' if OnWindows() else '/' }, re.X )
+    if OnWindows():
+      path_separators_pattern = PATH_SEPARATORS_PATTERN_WINDOWS
+      self._head_path_pattern = HEAD_PATH_PATTERN_WINDOWS
+    else:
+      path_separators_pattern = PATH_SEPARATORS_PATTERN_UNIX
+      self._head_path_pattern = HEAD_PATH_PATTERN_UNIX
+    self._path_separators_regex = re.compile( path_separators_pattern )
+    self._head_path_for_directory = {}
 
 
   def CurrentFiletypeCompletionDisabled( self, request_data ):
@@ -86,19 +73,90 @@ class FilenameCompleter( Completer ):
              any( x in disabled_filetypes for x in filetypes ) )
 
 
+  def GetWorkingDirectory( self, request_data ):
+    if self.user_options[ 'filepath_completion_use_working_dir' ]:
+      # Return paths relative to the working directory of the client, if
+      # supplied, otherwise relative to the current working directory of this
+      # process.
+      return request_data.get( 'working_dir' ) or GetCurrentDirectory()
+    # Return paths relative to the file.
+    return os.path.dirname( request_data[ 'filepath' ] )
+
+
+  def GetCompiledHeadRegexForDirectory( self, directory ):
+    mtime = GetModificationTime( directory )
+
+    try:
+      head_regex = self._head_path_for_directory[ directory ]
+      if mtime and mtime <= head_regex[ 'mtime' ]:
+        return head_regex[ 'regex' ]
+    except KeyError:
+      pass
+
+    current_paths = ListDirectory( directory )
+    current_paths_pattern = '|'.join(
+      [ re.escape( path ) for path in current_paths ] )
+    head_pattern = ( '(' + self._head_path_pattern + '|'
+                         + current_paths_pattern + ')$' )
+    head_regex = re.compile( head_pattern )
+    if mtime:
+      self._head_path_for_directory[ directory ] = {
+        'mtime': mtime,
+        'regex': head_regex
+      }
+    return head_regex
+
+
+  def DetectPath( self, request_data ):
+    current_line = request_data[ 'prefix' ]
+    matches = list( self._path_separators_regex.finditer( current_line ) )
+    if not matches:
+      return None, None
+
+    working_dir = self.GetWorkingDirectory( request_data )
+
+    head_regex = self.GetCompiledHeadRegexForDirectory( working_dir )
+
+    last_match = matches[ -1 ]
+    last_match_start = last_match.start( 1 )
+
+    for match in matches:
+      head_match = head_regex.search( current_line[ : match.start() ] )
+      if head_match:
+        path = current_line[ head_match.start( 1 ) : last_match_start ]
+        path = ExpandVariablesInPath( path + os.path.sep )
+        if not os.path.isabs( path ):
+          path = os.path.join( working_dir, path )
+        if os.path.exists( path ):
+          return path, last_match_start + 2
+
+      # Path doesn't start with ".", "..", "~", an environment variable, or one
+      # of the current directories. It also doesn't start with a drive letter on
+      # Windows. Assume that it starts with "/" (or "\" on Windows).
+      path = current_line[ match.start() : last_match_start ]
+      if path:
+        path = ExpandVariablesInPath( path + os.path.sep )
+        if os.path.exists( path ):
+          return path, last_match_start + 2
+
+    # Path is exactly "/" (or "\" on Windows). Only complete if there are no
+    # other separators before on the line. This prevents always completing the
+    # root directory if nothing is matched.
+    # TODO: completion on a single "/" or "\" is not really desirable in
+    # languages where such characters are part of special constructs like
+    # comments in C/C++ or closing tags in HTML. This behavior could be improved
+    # by using rules that depend on the filetype.
+    if len( matches ) == 1:
+      return os.path.sep, last_match_start + 2
+
+    return None, None
+
+
   def ShouldUseNowInner( self, request_data ):
     if self.CurrentFiletypeCompletionDisabled( request_data ):
       return False
 
-    current_line = request_data[ 'line_value' ]
-    start_codepoint = request_data[ 'start_codepoint' ]
-
-    # inspect the previous 'character' from the start column to find the trigger
-    # note: 1-based still. we subtract 1 when indexing into current_line
-    trigger_codepoint = start_codepoint - 1
-
-    return ( trigger_codepoint > 0 and
-             current_line[ trigger_codepoint - 1 ] in self._triggers )
+    return bool( self.DetectPath( request_data )[ 0 ] )
 
 
   def SupportedFiletypes( self ):
@@ -106,74 +164,28 @@ class FilenameCompleter( Completer ):
 
 
   def ComputeCandidatesInner( self, request_data ):
-    current_line = request_data[ 'line_value' ]
-    start_codepoint = request_data[ 'start_codepoint' ] - 1
-    filepath = request_data[ 'filepath' ]
-    line = current_line[ : start_codepoint ]
+    # Calling this function seems inefficient when it's already been called in
+    # ShouldUseNowInner for that request but its execution time is so low once
+    # the head regex is cached that it doesn't matter.
+    path_dir, start_codepoint = self.DetectPath( request_data )
 
-    path_match = self._path_regex.search( line )
-    path_dir = ExpandVariablesInPath( path_match.group() ) if path_match else ''
+    request_data[ 'start_codepoint' ] = start_codepoint
 
-    # If the client supplied its working directory, use that instead of the
-    # working directory of ycmd
-    working_dir = request_data.get( 'working_dir' )
-
-    return GeneratePathCompletionData(
-      _GetPathCompletionCandidates(
-        path_dir,
-        self.user_options[ 'filepath_completion_use_working_dir' ],
-        filepath,
-        working_dir ) )
+    return _GeneratePathCompletionCandidates( path_dir )
 
 
-def _GetAbsolutePathForCompletions( path_dir,
-                                    use_working_dir,
-                                    filepath,
-                                    working_dir ):
-  """
-  Returns the absolute path for which completion suggestions should be returned
-  (in the standard case).
-  """
+def _GeneratePathCompletionCandidates( path_dir ):
+  completions = []
 
-  if os.path.isabs( path_dir ):
-    # This is already an absolute path, return it
-    return path_dir
-  elif use_working_dir:
-    # Return paths relative to the working directory of the client, if
-    # supplied, otherwise relative to the current working directory of this
-    # process
-    if working_dir:
-      return os.path.join( working_dir, path_dir )
-    else:
-      return os.path.join( GetCurrentDirectory(), path_dir )
-  else:
-    # Return paths relative to the file
-    return os.path.join( os.path.join( os.path.dirname( filepath ) ),
-                         path_dir )
+  unicode_path = ToUnicode( path_dir )
 
-
-def _GetPathCompletionCandidates( path_dir, use_working_dir,
-                                  filepath, working_dir ):
-
-  absolute_path_dir = _GetAbsolutePathForCompletions( path_dir,
-                                                      use_working_dir,
-                                                      filepath,
-                                                      working_dir )
-  entries = []
-  unicode_path = ToUnicode( absolute_path_dir )
-  try:
-    # We need to pass a unicode string to get unicode strings out of
-    # listdir.
-    relative_paths = os.listdir( unicode_path )
-  except Exception:
-    _logger.exception( 'Error while listing %s folder.', absolute_path_dir )
-    relative_paths = []
-
-  for rel_path in relative_paths:
+  for rel_path in ListDirectory( unicode_path ):
     absolute_path = os.path.join( unicode_path, rel_path )
-    entries.append( ( rel_path, GetPathType( absolute_path ) ) )
+    path_type = GetPathTypeName( GetPathType( absolute_path ) )
+    completions.append(
+      responses.BuildCompletionData( rel_path, path_type ) )
 
-  return entries
+  return completions
 
 
 def GetPathType( path ):
@@ -182,13 +194,3 @@ def GetPathType( path ):
 
 def GetPathTypeName( path_type ):
   return EXTRA_INFO_MAP[ path_type ]
-
-
-def GeneratePathCompletionData( entries ):
-  completion_dicts = []
-  for entry in entries:
-    completion_dicts.append(
-      responses.BuildCompletionData( entry[ 0 ],
-        GetPathTypeName( entry[ 1 ] ) ) )
-
-  return completion_dicts
