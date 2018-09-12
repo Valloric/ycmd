@@ -407,6 +407,41 @@ def PathsToAllParentFolders_WindowsPath_test():
   ], list( utils.PathsToAllParentFolders( r'C:\\foo\\goo\\zoo\\test.c' ) ) )
 
 
+def PathLeftSplit_test():
+  # Tuples of ( path, expected_result ) for utils.PathLeftSplit.
+  tests = [
+    ( '',              ( '', '' ) ),
+    ( 'foo',           ( 'foo', '' ) ),
+    ( 'foo/bar',       ( 'foo', 'bar' ) ),
+    ( 'foo/bar/xyz',   ( 'foo', 'bar/xyz' ) ),
+    ( 'foo/bar/xyz/',  ( 'foo', 'bar/xyz' ) ),
+    ( '/',             ( '/', '' ) ),
+    ( '/foo',          ( '/', 'foo' ) ),
+    ( '/foo/bar',      ( '/', 'foo/bar' ) ),
+    ( '/foo/bar/xyz',  ( '/', 'foo/bar/xyz' ) ),
+    ( '/foo/bar/xyz/', ( '/', 'foo/bar/xyz' ) )
+  ]
+  for test in tests:
+    yield lambda test: eq_( utils.PathLeftSplit( test[ 0 ] ), test[ 1 ] ), test
+
+
+@WindowsOnly
+def PathLeftSplit_Windows_test():
+  # Tuples of ( path, expected_result ) for utils.PathLeftSplit.
+  tests = [
+    ( 'foo\\bar',            ( 'foo', 'bar' ) ),
+    ( 'foo\\bar\\xyz',       ( 'foo', 'bar\\xyz' ) ),
+    ( 'foo\\bar\\xyz\\',     ( 'foo', 'bar\\xyz' ) ),
+    ( 'C:\\',                ( 'C:\\', '' ) ),
+    ( 'C:\\foo',             ( 'C:\\', 'foo' ) ),
+    ( 'C:\\foo\\bar',        ( 'C:\\', 'foo\\bar' ) ),
+    ( 'C:\\foo\\bar\\xyz',   ( 'C:\\', 'foo\\bar\\xyz' ) ),
+    ( 'C:\\foo\\bar\\xyz\\', ( 'C:\\', 'foo\\bar\\xyz' ) )
+  ]
+  for test in tests:
+    yield lambda test: eq_( utils.PathLeftSplit( test[ 0 ] ), test[ 1 ] ), test
+
+
 def OpenForStdHandle_PrintDoesntThrowException_test():
   try:
     temp = PathToTestFile( 'open-for-std-handle' )
