@@ -350,6 +350,16 @@ def PathsToAllParentFolders( path ):
     yield folder
 
 
+def PathLeftSplit( path ):
+  left_tail = ''
+  while True:
+    head, tail = os.path.split( path )
+    if not head:
+      return path, left_tail
+    path = head
+    left_tail = os.path.join( tail, left_tail ) if left_tail else tail
+
+
 # A wrapper for subprocess.Popen that fixes quirks on Windows.
 def SafePopen( args, **kwargs ):
   if OnWindows():
