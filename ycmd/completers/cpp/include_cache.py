@@ -35,8 +35,6 @@ from ycmd.completers.general.filename_completer import ( GetPathType,
                                                          GetPathTypeName )
 from ycmd.utils import GetModificationTime, ListDirectory
 
-import logging
-_logger = logging.getLogger( __name__ )
 
 """ Represents single include completion candidate.
 name is the name/string of the completion candidate,
