@@ -41,8 +41,7 @@ DIR = 2
 # both a file and a directory.
 EXTRA_INFO_MAP = { FILE : '[File]', DIR : '[Dir]', 3 : '[File&Dir]' }
 
-PATH_SEPARATORS_PATTERN_UNIX = '(/[^/]+|/$)'
-PATH_SEPARATORS_PATTERN_WINDOWS = r'([/\\][^/\\]+|[/\\]$)'
+PATH_SEPARATORS_PATTERN = r'([{seps}][^{seps}]*|[{seps}]$)'
 
 HEAD_PATH_PATTERN_UNIX = '\.{1,2}|~|\$[^$]+'
 HEAD_PATH_PATTERN_WINDOWS = '[A-z]+:|\.{1,2}|~|\$[^$]+|%[^%]+%'
@@ -57,13 +56,16 @@ class FilenameCompleter( Completer ):
     super( FilenameCompleter, self ).__init__( user_options )
 
     if OnWindows():
-      path_separators_pattern = PATH_SEPARATORS_PATTERN_WINDOWS
+      self._path_separators = r'/\\'
       self._head_path_pattern = HEAD_PATH_PATTERN_WINDOWS
     else:
-      path_separators_pattern = PATH_SEPARATORS_PATTERN_UNIX
+      self._path_separators = '/'
       self._head_path_pattern = HEAD_PATH_PATTERN_UNIX
-    self._path_separators_regex = re.compile( path_separators_pattern )
+    print( PATH_SEPARATORS_PATTERN.format( seps = self._path_separators ) )
+    self._path_separators_regex = re.compile(
+      PATH_SEPARATORS_PATTERN.format( seps = self._path_separators ) )
     self._head_path_for_directory = {}
+    self._candidates_for_directory = {}
 
 
   def CurrentFiletypeCompletionDisabled( self, request_data ):
@@ -101,8 +103,8 @@ class FilenameCompleter( Completer ):
     head_regex = re.compile( head_pattern )
     if mtime:
       self._head_path_for_directory[ directory ] = {
-        'mtime': mtime,
-        'regex': head_regex
+        'regex': head_regex,
+        'mtime': mtime
       }
     return head_regex
 
@@ -134,7 +136,7 @@ class FilenameCompleter( Completer ):
       # of the current directories. It also doesn't start with a drive letter on
       # Windows. Assume that it starts with "/" (or "\" on Windows).
       path = current_line[ match.start() : last_match_start ]
-      if path:
+      if path.strip( self._path_separators ):
         path = ExpandVariablesInPath( path + os.path.sep )
         if os.path.exists( path ):
           return path, last_match_start + 2
@@ -152,7 +154,7 @@ class FilenameCompleter( Completer ):
     return None, None
 
 
-  def ShouldUseNowInner( self, request_data ):
+  def ShouldUseNow( self, request_data ):
     if self.CurrentFiletypeCompletionDisabled( request_data ):
       return False
 
@@ -163,15 +165,38 @@ class FilenameCompleter( Completer ):
     return []
 
 
-  def ComputeCandidatesInner( self, request_data ):
+  def GetCandidatesForDirectory( self, directory ):
+    mtime = GetModificationTime( directory )
+
+    try:
+      candidates = self._candidates_for_directory[ directory ]
+      if mtime and mtime <= candidates[ 'mtime' ]:
+        return candidates[ 'candidates' ]
+    except KeyError:
+      pass
+
+    candidates = _GeneratePathCompletionCandidates( directory )
+    if mtime:
+      self._candidates_for_directory[ directory ] = {
+        'candidates': candidates,
+        'mtime': mtime
+      }
+    return candidates
+
+
+  def ComputeCandidates( self, request_data ):
+    if not self.ShouldUseNow( request_data ):
+      return []
+
     # Calling this function seems inefficient when it's already been called in
-    # ShouldUseNowInner for that request but its execution time is so low once
-    # the head regex is cached that it doesn't matter.
-    path_dir, start_codepoint = self.DetectPath( request_data )
+    # ShouldUseNow for that request but its execution time is so low once the
+    # head regex is cached that it doesn't matter.
+    directory, start_codepoint = self.DetectPath( request_data )
 
     request_data[ 'start_codepoint' ] = start_codepoint
 
-    return _GeneratePathCompletionCandidates( path_dir )
+    candidates = self.GetCandidatesForDirectory( directory )
+    return self.FilterAndSortCandidates( candidates, request_data[ 'query' ] )
 
 
 def _GeneratePathCompletionCandidates( path_dir ):

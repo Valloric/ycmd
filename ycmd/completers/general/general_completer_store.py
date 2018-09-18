@@ -49,7 +49,8 @@ class GeneralCompleterStore( Completer ):
     self._all_completers = [ self._identifier_completer,
                              self._filename_completer,
                              self._ultisnips_completer ]
-    self._current_query_completers = []
+    self._primary_completers = []
+    self._secondary_completers = []
 
 
   def SupportedFiletypes( self ):
@@ -61,20 +62,23 @@ class GeneralCompleterStore( Completer ):
 
 
   def ShouldUseNow( self, request_data ):
-    self._current_query_completers = []
-
-    if self._filename_completer.ShouldUseNow( request_data ):
-      self._current_query_completers = [ self._filename_completer ]
-      return True
+    self._primary_completers = []
+    self._secondary_completers = []
+    completers = self._primary_completers
 
     should_use_now = False
+
+    if self._filename_completer.ShouldUseNow( request_data ):
+      should_use_now = True
+      completers.append( self._filename_completer )
+      completers = self._secondary_completers
 
     for completer in self._non_filename_completers:
       should_use_this_completer = completer.ShouldUseNow( request_data )
       should_use_now = should_use_now or should_use_this_completer
 
       if should_use_this_completer:
-        self._current_query_completers.append( completer )
+        completers.append( completer )
 
     return should_use_now
 
@@ -83,9 +87,17 @@ class GeneralCompleterStore( Completer ):
     if not self.ShouldUseNow( request_data ):
       return []
 
+    start_column = request_data[ 'start_column' ]
+
     candidates = []
-    for completer in self._current_query_completers:
+    for completer in self._primary_completers:
       candidates += completer.ComputeCandidates( request_data )
+
+    if not candidates:
+      # Primary completers may have changed the start column. Reset it.
+      request_data[ 'start_column' ] = start_column
+      for completer in self._secondary_completers:
+        candidates += completer.ComputeCandidates( request_data )
 
     return candidates
 
