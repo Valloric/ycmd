@@ -1304,7 +1304,11 @@ class LanguageServerCompleter( Completer ):
       lsp.Hover( request_id, request_data ),
       REQUEST_TIMEOUT_COMMAND )
 
-    return response[ 'result' ][ 'contents' ]
+    result = response[ 'result' ]
+    if result:
+      return result[ 'contents' ]
+    raise RuntimeError( 'No hover information.' )
+
 
 
   def GoToDeclaration( self, request_data ):
