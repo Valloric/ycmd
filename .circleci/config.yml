@@ -33,6 +33,7 @@ aliases:
         - clang_archives
         - third_party/racerd/target
         - third_party/eclipse.jdt.ls/target/cache
+        - third_party/clangd/cache
   restore-cache: &restore-cache
     restore_cache:
       key: v5-ycmd-{{ .Environment.CIRCLE_JOB }}
