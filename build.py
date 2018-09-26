@@ -25,6 +25,8 @@ import sysconfig
 import tarfile
 import tempfile
 
+from ycmd.completers.cpp.clangd_completer import LLVM_RELEASE
+
 PY_MAJOR, PY_MINOR, PY_PATCH = sys.version_info[ 0 : 3 ]
 if not ( ( PY_MAJOR == 2 and PY_MINOR == 7 and PY_PATCH >= 1 ) or
          ( PY_MAJOR == 3 and PY_MINOR >= 4 ) or
@@ -101,6 +103,18 @@ def OnMac():
 
 def OnWindows():
   return platform.system() == 'Windows'
+
+
+def OnFreeBSD():
+  return platform.system() == 'FreeBSD'
+
+
+def OnAArch64():
+  return platform.machine().lower().startswith('aarch64')
+
+
+def OnArm():
+  return platform.machine().lower().startswith('arm')
 
 
 def OnCiService():
@@ -317,7 +331,11 @@ def GetGenerator( args ):
 def ParseArguments():
   parser = argparse.ArgumentParser()
   parser.add_argument( '--clang-completer', action = 'store_true',
-                       help = 'Enable C-family semantic completion engine.' )
+                       help = 'Enable C-family semantic completion engine '
+                              'through libclang.' )
+  parser.add_argument( '--clangd-completer', action = 'store_true',
+                       help = 'Enable C-family semantic completion engine '
+                              'through clangd lsp server.' )
   parser.add_argument( '--cs-completer', action = 'store_true',
                        help = 'Enable C# semantic completion engine.' )
   parser.add_argument( '--go-completer', action = 'store_true',
@@ -729,6 +747,102 @@ def EnableJavaCompleter( switches ):
     print( 'OK' )
 
 
+def DownloadClangd():
+  CLANGD = p.join( DIR_OF_THIRD_PARTY, 'clangd', )
+  CACHE = p.join( CLANGD, 'cache' )
+  OUTPUT = p.join( CLANGD, 'output' )
+  is_64_bit = sys.maxsize > 2**32
+  if OnWindows():
+    if is_64_bit:
+      dir_name = 'clangd-{LLVM_RELEASE}-win64'
+      check_sum = '3d1e385f95426144557d358c9f3a52f7ab3cda7dd17dd66cda58c1fa9bb963ff'
+    else:
+      dir_name = 'clangd-{LLVM_RELEASE}-win32'
+      check_sum = 'fc1c98d6b9d045fc15a7928e0c0bcabdf9425d238c583d83ee12ffdbbe3dc18e'
+  elif OnMac():
+    dir_name = 'clangd-{LLVM_RELEASE}-x86_64-apple-darwin'
+    check_sum = 'f851764e9846c09d78deb95a2c26230a25bde6cd3011d65314bec68ccd6d129b'
+  elif OnFreeBSD():
+    if is_64_bit:
+      dir_name = 'clangd-{LLVM_RELEASE}-amd64-unknown-freebsd11'
+      check_sum = 'b036731c7f00a5199bee9628f56e13068113ca8773b523f5711afbb21b1b303c'
+    else:
+      dir_name = 'clangd-{LLVM_RELEASE}-i386-unknown-freebsd11'
+      check_sum = 'cad4e709b0f25b7044a3d9925d7da1a791625bbf292a3b37d2e05f9b71f2fac5'
+  elif OnAArch64():
+    dir_name = 'clangd-{LLVM_RELEASE}-aarch64-linux-gnu'
+    check_sum = 'b927753e2c5dc7baa2381f67ae901c44379f18c27aeb3fb262c40d7ed7393d70'
+  elif OnArm():
+    dir_name = 'clangd-{LLVM_RELEASE}-armv7a-linux-gnueabihf'
+    check_sum = '9006be1f1ecca024ecdf97493baf1dd71286c407ae1b5a38e57055e150f4ecc5'
+  else:
+    if is_64_bit:
+      dir_name = 'clangd-{LLVM_RELEASE}-x86_64-linux-gnu-ubuntu-14.04'
+      check_sum = 'ed5fe590be63f78dd6deb60145794555c0ec833d721b4b81a29e9eb68ef83679'
+      # Delete line below after packages are uploaded into bintray.
+      check_sum = 'd24c49ef6ffeba3d121cc2de46dc0dcad244ba40fde02eb88d73ff984a257bcb'
+    else:
+      print( 'No binaries for 32 bit linux, please compile it from source.' )
+      return False
+
+  dir_name = dir_name.format( LLVM_RELEASE = LLVM_RELEASE )
+  file_name = '{DIR_NAME}.tar.bz2'.format( DIR_NAME = dir_name )
+  download_url = 'https://dl.bintray.com/micbou/libclang/{FILE_NAME}'.format(
+      FILE_NAME = file_name )
+
+  file_name = p.join( CACHE, file_name )
+
+  if p.exists( OUTPUT ):
+    shutil.rmtree( OUTPUT )
+  os.makedirs( OUTPUT )
+
+  if not p.exists( CACHE ):
+    os.makedirs( CACHE )
+  elif p.exists( file_name ):
+    with open( file_name, 'rb' ) as existing_file:
+      existing_sha256 = hashlib.sha256( existing_file.read() ).hexdigest()
+    if existing_sha256 != check_sum:
+      print( 'Cached clangd tar file does not match checksum. Removing...' )
+      os.remove( file_name )
+
+  if p.exists( file_name ):
+    print( 'Using cached clangd: {0}'.format( file_name ) )
+  else:
+    print( "Downloading clangd from {0}...".format( download_url ) )
+    request = requests.get( download_url, stream = True )
+    with open( file_name, 'wb' ) as package_file:
+      package_file.write( request.content )
+    request.close()
+
+  print( "Extracting clangd to {0}...".format( OUTPUT ) )
+  with tarfile.open( file_name ) as package_tar:
+    package_tar.extractall( OUTPUT )
+
+  print( "Done installing clangd" )
+
+  return True
+
+
+def EnableClangdCompleter( Args ):
+  ShouldPrint = not Args.quiet
+
+  if ShouldPrint:
+    sys.stdout.write( 'Checking for clangd binary...' )
+    sys.stdout.flush()
+
+  INSTALLED_CLANGD = PathToFirstExistingExecutable( [ 'clangd-7', 'clangd' ] )
+  if not INSTALLED_CLANGD:
+    if ShouldPrint:
+      print( "Clangd not found on the path, trying to download it." )
+    if not DownloadClangd():
+      print( "FAIL: Couldn't download clangd." )
+      return False
+
+  if ShouldPrint:
+    print( 'OK' )
+  return True
+
+
 def WritePythonUsedDuringBuild():
   path = p.join( DIR_OF_THIS_SCRIPT, 'PYTHON_USED_DURING_BUILDING' )
   with open( path, 'w' ) as f:
@@ -755,6 +869,8 @@ def Main():
     EnableRustCompleter( args )
   if args.java_completer or args.all_completers:
     EnableJavaCompleter( args )
+  if args.clangd_completer or args.all_completers:
+    EnableClangdCompleter( args )
 
 
 if __name__ == '__main__':
