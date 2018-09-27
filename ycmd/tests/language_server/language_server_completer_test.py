@@ -394,6 +394,27 @@ def LanguageServerCompleter_GetCompletions_List_test():
                    has_items( has_entries( { 'insertion_text': 'test' } ) ) )
 
 
+def LanguageServerCompleter_GetCompletions_UnsupportedKinds_test():
+  completer = MockCompleter()
+  request_data = RequestWrap( BuildRequest() )
+
+  completion_response = { 'result': [ { 'label': 'test',
+                                        'kind': len( lsp.ITEM_KIND ) + 1 } ] }
+
+  resolve_responses = [
+    { 'result': { 'label': 'test' } },
+  ]
+
+  with patch.object( completer, 'ServerIsReady', return_value = True ):
+    with patch.object( completer.GetConnection(),
+                       'GetResponse',
+                       side_effect = [ completion_response ] +
+                                     resolve_responses ):
+      assert_that( completer.ComputeCandidatesInner( request_data ),
+                   has_items( has_entries( { 'insertion_text': 'test',
+                                             'kind': 'Text' } ) ) )
+
+
 def FindOverlapLength_test():
   tests = [
     ( '', '', 0 ),
