@@ -1490,6 +1490,11 @@ class LanguageServerCompleter( Completer ):
 
 
 def _CompletionItemToCompletionData( insertion_text, item, fixits ):
+  kind = item.get( 'kind', 0 )
+  # Since we send completionItemKind capabilities, we guarantee to handle
+  # values outside our value set and fall back to a default.
+  if kind > len( lsp.ITEM_KIND ):
+    kind = 1 # Fallback to Text for unsupported kinds.
   return responses.BuildCompletionData(
     insertion_text,
     extra_menu_info = item.get( 'detail', None ),
@@ -1497,7 +1502,7 @@ def _CompletionItemToCompletionData( insertion_text, item, fixits ):
                       '\n\n' +
                       item.get( 'documentation', '' ) ),
     menu_text = item[ 'label' ],
-    kind = lsp.ITEM_KIND[ item.get( 'kind', 0 ) ],
+    kind = lsp.ITEM_KIND[ kind ],
     extra_data = fixits )
 
 
