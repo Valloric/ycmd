@@ -598,3 +598,25 @@ def LanguageServerCompleter_Diagnostics_NoLimitToNumberOfDiagnostics_test():
         'filepath': filepath
       } ) )
     )
+
+
+def LanguageServerCompleter_GetHoverResponse_test():
+  completer = MockCompleter()
+  request_data = RequestWrap( BuildRequest( line_num = 1,
+                                            column_num = 1,
+                                            contents = '' ) )
+
+  with patch.object( completer, 'ServerIsReady', return_value = True ):
+    with patch.object( completer.GetConnection(),
+                       'GetResponse',
+                       side_effect = [ { 'result': None } ] ):
+      assert_that(
+        calling( completer.GetHoverResponse ).with_args( request_data ),
+        raises( RuntimeError )
+      )
+    with patch.object( completer.GetConnection(),
+                       'GetResponse',
+                       side_effect = [ { 'result': { 'contents': 'test' } } ] ):
+      assert_that(
+        completer.GetHoverResponse( request_data ), equal_to( 'test' )
+      )
