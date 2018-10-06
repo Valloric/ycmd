@@ -129,19 +129,6 @@ void BuildFullDiagnosticDataFromChildren(
   }
 }
 
-// Returns true when the provided completion string is available to the user;
-// unavailable completion strings refer to entities that are private/protected,
-// deprecated etc.
-bool CompletionStringAvailable( CXCompletionString completion_string ) {
-  if ( !completion_string ) {
-    return false;
-  }
-
-  return clang_getCompletionAvailability( completion_string ) ==
-         CXAvailability_Available;
-}
-
-
 std::vector< Range > GetRanges( const DiagnosticWrap &diagnostic_wrap ) {
   std::vector< Range > ranges;
   size_t num_ranges = clang_getDiagnosticNumRanges( diagnostic_wrap.get() );
@@ -208,34 +195,6 @@ std::vector< CXUnsavedFile > ToCXUnsavedFiles(
 }
 
 
-FixIt BuildCompletionFixIt( CXCodeCompleteResults *results,
-                            unsigned completion_index ) {
-  FixIt fixit;
-
-  size_t num_chunks = clang_getCompletionNumFixIts( results, completion_index );
-  if ( !num_chunks ) {
-    return fixit;
-  }
-
-  fixit.chunks.reserve( num_chunks );
-
-  for ( size_t chunk_index = 0; chunk_index < num_chunks; ++chunk_index ) {
-    FixItChunk chunk;
-    CXSourceRange range;
-    chunk.replacement_text = CXStringToString(
-                               clang_getCompletionFixIt( results,
-                                                         completion_index,
-                                                         chunk_index,
-                                                         &range ) );
-
-    chunk.range = range;
-    fixit.chunks.push_back( chunk );
-  }
-
-  return fixit;
-}
-
-
 std::vector< CompletionData > ToCompletionDataVector(
   CXCodeCompleteResults *results ) {
   std::vector< CompletionData > completions;
@@ -248,21 +207,14 @@ std::vector< CompletionData > ToCompletionDataVector(
   unordered_map< std::string, size_t > seen_data;
 
   for ( size_t i = 0; i < results->NumResults; ++i ) {
-    CXCompletionResult completion_result = results->Results[ i ];
-
-    if ( !CompletionStringAvailable( completion_result.CompletionString ) ) {
+    CompletionData data( results, i );
+    if ( data.original_string_.empty() ) {
       continue;
     }
 
-    CompletionData data( completion_result );
     size_t index = GetValueElseInsert( seen_data,
-                                     data.original_string_,
-                                     completions.size() );
-
-    FixIt fixit = BuildCompletionFixIt( results, i );
-    if ( !fixit.chunks.empty() ) {
-      data.fixits_.push_back( fixit );
-    }
+                                       data.original_string_,
+                                       completions.size() );
 
     if ( index == completions.size() ) {
       completions.push_back( std::move( data ) );

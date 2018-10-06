@@ -119,6 +119,11 @@ def GetCompletions():
     completions = _server_state.GetGeneralCompleter().ComputeCandidates(
       request_data )
 
+  import pprint
+  response = BuildCompletionResponse( completions if completions else [],
+                               request_data[ 'start_column' ],
+                               errors = errors )
+  pprint.pprint( response )
   return _JsonResponse(
       BuildCompletionResponse( completions if completions else [],
                                request_data[ 'start_column' ],

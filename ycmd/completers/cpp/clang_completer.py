@@ -481,9 +481,15 @@ class ClangCompleter( Completer ):
 
 
 def ConvertCompletionData( completion_data ):
-  extra_data = responses.BuildFixItResponse( completion_data.fixits_ )
+  extra_data = {}
+
+  fixit = completion_data.fixit_
+  if fixit.chunks:
+    extra_data.update( responses.BuildFixItResponse( [ fixit ] ) )
+
   if completion_data.DocString():
     extra_data[ 'doc_string' ] = completion_data.DocString()
+
   return responses.BuildCompletionData(
     insertion_text = completion_data.TextToInsertInBuffer(),
     menu_text = completion_data.MainCompletionText(),
