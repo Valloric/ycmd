@@ -50,7 +50,7 @@ enum class CompletionKind {
 // about a completion at the top of the buffer.
 struct CompletionData {
   CompletionData() = default;
-  CompletionData( const CXCompletionResult &completion_result );
+  CompletionData( CXCodeCompleteResults *results, size_t index );
 
   // What should actually be inserted into the buffer. For a function like
   // "int foo(int x)", this is just "foo". Same for a data member like "foo_":
@@ -102,7 +102,7 @@ struct CompletionData {
 
   std::string doc_string_;
 
-  std::vector< FixIt > fixits_;
+  FixIt fixit_;
 
 private:
 
@@ -111,6 +111,8 @@ private:
                              bool &saw_left_paren,
                              bool &saw_function_params,
                              bool &saw_placeholder );
+
+  void BuildCompletionFixIt( CXCodeCompleteResults *results, size_t index );
 };
 
 } // namespace YouCompleteMe
