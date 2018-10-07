@@ -29,8 +29,15 @@ import requests
 import ycm_core
 from mock import patch
 from nose.tools import eq_
-from hamcrest import ( assert_that, contains, contains_inanyorder, empty,
-                       has_item, has_items, has_entry, has_entries )
+from hamcrest import ( assert_that,
+                       contains,
+                       contains_inanyorder,
+                       empty,
+                       has_item,
+                       has_items,
+                       has_entry,
+                       has_entries,
+                       matches_regexp )
 
 from ycmd import handlers
 from ycmd.completers.cpp.clang_completer import ( NO_COMPLETIONS_MESSAGE,
@@ -46,6 +53,7 @@ from ycmd.tests.test_utils import ( BuildRequest,
                                     CombineRequest,
                                     CompletionEntryMatcher,
                                     ErrorMatcher,
+                                    ExpectedFailure,
                                     LocationMatcher,
                                     WindowsOnly )
 from ycmd.utils import ReadFile
@@ -467,6 +475,59 @@ int main()
     contains_inanyorder( CompletionEntryMatcher( 'foobar' ),
                          CompletionEntryMatcher( 'floozar' ) )
   )
+
+
+@SharedYcmd
+def GetCompletions_Availability_PublicMemberInDerivedClass_test( app ):
+  filepath = PathToTestFile( 'completion_availability.cc' )
+  completion_data = BuildRequest( filepath = filepath,
+                                  filetype = 'cpp',
+                                  contents = ReadFile( filepath ),
+                                  line_num = 14,
+                                  column_num = 13,
+                                  compilation_flags = [ '-x', 'c++' ],
+                                  force_semantic = True )
+
+  results = app.post_json( '/completions',
+                           completion_data ).json[ 'completions' ]
+  assert_that( results, contains( CompletionEntryMatcher( 'public_member' ) ) )
+
+
+@ExpectedFailure( 'libclang wrongly marks protected members from base class '
+                  'in derived class as inaccessible. '
+                  'See https://bugs.llvm.org/show_bug.cgi?id=24329',
+                  matches_regexp( 'No item matched: .*protected_member' ) )
+@SharedYcmd
+def GetCompletions_Availability_ProtectedMemberInDerivedClass_test( app ):
+  filepath = PathToTestFile( 'completion_availability.cc' )
+  completion_data = BuildRequest( filepath = filepath,
+                                  filetype = 'cpp',
+                                  contents = ReadFile( filepath ),
+                                  line_num = 15,
+                                  column_num = 16,
+                                  compilation_flags = [ '-x', 'c++' ],
+                                  force_semantic = True )
+
+  results = app.post_json( '/completions',
+                           completion_data ).json[ 'completions' ]
+  assert_that( results,
+               contains( CompletionEntryMatcher( 'protected_member' ) ) )
+
+
+@SharedYcmd
+def GetCompletions_Availability_PrivateMemberInDerivedClass_test( app ):
+  filepath = PathToTestFile( 'completion_availability.cc' )
+  completion_data = BuildRequest( filepath = filepath,
+                                  filetype = 'cpp',
+                                  contents = ReadFile( filepath ),
+                                  line_num = 16,
+                                  column_num = 14,
+                                  compilation_flags = [ '-x', 'c++' ],
+                                  force_semantic = True )
+
+  results = app.post_json( '/completions',
+                           completion_data ).json[ 'completions' ]
+  assert_that( results, empty() )
 
 
 @SharedYcmd
