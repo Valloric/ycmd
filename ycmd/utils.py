@@ -45,9 +45,9 @@ import threading
 #
 if PY2:
   from urlparse import urljoin, urlparse, unquote
-  from urllib import pathname2url, url2pathname
+  from urllib import pathname2url, url2pathname, quote
 else:
-  from urllib.parse import urljoin, urlparse, unquote  # noqa
+  from urllib.parse import urljoin, urlparse, unquote, quote  # noqa
   from urllib.request import pathname2url, url2pathname  # noqa
 
 
