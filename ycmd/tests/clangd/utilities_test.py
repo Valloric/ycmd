@@ -25,6 +25,9 @@ from __future__ import absolute_import
 
 from nose.tools import eq_
 from ycmd.completers.cpp import clangd_completer
+from ycmd import handlers
+from mock import patch
+from ycmd.tests.clangd import IsolatedYcmd
 
 
 def _TupleToLSPRange( tuple ):
@@ -63,6 +66,10 @@ def ClangdCompleter_FindClangdBinary_test():
   user_options = { 'clangd_binary_path': EXPECTED }
   eq_( clangd_completer.FindClangdBinary( user_options ), EXPECTED )
 
+  with patch( 'os.path.isfile', return_value=False ) as os_path_isfile:
+    eq_( clangd_completer.FindClangdBinary( {} ), None )
+    os_path_isfile.assert_called()
+
 
 def ClangdCompleter_ShouldEnableClangdCompleter_test():
   user_options = { 'clangd_binary_path': 'test_path' }
@@ -71,6 +78,38 @@ def ClangdCompleter_ShouldEnableClangdCompleter_test():
   user_options[ 'use_clangd' ] = False
   eq_( clangd_completer.ShouldEnableClangdCompleter( user_options ), False )
 
-  user_options[ 'use_clangd' ] = True
+  user_options = { 'use_clangd': True }
+  with patch(
+      'ycmd.completers.cpp.clangd_completer.FindClangdBinary',
+      return_value = None ) as find_clangd_binary:
+    eq_( clangd_completer.ShouldEnableClangdCompleter( user_options ), False )
+    find_clangd_binary.assert_called()
+
   user_options[ 'clangd_binary_path' ] = 'test_path'
   eq_( clangd_completer.ShouldEnableClangdCompleter( user_options ), True )
+
+
+class MockPopen:
+  stdin = None
+  stdout = None
+  pid = 0
+
+  def communicate( self ):
+    return ( bytes(), None )
+
+
+@patch( 'subprocess.Popen', return_value = MockPopen() )
+def ClangdCompleter_GetVersion_test( mock_popen ):
+  eq_( clangd_completer.GetVersion( '' ), None )
+  mock_popen.assert_called()
+
+
+@IsolatedYcmd()
+def ClangdCompleter_ShutdownFail_test( app ):
+  completer = handlers._server_state.GetFiletypeCompleter( [ 'cpp' ] )
+  with patch.object( completer, 'ShutdownServer', side_effect = Exception ) as \
+      shutdown_server:
+    completer._server_handle = MockPopen()
+    with patch.object( completer, 'ServerIsHealthy', return_value = True ):
+      completer.Shutdown()
+      shutdown_server.assert_called()
