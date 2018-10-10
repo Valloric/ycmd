@@ -30,6 +30,7 @@ from hamcrest import ( assert_that,
                        has_items,
                        empty,
                        equal_to )
+from mock import patch
 from pprint import pprint
 
 from ycmd.tests.clangd import ( SharedYcmd,
@@ -38,6 +39,7 @@ from ycmd.tests.clangd import ( SharedYcmd,
                                 RunAfterInitialized )
 from ycmd.tests.test_utils import BuildRequest, LocationMatcher, RangeMatcher
 from ycmd.utils import ReadFile
+from ycmd import handlers
 
 
 @IsolatedYcmd()
@@ -408,3 +410,33 @@ def Diagnostics_NoLimitToNumberOfDiagnostics_test( app ):
       } )
     ) } )
   ) )
+
+
+@IsolatedYcmd()
+def Diagnostics_DiagsNotReady_test( app ):
+  completer = handlers._server_state.GetFiletypeCompleter( [ 'cpp' ] )
+  contents = """
+struct Foo {
+  int x  // semicolon missing here!
+  int y;
+  int c;
+  int d;
+};
+"""
+
+  filepath = PathToTestFile( 'foo.cc' )
+  request = { 'contents': contents,
+              'filepath': filepath,
+              'filetype': 'cpp' }
+
+  test = { 'request': request, 'route': '/receive_messages' }
+  RunAfterInitialized( app, test )
+  diag_data = BuildRequest( line_num = 3,
+                            contents = contents,
+                            filepath = filepath,
+                            filetype = 'cpp' )
+
+  with patch.object( completer, '_latest_diagnostics', None ):
+    results = app.post_json( '/detailed_diagnostic', diag_data ).json
+    assert_that( results,
+               has_entry( 'message', contains_string( "are not ready yet" ) ) )
