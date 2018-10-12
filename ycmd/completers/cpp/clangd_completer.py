@@ -37,6 +37,7 @@ from ycmd.completers.language_server import language_server_protocol as lsp
 
 _logger = logging.getLogger( __name__ )
 LLVM_RELEASE = '7.0.0'
+INCLUDE_REGEX = re.compile( '(\s*#\s*(?:include|import)\s*)(:?"[^"]*|<[^>]*)' )
 
 
 def DistanceOfPointToRange( point, range ):
@@ -259,13 +260,19 @@ class ClangdCompleter( language_server_completer.LanguageServerCompleter ):
     return request_data[ 'column_codepoint' ]
 
 
+  def ShouldCompleteIncludeStatement( self, request_data ):
+    column_codepoint = request_data[ 'column_codepoint' ] - 1
+    current_line = request_data[ 'line_value' ]
+    return INCLUDE_REGEX.match( current_line[ : column_codepoint ] )
+
+
   def ShouldUseNow( self, request_data ):
     """Overriden to avoid YCM's caching/filtering logic."""
     # Clangd should be able to provide completions in any context.
     # FIXME: Empty queries provide spammy results, fix this in clangd.
-    return self._auto_trigger and ( request_data[ 'query' ] != '' or
-            request_data[ 'prefix' ].endswith( ( '::', '.', '->' ) ) or
-            request_data[ 'prefix' ].startswith( '#include' ) )
+    return ( self.ShouldCompleteIncludeStatement( request_data ) or
+            request_data[ 'query' ] != '' or
+            super( ClangdCompleter, self ).ShouldUseNowInner( request_data ) )
 
 
   def ComputeCandidates( self, request_data ):
