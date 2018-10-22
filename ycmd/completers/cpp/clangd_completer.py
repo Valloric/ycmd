@@ -119,7 +119,7 @@ def FindClangdBinary( user_options ):
       and os.access( INSTALLED_CLANGD, os.X_OK ):
     if RESOURCE_DIR:
       INSTALLED_CLANGD += ' -resource-dir=' + RESOURCE_DIR
-    return INSTALLED_CLANGD
+    return INSTALLED_CLANGD + ' -limit-results=0'
   _logger.warning( INSTALLED_CLANGD + ' does not exist or is not accessible.' )
 
   return None
