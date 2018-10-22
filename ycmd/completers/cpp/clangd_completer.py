@@ -119,7 +119,9 @@ def FindClangdBinary( user_options ):
       and os.access( INSTALLED_CLANGD, os.X_OK ):
     if RESOURCE_DIR:
       INSTALLED_CLANGD += ' -resource-dir=' + RESOURCE_DIR
-    return INSTALLED_CLANGD + ' -limit-results=0'
+    if user_options.get( 'clangd_uses_ycmd_caching', True ):
+      INSTALLED_CLANGD += ' -limit-results=0'
+    return INSTALLED_CLANGD
   _logger.warning( INSTALLED_CLANGD + ' does not exist or is not accessible.' )
 
   return None
@@ -156,6 +158,8 @@ class ClangdCompleter( language_server_completer.LanguageServerCompleter ):
 
     self._Reset()
     self._auto_trigger = user_options[ 'auto_trigger' ]
+    self._use_ycmd_caching = user_options.get( 'clangd_uses_ycmd_caching',
+                                               True )
 
 
   def _Reset( self ):
@@ -270,6 +274,8 @@ class ClangdCompleter( language_server_completer.LanguageServerCompleter ):
     """Overriden to avoid YCM's caching/filtering logic."""
     # Clangd should be able to provide completions in any context.
     # FIXME: Empty queries provide spammy results, fix this in clangd.
+    if self._use_ycmd_caching:
+      return super( ClangdCompleter, self ).ShouldUseNow( request_data )
     return ( self.ShouldCompleteIncludeStatement( request_data ) or
             request_data[ 'query' ] != '' or
             super( ClangdCompleter, self ).ShouldUseNowInner( request_data ) )
@@ -278,6 +284,8 @@ class ClangdCompleter( language_server_completer.LanguageServerCompleter ):
   def ComputeCandidates( self, request_data ):
     """Orverriden to bypass YCM's cache."""
     # Caching results means reranking them, and YCM has fewer signals.
+    if self._use_ycmd_caching:
+      return super( ClangdCompleter, self ).ComputeCandidates( request_data )
     return super( ClangdCompleter, self ).ComputeCandidatesInner( request_data )
 
 

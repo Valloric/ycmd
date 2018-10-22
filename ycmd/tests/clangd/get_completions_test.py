@@ -103,6 +103,33 @@ def RunTest( app, test ):
   assert_that( response.json, test[ 'expect' ][ 'data' ] )
 
 
+@IsolatedYcmd( { 'clangd_uses_ycmd_caching': False } )
+def GetCompletions_ForcedWithNoTrigger_NotUsesYcmdCaching_test( app ):
+  RunTest( app, {
+    'description': 'semantic completion with force query=DO_SO',
+    'request': {
+      'filetype'  : 'cpp',
+      'filepath'  : PathToTestFile( 'general_fallback',
+                                    'lang_cpp.cc' ),
+      'line_num'  : 54,
+      'column_num': 8,
+      'extra_conf_data': { '&filetype': 'cpp' },
+      'force_semantic': True,
+    },
+    'expect': {
+      'response': requests.codes.ok,
+      'data': has_entries( {
+        'completions': contains(
+          CompletionEntryMatcher( 'DO_SOMETHING_TO', 'void' ),
+          CompletionEntryMatcher( 'DO_SOMETHING_WITH', 'void' ),
+          CompletionEntryMatcher( 'do_something', 'void' ),
+        ),
+        'errors': empty(),
+      } )
+    },
+  } )
+
+
 @SharedYcmd
 def GetCompletions_ForcedWithNoTrigger_test( app ):
   RunTest( app, {
@@ -122,7 +149,6 @@ def GetCompletions_ForcedWithNoTrigger_test( app ):
         'completions': contains(
           CompletionEntryMatcher( 'DO_SOMETHING_TO', 'void' ),
           CompletionEntryMatcher( 'DO_SOMETHING_WITH', 'void' ),
-          CompletionEntryMatcher( 'do_something', 'void' ),
         ),
         'errors': empty(),
       } )
