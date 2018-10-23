@@ -117,10 +117,11 @@ def FindClangdBinary( user_options ):
 
   if os.path.isfile( INSTALLED_CLANGD ) \
       and os.access( INSTALLED_CLANGD, os.X_OK ):
+    INSTALLED_CLANGD = [ INSTALLED_CLANGD ]
     if RESOURCE_DIR:
-      INSTALLED_CLANGD += ' -resource-dir=' + RESOURCE_DIR
+      INSTALLED_CLANGD.append( '-resource-dir=' + RESOURCE_DIR )
     if user_options.get( 'clangd_uses_ycmd_caching', True ):
-      INSTALLED_CLANGD += ' -limit-results=0'
+      INSTALLED_CLANGD.append( '-limit-results=0' )
     return INSTALLED_CLANGD
   _logger.warning( INSTALLED_CLANGD + ' does not exist or is not accessible.' )
 
@@ -302,7 +303,7 @@ class ClangdCompleter( language_server_completer.LanguageServerCompleter ):
       # Ensure we cleanup all states.
       self._Reset()
 
-      _logger.info( 'Starting clangd: ' + self._clangd_path )
+      _logger.info( 'Starting clangd: {0}'.format( self._clangd_path ) )
       self._server_handle = utils.SafePopen( self._clangd_path,
                                              shell = True,
                                              stdin = subprocess.PIPE,
