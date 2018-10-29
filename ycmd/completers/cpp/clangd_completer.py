@@ -305,7 +305,6 @@ class ClangdCompleter( language_server_completer.LanguageServerCompleter ):
 
       _logger.info( 'Starting clangd: {0}'.format( self._clangd_path ) )
       self._server_handle = utils.SafePopen( self._clangd_path,
-                                             shell = True,
                                              stdin = subprocess.PIPE,
                                              stdout = subprocess.PIPE,
                                              stderr = sys.stderr )
