@@ -61,13 +61,26 @@ def ClangdCompleter_DistanceOfPointToRange_MultiLineRange_test():
   _Check_Distance( ( 3, 8 ), ( 0, 2 ), ( 3, 5 ) , 3 )
 
 
-def ClangdCompleter_FindClangdBinary_test():
-  EXPECTED = 'test_path'
-  user_options = { 'clangd_binary_path': EXPECTED }
-  eq_( clangd_completer.FindClangdBinary( user_options ), EXPECTED )
+def ClangdCompleter_GetClangdCommand_test():
+  EXPECTED = [ 'test_path' ]
+  user_options = { 'clangd_binary_path': EXPECTED[ 0 ],
+                   'clangd_uses_ycmd_caching': False }
+  with patch( 'os.path.isfile', return_value=True ) as os_path_isfile:
+    with patch( 'os.access', return_value=True ) as os_access:
+      eq_( clangd_completer.GetClangdCommand( user_options ), EXPECTED )
+      os_path_isfile.assert_called()
+      os_access.assert_called()
+
+      ARGS = [ 'a', 'b' ]
+      user_options[ 'clangd_args' ] = ARGS
+      EXPECTED.extend( ARGS )
+      eq_( clangd_completer.GetClangdCommand( user_options ), EXPECTED )
+      os_path_isfile.assert_called()
+      os_access.assert_called()
+
 
   with patch( 'os.path.isfile', return_value=False ) as os_path_isfile:
-    eq_( clangd_completer.FindClangdBinary( {} ), None )
+    eq_( clangd_completer.GetClangdCommand( {} ), None )
     os_path_isfile.assert_called()
 
 
@@ -80,13 +93,13 @@ def ClangdCompleter_ShouldEnableClangdCompleter_test():
 
   user_options = { 'use_clangd': True }
   with patch(
-      'ycmd.completers.cpp.clangd_completer.FindClangdBinary',
+      'ycmd.completers.cpp.clangd_completer.GetClangdCommand',
       return_value = None ) as find_clangd_binary:
     eq_( clangd_completer.ShouldEnableClangdCompleter( user_options ), False )
     find_clangd_binary.assert_called()
 
   user_options[ 'clangd_binary_path' ] = 'test_path'
-  eq_( clangd_completer.ShouldEnableClangdCompleter( user_options ), True )
+  eq_( clangd_completer.ShouldEnableClangdCompleter( user_options ), False )
 
 
 class MockPopen:
