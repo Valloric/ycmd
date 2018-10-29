@@ -27,7 +27,6 @@ import subprocess
 import logging
 import os
 import threading
-import sys
 import re
 
 from ycmd import responses, utils
@@ -75,56 +74,60 @@ def GetVersion( clangd_path ):
   return version
 
 
-def FindClangdBinary( user_options ):
-  """Find the path to the clangd binary.
+def GetClangdCommand( user_options ):
+  """Get commands to run clangd.
 
   Use 'clangd_binary_path' option, if specified.
-  Otherwise fall back to INSTALLED_CLANGD.
-  Return None if the selected binary doesn't exist. """
-  if user_options.get( 'clangd_binary_path' ):
-    return user_options[ 'clangd_binary_path' ]
-
-  INSTALLED_CLANGD = utils.FindExecutable( 'clangd' )
+  Otherwise fall back to binaries reachable through PATH or pre-built ones.
+  Return None if no binary exists or it is out of date. """
   RESOURCE_DIR = None
-  if INSTALLED_CLANGD:
-    version = GetVersion( INSTALLED_CLANGD )
-    # If version is None it means we have a custom build, respect that.
-    if version and version < LLVM_RELEASE:
-      # Installed clangd has an unsupported version, try to use built-in binary.
-      INSTALLED_CLANGD = None
-      _logger.warning( 'Your system has a clangd installed with llvm-{version},'
-                       ' which is not supported. Please update your clangd '
-                       'binary. Trying to use pre-built binary.'
-                       .format( version=version ) )
-  if not INSTALLED_CLANGD:
-    # Try looking for the pre-built binary.
-    INSTALLED_CLANGD = os.path.abspath( os.path.join(
-      os.path.dirname( __file__ ),
-      '..',
-      '..',
-      '..',
-      'third_party',
-      'clangd',
-      'output',
-      'bin',
-      'clangd' ) )
-    RESOURCE_DIR = os.path.abspath( os.path.join(
-      os.path.dirname( __file__ ),
-      '..',
-      '..',
-      '..',
-      'clang_includes' ) )
+  if user_options.get( 'clangd_binary_path' ):
+    INSTALLED_CLANGD = user_options[ 'clangd_binary_path' ]
+  else:
+    INSTALLED_CLANGD = utils.FindExecutable( 'clangd' )
+    if INSTALLED_CLANGD:
+      version = GetVersion( INSTALLED_CLANGD )
+      # If version is None it means we have a custom build, respect that.
+      if version and version < LLVM_RELEASE:
+        # Installed clangd has an unsupported version, try to use built-in
+        # binary.
+        INSTALLED_CLANGD = None
+        _logger.warning( 'Your system has a clangd installed with '
+                         'llvm-{version}, which is not supported. Please update'
+                         ' your clangd binary. Trying to use pre-built binary.'
+                         .format( version=version ) )
+    if not INSTALLED_CLANGD:
+      # Try looking for the pre-built binary.
+      INSTALLED_CLANGD = os.path.abspath( os.path.join(
+        os.path.dirname( __file__ ),
+        '..',
+        '..',
+        '..',
+        'third_party',
+        'clangd',
+        'output',
+        'bin',
+        'clangd' ) )
+      RESOURCE_DIR = os.path.abspath( os.path.join(
+        os.path.dirname( __file__ ),
+        '..',
+        '..',
+        '..',
+        'clang_includes' ) )
 
-  if os.path.isfile( INSTALLED_CLANGD ) \
-      and os.access( INSTALLED_CLANGD, os.X_OK ):
-    INSTALLED_CLANGD = [ INSTALLED_CLANGD ]
+  if ( os.path.isfile( INSTALLED_CLANGD ) and os.access(
+      INSTALLED_CLANGD, os.X_OK ) ):
+    CLANGD_COMMAND = [ INSTALLED_CLANGD ]
     if RESOURCE_DIR:
-      INSTALLED_CLANGD.append( '-resource-dir=' + RESOURCE_DIR )
+      CLANGD_COMMAND.append( '-resource-dir=' + RESOURCE_DIR )
     if user_options.get( 'clangd_uses_ycmd_caching', True ):
-      INSTALLED_CLANGD.append( '-limit-results=0' )
-    return INSTALLED_CLANGD
-  _logger.warning( INSTALLED_CLANGD + ' does not exist or is not accessible.' )
+      CLANGD_COMMAND.append( '-limit-results=0' )
+    clangd_args = user_options.get( 'clangd_args' )
+    if clangd_args is not None:
+      CLANGD_COMMAND.extend( clangd_args )
+    return CLANGD_COMMAND
 
+  _logger.warning( INSTALLED_CLANGD + ' does not exist or is not accessible.' )
   return None
 
 
@@ -132,11 +135,11 @@ def ShouldEnableClangdCompleter( user_options ):
   if 'use_clangd' not in user_options or not user_options[ 'use_clangd' ]:
     return False
 
-  path_to_clangd = FindClangdBinary( user_options )
-  if not path_to_clangd:
+  clangd_command = GetClangdCommand( user_options )
+  if not clangd_command:
     _logger.warning( 'Not using clangd: unable to find clangd binary' )
     return False
-  _logger.info( 'Using clangd from {0}'.format( path_to_clangd ) )
+  _logger.info( 'Using clangd from {0}'.format( clangd_command ) )
   return True
 
 
@@ -155,12 +158,13 @@ class ClangdCompleter( language_server_completer.LanguageServerCompleter ):
     # Used to ensure that starting/stopping of the server is synchronized.
     # Guards _connection and _server_handle.
     self._server_state_mutex = threading.RLock()
-    self._clangd_path = FindClangdBinary( user_options )
+    self._clangd_command = GetClangdCommand( user_options )
 
     self._Reset()
     self._auto_trigger = user_options[ 'auto_trigger' ]
     self._use_ycmd_caching = user_options.get( 'clangd_uses_ycmd_caching',
                                                True )
+    self._stderr_file = None
 
 
   def _Reset( self ):
@@ -180,8 +184,10 @@ class ClangdCompleter( language_server_completer.LanguageServerCompleter ):
       clangd = responses.DebugInfoServer(
         name = 'clangd',
         handle = self._server_handle,
-        executable = self._clangd_path
+        executable = self._clangd_command
       )
+      if self._stderr_file:
+        clangd.logfiles = [ self._stderr_file.name ]
       return responses.BuildDebugInfoResponse( name = 'clangd',
                                                servers = [ clangd ] )
 
@@ -303,11 +309,13 @@ class ClangdCompleter( language_server_completer.LanguageServerCompleter ):
       # Ensure we cleanup all states.
       self._Reset()
 
-      _logger.info( 'Starting clangd: {0}'.format( self._clangd_path ) )
-      self._server_handle = utils.SafePopen( self._clangd_path,
-                                             stdin = subprocess.PIPE,
-                                             stdout = subprocess.PIPE,
-                                             stderr = sys.stderr )
+      _logger.info( 'Starting clangd: {0}'.format( self._clangd_command ) )
+      self._stderr_file = utils.CreateLogfile( 'clangd_stderr' )
+      with utils.OpenForStdHandle( self._stderr_file ) as stderr:
+        self._server_handle = utils.SafePopen( self._clangd_command,
+                                               stdin = subprocess.PIPE,
+                                               stdout = subprocess.PIPE,
+                                               stderr = stderr )
 
       self._connection = (
         language_server_completer.StandardIOLanguageServerConnection(
