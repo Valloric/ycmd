@@ -26,7 +26,7 @@ import tarfile
 import tempfile
 
 from ycmd.completers.cpp.clangd_completer import LLVM_RELEASE
-from ycmd.completers.cpp.clangd_completer import FindClangdBinary
+from ycmd.completers.cpp.clangd_completer import GetClangdCommand
 
 PY_MAJOR, PY_MINOR, PY_PATCH = sys.version_info[ 0 : 3 ]
 if not ( ( PY_MAJOR == 2 and PY_MINOR == 7 and PY_PATCH >= 1 ) or
@@ -843,8 +843,8 @@ def EnableClangdCompleter( Args ):
     sys.stdout.write( 'Checking for clangd binary...' )
     sys.stdout.flush()
 
-  INSTALLED_CLANGD = FindClangdBinary( {} )
-  if not INSTALLED_CLANGD:
+  CLANGD_COMMAND = GetClangdCommand( {} )
+  if not CLANGD_COMMAND:
     if ShouldPrint:
       print( "Clangd not found on the path, trying to download it." )
     if not DownloadClangd():
@@ -852,7 +852,7 @@ def EnableClangdCompleter( Args ):
       return False
 
   if not ShouldPrint:
-    print( 'OK', INSTALLED_CLANGD )
+    print( 'OK' )
   return True
 
 
