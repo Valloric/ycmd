@@ -281,11 +281,11 @@ class ClangdCompleter( language_server_completer.LanguageServerCompleter ):
     """Overriden to avoid YCM's caching/filtering logic."""
     # Clangd should be able to provide completions in any context.
     # FIXME: Empty queries provide spammy results, fix this in clangd.
+    # FIXME: Add triggers for include completion with release of LLVM8.
     if self._use_ycmd_caching:
       return super( ClangdCompleter, self ).ShouldUseNow( request_data )
-    return ( self.ShouldCompleteIncludeStatement( request_data ) or
-            request_data[ 'query' ] != '' or
-            super( ClangdCompleter, self ).ShouldUseNowInner( request_data ) )
+    return ( request_data[ 'query' ] != '' or
+             super( ClangdCompleter, self ).ShouldUseNowInner( request_data ) )
 
 
   def ComputeCandidates( self, request_data ):
