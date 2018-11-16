@@ -1,5 +1,4 @@
-# Copyright (C) 2011-2012 Google Inc.
-#               2017      ycmd contributors
+# Copyright (C) 2018 ycmd contributors
 #
 # This file is part of ycmd.
 #
@@ -146,7 +145,7 @@ def ShouldEnableClangdCompleter( user_options ):
 class ClangdCompleter( language_server_completer.LanguageServerCompleter ):
   """A LSP-based completer for C-family languages, powered by clangd.
 
-  Features are supported:
+  Supported features:
     * Code completion
     * Diagnostics and apply FixIts
     * Go to definition
