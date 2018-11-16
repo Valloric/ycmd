@@ -100,6 +100,25 @@ BUILD_ERROR_MESSAGE = (
   'and the invocation line used to run it.' )
 
 
+def MakeCleanDirectory( directory_path ):
+  if p.exists( directory_path ):
+    shutil.rmtree( directory_path )
+  os.makedirs( directory_path )
+
+
+def CheckFileIntegrity( file_path, check_sum ):
+  with open( file_path, 'rb' ) as existing_file:
+    existing_sha256 = hashlib.sha256( existing_file.read() ).hexdigest()
+  return existing_sha256 == check_sum
+
+
+def DownloadFileTo( download_url, file_path ):
+  request = requests.get( download_url, stream = True )
+  with open( file_path, 'wb' ) as package_file:
+    package_file.write( request.content )
+  request.close()
+
+
 def OnMac():
   return platform.system() == 'Darwin'
 
@@ -805,27 +824,19 @@ def DownloadClangd():
 
   file_name = p.join( CLANGD_CACHE_DIR, file_name )
 
-  if p.exists( CLANGD_OUTPUT_DIR ):
-    shutil.rmtree( CLANGD_OUTPUT_DIR )
-  os.makedirs( CLANGD_OUTPUT_DIR )
+  MakeCleanDirectory( CLANGD_OUTPUT_DIR )
 
   if not p.exists( CLANGD_CACHE_DIR ):
     os.makedirs( CLANGD_CACHE_DIR )
-  elif p.exists( file_name ):
-    with open( file_name, 'rb' ) as existing_file:
-      existing_sha256 = hashlib.sha256( existing_file.read() ).hexdigest()
-    if existing_sha256 != check_sum:
-      print( 'Cached clangd tar file does not match checksum. Removing...' )
-      os.remove( file_name )
+  elif p.exists( file_name ) and not CheckFileIntegrity( file_name, check_sum ):
+    print( 'Cached clangd tar file does not match checksum. Removing...' )
+    os.remove( file_name )
 
   if p.exists( file_name ):
     print( 'Using cached clangd: {0}'.format( file_name ) )
   else:
     print( "Downloading clangd from {0}...".format( download_url ) )
-    request = requests.get( download_url, stream = True )
-    with open( file_name, 'wb' ) as package_file:
-      package_file.write( request.content )
-    request.close()
+    DownloadFileTo( download_url, file_name )
 
   print( "Extracting clangd to {0}...".format( CLANGD_OUTPUT_DIR ) )
   with tarfile.open( file_name ) as package_tar:
