@@ -186,6 +186,9 @@ def Extract7Z( llvm_package, archive, destination ):
     # On Linux, p7zip 16.02 is required.
     executable = find_executable( '7z' )
 
+  if executable is None:
+    raise RuntimeError( 'ERROR: 7z binary could not be found.' )
+
   command = [
     executable,
     '-y',
