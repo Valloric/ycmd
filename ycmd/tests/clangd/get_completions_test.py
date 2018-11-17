@@ -55,12 +55,9 @@ def RunTest( app, test ):
   """
   Method to run a simple completion test and verify the result
 
-  Note: by default uses the .ycm_extra_conf from general_fallback/ which:
-   - supports cpp, c and objc
-   - requires extra_conf_data containing 'filetype&' = the filetype
-
-  This should be sufficient for many standard test cases. If not, specify
-  a path (as a list of path items) in 'extra_conf' member of |test|.
+  Note: Compile commands are extracted from a compile_flags.txt file by clangd
+  by iteratively looking at the directory containing the source file and its
+  ancestors.
 
   test is a dictionary containing:
     'request': kwargs for BuildRequest
@@ -68,7 +65,6 @@ def RunTest( app, test ):
        'response': server response code (e.g. requests.codes.ok)
        'data': matcher for the server response json
     }
-    'extra_conf': [ optional list of path items to extra conf file ]
   """
 
   request = test[ 'request' ]
@@ -104,7 +100,7 @@ def RunTest( app, test ):
 
 
 @IsolatedYcmd( { 'clangd_uses_ycmd_caching': False } )
-def GetCompletions_ForcedWithNoTrigger_NotUsesYcmdCaching_test( app ):
+def GetCompletions_ForcedWithNoTrigger_NoYcmdCaching_test( app ):
   RunTest( app, {
     'description': 'semantic completion with force query=DO_SO',
     'request': {
@@ -113,7 +109,6 @@ def GetCompletions_ForcedWithNoTrigger_NotUsesYcmdCaching_test( app ):
                                     'lang_cpp.cc' ),
       'line_num'  : 54,
       'column_num': 8,
-      'extra_conf_data': { '&filetype': 'cpp' },
       'force_semantic': True,
     },
     'expect': {
@@ -140,7 +135,6 @@ def GetCompletions_ForcedWithNoTrigger_test( app ):
                                     'lang_cpp.cc' ),
       'line_num'  : 54,
       'column_num': 8,
-      'extra_conf_data': { '&filetype': 'cpp' },
       'force_semantic': True,
     },
     'expect': {
@@ -166,7 +160,6 @@ def GetCompletions_Fallback_NoSuggestions_test( app ):
       'filepath'  : PathToTestFile( 'general_fallback', 'lang_c.c' ),
       'line_num'  : 29,
       'column_num': 21,
-      'extra_conf_data': { '&filetype': 'c' },
       'force_semantic': False,
     },
     'expect': {
@@ -191,7 +184,6 @@ def GetCompletions_Fallback_NoSuggestions_MinimumCharaceters_test( app ):
                                     'lang_cpp.cc' ),
       'line_num'  : 21,
       'column_num': 22,
-      'extra_conf_data': { '&filetype': 'cpp' },
       'force_semantic': False,
     },
     'expect': {
@@ -263,7 +255,6 @@ def GetCompletions_Forced_NoFallback_test( app ):
       'filepath'  : PathToTestFile( 'general_fallback', 'lang_c.c' ),
       'line_num'  : 41,
       'column_num': 30,
-      'extra_conf_data': { '&filetype': 'c' },
       'force_semantic': True,
     },
     'expect': {
@@ -288,7 +279,6 @@ def GetCompletions_FilteredNoResults_Fallback_test( app ):
       'filepath':   PathToTestFile( 'general_fallback', 'lang_c.c' ),
       'line_num':   71,
       'column_num': 18,
-      'extra_conf_data': { '&filetype': 'c' },
       'force_semantic': False,
     },
     'expect': {
@@ -475,7 +465,6 @@ def GetCompletions_ClangCLDriverExec_SimpleCompletion_test( app ):
 def GetCompletions_ClangCLDriverFlag_IncludeStatementCandidate_test( app ):
   RunTest( app, {
     'description': 'Completion inside include statement with CL driver',
-    'extra_conf': [ 'driver_mode_cl', 'flag', '.ycm_extra_conf.py' ],
     'request': {
       'filetype': 'cpp',
       'filepath': PathToTestFile( 'driver_mode_cl',
@@ -503,7 +492,6 @@ def GetCompletions_ClangCLDriverFlag_IncludeStatementCandidate_test( app ):
 def GetCompletions_ClangCLDriverExec_IncludeStatementCandidate_test( app ):
   RunTest( app, {
     'description': 'Completion inside include statement with CL driver',
-    'extra_conf': [ 'driver_mode_cl', 'executable', '.ycm_extra_conf.py' ],
     'request': {
       'filetype': 'cpp',
       'filepath': PathToTestFile( 'driver_mode_cl',
@@ -534,7 +522,6 @@ def GetCompletions_UnicodeInLine_test( app ):
       'filepath'  : PathToTestFile( 'unicode.cc' ),
       'line_num'  : 9,
       'column_num': 8,
-      'extra_conf_data': { '&filetype': 'cpp' },
     },
     'expect': {
       'response': requests.codes.ok,
@@ -558,7 +545,6 @@ def GetCompletions_UnicodeInLineFilter_test( app ):
       'filepath'  : PathToTestFile( 'unicode.cc' ),
       'line_num'  : 9,
       'column_num': 10,
-      'extra_conf_data': { '&filetype': 'cpp' },
     },
     'expect': {
       'response': requests.codes.ok,

@@ -24,14 +24,11 @@ from builtins import *  # noqa
 
 import functools
 import os
-import contextlib
-import json
 
 from hamcrest import ( assert_that )
 from nose.tools import eq_
 
 
-from ycmd.utils import ToUnicode
 from ycmd.tests.test_utils import ( BuildRequest,
                                     ClearCompletionsCache,
                                     CombineRequest,
@@ -111,40 +108,32 @@ def IsolatedYcmd( custom_options = {} ):
   return Decorator
 
 
-@contextlib.contextmanager
-def TemporaryClangProject( tmp_dir, compile_commands ):
-  """Context manager to create a compilation database in a directory and delete
-  it when the test completes. |tmp_dir| is the directory in which to create the
-  database file (typically used in conjunction with |TemporaryTestDir|) and
-  |compile_commands| is a python object representing the compilation database.
-
-  e.g.:
-    with TemporaryTestDir() as tmp_dir:
-      database = [
-        {
-          'directory': os.path.join( tmp_dir, dir ),
-          'command': compiler_invocation,
-          'file': os.path.join( tmp_dir, dir, filename )
-        },
-        ...
-      ]
-      with TemporaryClangProject( tmp_dir, database ):
-        <test here>
-
-  The context manager does not yield anything.
-  """
-  path = os.path.join( tmp_dir, 'compile_commands.json' )
-
-  with open( path, 'w' ) as f:
-    f.write( ToUnicode( json.dumps( compile_commands, indent=2 ) ) )
-
-  try:
-    yield
-  finally:
-    os.remove( path )
-
-
 def RunAfterInitialized( app, test ):
+  """Performs initialization of clangd server for the file contents specified in
+  the |test| and optionally can run a test and check for its response.
+  Since LSP servers do not start until initialization we need to send a
+  FileReadyToParse request prior to any other request we will make.
+
+  |test| consists of two parts a 'request' to be made and an optional 'expect'
+  to perform a check on server's response.
+  Request part must contain either a 'content' or 'filepath' element which
+  either contains or points to the source code that will be sent to the server.
+  In addition to that, if |test| also contain a 'route' element, then a
+  follow-up request will be made to the server, with the same file contents and
+  response of that request will be returned.
+  Expect part, if specified, must contain two elements named 'response' and
+  'data' which are used to check status code and data of the result received
+  from server before returning them to the caller.
+
+  Example usage:
+    filepath = PathToTestFile( 'foo.cc' )
+    request = { 'filepath': filepath,
+                'filetype': 'cpp' }
+
+    test = { 'request': request }
+    RunAfterInitialized( app, test )
+    ...
+  """
   request = test[ 'request' ]
   contents = ( request[ 'contents' ] if 'contents' in request else
                ReadFile( request[ 'filepath' ] ) )

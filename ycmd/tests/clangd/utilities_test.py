@@ -70,6 +70,8 @@ def ClangdCompleter_GetClangdCommand_test():
       eq_( clangd_completer.GetClangdCommand( user_options ), EXPECTED )
       os_path_isfile.assert_called()
       os_access.assert_called()
+      # Clear cache.
+      del user_options[ 'clangd_command' ]
 
       ARGS = [ 'a', 'b' ]
       user_options[ 'clangd_args' ] = ARGS
@@ -77,6 +79,10 @@ def ClangdCompleter_GetClangdCommand_test():
       eq_( clangd_completer.GetClangdCommand( user_options ), EXPECTED )
       os_path_isfile.assert_called()
       os_access.assert_called()
+
+      # Check caching works.
+      del user_options[ 'clangd_args' ]
+      eq_( clangd_completer.GetClangdCommand( user_options ), EXPECTED )
 
 
   with patch( 'os.path.isfile', return_value=False ) as os_path_isfile:
@@ -120,8 +126,8 @@ def ClangdCompleter_GetVersion_test( mock_popen ):
 @IsolatedYcmd()
 def ClangdCompleter_ShutdownFail_test( app ):
   completer = handlers._server_state.GetFiletypeCompleter( [ 'cpp' ] )
-  with patch.object( completer, 'ShutdownServer', side_effect = Exception ) as \
-      shutdown_server:
+  with patch.object( completer, 'ShutdownServer',
+                     side_effect = Exception ) as shutdown_server:
     completer._server_handle = MockPopen()
     with patch.object( completer, 'ServerIsHealthy', return_value = True ):
       completer.Shutdown()
