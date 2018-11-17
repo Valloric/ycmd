@@ -1,2 +1,0 @@
-# This is just to have a persistent third_party/clangd directory so that tests
-# will pass on systems that don't need to download clangd.

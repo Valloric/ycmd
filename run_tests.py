@@ -56,7 +56,7 @@ COMPLETERS = {
   'clangd': {
     'build': [ '--clangd-completer' ],
     'test': [ '--exclude-dir=ycmd/tests/clangd' ],
-    'aliases': [ 'clangd' ]
+    'aliases': []
   },
   'cs': {
     'build': [ '--cs-completer' ],

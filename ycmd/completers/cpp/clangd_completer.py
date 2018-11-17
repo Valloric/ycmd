@@ -36,6 +36,7 @@ from ycmd.completers.language_server import language_server_protocol as lsp
 _logger = logging.getLogger( __name__ )
 LLVM_RELEASE = '7.0.0'
 INCLUDE_REGEX = re.compile( '(\s*#\s*(?:include|import)\s*)(:?"[^"]*|<[^>]*)' )
+USES_YCMD_CACHING = 'clangd_uses_ycmd_caching'
 
 
 def DistanceOfPointToRange( point, range ):
@@ -79,6 +80,8 @@ def GetClangdCommand( user_options ):
   Use 'clangd_binary_path' option, if specified.
   Otherwise fall back to binaries reachable through PATH or pre-built ones.
   Return None if no binary exists or it is out of date. """
+  if 'clangd_command' in user_options:
+    return user_options[ 'clangd_command' ]
   RESOURCE_DIR = None
   if user_options.get( 'clangd_binary_path' ):
     INSTALLED_CLANGD = user_options[ 'clangd_binary_path' ]
@@ -119,19 +122,21 @@ def GetClangdCommand( user_options ):
     CLANGD_COMMAND = [ INSTALLED_CLANGD ]
     if RESOURCE_DIR:
       CLANGD_COMMAND.append( '-resource-dir=' + RESOURCE_DIR )
-    if user_options.get( 'clangd_uses_ycmd_caching', True ):
-      CLANGD_COMMAND.append( '-limit-results=0' )
+    if user_options.get( USES_YCMD_CACHING, True ):
+      CLANGD_COMMAND.append( '-limit-results=500' )
     clangd_args = user_options.get( 'clangd_args' )
     if clangd_args is not None:
       CLANGD_COMMAND.extend( clangd_args )
+    user_options[ 'clangd_command' ] = CLANGD_COMMAND
     return CLANGD_COMMAND
 
   _logger.warning( INSTALLED_CLANGD + ' does not exist or is not accessible.' )
+  user_options[ 'clangd_command' ] = None
   return None
 
 
 def ShouldEnableClangdCompleter( user_options ):
-  if 'use_clangd' not in user_options or not user_options[ 'use_clangd' ]:
+  if not user_options.get( 'use_clangd', False ):
     return False
 
   clangd_command = GetClangdCommand( user_options )
@@ -157,12 +162,12 @@ class ClangdCompleter( language_server_completer.LanguageServerCompleter ):
     # Used to ensure that starting/stopping of the server is synchronized.
     # Guards _connection and _server_handle.
     self._server_state_mutex = threading.RLock()
-    self._clangd_command = GetClangdCommand( user_options )
+    self._clangd_command = user_options.get( 'clangd_command',
+                                             GetClangdCommand( user_options ) )
 
     self._Reset()
     self._auto_trigger = user_options[ 'auto_trigger' ]
-    self._use_ycmd_caching = user_options.get( 'clangd_uses_ycmd_caching',
-                                               True )
+    self._use_ycmd_caching = user_options.get( USES_YCMD_CACHING, True )
     self._stderr_file = None
 
 
@@ -186,9 +191,13 @@ class ClangdCompleter( language_server_completer.LanguageServerCompleter ):
         executable = self._clangd_command
       )
       if self._stderr_file:
-        clangd.logfiles = [ self._stderr_file.name ]
+        clangd.logfiles = [ self._stderr_file ]
       return responses.BuildDebugInfoResponse( name = 'clangd',
                                                servers = [ clangd ] )
+
+
+  def Language( self ):
+    return 'cpp'
 
 
   def SupportedFiletypes( self ):
@@ -244,11 +253,6 @@ class ClangdCompleter( language_server_completer.LanguageServerCompleter ):
     }
 
 
-  def OnFileReadyToParse( self, request_data ):
-    self._StartServerIfNotRunning( request_data )
-    return super( ClangdCompleter, self ).OnFileReadyToParse( request_data )
-
-
   def HandleServerCommand( self, request_data, command ):
     if command[ 'command' ] == 'clangd.applyFix':
       return language_server_completer.WorkspaceEditToFixIt(
@@ -300,7 +304,7 @@ class ClangdCompleter( language_server_completer.LanguageServerCompleter ):
       return utils.ProcessIsRunning( self._server_handle )
 
 
-  def _StartServerIfNotRunning( self, request_data ):
+  def StartServer( self, request_data ):
     with self._server_state_mutex:
       if self.ServerIsHealthy():
         return
@@ -351,7 +355,7 @@ class ClangdCompleter( language_server_completer.LanguageServerCompleter ):
         self._Reset()
         return
 
-      _logger.info( 'Stopping cland with PID {0}'.format(
+      _logger.info( 'Stopping clangd with PID {0}'.format(
                         self._server_handle.pid ) )
 
       try:
@@ -379,6 +383,7 @@ class ClangdCompleter( language_server_completer.LanguageServerCompleter ):
       # Tidy up our internal state, even if the completer server didn't close
       # down cleanly.
       self._Reset()
+
 
   def GetDetailedDiagnostic( self, request_data ):
     self._UpdateServerWithFileContents( request_data )

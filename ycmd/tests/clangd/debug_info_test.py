@@ -1,5 +1,5 @@
 # Copyright (C) 2011-2012 Google Inc.
-#               2017      ycmd contributors
+#               2018      ycmd contributors
 #
 # This file is part of ycmd.
 #
@@ -27,12 +27,13 @@ import os
 from hamcrest import ( assert_that, contains, empty, has_entries, has_entry )
 
 from ycmd.tests.clangd import ( IsolatedYcmd, PathToTestFile, SharedYcmd,
-                               TemporaryClangProject )
-from ycmd.tests.test_utils import BuildRequest, TemporaryTestDir
+                                RunAfterInitialized )
+from ycmd.tests.test_utils import ( BuildRequest, TemporaryTestDir,
+                                    TemporaryClangProject )
 
 
 @SharedYcmd
-def DebugInfo_FlagsWhenNoCompilationDatabase_test( app ):
+def DebugInfo_NotInitialized_test( app ):
   request_data = BuildRequest( filepath = PathToTestFile( 'basic.cpp' ),
                                filetype = 'cpp' )
   assert_that(
@@ -50,7 +51,26 @@ def DebugInfo_FlagsWhenNoCompilationDatabase_test( app ):
 
 
 @IsolatedYcmd()
-def DebugInfo_FlagsWhenCompilationDatabaseLoaded_test( app ):
+def DebugInfo_NoCompilationDatabase_test( app ):
+  request_data = BuildRequest( filepath = PathToTestFile( 'basic.cpp' ),
+                               filetype = 'cpp' )
+  test = { 'request': request_data }
+  RunAfterInitialized( app, test )
+  assert_that(
+    app.post_json( '/debug_info', request_data ).json,
+    has_entry( 'completer', has_entries( {
+      'name': 'clangd',
+      'servers': contains( has_entries( {
+          'name': 'clangd',
+          'is_running': True
+      } ) ),
+      'items': empty()
+    } ) )
+  )
+
+
+@IsolatedYcmd()
+def DebugInfo_WithCompilationDatabase_test( app ):
   with TemporaryTestDir() as tmp_dir:
     compile_commands = [
       {
@@ -63,6 +83,9 @@ def DebugInfo_FlagsWhenCompilationDatabaseLoaded_test( app ):
       request_data = BuildRequest(
         filepath = os.path.join( tmp_dir, 'test.cc' ),
         filetype = 'cpp' )
+      request_data[ 'contents' ] = 'int main(){ return 0; }'
+      test = { 'request': request_data }
+      RunAfterInitialized( app, test )
 
       assert_that(
         app.post_json( '/debug_info', request_data ).json,
@@ -70,8 +93,7 @@ def DebugInfo_FlagsWhenCompilationDatabaseLoaded_test( app ):
           'name': 'clangd',
           'servers': contains( has_entries( {
               'name': 'clangd',
-              'pid': None,
-              'is_running': False
+              'is_running': True
           } ) ),
           'items': empty()
         } ) )
