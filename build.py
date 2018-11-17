@@ -139,6 +139,10 @@ def OnArm():
   return platform.machine().lower().startswith('arm')
 
 
+def OnX86_64():
+  return platform.machine().lower().startswith( 'x86_64' )
+
+
 def OnCiService():
   return 'CI' in os.environ
 
@@ -788,37 +792,36 @@ def DownloadClangd():
   is_64_bit = sys.maxsize > 2**32
   if OnWindows():
     if is_64_bit:
-      dir_name = 'clangd-{LLVM_RELEASE}-win64'
+      target_name = 'clangd-{LLVM_RELEASE}-win64'
       check_sum = '2486670cb84c3ea9e9ab3409ebd940ed2c9ddee75adab4745d89df19d029fa54'
     else:
-      dir_name = 'clangd-{LLVM_RELEASE}-win32'
+      target_name = 'clangd-{LLVM_RELEASE}-win32'
       check_sum = '533359bb236df7de9f04d6efe3de74a3a6d56f2e1a9154733c076c252d657806'
   elif OnMac():
-    dir_name = 'clangd-{LLVM_RELEASE}-x86_64-apple-darwin'
+    target_name = 'clangd-{LLVM_RELEASE}-x86_64-apple-darwin'
     check_sum = '22431c42404a85c5d0a91b2e3683db08ab8f434c652ec9da2ceb4f168f711579'
   elif OnFreeBSD():
     if is_64_bit:
-      dir_name = 'clangd-{LLVM_RELEASE}-amd64-unknown-freebsd11'
+      target_name = 'clangd-{LLVM_RELEASE}-amd64-unknown-freebsd11'
       check_sum = '33d4d399605fce59c80f41bc53cf5fb0f552342c1698d9e6001c9b4edfbbd68c'
     else:
-      dir_name = 'clangd-{LLVM_RELEASE}-i386-unknown-freebsd11'
+      target_name = 'clangd-{LLVM_RELEASE}-i386-unknown-freebsd11'
       check_sum = '5593e66c6d3e374b0e41b426685d5fd1b50d44ad6301f0148612dc30aa12924a'
   elif OnAArch64():
-    dir_name = 'clangd-{LLVM_RELEASE}-aarch64-linux-gnu'
+    target_name = 'clangd-{LLVM_RELEASE}-aarch64-linux-gnu'
     check_sum = 'a5a12adc8685754aa1a717fd57d5031805f66d853e1a6fabd5c7f235565cb33a'
   elif OnArm():
-    dir_name = 'clangd-{LLVM_RELEASE}-armv7a-linux-gnueabihf'
+    target_name = 'clangd-{LLVM_RELEASE}-armv7a-linux-gnueabihf'
     check_sum = 'c776f19f0fd60e5cda550fc862a1c17cc8b1d917d6732931044e72694a824dab'
+  elif OnX86_64():
+    target_name = 'clangd-{LLVM_RELEASE}-x86_64-unknown-linux-gnu'
+    check_sum = '5db646bf789eb5b331ce41275d0575f6f4683921469e33bfaf35f84af72947a8'
   else:
-    if is_64_bit:
-      dir_name = 'clangd-{LLVM_RELEASE}-x86_64-unknown-linux-gnu'
-      check_sum = '5db646bf789eb5b331ce41275d0575f6f4683921469e33bfaf35f84af72947a8'
-    else:
-      print( 'No binaries for 32 bit linux, please compile it from source.' )
-      return False
+    print( 'No binaries for your system, please compile it from source.' )
+    return False
 
-  dir_name = dir_name.format( LLVM_RELEASE = LLVM_RELEASE )
-  file_name = '{DIR_NAME}.tar.bz2'.format( DIR_NAME = dir_name )
+  target_name = target_name.format( LLVM_RELEASE = LLVM_RELEASE )
+  file_name = '{TARGET_NAME}.tar.bz2'.format( TARGET_NAME = target_name )
   download_url = 'https://dl.bintray.com/micbou/clangd/{FILE_NAME}'.format(
       FILE_NAME = file_name )
 
@@ -848,23 +851,19 @@ def DownloadClangd():
 
 
 def EnableClangdCompleter( Args ):
-  ShouldPrint = not Args.quiet
-
-  if not ShouldPrint:
+  if Args.quiet:
     sys.stdout.write( 'Checking for clangd binary...' )
     sys.stdout.flush()
 
   CLANGD_COMMAND = GetClangdCommand( {} )
   if not CLANGD_COMMAND:
-    if ShouldPrint:
+    if not Args.quiet:
       print( "Clangd not found on the path, trying to download it." )
     if not DownloadClangd():
-      print( "FAIL: Couldn't download clangd." )
-      return False
+      raise Exception( "FAIL: Couldn't download clangd." )
 
-  if not ShouldPrint:
+  if Args.quiet:
     print( 'OK' )
-  return True
 
 
 def WritePythonUsedDuringBuild():
