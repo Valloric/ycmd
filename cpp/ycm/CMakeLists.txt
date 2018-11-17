@@ -66,7 +66,7 @@ if ( USE_CLANG_COMPLETER AND
     set( LIBCLANG_DIRNAME "libclang-${CLANG_VERSION}-armv7a-linux-gnueabihf" )
     set( LIBCLANG_SHA256
          "2b3fd40630e9edc20da868a1e12aedef18bf244fddda20b6ed04809adacd00ca" )
-  else( CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86.*|X86.*|amd64.*|AMD64.*)" )
+  elseif ( CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86.*|X86.*|amd64.*|AMD64.*)" )
     if ( 64_BIT_PLATFORM )
       set( LIBCLANG_DIRNAME
            "libclang-${CLANG_VERSION}-x86_64-unknown-linux-gnu" )
