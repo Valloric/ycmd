@@ -92,39 +92,6 @@ def IsolatedYcmd( custom_options = {} ):
   return Decorator
 
 
-@contextlib.contextmanager
-def TemporaryClangProject( tmp_dir, compile_commands ):
-  """Context manager to create a compilation database in a directory and delete
-  it when the test completes. |tmp_dir| is the directory in which to create the
-  database file (typically used in conjunction with |TemporaryTestDir|) and
-  |compile_commands| is a python object representing the compilation database.
-
-  e.g.:
-    with TemporaryTestDir() as tmp_dir:
-      database = [
-        {
-          'directory': os.path.join( tmp_dir, dir ),
-          'command': compiler_invocation,
-          'file': os.path.join( tmp_dir, dir, filename )
-        },
-        ...
-      ]
-      with TemporaryClangProject( tmp_dir, database ):
-        <test here>
-
-  The context manager does not yield anything.
-  """
-  path = os.path.join( tmp_dir, 'compile_commands.json' )
-
-  with open( path, 'w' ) as f:
-    f.write( ToUnicode( json.dumps( compile_commands, indent=2 ) ) )
-
-  try:
-    yield
-  finally:
-    os.remove( path )
-
-
 # A mock of ycm_core.ClangCompleter with translation units still being parsed.
 class MockCoreClangCompleter( object ):
 
