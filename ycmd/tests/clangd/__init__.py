@@ -54,6 +54,7 @@ def setUpPackage():
   global shared_app
 
   user_options_with_clangd = { 'use_clangd': True }
+  user_options_with_clangd.update( { 'confirm_extra_conf': 0 } )
   shared_app = SetUpApp( user_options_with_clangd )
 
 
@@ -99,6 +100,7 @@ def IsolatedYcmd( custom_options = {} ):
     @functools.wraps( test )
     def Wrapper( *args, **kwargs ):
       custom_options.update( { 'use_clangd': True } )
+      custom_options.update( { 'confirm_extra_conf': 0 } )
       with IsolatedApp( custom_options ) as app:
         test( app, *args, **kwargs )
         app.post_json( '/run_completer_command',
