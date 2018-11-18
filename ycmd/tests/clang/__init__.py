@@ -24,11 +24,7 @@ from builtins import *  # noqa
 
 import functools
 import os
-import contextlib
-import json
 
-
-from ycmd.utils import ToUnicode
 from ycmd.tests.test_utils import ( ClearCompletionsCache,
                                     IsolatedApp,
                                     SetUpApp )

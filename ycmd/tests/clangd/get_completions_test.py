@@ -31,7 +31,7 @@ from nose.tools import eq_
 from hamcrest import ( assert_that, contains, contains_inanyorder, empty,
                        has_item, has_items, has_entries )
 
-from ycmd.completers.cpp.clangd_completer import LLVM_RELEASE
+from ycmd.completers.cpp.clangd_completer import GetVersion, GetClangdCommand
 from ycmd.tests.clangd import ( IsolatedYcmd,
                                 PathToTestFile,
                                 RunAfterInitialized,
@@ -47,8 +47,8 @@ try:
   from unittest import skipIf
 except ImportError:
   from unittest2 import skipIf
-Clangd8Only = skipIf( LLVM_RELEASE == '7.0.0', 'Include completion is not '
-                      'implemented in LLVM 7.0.0' )
+Clangd8Only = skipIf( GetVersion( GetClangdCommand( {} )[ 0 ] ) == '7.0.0',
+                      'Include completion is not implemented in LLVM 7.0.0' )
 
 
 def RunTest( app, test ):
