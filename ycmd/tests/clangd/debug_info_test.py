@@ -51,7 +51,7 @@ def DebugInfo_NotInitialized_test( app ):
 
 
 @IsolatedYcmd()
-def DebugInfo_NoCompilationDatabase_test( app ):
+def DebugInfo_Initialized_test( app ):
   request_data = BuildRequest( filepath = PathToTestFile( 'basic.cpp' ),
                                filetype = 'cpp' )
   test = { 'request': request_data }
@@ -67,34 +67,3 @@ def DebugInfo_NoCompilationDatabase_test( app ):
       'items': empty()
     } ) )
   )
-
-
-@IsolatedYcmd()
-def DebugInfo_WithCompilationDatabase_test( app ):
-  with TemporaryTestDir() as tmp_dir:
-    compile_commands = [
-      {
-        'directory': tmp_dir,
-        'command': 'clang++ -I. -I/absolute/path -Wall',
-        'file': os.path.join( tmp_dir, 'test.cc' ),
-      },
-    ]
-    with TemporaryClangProject( tmp_dir, compile_commands ):
-      request_data = BuildRequest(
-        filepath = os.path.join( tmp_dir, 'test.cc' ),
-        filetype = 'cpp' )
-      request_data[ 'contents' ] = 'int main(){ return 0; }'
-      test = { 'request': request_data }
-      RunAfterInitialized( app, test )
-
-      assert_that(
-        app.post_json( '/debug_info', request_data ).json,
-        has_entry( 'completer', has_entries( {
-          'name': 'clangd',
-          'servers': contains( has_entries( {
-              'name': 'clangd',
-              'is_running': True
-          } ) ),
-          'items': empty()
-        } ) )
-      )

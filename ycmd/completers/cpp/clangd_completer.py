@@ -34,7 +34,7 @@ from ycmd.completers.language_server import language_server_completer
 from ycmd.completers.language_server import language_server_protocol as lsp
 
 _logger = logging.getLogger( __name__ )
-LLVM_RELEASE = '7.0.0'
+MIN_SUPPORTED_VERSION = '7.0.0'
 INCLUDE_REGEX = re.compile( '(\s*#\s*(?:include|import)\s*)(:?"[^"]*|<[^>]*)' )
 USES_YCMD_CACHING = 'clangd_uses_ycmd_caching'
 
@@ -90,7 +90,7 @@ def GetClangdCommand( user_options ):
     if INSTALLED_CLANGD:
       version = GetVersion( INSTALLED_CLANGD )
       # If version is None it means we have a custom build, respect that.
-      if version and version < LLVM_RELEASE:
+      if version and version < MIN_SUPPORTED_VERSION:
         # Installed clangd has an unsupported version, try to use built-in
         # binary.
         INSTALLED_CLANGD = None
