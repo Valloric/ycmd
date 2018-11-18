@@ -35,7 +35,8 @@ from ycmd.completers.language_server import language_server_protocol as lsp
 
 _logger = logging.getLogger( __name__ )
 MIN_SUPPORTED_VERSION = '7.0.0'
-INCLUDE_REGEX = re.compile( '(\s*#\s*(?:include|import)\s*)(:?"[^"]*|<[^>]*)' )
+INCLUDE_REGEX = re.compile(
+  '(\\s*#\\s*(?:include|import)\\s*)(?:"[^"]*|<[^>]*)' )
 USES_YCMD_CACHING = 'clangd_uses_ycmd_caching'
 
 
