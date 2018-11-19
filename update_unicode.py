@@ -33,8 +33,14 @@ from collections import defaultdict, OrderedDict
 DIR_OF_THIS_SCRIPT = os.path.dirname( os.path.abspath( __file__ ) )
 DIR_OF_THIRD_PARTY = os.path.join( DIR_OF_THIS_SCRIPT, 'third_party' )
 
-sys.path.insert( 1, os.path.abspath( os.path.join( DIR_OF_THIRD_PARTY,
-                                                   'requests' ) ) )
+sys.path[ 0:0 ] = [ p.join( DIR_OF_THIRD_PARTY, 'requests' ),
+                    p.join( DIR_OF_THIRD_PARTY,
+                            'requests_deps',
+                            'urllib3',
+                            'src' ),
+                    p.join( DIR_OF_THIRD_PARTY, 'requests_deps', 'chardet' ),
+                    p.join( DIR_OF_THIRD_PARTY, 'requests_deps', 'certifi' ),
+                    p.join( DIR_OF_THIRD_PARTY, 'requests_deps', 'idna' ) ]
 
 import requests
 
