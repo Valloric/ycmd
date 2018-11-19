@@ -165,11 +165,11 @@ class ClangdCompleter( language_server_completer.LanguageServerCompleter ):
     self._server_state_mutex = threading.RLock()
     self._clangd_command = user_options.get( 'clangd_command',
                                              GetClangdCommand( user_options ) )
+    self._stderr_file = None
 
     self._Reset()
     self._auto_trigger = user_options[ 'auto_trigger' ]
     self._use_ycmd_caching = user_options.get( USES_YCMD_CACHING, True )
-    self._stderr_file = None
 
 
   def _Reset( self ):
@@ -177,6 +177,9 @@ class ClangdCompleter( language_server_completer.LanguageServerCompleter ):
       self.ServerReset() # Cleanup subclass internal states.
       self._connection = None
       self._server_handle = None
+      if self._stderr_file is not None:
+        utils.RemoveIfExists( self._stderr_file )
+        self._stderr_file = None
 
 
   def GetConnection( self ):
