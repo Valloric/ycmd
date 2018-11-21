@@ -26,9 +26,20 @@ except:
   from backports import lzma
 
 DIR_OF_THIS_SCRIPT = p.dirname( p.abspath( __file__ ) )
-sys.path.insert( 0, os.path.join( DIR_OF_THIS_SCRIPT, 'ycmd' ) )
-from ycmd import server_utils
-server_utils.SetUpPythonPath()
+DIR_OF_THIRD_PARTY = p.join( DIR_OF_THIS_SCRIPT, 'third_party' )
+
+
+def GetStandardLibraryIndexInSysPath():
+  for index, path in enumerate( sys.path ):
+    if p.isfile( p.join( path, 'os.py' ) ):
+      return index
+  raise RuntimeError( 'Could not find standard library path in Python path.' )
+
+
+sys.path.insert( 0, p.abspath( p.join( DIR_OF_THIRD_PARTY, 'requests' ) ) )
+sys.path.insert( GetStandardLibraryIndexInSysPath() + 1,
+                 p.abspath( p.join( DIR_OF_THIRD_PARTY, 'python-future',
+                                    'src' ) ) )
 
 # Not installing aliases from python-future; it's unreliable and slow.
 from builtins import *  # noqa
