@@ -32,6 +32,7 @@ from nose.tools import eq_
 from ycmd.tests.test_utils import ( BuildRequest,
                                     ClearCompletionsCache,
                                     CombineRequest,
+                                    IgnoreExtraConfOutsideTestsFolder,
                                     IsolatedApp,
                                     SetUpApp,
                                     StopCompleterServer,
@@ -54,7 +55,6 @@ def setUpPackage():
   global shared_app
 
   user_options_with_clangd = { 'use_clangd': True }
-  user_options_with_clangd.update( { 'confirm_extra_conf': 0 } )
   shared_app = SetUpApp( user_options_with_clangd )
 
 
@@ -74,7 +74,8 @@ def SharedYcmd( test ):
   @functools.wraps( test )
   def Wrapper( *args, **kwargs ):
     ClearCompletionsCache()
-    return test( shared_app, *args, **kwargs )
+    with IgnoreExtraConfOutsideTestsFolder():
+      return test( shared_app, *args, **kwargs )
   return Wrapper
 
 
@@ -100,12 +101,12 @@ def IsolatedYcmd( custom_options = {} ):
     @functools.wraps( test )
     def Wrapper( *args, **kwargs ):
       custom_options.update( { 'use_clangd': True } )
-      custom_options.update( { 'confirm_extra_conf': 0 } )
-      with IsolatedApp( custom_options ) as app:
-        test( app, *args, **kwargs )
-        app.post_json( '/run_completer_command',
-                        BuildRequest( completer_target = 'cpp',
-                                      command_arguments = [ 'StopServer' ] ) )
+      with IgnoreExtraConfOutsideTestsFolder():
+        with IsolatedApp( custom_options ) as app:
+          test( app, *args, **kwargs )
+          app.post_json( '/run_completer_command',
+                          BuildRequest( completer_target = 'cpp',
+                                        command_arguments = [ 'StopServer' ] ) )
     return Wrapper
   return Decorator
 
