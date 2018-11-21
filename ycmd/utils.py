@@ -25,7 +25,11 @@ from __future__ import absolute_import
 from builtins import *  # noqa
 
 from future.utils import PY2, native
-import collections
+try:
+  from collections.abc import Mapping
+except ImportError: # pragma: no cover
+  # Python < 3.3
+  from collections import Mapping # noqa
 import copy
 import json
 import logging
@@ -496,7 +500,7 @@ def StartThread( func, *args ):
   return thread
 
 
-class HashableDict( collections.Mapping ):
+class HashableDict( Mapping ):
   """An immutable dictionary that can be used in dictionary's keys. The
   dictionary must be JSON-encodable; in particular, all keys must be strings."""
 
