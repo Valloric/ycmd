@@ -201,7 +201,7 @@ class ClangdCompleter( language_server_completer.LanguageServerCompleter ):
 
 
   def Language( self ):
-    return 'cpp'
+    return 'cfamily'
 
 
   def SupportedFiletypes( self ):
