@@ -75,6 +75,15 @@ def GetVersion( clangd_path ):
   return version
 
 
+def CheckClangdVersion( clangd_path ):
+  if not clangd_path:
+    return False
+  version = GetVersion( clangd_path )
+  if version and version < MIN_SUPPORTED_VERSION:
+    return False
+  return True
+
+
 def GetClangdCommand( user_options ):
   """Get commands to run clangd.
 
@@ -82,9 +91,15 @@ def GetClangdCommand( user_options ):
   Return None if no binary exists or it is out of date. """
   if 'clangd_command' in user_options:
     return user_options[ 'clangd_command' ]
+  user_options[ 'clangd_command' ] = None
+
   RESOURCE_DIR = None
   INSTALLED_CLANGD = utils.FindExecutable( 'clangd' ) # Look ath $PATH first.
-  if not INSTALLED_CLANGD:
+  if not CheckClangdVersion( INSTALLED_CLANGD ):
+    # Either no clangd on $PATH or it has an unsupported version, try to use
+    # built-in binary.
+    _logger.warning( 'Either your system does not have a clangd or it is '
+                     'out-of-date, trying to use pre-built version.' )
     # Try looking for the pre-built binary.
     INSTALLED_CLANGD = os.path.abspath( os.path.join(
       os.path.dirname( __file__ ),
@@ -96,6 +111,18 @@ def GetClangdCommand( user_options ):
       'output',
       'bin',
       'clangd' ) )
+    if not os.path.isfile( INSTALLED_CLANGD ):
+      _logger.fatal( 'Could not find pre-built binary, please make sure you '
+                     'installed clangd during the installation of ycmd.' )
+      return None
+    if not os.access( INSTALLED_CLANGD, os.X_OK ):
+      _logger.fatal( 'clangd binary at {0} does not have the executable flag.'
+                     .format( INSTALLED_CLANGD ) )
+      return None
+    if not CheckClangdVersion( INSTALLED_CLANGD ):
+      _logger.fatal( 'clangd binary at {0} is out-of-date please update.'
+                     .format( INSTALLED_CLANGD ) )
+      return None
     RESOURCE_DIR = os.path.abspath( os.path.join(
       os.path.dirname( __file__ ),
       '..',
@@ -103,33 +130,18 @@ def GetClangdCommand( user_options ):
       '..',
       'clang_includes' ) )
 
-  if ( os.path.isfile( INSTALLED_CLANGD ) and os.access(
-      INSTALLED_CLANGD, os.X_OK ) ):
-    version = GetVersion( INSTALLED_CLANGD )
-    # If version is None it means we have a custom build, respect that.
-    if version and version < MIN_SUPPORTED_VERSION:
-      # Installed clangd has an unsupported version, try to use built-in
-      # binary.
-      INSTALLED_CLANGD = None
-      _logger.warning( 'Your system has a clangd installed with '
-                       'llvm-{version}, which is not supported. Please update'
-                       ' your clangd binary.'.format( version=version ) )
-      return None
+  # We have a clangd binary that is executable and up-to-date at this point.
+  CLANGD_COMMAND = [ INSTALLED_CLANGD ]
+  if RESOURCE_DIR:
+    CLANGD_COMMAND.append( '-resource-dir=' + RESOURCE_DIR )
+  if user_options.get( USES_YCMD_CACHING, True ):
+    CLANGD_COMMAND.append( '-limit-results=500' )
+  clangd_args = user_options.get( 'clangd_args' )
+  if clangd_args is not None:
+    CLANGD_COMMAND.extend( clangd_args )
 
-    CLANGD_COMMAND = [ INSTALLED_CLANGD ]
-    if RESOURCE_DIR:
-      CLANGD_COMMAND.append( '-resource-dir=' + RESOURCE_DIR )
-    if user_options.get( USES_YCMD_CACHING, True ):
-      CLANGD_COMMAND.append( '-limit-results=500' )
-    clangd_args = user_options.get( 'clangd_args' )
-    if clangd_args is not None:
-      CLANGD_COMMAND.extend( clangd_args )
-    user_options[ 'clangd_command' ] = CLANGD_COMMAND
-    return CLANGD_COMMAND
-
-  _logger.warning( INSTALLED_CLANGD + ' does not exist or is not accessible.' )
-  user_options[ 'clangd_command' ] = None
-  return None
+  user_options[ 'clangd_command' ] = CLANGD_COMMAND
+  return CLANGD_COMMAND
 
 
 def ShouldEnableClangdCompleter( user_options ):
