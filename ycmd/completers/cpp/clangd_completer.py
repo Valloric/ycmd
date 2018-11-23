@@ -78,48 +78,44 @@ def GetVersion( clangd_path ):
 def GetClangdCommand( user_options ):
   """Get commands to run clangd.
 
-  Use 'clangd_binary_path' option, if specified.
-  Otherwise fall back to binaries reachable through PATH or pre-built ones.
+  Look through binaries reachable through PATH or pre-built ones.
   Return None if no binary exists or it is out of date. """
   if 'clangd_command' in user_options:
     return user_options[ 'clangd_command' ]
   RESOURCE_DIR = None
-  if user_options.get( 'clangd_binary_path' ):
-    INSTALLED_CLANGD = user_options[ 'clangd_binary_path' ]
-  else:
-    INSTALLED_CLANGD = utils.FindExecutable( 'clangd' )
-    if INSTALLED_CLANGD:
-      version = GetVersion( INSTALLED_CLANGD )
-      # If version is None it means we have a custom build, respect that.
-      if version and version < MIN_SUPPORTED_VERSION:
-        # Installed clangd has an unsupported version, try to use built-in
-        # binary.
-        INSTALLED_CLANGD = None
-        _logger.warning( 'Your system has a clangd installed with '
-                         'llvm-{version}, which is not supported. Please update'
-                         ' your clangd binary. Trying to use pre-built binary.'
-                         .format( version=version ) )
-    if not INSTALLED_CLANGD:
-      # Try looking for the pre-built binary.
-      INSTALLED_CLANGD = os.path.abspath( os.path.join(
-        os.path.dirname( __file__ ),
-        '..',
-        '..',
-        '..',
-        'third_party',
-        'clangd',
-        'output',
-        'bin',
-        'clangd' ) )
-      RESOURCE_DIR = os.path.abspath( os.path.join(
-        os.path.dirname( __file__ ),
-        '..',
-        '..',
-        '..',
-        'clang_includes' ) )
+  INSTALLED_CLANGD = utils.FindExecutable( 'clangd' ) # Look ath $PATH first.
+  if not INSTALLED_CLANGD:
+    # Try looking for the pre-built binary.
+    INSTALLED_CLANGD = os.path.abspath( os.path.join(
+      os.path.dirname( __file__ ),
+      '..',
+      '..',
+      '..',
+      'third_party',
+      'clangd',
+      'output',
+      'bin',
+      'clangd' ) )
+    RESOURCE_DIR = os.path.abspath( os.path.join(
+      os.path.dirname( __file__ ),
+      '..',
+      '..',
+      '..',
+      'clang_includes' ) )
 
   if ( os.path.isfile( INSTALLED_CLANGD ) and os.access(
       INSTALLED_CLANGD, os.X_OK ) ):
+    version = GetVersion( INSTALLED_CLANGD )
+    # If version is None it means we have a custom build, respect that.
+    if version and version < MIN_SUPPORTED_VERSION:
+      # Installed clangd has an unsupported version, try to use built-in
+      # binary.
+      INSTALLED_CLANGD = None
+      _logger.warning( 'Your system has a clangd installed with '
+                       'llvm-{version}, which is not supported. Please update'
+                       ' your clangd binary.'.format( version=version ) )
+      return None
+
     CLANGD_COMMAND = [ INSTALLED_CLANGD ]
     if RESOURCE_DIR:
       CLANGD_COMMAND.append( '-resource-dir=' + RESOURCE_DIR )
