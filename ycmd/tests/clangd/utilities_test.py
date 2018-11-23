@@ -29,6 +29,8 @@ from ycmd import handlers
 from mock import patch
 from ycmd.tests.clangd import IsolatedYcmd
 
+import os
+
 
 def _TupleToLSPRange( tuple ):
   return { 'line': tuple[ 0 ], 'character': tuple[ 1 ] }
@@ -62,28 +64,32 @@ def ClangdCompleter_DistanceOfPointToRange_MultiLineRange_test():
 
 
 def ClangdCompleter_GetClangdCommand_test():
-  EXPECTED = [ 'test_path' ]
-  user_options = { 'clangd_binary_path': EXPECTED[ 0 ],
-                   'clangd_uses_ycmd_caching': False }
+  TEST_PATH = '/test'
+  EXPECTED = [ os.path.join( TEST_PATH, 'clangd' ) ]
+  old_path = os.environ[ 'PATH' ]
+  os.environ[ 'PATH' ] = TEST_PATH
+  user_options = { 'clangd_uses_ycmd_caching': False }
   with patch( 'os.path.isfile', return_value=True ) as os_path_isfile:
     with patch( 'os.access', return_value=True ) as os_access:
-      eq_( clangd_completer.GetClangdCommand( user_options ), EXPECTED )
-      os_path_isfile.assert_called()
-      os_access.assert_called()
-      # Clear cache.
-      del user_options[ 'clangd_command' ]
+      with patch( 'ycmd.completers.cpp.clangd_completer.GetVersion',
+                  return_value = None ):
+        eq_( clangd_completer.GetClangdCommand( user_options ), EXPECTED )
+        os_path_isfile.assert_called()
+        os_access.assert_called()
+        # Clear cache.
+        del user_options[ 'clangd_command' ]
 
-      ARGS = [ 'a', 'b' ]
-      user_options[ 'clangd_args' ] = ARGS
-      EXPECTED.extend( ARGS )
-      eq_( clangd_completer.GetClangdCommand( user_options ), EXPECTED )
-      os_path_isfile.assert_called()
-      os_access.assert_called()
+        ARGS = [ 'a', 'b' ]
+        user_options[ 'clangd_args' ] = ARGS
+        EXPECTED.extend( ARGS )
+        eq_( clangd_completer.GetClangdCommand( user_options ), EXPECTED )
+        os_path_isfile.assert_called()
+        os_access.assert_called()
 
-      # Check caching works.
-      del user_options[ 'clangd_args' ]
-      eq_( clangd_completer.GetClangdCommand( user_options ), EXPECTED )
-
+        # Check caching works.
+        del user_options[ 'clangd_args' ]
+        eq_( clangd_completer.GetClangdCommand( user_options ), EXPECTED )
+  os.environ[ 'PATH' ] = old_path
 
   with patch( 'os.path.isfile', return_value=False ) as os_path_isfile:
     eq_( clangd_completer.GetClangdCommand( {} ), None )
@@ -91,11 +97,14 @@ def ClangdCompleter_GetClangdCommand_test():
 
 
 def ClangdCompleter_ShouldEnableClangdCompleter_test():
-  user_options = { 'clangd_binary_path': 'test_path' }
-  eq_( clangd_completer.ShouldEnableClangdCompleter( user_options ), False )
+  user_options = {}
 
   user_options[ 'use_clangd' ] = False
   eq_( clangd_completer.ShouldEnableClangdCompleter( user_options ), False )
+
+  user_options = { 'use_clangd': True }
+  # Finds the one in third_party
+  eq_( clangd_completer.ShouldEnableClangdCompleter( user_options ), True )
 
   user_options = { 'use_clangd': True }
   with patch(
@@ -103,9 +112,6 @@ def ClangdCompleter_ShouldEnableClangdCompleter_test():
       return_value = None ) as find_clangd_binary:
     eq_( clangd_completer.ShouldEnableClangdCompleter( user_options ), False )
     find_clangd_binary.assert_called()
-
-  user_options[ 'clangd_binary_path' ] = 'test_path'
-  eq_( clangd_completer.ShouldEnableClangdCompleter( user_options ), False )
 
 
 class MockPopen:
