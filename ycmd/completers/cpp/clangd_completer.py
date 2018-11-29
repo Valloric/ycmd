@@ -38,6 +38,8 @@ MIN_SUPPORTED_VERSION = '7.0.0'
 INCLUDE_REGEX = re.compile(
   '(\\s*#\\s*(?:include|import)\\s*)(?:"[^"]*|<[^>]*)' )
 USES_YCMD_CACHING = 'clangd_uses_ycmd_caching'
+NOT_CACHED = 'NOT_CACHED'
+CLANGD_COMMAND = NOT_CACHED
 
 
 def DistanceOfPointToRange( point, range ):
@@ -89,9 +91,10 @@ def GetClangdCommand( user_options ):
 
   Look through binaries reachable through PATH or pre-built ones.
   Return None if no binary exists or it is out of date. """
-  if 'clangd_command' in user_options:
-    return user_options[ 'clangd_command' ]
-  user_options[ 'clangd_command' ] = None
+  global CLANGD_COMMAND
+  if CLANGD_COMMAND != NOT_CACHED:
+    return CLANGD_COMMAND
+  CLANGD_COMMAND = None
 
   RESOURCE_DIR = None
   INSTALLED_CLANGD = utils.FindExecutable( 'clangd' ) # Look ath $PATH first.
@@ -140,7 +143,6 @@ def GetClangdCommand( user_options ):
   if clangd_args is not None:
     CLANGD_COMMAND.extend( clangd_args )
 
-  user_options[ 'clangd_command' ] = CLANGD_COMMAND
   return CLANGD_COMMAND
 
 

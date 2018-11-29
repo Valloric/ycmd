@@ -61,14 +61,9 @@ def ClangdCompleter_DistanceOfPointToRange_MultiLineRange_test():
   _Check_Distance( ( 3, 8 ), ( 0, 2 ), ( 3, 5 ) , 3 )
 
 
-def ClangdCompleter_GetClangdCommand_UserOption_test():
-  EXPECTED = [ 'test' ]
-  user_options = { 'clangd_command': EXPECTED }
-  eq_( clangd_completer.GetClangdCommand( user_options ), EXPECTED )
-
-
 def ClangdCompleter_GetClangdCommand_test():
   CLANGD_PATH = '/test/clangd'
+  clangd_completer.CLANGD_COMMAND = clangd_completer.NOT_CACHED
   # Binary exists.
   with patch( 'ycmd.utils.FindExecutable', return_value = CLANGD_PATH ):
     # Supported version in $PATH.
@@ -76,6 +71,7 @@ def ClangdCompleter_GetClangdCommand_test():
                 return_value = True ):
       user_options = { 'clangd_uses_ycmd_caching': False }
       eq_( clangd_completer.GetClangdCommand( user_options )[ 0 ], CLANGD_PATH )
+      clangd_completer.CLANGD_COMMAND = clangd_completer.NOT_CACHED
 
     # Unsupported version in $PATH.
     with patch( 'ycmd.completers.cpp.clangd_completer.CheckClangdVersion',
@@ -88,10 +84,12 @@ def ClangdCompleter_GetClangdCommand_test():
           user_options = { 'clangd_uses_ycmd_caching': False }
           eq_( clangd_completer.GetClangdCommand( user_options )[ 0 ],
                THIRD_PARTY )
+          clangd_completer.CLANGD_COMMAND = clangd_completer.NOT_CACHED
         # Binary not in third_party.
         with patch( 'os.path.isfile', return_value = False ):
           user_options = { 'clangd_uses_ycmd_caching': False }
           eq_( clangd_completer.GetClangdCommand( user_options ), None )
+          clangd_completer.CLANGD_COMMAND = clangd_completer.NOT_CACHED
 
 
 def ClangdCompleter_CheckClangdVersion_test():
