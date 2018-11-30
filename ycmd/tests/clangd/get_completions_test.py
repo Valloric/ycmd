@@ -302,43 +302,6 @@ def GetCompletions_FilteredNoResults_Fallback_test( app ):
   } )
 
 
-@IsolatedYcmd()
-def GetCompletions_WorksWithExplicitFlags_test( app ):
-  contents = """
-struct Foo {
-  int x;
-  int y;
-  char c;
-};
-
-int main()
-{
-  Foo foo;
-  foo.
-}
-"""
-
-  filepath = PathToTestFile( 'foo.cc' )
-  request = { 'contents': contents,
-              'filepath': filepath,
-              'filetype': 'cpp' }
-
-  test = { 'request': request }
-  RunAfterInitialized( app, test )
-  completion_data = BuildRequest( filepath = filepath,
-                                  filetype = 'cpp',
-                                  contents = contents,
-                                  line_num = 11,
-                                  column_num = 7 )
-
-  response_data = app.post_json( '/completions', completion_data ).json
-  assert_that( response_data[ 'completions' ],
-               has_items( CompletionEntryMatcher( 'c' ),
-                          CompletionEntryMatcher( 'x' ),
-                          CompletionEntryMatcher( 'y' ) ) )
-  eq_( 7, response_data[ 'completion_start_column' ] )
-
-
 @IsolatedYcmd( { 'auto_trigger': 0 } )
 def GetCompletions_NoCompletionsWhenAutoTriggerOff_test( app ):
   contents = """

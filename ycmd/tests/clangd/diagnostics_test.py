@@ -33,8 +33,7 @@ from hamcrest import ( assert_that,
 from mock import patch
 from pprint import pprint
 
-from ycmd.tests.clangd import ( SharedYcmd,
-                                IsolatedYcmd,
+from ycmd.tests.clangd import ( IsolatedYcmd,
                                 PathToTestFile,
                                 RunAfterInitialized )
 from ycmd.tests.test_utils import BuildRequest, LocationMatcher, RangeMatcher
@@ -268,7 +267,7 @@ def Diagnostics_LocationExtent_MissingSemicolon_test( app ):
   ) )
 
 
-@SharedYcmd
+@IsolatedYcmd()
 def Diagnostics_CUDA_Kernel_test( app ):
   filepath = PathToTestFile( 'cuda', 'kernel_call.cu' )
   contents = ReadFile( filepath )

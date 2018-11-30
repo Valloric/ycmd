@@ -112,7 +112,7 @@ def GetClangdCommand( user_options, third_party_clangd = None ):
   Return None if no binary exists or it is out of date. """
   global CLANGD_COMMAND
   if CLANGD_COMMAND != NOT_CACHED:
-    _logger.warning( 'Returning cached clangd: {0}'.format( CLANGD_COMMAND ) )
+    _logger.info( 'Returning cached clangd: {0}'.format( CLANGD_COMMAND ) )
     return CLANGD_COMMAND
   CLANGD_COMMAND = None
 

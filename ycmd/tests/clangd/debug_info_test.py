@@ -30,7 +30,7 @@ from ycmd.tests.clangd import ( IsolatedYcmd, PathToTestFile, SharedYcmd,
 from ycmd.tests.test_utils import BuildRequest
 
 
-@SharedYcmd
+@IsolatedYcmd()
 def DebugInfo_NotInitialized_test( app ):
   request_data = BuildRequest( filepath = PathToTestFile( 'basic.cpp' ),
                                filetype = 'cpp' )
@@ -48,7 +48,7 @@ def DebugInfo_NotInitialized_test( app ):
   )
 
 
-@IsolatedYcmd()
+@SharedYcmd
 def DebugInfo_Initialized_test( app ):
   request_data = BuildRequest( filepath = PathToTestFile( 'basic.cpp' ),
                                filetype = 'cpp' )
