@@ -27,7 +27,10 @@ from nose.tools import eq_
 from ycmd.completers.cpp import clangd_completer
 from ycmd import handlers
 from mock import patch
-from ycmd.tests.clangd import IsolatedYcmd
+from ycmd.tests.clangd import IsolatedYcmd, PathToTestFile
+from ycmd.tests.test_utils import BuildRequest
+from ycmd.completers.language_server.language_server_completer import (
+    LanguageServerConnectionTimeout )
 
 
 def _TupleToLSPRange( tuple ):
@@ -66,6 +69,12 @@ def ClangdCompleter_GetClangdCommand_NoCustomBinary_test():
   THIRD_PARTY = '/third_party/clangd'
   clangd_completer.CLANGD_COMMAND = clangd_completer.NOT_CACHED
   eq_( clangd_completer.GetClangdCommand( {}, THIRD_PARTY )[ 0 ], THIRD_PARTY )
+  # With args
+  clangd_completer.CLANGD_COMMAND = clangd_completer.NOT_CACHED
+  CLANGD_ARGS = [ 1, 2, 3 ]
+  user_options = { 'clangd_args': CLANGD_ARGS }
+  eq_( clangd_completer.GetClangdCommand( user_options, THIRD_PARTY )[ -3 : ],
+       CLANGD_ARGS )
 
   # No supported binary in third_party.
   clangd_completer.CLANGD_COMMAND = clangd_completer.NOT_CACHED
@@ -186,3 +195,32 @@ def ClangdCompleter_ShutdownFail_test( app ):
     with patch.object( completer, 'ServerIsHealthy', return_value = True ):
       completer.Shutdown()
       shutdown_server.assert_called()
+
+
+def ClangdCompleter_Get3rdParty_test():
+  CLANGD = '/third_party/clangd'
+  with patch( 'ycmd.utils.GetExecutable', return_value = CLANGD ):
+    with patch( 'ycmd.completers.cpp.clangd_completer.CheckClangdVersion',
+                return_value = True ):
+      eq_( clangd_completer.Get3rdPartyClangd(), CLANGD )
+    with patch( 'ycmd.completers.cpp.clangd_completer.CheckClangdVersion',
+                return_value = False ):
+      eq_( clangd_completer.Get3rdPartyClangd(), None )
+
+
+@IsolatedYcmd()
+def ClangdCompleter_StartServer_Fails_test( app ):
+  with patch( 'ycmd.completers.language_server.language_server_completer.'
+              'LanguageServerConnection.AwaitServerConnection',
+              side_effect = LanguageServerConnectionTimeout ):
+    with patch( 'ycmd.completers.cpp.clangd_completer.ClangdCompleter.'
+                'ShutdownServer' ) as shutdown:
+      resp = app.post_json( '/event_notification',
+                     BuildRequest(
+                       event_name = 'FileReadyToParse',
+                       filetype = 'cpp',
+                       filepath = PathToTestFile( 'foo.cc' ),
+                       contents = ""
+                     ) )
+      eq_( resp.status_code, 200 )
+      shutdown.assert_called()
