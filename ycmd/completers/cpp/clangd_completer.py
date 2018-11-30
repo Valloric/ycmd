@@ -86,46 +86,55 @@ def CheckClangdVersion( clangd_path ):
   return True
 
 
-def GetClangdCommand( user_options ):
+def Get3rdPartyClangd():
+  PRE_BUILT_CLANGD = os.path.abspath( os.path.join(
+    os.path.dirname( __file__ ),
+    '..',
+    '..',
+    '..',
+    'third_party',
+    'clangd',
+    'output',
+    'bin',
+    'clangd' ) )
+  if not os.path.isfile( PRE_BUILT_CLANGD ):
+    _logger.error( 'Could not find pre-built binary, please make sure you '
+                   'installed clangd during the installation of ycmd.' )
+    return None
+  if not os.access( PRE_BUILT_CLANGD, os.X_OK ):
+    _logger.error( 'clangd binary at {0} does not have the executable flag.'
+                   .format( PRE_BUILT_CLANGD ) )
+    return None
+  if not CheckClangdVersion( PRE_BUILT_CLANGD ):
+    _logger.error( 'clangd binary at {0} is out-of-date please update.'
+                   .format( PRE_BUILT_CLANGD ) )
+    return None
+  return PRE_BUILT_CLANGD
+
+
+def GetClangdCommand( user_options, third_party_clangd = None ):
   """Get commands to run clangd.
 
   Look through binaries reachable through PATH or pre-built ones.
   Return None if no binary exists or it is out of date. """
   global CLANGD_COMMAND
   if CLANGD_COMMAND != NOT_CACHED:
+    _logger.warning( 'Returning cached clangd: {0}'.format( CLANGD_COMMAND ) )
     return CLANGD_COMMAND
   CLANGD_COMMAND = None
 
   RESOURCE_DIR = None
-  INSTALLED_CLANGD = utils.FindExecutable( 'clangd' ) # Look ath $PATH first.
+  INSTALLED_CLANGD = user_options.get( 'clangd_binary_path', None )
   if not CheckClangdVersion( INSTALLED_CLANGD ):
     # Either no clangd on $PATH or it has an unsupported version, try to use
     # built-in binary.
-    _logger.warning( 'Either your system does not have a clangd or it is '
-                     'out-of-date, trying to use pre-built version.' )
+    _logger.warning( 'Either there is no clangd at {0} or it is out-of-date, '
+                     'trying to use pre-built version.'.format(
+                         INSTALLED_CLANGD ) )
     # Try looking for the pre-built binary.
-    INSTALLED_CLANGD = os.path.abspath( os.path.join(
-      os.path.dirname( __file__ ),
-      '..',
-      '..',
-      '..',
-      'third_party',
-      'clangd',
-      'output',
-      'bin',
-      'clangd' ) )
-    if not os.path.isfile( INSTALLED_CLANGD ):
-      _logger.fatal( 'Could not find pre-built binary, please make sure you '
-                     'installed clangd during the installation of ycmd.' )
+    if not third_party_clangd:
       return None
-    if not os.access( INSTALLED_CLANGD, os.X_OK ):
-      _logger.fatal( 'clangd binary at {0} does not have the executable flag.'
-                     .format( INSTALLED_CLANGD ) )
-      return None
-    if not CheckClangdVersion( INSTALLED_CLANGD ):
-      _logger.fatal( 'clangd binary at {0} is out-of-date please update.'
-                     .format( INSTALLED_CLANGD ) )
-      return None
+    INSTALLED_CLANGD = third_party_clangd
     RESOURCE_DIR = os.path.abspath( os.path.join(
       os.path.dirname( __file__ ),
       '..',
@@ -147,10 +156,15 @@ def GetClangdCommand( user_options ):
 
 
 def ShouldEnableClangdCompleter( user_options ):
-  if not user_options.get( 'use_clangd', False ):
+  third_party_clangd = Get3rdPartyClangd()
+  # User disabled clangd explicitly.
+  if 'use_clangd' in user_options and not user_options[ 'use_clangd' ]:
+    return False
+  # User haven't downloaded clangd and didn't turned it on.
+  if not third_party_clangd and not user_options.get( 'use_clangd' ):
     return False
 
-  clangd_command = GetClangdCommand( user_options )
+  clangd_command = GetClangdCommand( user_options, third_party_clangd )
   if not clangd_command:
     _logger.warning( 'Not using clangd: unable to find clangd binary' )
     return False
