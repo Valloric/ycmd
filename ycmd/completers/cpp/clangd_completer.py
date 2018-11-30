@@ -97,14 +97,7 @@ def Get3rdPartyClangd():
     'output',
     'bin',
     'clangd' ) )
-  if not os.path.isfile( PRE_BUILT_CLANGD ):
-    _logger.error( 'Could not find pre-built binary, please make sure you '
-                   'installed clangd during the installation of ycmd.' )
-    return None
-  if not os.access( PRE_BUILT_CLANGD, os.X_OK ):
-    _logger.error( 'clangd binary at {0} does not have the executable flag.'
-                   .format( PRE_BUILT_CLANGD ) )
-    return None
+  PRE_BUILT_CLANGD = utils.GetExecutable( PRE_BUILT_CLANGD )
   if not CheckClangdVersion( PRE_BUILT_CLANGD ):
     _logger.error( 'clangd binary at {0} is out-of-date please update.'
                    .format( PRE_BUILT_CLANGD ) )
