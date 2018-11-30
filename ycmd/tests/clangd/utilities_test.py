@@ -61,35 +61,41 @@ def ClangdCompleter_DistanceOfPointToRange_MultiLineRange_test():
   _Check_Distance( ( 3, 8 ), ( 0, 2 ), ( 3, 5 ) , 3 )
 
 
-def ClangdCompleter_GetClangdCommand_test():
-  CLANGD_PATH = '/test/clangd'
+def ClangdCompleter_GetClangdCommand_NoCustomBinary_test():
+  # Supported binary in third_party.
+  THIRD_PARTY = '/third_party/clangd'
   clangd_completer.CLANGD_COMMAND = clangd_completer.NOT_CACHED
-  # Binary exists.
-  with patch( 'ycmd.utils.FindExecutable', return_value = CLANGD_PATH ):
-    # Supported version in $PATH.
-    with patch( 'ycmd.completers.cpp.clangd_completer.CheckClangdVersion',
-                return_value = True ):
-      user_options = { 'clangd_uses_ycmd_caching': False }
-      eq_( clangd_completer.GetClangdCommand( user_options )[ 0 ], CLANGD_PATH )
-      clangd_completer.CLANGD_COMMAND = clangd_completer.NOT_CACHED
+  eq_( clangd_completer.GetClangdCommand( {}, THIRD_PARTY )[ 0 ], THIRD_PARTY )
 
-    # Unsupported version in $PATH.
-    with patch( 'ycmd.completers.cpp.clangd_completer.CheckClangdVersion',
-                side_effect = [ False, True, False ] ):
-      THIRD_PARTY = '/third_party/clangd'
-      with patch( 'os.path.abspath', return_value = THIRD_PARTY ):
-        # Binary in third_party.
-        with patch( 'os.path.isfile', return_value = True ), patch( 'os.access',
-                    return_value = True ):
-          user_options = { 'clangd_uses_ycmd_caching': False }
-          eq_( clangd_completer.GetClangdCommand( user_options )[ 0 ],
-               THIRD_PARTY )
-          clangd_completer.CLANGD_COMMAND = clangd_completer.NOT_CACHED
-        # Binary not in third_party.
-        with patch( 'os.path.isfile', return_value = False ):
-          user_options = { 'clangd_uses_ycmd_caching': False }
-          eq_( clangd_completer.GetClangdCommand( user_options ), None )
-          clangd_completer.CLANGD_COMMAND = clangd_completer.NOT_CACHED
+  # No supported binary in third_party.
+  clangd_completer.CLANGD_COMMAND = clangd_completer.NOT_CACHED
+  eq_( clangd_completer.GetClangdCommand( {}, None ), None )
+
+  clangd_completer.CLANGD_COMMAND = clangd_completer.NOT_CACHED
+
+
+def ClangdCompleter_GetClangdCommand_CustomBinary_test():
+  CLANGD_PATH = '/test/clangd'
+  user_options = { 'clangd_binary_path': CLANGD_PATH }
+  # Supported version.
+  with patch( 'ycmd.completers.cpp.clangd_completer.CheckClangdVersion',
+              return_value = True ):
+    clangd_completer.CLANGD_COMMAND = clangd_completer.NOT_CACHED
+    eq_( clangd_completer.GetClangdCommand( user_options )[ 0 ], CLANGD_PATH )
+
+  # Unsupported version.
+  with patch( 'ycmd.completers.cpp.clangd_completer.CheckClangdVersion',
+              return_value = False ):
+    THIRD_PARTY = '/third_party/clangd'
+    # Binary in third_party.
+    clangd_completer.CLANGD_COMMAND = clangd_completer.NOT_CACHED
+    eq_( clangd_completer.GetClangdCommand( user_options, THIRD_PARTY )[ 0 ],
+         THIRD_PARTY )
+    # Binary not in third_party.
+    clangd_completer.CLANGD_COMMAND = clangd_completer.NOT_CACHED
+    eq_( clangd_completer.GetClangdCommand( user_options, None ), None )
+
+  clangd_completer.CLANGD_COMMAND = clangd_completer.NOT_CACHED
 
 
 def ClangdCompleter_CheckClangdVersion_test():
@@ -104,13 +110,38 @@ def ClangdCompleter_CheckClangdVersion_test():
 
 
 def ClangdCompleter_ShouldEnableClangdCompleter_NoUseClangd_test():
-  # Clangd is off by default.
-  user_options = {}
-  eq_( clangd_completer.ShouldEnableClangdCompleter( user_options ), False )
+  # Clangd not in third_party( or an old version ):
+  with patch( 'ycmd.completers.cpp.clangd_completer.Get3rdPartyClangd',
+              return_value = None ):
+    # Not enabled.
+    eq_( clangd_completer.ShouldEnableClangdCompleter( {} ), False )
 
-  # Explicitly turned off.
-  user_options = { 'use_clangd': False }
-  eq_( clangd_completer.ShouldEnableClangdCompleter( user_options ), False )
+    # Enabled.
+    user_options = { 'use_clangd': True }
+    # Found supported binary.
+    with patch( 'ycmd.completers.cpp.clangd_completer.GetClangdCommand',
+                return_value = True ):
+      eq_( clangd_completer.ShouldEnableClangdCompleter( user_options ), True )
+    with patch( 'ycmd.completers.cpp.clangd_completer.GetClangdCommand',
+                return_value = None ):
+      eq_( clangd_completer.ShouldEnableClangdCompleter( user_options ), False )
+
+  # Clangd in third_party with a supported version.
+  with patch( 'ycmd.completers.cpp.clangd_completer.Get3rdPartyClangd',
+              return_value = True ):
+    # Disabled.
+    user_options = { 'use_clangd': False }
+    eq_( clangd_completer.ShouldEnableClangdCompleter( user_options ), False )
+
+    # Enabled.
+    user_options = { 'use_clangd': True }
+    # Found supported binary.
+    with patch( 'ycmd.completers.cpp.clangd_completer.GetClangdCommand',
+                return_value = True ):
+      eq_( clangd_completer.ShouldEnableClangdCompleter( user_options ), True )
+    with patch( 'ycmd.completers.cpp.clangd_completer.GetClangdCommand',
+                return_value = None ):
+      eq_( clangd_completer.ShouldEnableClangdCompleter( user_options ), False )
 
 
 def ClangdCompleter_ShouldEnableClangdCompleter_UseClangd_test():
