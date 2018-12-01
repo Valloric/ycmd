@@ -297,7 +297,9 @@ class ClangdCompleter( language_server_completer.LanguageServerCompleter ):
     return request_data[ 'column_codepoint' ]
 
 
-  def ShouldCompleteIncludeStatement( self, request_data ):
+  # TODO: Turn on coverage detection when updating to LLVM8 release. It is
+  # currently turned off because clangd doesn't support it in LLVM7 release.
+  def ShouldCompleteIncludeStatement( self, request_data ): # pragma: no cover
     column_codepoint = request_data[ 'column_codepoint' ] - 1
     current_line = request_data[ 'line_value' ]
     return INCLUDE_REGEX.match( current_line[ : column_codepoint ] )
