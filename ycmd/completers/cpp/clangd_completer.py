@@ -111,6 +111,8 @@ def GetClangdCommand( user_options, third_party_clangd = None ):
   Look through binaries reachable through PATH or pre-built ones.
   Return None if no binary exists or it is out of date. """
   global CLANGD_COMMAND
+  # None stands for we tried to fetch command and failed, therefore it is not
+  # the default.
   if CLANGD_COMMAND != NOT_CACHED:
     _logger.info( 'Returning cached clangd: {0}'.format( CLANGD_COMMAND ) )
     return CLANGD_COMMAND
