@@ -128,6 +128,33 @@ def GetCompletions_ForcedWithNoTrigger_NoYcmdCaching_test( app ):
   } )
 
 
+@IsolatedYcmd( { 'clangd_uses_ycmd_caching': False } )
+def GetCompletions_NotForced_NoYcmdCaching_test( app ):
+  RunTest( app, {
+    'description': 'semantic completion with force query=DO_SO',
+    'request': {
+      'filetype'  : 'cpp',
+      'filepath'  : PathToTestFile( 'general_fallback',
+                                    'lang_cpp.cc' ),
+      'line_num'  : 54,
+      'column_num': 8,
+      'force_semantic': False,
+    },
+    'expect': {
+      'response': requests.codes.ok,
+      'data': has_entries( {
+        'completions': contains(
+          CompletionEntryMatcher( 'DO_SOMETHING_TO', 'void' ),
+          CompletionEntryMatcher( 'DO_SOMETHING_WITH', 'void' ),
+          CompletionEntryMatcher( 'do_something', 'void' ),
+        ),
+        'errors': empty(),
+      } )
+    },
+  } )
+
+
+
 @SharedYcmd
 def GetCompletions_ForcedWithNoTrigger_test( app ):
   RunTest( app, {
