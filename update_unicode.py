@@ -44,10 +44,10 @@ UNICODE_TABLE_TEMPLATE = (
 // using version {unicode_version} of the Unicode Character Database.
 #include <array>
 struct RawCodePointArray {{
-std::array< char[5], {size} > original;
-std::array< char[13], {size} > normal;
-std::array< char[13], {size} > folded_case;
-std::array< char[13], {size} > swapped_case;
+std::array< char[{original_size}], {size} > original;
+std::array< char[{normal_size}], {size} > normal;
+std::array< char[{folded_case_size}], {size} > folded_case;
+std::array< char[{swapped_case_size}], {size} > swapped_case;
 std::array< bool, {size} > is_letter;
 std::array< bool, {size} > is_punctuation;
 std::array< bool, {size} > is_uppercase;
@@ -498,58 +498,73 @@ def CppBool( statement ):
   return '0'
 
 
+def CppLength( utf8_code_point ):
+  nb_utf8_hex = len( utf8_code_point.split( '\\x' )[ 1: ] )
+  if nb_utf8_hex > 0:
+    return nb_utf8_hex + 1
+  return len( bytearray( utf8_code_point, encoding = 'utf8' ) ) + 1
+
+
 def GenerateUnicodeTable( header_path, code_points ):
   unicode_version = GetUnicodeVersion()
   size = len( code_points )
-  original = '{{'
-  normal = '{{'
-  folded_case = '{{'
-  swapped_case = '{{'
-  is_letter = '{{'
-  is_punctuation = '{{'
-  is_uppercase = '{{'
-  break_property = '{{'
-  combining_class = '{{'
+  original_table = '{{'
+  original_size = 0
+  normal_table = '{{'
+  normal_size = 0
+  folded_case_table = '{{'
+  folded_case_size = 0
+  swapped_case_table = '{{'
+  swapped_case_size = 0
+  is_letter_table = '{{'
+  is_punctuation_table = '{{'
+  is_uppercase_table = '{{'
+  break_property_table = '{{'
+  combining_class_table = '{{'
   for code_point in code_points:
-    original += CppChar( code_point[ 'original' ] ) + ','
-    normal += CppChar( code_point[ 'normal' ] ) + ','
-    folded_case += CppChar( code_point[ 'folded_case' ] ) + ','
-    swapped_case += CppChar( code_point[ 'swapped_case' ] ) + ','
-    is_letter += CppBool( code_point[ 'is_letter' ] ) + ','
-    is_punctuation += CppBool( code_point[ 'is_punctuation' ] ) + ','
-    is_uppercase += CppBool( code_point[ 'is_uppercase' ] ) + ','
-    break_property += str( code_point[ 'break_property' ] ) + ','
-    combining_class += str( code_point[ 'combining_class' ] ) + ','
-  original = original.rstrip( ',' )
-  original += '}},'
-  normal = normal.rstrip( ',' )
-  normal += '}},'
-  folded_case = folded_case.rstrip( ',' )
-  folded_case += '}},'
-  swapped_case = swapped_case.rstrip( ',' )
-  swapped_case += '}},'
-  is_letter = is_letter.rstrip( ',' )
-  is_letter += '}},'
-  is_punctuation = is_punctuation.rstrip( ',' )
-  is_punctuation += '}},'
-  is_uppercase = is_uppercase.rstrip( ',' )
-  is_uppercase += '}},'
-  break_property = break_property.rstrip( ',' )
-  break_property += '}},'
-  combining_class = combining_class.rstrip( ',' )
-  combining_class += '}}'
-  code_points = '\n'.join( [ original,
-                             normal,
-                             folded_case,
-                             swapped_case,
-                             is_letter,
-                             is_punctuation,
-                             is_uppercase,
-                             break_property,
-                             combining_class ] )
-  contents = UNICODE_TABLE_TEMPLATE.format( unicode_version = unicode_version,
-                                            size = size,
-                                            code_points = code_points )
+    original = code_point[ 'original' ]
+    original_table += CppChar( original ) + ','
+    original_size = max( CppLength( original ), original_size )
+    normal = code_point[ 'normal' ]
+    normal_table += CppChar( normal ) + ','
+    normal_size = max( CppLength( normal ), normal_size )
+    folded_case = code_point[ 'folded_case' ]
+    folded_case_table += CppChar( folded_case ) + ','
+    folded_case_size = max( CppLength( folded_case ), folded_case_size )
+    swapped_case = code_point[ 'swapped_case' ]
+    swapped_case_table += CppChar( swapped_case ) + ','
+    swapped_case_size = max( CppLength( swapped_case ), swapped_case_size )
+    is_letter_table += CppBool( code_point[ 'is_letter' ] ) + ','
+    is_punctuation_table += CppBool( code_point[ 'is_punctuation' ] ) + ','
+    is_uppercase_table += CppBool( code_point[ 'is_uppercase' ] ) + ','
+    break_property_table += str( code_point[ 'break_property' ] ) + ','
+    combining_class_table += str( code_point[ 'combining_class' ] ) + ','
+  original_table = original_table.rstrip( ',' ) + '}},'
+  normal_table = normal_table.rstrip( ',' ) + '}},'
+  folded_case_table = folded_case_table.rstrip( ',' ) + '}},'
+  swapped_case_table = swapped_case_table.rstrip( ',' ) + '}},'
+  is_letter_table = is_letter_table.rstrip( ',' ) + '}},'
+  is_punctuation_table = is_punctuation_table.rstrip( ',' ) + '}},'
+  is_uppercase_table = is_uppercase_table.rstrip( ',' ) + '}},'
+  break_property_table = break_property_table.rstrip( ',' ) + '}},'
+  combining_class_table = combining_class_table.rstrip( ',' ) + '}}'
+  code_points = '\n'.join( [ original_table,
+                             normal_table,
+                             folded_case_table,
+                             swapped_case_table,
+                             is_letter_table,
+                             is_punctuation_table,
+                             is_uppercase_table,
+                             break_property_table,
+                             combining_class_table ] )
+  contents = UNICODE_TABLE_TEMPLATE.format(
+    unicode_version = unicode_version,
+    size = size,
+    original_size = original_size,
+    normal_size = normal_size,
+    folded_case_size = folded_case_size,
+    swapped_case_size = swapped_case_size,
+    code_points = code_points )
   with open( header_path, 'w', newline = '\n', encoding='utf8' ) as header_file:
     header_file.write( contents )
 
