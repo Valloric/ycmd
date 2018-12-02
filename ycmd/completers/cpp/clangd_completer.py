@@ -87,7 +87,7 @@ def CheckClangdVersion( clangd_path ):
 
 
 def Get3rdPartyClangd():
-  PRE_BUILT_CLANGD = os.path.abspath( os.path.join(
+  pre_built_clangd = os.path.abspath( os.path.join(
     os.path.dirname( __file__ ),
     '..',
     '..',
@@ -97,12 +97,12 @@ def Get3rdPartyClangd():
     'output',
     'bin',
     'clangd' ) )
-  PRE_BUILT_CLANGD = utils.GetExecutable( PRE_BUILT_CLANGD )
-  if not CheckClangdVersion( PRE_BUILT_CLANGD ):
+  pre_built_clangd = utils.GetExecutable( pre_built_clangd )
+  if not CheckClangdVersion( pre_built_clangd ):
     _logger.error( 'clangd binary at {} is out-of-date please update.'
-                   .format( PRE_BUILT_CLANGD ) )
+                   .format( pre_built_clangd ) )
     return None
-  return PRE_BUILT_CLANGD
+  return pre_built_clangd
 
 
 def GetClangdCommand( user_options, third_party_clangd = None ):
@@ -118,19 +118,19 @@ def GetClangdCommand( user_options, third_party_clangd = None ):
     return CLANGD_COMMAND
   CLANGD_COMMAND = None
 
-  RESOURCE_DIR = None
-  INSTALLED_CLANGD = user_options.get( 'clangd_binary_path', None )
-  if not CheckClangdVersion( INSTALLED_CLANGD ):
+  resource_dir = None
+  installed_clangd = user_options.get( 'clangd_binary_path', None )
+  if not CheckClangdVersion( installed_clangd ):
     # Either no clangd on $PATH or it has an unsupported version, try to use
     # built-in binary.
     _logger.warning( 'Either there is no clangd at {} or it is out-of-date, '
                      'trying to use pre-built version.'.format(
-                         INSTALLED_CLANGD ) )
+                         installed_clangd ) )
     # Try looking for the pre-built binary.
     if not third_party_clangd:
       return None
-    INSTALLED_CLANGD = third_party_clangd
-    RESOURCE_DIR = os.path.abspath( os.path.join(
+    installed_clangd = third_party_clangd
+    resource_dir = os.path.abspath( os.path.join(
       os.path.dirname( __file__ ),
       '..',
       '..',
@@ -138,7 +138,7 @@ def GetClangdCommand( user_options, third_party_clangd = None ):
       'clang_includes' ) )
 
   # We have a clangd binary that is executable and up-to-date at this point.
-  CLANGD_COMMAND = [ INSTALLED_CLANGD ]
+  CLANGD_COMMAND = [ installed_clangd ]
   clangd_args = user_options.get( 'clangd_args', [] )
   put_resource_dir = False
   put_limit_results = False
@@ -146,8 +146,8 @@ def GetClangdCommand( user_options, third_party_clangd = None ):
     CLANGD_COMMAND.append( arg )
     put_resource_dir = put_resource_dir or arg.startswith( '-resource-dir' )
     put_limit_results = put_limit_results or arg.startswith( '-limit-results' )
-  if RESOURCE_DIR and not put_resource_dir:
-    CLANGD_COMMAND.append( '-resource-dir=' + RESOURCE_DIR )
+  if resource_dir and not put_resource_dir:
+    CLANGD_COMMAND.append( '-resource-dir=' + resource_dir )
   if user_options.get( USES_YCMD_CACHING, True ) and not put_limit_results:
     CLANGD_COMMAND.append( '-limit-results=500' )
 
@@ -159,8 +159,8 @@ def ShouldEnableClangdCompleter( user_options ):
   # User disabled clangd explicitly.
   if 'use_clangd' in user_options and not user_options[ 'use_clangd' ]:
     return False
-  # User haven't downloaded clangd and didn't turned it on.
-  if not third_party_clangd and not user_options.get( 'use_clangd' ):
+  # User haven't downloaded clangd and use_clangd is in auto mode.
+  if not third_party_clangd and user_options.get( 'use_clangd', 2 ) == 2:
     return False
 
   clangd_command = GetClangdCommand( user_options, third_party_clangd )
@@ -191,7 +191,7 @@ class ClangdCompleter( language_server_completer.LanguageServerCompleter ):
 
     self._Reset()
     self._auto_trigger = user_options[ 'auto_trigger' ]
-    self._use_ycmd_caching = user_options.get( USES_YCMD_CACHING, True )
+    self._use_ycmd_caching = user_options[ USES_YCMD_CACHING ]
 
 
   def _Reset( self ):
