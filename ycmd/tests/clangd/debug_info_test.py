@@ -23,7 +23,7 @@ from __future__ import absolute_import
 # Not installing aliases from python-future; it's unreliable and slow.
 from builtins import *  # noqa
 
-from hamcrest import ( assert_that, contains, empty, has_entries, has_entry )
+from hamcrest import assert_that, contains, empty, has_entries, has_entry
 
 from ycmd.tests.clangd import ( IsolatedYcmd, PathToTestFile, SharedYcmd,
                                 RunAfterInitialized )

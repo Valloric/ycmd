@@ -180,7 +180,9 @@ def GetCompletions_ForcedWithNoTrigger_test( app ):
   } )
 
 
-@SharedYcmd
+# This test is isolated to make sure we trigger c hook for clangd, instead of
+# fetching completer from cache.
+@IsolatedYcmd()
 def GetCompletions_Fallback_NoSuggestions_test( app ):
   # TESTCASE1 (general_fallback/lang_c.c)
   RunTest( app, {

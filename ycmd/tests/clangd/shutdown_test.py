@@ -27,7 +27,7 @@ from mock import patch
 import psutil
 import time
 
-from hamcrest import ( assert_that, contains, empty, has_entries, has_entry )
+from hamcrest import assert_that, contains, empty, has_entries, has_entry
 
 from ycmd import handlers, utils
 from ycmd.tests.clangd import ( IsolatedYcmd, PathToTestFile,

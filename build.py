@@ -25,6 +25,7 @@ import sysconfig
 import tarfile
 import tempfile
 
+IS_64BIT = sys.maxsize > 2**32
 PY_MAJOR, PY_MINOR, PY_PATCH = sys.version_info[ 0 : 3 ]
 if not ( ( PY_MAJOR == 2 and PY_MINOR == 7 and PY_PATCH >= 1 ) or
          ( PY_MAJOR == 3 and PY_MINOR >= 4 ) or
@@ -346,8 +347,7 @@ def GetGenerator( args ):
     return 'Ninja'
   if OnWindows():
     return 'Visual Studio {version}{arch}'.format(
-        version = args.msvc,
-        arch = ' Win64' if platform.architecture()[ 0 ] == '64bit' else '' )
+        version = args.msvc, arch = ' Win64' if IS_64BIT else '' )
   return 'Unix Makefiles'
 
 
@@ -811,7 +811,7 @@ def DownloadClangd():
     print( 'No binaries for your system, please compile it from source.' )
     return False
 
-  target_name, check_sum = target[ sys.maxsize <= 2**32 ]
+  target_name, check_sum = target[ not IS_64BIT ]
   target_name = target_name.format( LLVM_RELEASE = LLVM_RELEASE )
   file_name = '{TARGET_NAME}.tar.bz2'.format( TARGET_NAME = target_name )
   download_url = 'https://dl.bintray.com/micbou/clangd/{FILE_NAME}'.format(

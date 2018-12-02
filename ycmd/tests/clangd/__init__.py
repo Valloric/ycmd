@@ -25,7 +25,7 @@ from builtins import *  # noqa
 import functools
 import os
 
-from hamcrest import ( assert_that )
+from hamcrest import assert_that
 from nose.tools import eq_
 
 

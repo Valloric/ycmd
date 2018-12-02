@@ -71,9 +71,9 @@ def ClangdCompleter_GetClangdCommand_NoCustomBinary_test():
   eq_( clangd_completer.GetClangdCommand( {}, THIRD_PARTY )[ 0 ], THIRD_PARTY )
   # With args
   clangd_completer.CLANGD_COMMAND = clangd_completer.NOT_CACHED
-  CLANGD_ARGS = [ 1, 2, 3 ]
+  CLANGD_ARGS = [ "1", "2", "3" ]
   user_options = { 'clangd_args': CLANGD_ARGS }
-  eq_( clangd_completer.GetClangdCommand( user_options, THIRD_PARTY )[ -3 : ],
+  eq_( clangd_completer.GetClangdCommand( user_options, THIRD_PARTY )[ 1:4 ],
        CLANGD_ARGS )
 
   # No supported binary in third_party.
