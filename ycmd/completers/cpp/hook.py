@@ -33,5 +33,4 @@ def GetCompleter( user_options ):
     return ClangdCompleter( user_options )
   if ycm_core.HasClangSupport():
     return ClangCompleter( user_options )
-  else:
-    return None
+  return None

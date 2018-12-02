@@ -99,7 +99,7 @@ def Get3rdPartyClangd():
     'clangd' ) )
   PRE_BUILT_CLANGD = utils.GetExecutable( PRE_BUILT_CLANGD )
   if not CheckClangdVersion( PRE_BUILT_CLANGD ):
-    _logger.error( 'clangd binary at {0} is out-of-date please update.'
+    _logger.error( 'clangd binary at {} is out-of-date please update.'
                    .format( PRE_BUILT_CLANGD ) )
     return None
   return PRE_BUILT_CLANGD
@@ -114,7 +114,7 @@ def GetClangdCommand( user_options, third_party_clangd = None ):
   # None stands for we tried to fetch command and failed, therefore it is not
   # the default.
   if CLANGD_COMMAND != NOT_CACHED:
-    _logger.info( 'Returning cached clangd: {0}'.format( CLANGD_COMMAND ) )
+    _logger.info( 'Returning cached clangd: {}'.format( CLANGD_COMMAND ) )
     return CLANGD_COMMAND
   CLANGD_COMMAND = None
 
@@ -123,7 +123,7 @@ def GetClangdCommand( user_options, third_party_clangd = None ):
   if not CheckClangdVersion( INSTALLED_CLANGD ):
     # Either no clangd on $PATH or it has an unsupported version, try to use
     # built-in binary.
-    _logger.warning( 'Either there is no clangd at {0} or it is out-of-date, '
+    _logger.warning( 'Either there is no clangd at {} or it is out-of-date, '
                      'trying to use pre-built version.'.format(
                          INSTALLED_CLANGD ) )
     # Try looking for the pre-built binary.
@@ -139,13 +139,17 @@ def GetClangdCommand( user_options, third_party_clangd = None ):
 
   # We have a clangd binary that is executable and up-to-date at this point.
   CLANGD_COMMAND = [ INSTALLED_CLANGD ]
-  if RESOURCE_DIR:
+  clangd_args = user_options.get( 'clangd_args', [] )
+  put_resource_dir = False
+  put_limit_results = False
+  for arg in clangd_args:
+    CLANGD_COMMAND.append( arg )
+    put_resource_dir = put_resource_dir or arg.startswith( '-resource-dir' )
+    put_limit_results = put_limit_results or arg.startswith( '-limit-results' )
+  if RESOURCE_DIR and not put_resource_dir:
     CLANGD_COMMAND.append( '-resource-dir=' + RESOURCE_DIR )
-  if user_options.get( USES_YCMD_CACHING, True ):
+  if user_options.get( USES_YCMD_CACHING, True ) and not put_limit_results:
     CLANGD_COMMAND.append( '-limit-results=500' )
-  clangd_args = user_options.get( 'clangd_args' )
-  if clangd_args is not None:
-    CLANGD_COMMAND.extend( clangd_args )
 
   return CLANGD_COMMAND
 
@@ -163,7 +167,7 @@ def ShouldEnableClangdCompleter( user_options ):
   if not clangd_command:
     _logger.warning( 'Not using clangd: unable to find clangd binary' )
     return False
-  _logger.info( 'Using clangd from {0}'.format( clangd_command ) )
+  _logger.info( 'Using clangd from {}'.format( clangd_command ) )
   return True
 
 
@@ -182,8 +186,7 @@ class ClangdCompleter( language_server_completer.LanguageServerCompleter ):
     # Used to ensure that starting/stopping of the server is synchronized.
     # Guards _connection and _server_handle.
     self._server_state_mutex = threading.RLock()
-    self._clangd_command = user_options.get( 'clangd_command',
-                                             GetClangdCommand( user_options ) )
+    self._clangd_command = GetClangdCommand( user_options )
     self._stderr_file = None
 
     self._Reset()
@@ -211,10 +214,9 @@ class ClangdCompleter( language_server_completer.LanguageServerCompleter ):
       clangd = responses.DebugInfoServer(
         name = 'clangd',
         handle = self._server_handle,
-        executable = self._clangd_command
+        executable = self._clangd_command,
+        logfiles = [ self._stderr_file ]
       )
-      if self._stderr_file:
-        clangd.logfiles = [ self._stderr_file ]
       return responses.BuildDebugInfoResponse( name = 'clangd',
                                                servers = [ clangd ] )
 
@@ -253,7 +255,7 @@ class ClangdCompleter( language_server_completer.LanguageServerCompleter ):
         lambda self, request_data, args: self.GoToDeclaration( request_data )
       ),
       'GetType': (
-          # In addition to type information we show declaration.
+        # In addition to type information we show declaration.
         lambda self, request_data, args: self.GetType( request_data )
       ),
       'GetTypeImprecise': (
@@ -337,7 +339,7 @@ class ClangdCompleter( language_server_completer.LanguageServerCompleter ):
       # Ensure we cleanup all states.
       self._Reset()
 
-      _logger.info( 'Starting clangd: {0}'.format( self._clangd_command ) )
+      _logger.info( 'Starting clangd: {}'.format( self._clangd_command ) )
       self._stderr_file = utils.CreateLogfile( 'clangd_stderr' )
       with utils.OpenForStdHandle( self._stderr_file ) as stderr:
         self._server_handle = utils.SafePopen( self._clangd_command,
@@ -380,7 +382,7 @@ class ClangdCompleter( language_server_completer.LanguageServerCompleter ):
         self._Reset()
         return
 
-      _logger.info( 'Stopping clangd with PID {0}'.format(
+      _logger.info( 'Stopping clangd with PID {}'.format(
                         self._server_handle.pid ) )
 
       try:
