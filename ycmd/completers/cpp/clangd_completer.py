@@ -121,11 +121,9 @@ def GetClangdCommand( user_options, third_party_clangd = None ):
   resource_dir = None
   installed_clangd = user_options.get( 'clangd_binary_path', None )
   if not CheckClangdVersion( installed_clangd ):
-    # Either no clangd on $PATH or it has an unsupported version, try to use
-    # built-in binary.
-    _logger.warning( 'Either there is no clangd at {} or it is out-of-date, '
-                     'trying to use pre-built version.'.format(
-                         installed_clangd ) )
+    if installed_clangd:
+      _logger.warning( 'Clangd at {} is out-of-date, trying to use pre-built '
+                       'version.'.format( installed_clangd ) )
     # Try looking for the pre-built binary.
     if not third_party_clangd:
       return None

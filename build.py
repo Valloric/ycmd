@@ -774,7 +774,7 @@ def EnableTypeScriptCompleter( args ):
                               'and TypeScript completion' )
 
 
-def DownloadClangd():
+def DownloadClangd( printer ):
   LLVM_RELEASE = '7.0.0'
   CLANGD_DIR = p.join( DIR_OF_THIRD_PARTY, 'clangd', )
   CLANGD_CACHE_DIR = p.join( CLANGD_DIR, 'cache' )
@@ -824,30 +824,33 @@ def DownloadClangd():
   if not p.exists( CLANGD_CACHE_DIR ):
     os.makedirs( CLANGD_CACHE_DIR )
   elif p.exists( file_name ) and not CheckFileIntegrity( file_name, check_sum ):
-    print( 'Cached clangd tar file does not match checksum. Removing...' )
+    printer( 'Cached clangd tar file does not match checksum. Removing...' )
     os.remove( file_name )
 
   if p.exists( file_name ):
-    print( 'Using cached clangd: {0}'.format( file_name ) )
+    printer( 'Using cached clangd: {0}'.format( file_name ) )
   else:
-    print( "Downloading clangd from {0}...".format( download_url ) )
+    printer( "Downloading clangd from {0}...".format( download_url ) )
     DownloadFileTo( download_url, file_name )
 
-  print( "Extracting clangd to {0}...".format( CLANGD_OUTPUT_DIR ) )
+  printer( "Extracting clangd to {0}...".format( CLANGD_OUTPUT_DIR ) )
   with tarfile.open( file_name ) as package_tar:
     package_tar.extractall( CLANGD_OUTPUT_DIR )
 
-  print( "Done installing clangd" )
-
+  printer( "Done installing clangd" )
   return True
 
 
 def EnableClangdCompleter( Args ):
   if Args.quiet:
-    sys.stdout.write( 'Checking for clangd binary...' )
+    sys.stdout.write( 'Setting up clangd completer...' )
     sys.stdout.flush()
 
-  if not DownloadClangd():
+  def Print( msg ):
+    if not Args.quiet:
+      print( msg )
+
+  if not DownloadClangd( Print ):
     raise Exception( "FAIL: Couldn't download clangd." )
 
   if Args.quiet:
