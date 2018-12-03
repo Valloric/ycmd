@@ -344,13 +344,13 @@ if( LIBCLANG_TARGET )
     add_custom_command(
       TARGET ${PROJECT_NAME}
       POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E copy "${PATH_TO_LLVM_ROOT}/bin/libclang.dll" "$<TARGET_FILE_DIR:${PROJECT_NAME}>"
+      COMMAND ${CMAKE_COMMAND} -E copy "${PATH_TO_LLVM_ROOT}/bin/libclang.dll" "$<TARGET_FILE_DIR:${PROJECT_NAME}>/third_party/clang/lib"
     )
   else()
     add_custom_command(
       TARGET ${PROJECT_NAME}
       POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E copy "${LIBCLANG_TARGET}" "$<TARGET_FILE_DIR:${PROJECT_NAME}>"
+      COMMAND ${CMAKE_COMMAND} -E copy "${LIBCLANG_TARGET}" "$<TARGET_FILE_DIR:${PROJECT_NAME}>/third_party/clang/lib"
     )
   endif()
 endif()
@@ -369,20 +369,19 @@ endif()
 # present in the same directory as our ycm_core.so is used.
 # And the extra `rpath` is helpful to find libclang.dylib's dependencies
 # if it is built with `--enable-shared` flag.
-if ( EXTERNAL_LIBCLANG_PATH AND APPLE AND NOT USE_SYSTEM_LIBCLANG)
-  get_filename_component(EXTRA_LIB_PATH ${EXTERNAL_LIBCLANG_PATH} DIRECTORY)
+if ( EXTERNAL_LIBCLANG_PATH AND APPLE AND NOT USE_SYSTEM_LIBCLANG )
+  get_filename_component( EXTRA_LIB_PATH ${EXTERNAL_LIBCLANG_PATH} DIRECTORY )
 
-  set_target_properties(${PROJECT_NAME}
-    PROPERTIES LINK_FLAGS "-Wl,-rpath,${EXTRA_LIB_PATH}")
+  set_target_properties( ${PROJECT_NAME}
+    PROPERTIES LINK_FLAGS "-Wl,-rpath,${EXTRA_LIB_PATH}" )
 
   add_custom_command( TARGET ${PROJECT_NAME}
                       POST_BUILD
                       COMMAND install_name_tool
                       "-change"
                       "@rpath/libclang.dylib"
-                      "@loader_path/libclang.dylib"
-                      "$<TARGET_FILE:${PROJECT_NAME}>"
-                    )
+                      "@loader_path/third_party/clang/lib/libclang.dylib"
+                      "$<TARGET_FILE:${PROJECT_NAME}>" )
 endif()
 
 

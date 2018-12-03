@@ -42,7 +42,7 @@ import base64
 
 from ycmd import extra_conf_store, user_options_store, utils
 from ycmd.hmac_plugin import HmacPlugin
-from ycmd.utils import ( CompatibleWithCurrentCore,
+from ycmd.utils import ( ImportAndCheckCore,
                          OpenForStdHandle,
                          ReadFile,
                          ToBytes )
@@ -161,9 +161,10 @@ def Main():
   # This ensures that ycm_core is not loaded before extra conf
   # preload was run.
   YcmCoreSanityCheck()
+
   extra_conf_store.CallGlobalExtraConfYcmCorePreloadIfExists()
 
-  code = CompatibleWithCurrentCore()
+  code = ImportAndCheckCore()
   if code:
     sys.exit( code )
 
