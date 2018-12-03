@@ -900,10 +900,11 @@ class LanguageServerCompleter( Completer ):
     return completions
 
 
-  def _GetSettings( self, module, client_data ):
+  def _GetSettings( self, module, client_data, filename ):
     if hasattr( module, 'Settings' ):
       settings = module.Settings( language = self.Language(),
-                                  client_data = client_data )
+                                  client_data = client_data,
+                                  filename = filename )
       if settings is not None:
         return settings
 
@@ -913,9 +914,11 @@ class LanguageServerCompleter( Completer ):
 
 
   def _GetSettingsFromExtraConf( self, request_data ):
-    module = extra_conf_store.ModuleForSourceFile( request_data[ 'filepath' ] )
+    filename = request_data[ 'filepath' ]
+    module = extra_conf_store.ModuleForSourceFile( filename )
     if module:
-      settings = self._GetSettings( module, request_data[ 'extra_conf_data' ] )
+      settings = self._GetSettings( module, request_data[ 'extra_conf_data' ],
+                                    filename )
       self._settings = settings.get( 'ls', {} )
 
 
