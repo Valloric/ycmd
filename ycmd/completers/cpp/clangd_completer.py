@@ -40,6 +40,7 @@ INCLUDE_REGEX = re.compile(
 USES_YCMD_CACHING = 'clangd_uses_ycmd_caching'
 NOT_CACHED = 'NOT_CACHED'
 CLANGD_COMMAND = NOT_CACHED
+REPORTED_OUT_OF_DATE = False
 
 
 def DistanceOfPointToRange( point, range ):
@@ -99,13 +100,18 @@ def Get3rdPartyClangd():
     'clangd' ) )
   pre_built_clangd = utils.GetExecutable( pre_built_clangd )
   if not CheckClangdVersion( pre_built_clangd ):
-    _logger.error( 'clangd binary at {} is out-of-date please update.'
-                   .format( pre_built_clangd ) )
+    error = 'clangd binary at {} is out-of-date please update.'.format(
+               pre_built_clangd )
+    global REPORTED_OUT_OF_DATE
+    if not REPORTED_OUT_OF_DATE:
+      REPORTED_OUT_OF_DATE = True
+      raise Exception( error )
+    _logger.error( error )
     return None
   return pre_built_clangd
 
 
-def GetClangdCommand( user_options, third_party_clangd = None ):
+def GetClangdCommand( user_options, third_party_clangd ):
   """Get commands to run clangd.
 
   Look through binaries reachable through PATH or pre-built ones.
@@ -155,10 +161,11 @@ def GetClangdCommand( user_options, third_party_clangd = None ):
 def ShouldEnableClangdCompleter( user_options ):
   third_party_clangd = Get3rdPartyClangd()
   # User disabled clangd explicitly.
-  if 'use_clangd' in user_options and not user_options[ 'use_clangd' ]:
+  if 'use_clangd' in user_options and user_options[ 'use_clangd' ] == 'Never':
     return False
   # User haven't downloaded clangd and use_clangd is in auto mode.
-  if not third_party_clangd and user_options.get( 'use_clangd', 2 ) == 2:
+  if not third_party_clangd and user_options.get( 'use_clangd',
+                                                  'Auto' ) == 'Auto':
     return False
 
   clangd_command = GetClangdCommand( user_options, third_party_clangd )
@@ -184,7 +191,7 @@ class ClangdCompleter( language_server_completer.LanguageServerCompleter ):
     # Used to ensure that starting/stopping of the server is synchronized.
     # Guards _connection and _server_handle.
     self._server_state_mutex = threading.RLock()
-    self._clangd_command = GetClangdCommand( user_options )
+    self._clangd_command = GetClangdCommand( user_options, Get3rdPartyClangd() )
     self._stderr_file = None
 
     self._Reset()
@@ -287,10 +294,10 @@ class ClangdCompleter( language_server_completer.LanguageServerCompleter ):
   def GetCodepointForCompletionRequest( self, request_data ):
     """Overriden to pass the actual cursor position to clangd."""
 
-    # There are two types of codepoint offsets on the current line in YCM:
+    # There are two types of codepoint offsets on the current line in ycmd:
     #   - start_codepoint: where the completion identifier starts.
     #   - column_codepoint: where the current cursor is placed.
-    # YCM uses the start_codepoint by default -- because it caches completion
+    # ycmd uses the start_codepoint by default -- because it caches completion
     # items and does filtering/ranking. Instead, we use the filtering/ranking
     # results from clangd, thus we pass "column_codepoint" (which includes the
     # whole query string e.g. "std::u_p") to clangd.
@@ -306,7 +313,7 @@ class ClangdCompleter( language_server_completer.LanguageServerCompleter ):
 
 
   def ShouldUseNow( self, request_data ):
-    """Overriden to avoid YCM's caching/filtering logic."""
+    """Overriden to avoid ycmd's caching/filtering logic."""
     # Clangd should be able to provide completions in any context.
     # FIXME: Empty queries provide spammy results, fix this in clangd.
     # FIXME: Add triggers for include completion with release of LLVM8.
@@ -317,8 +324,8 @@ class ClangdCompleter( language_server_completer.LanguageServerCompleter ):
 
 
   def ComputeCandidates( self, request_data ):
-    """Orverriden to bypass YCM's cache."""
-    # Caching results means reranking them, and YCM has fewer signals.
+    """Orverriden to bypass ycmd's cache."""
+    # Caching results means reranking them, and ycmd has fewer signals.
     if self._use_ycmd_caching:
       return super( ClangdCompleter, self ).ComputeCandidates( request_data )
     return super( ClangdCompleter, self ).ComputeCandidatesInner( request_data )
@@ -428,9 +435,9 @@ class ClangdCompleter( language_server_completer.LanguageServerCompleter ):
       return responses.BuildDisplayMessageResponse(
           'No diagnostics for current file.' )
 
-    current_column = lsp.UTF16CodeUnitsToCodepoints(
+    current_column = lsp.CodepointsToUTF16CodeUnits(
         GetFileLines( request_data, current_file )[ current_line_lsp ],
-        request_data[ 'column_num' ] )
+        request_data[ 'column_codepoint' ] )
     minimum_distance = None
 
     message = 'No diagnostics for current line.'
