@@ -44,6 +44,13 @@ for folder in os.listdir( DIR_OF_THIRD_PARTY ):
       python_path.append( p.abspath( p.join( DIR_OF_THIRD_PARTY,
                                              folder,
                                              requests_folder ) ) )
+  elif folder == 'jedi_deps':
+    for jedi_folder in os.listdir( os.path.join( DIR_OF_THIRD_PARTY,
+                                                 folder ) ):
+      python_path.append( p.abspath( p.join( DIR_OF_THIRD_PARTY,
+                                             folder,
+                                             jedi_folder ) ) )
+
   else:
     python_path.append( p.abspath( p.join( DIR_OF_THIRD_PARTY, folder ) ) )
 if os.environ.get( 'PYTHONPATH' ) is not None:
