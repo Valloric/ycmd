@@ -35,7 +35,17 @@ for folder in os.listdir( DIR_OF_THIRD_PARTY ):
     continue
   if folder == 'cregex':
     folder = p.join( folder, 'regex_{}'.format( sys.version_info[ 0 ] ) )
-  python_path.append( p.abspath( p.join( DIR_OF_THIRD_PARTY, folder ) ) )
+  if folder == 'requests_deps':
+    for requests_folder in os.listdir( os.path.join( DIR_OF_THIRD_PARTY,
+                                                     folder ) ):
+      if requests_folder == 'urllib3':
+        requests_folder = os.path.join( requests_folder, 'src' )
+
+      python_path.append( p.abspath( p.join( DIR_OF_THIRD_PARTY,
+                                             folder,
+                                             requests_folder ) ) )
+  else:
+    python_path.append( p.abspath( p.join( DIR_OF_THIRD_PARTY, folder ) ) )
 if os.environ.get( 'PYTHONPATH' ) is not None:
   python_path.append( os.environ[ 'PYTHONPATH' ] )
 os.environ[ 'PYTHONPATH' ] = os.pathsep.join( python_path )
