@@ -1,4 +1,4 @@
-# Copyright (C) 2016 ycmd contributors
+# Copyright (C) 2016-2018 ycmd contributors
 #
 # This file is part of ycmd.
 #
@@ -30,7 +30,7 @@ from ycmd.server_utils import ( CompatibleWithCurrentCore,
 from ycmd.tests import PathToTestFile
 
 
-@patch( 'ycmd.server_utils._logger', autospec = True )
+@patch( 'ycmd.server_utils.LOGGER', autospec = True )
 def RunCompatibleWithCurrentCoreImportException( test, logger ):
   with patch( 'ycmd.server_utils.ImportCore',
               side_effect = ImportError( test[ 'exception_message' ] ) ):
@@ -41,7 +41,7 @@ def RunCompatibleWithCurrentCoreImportException( test, logger ):
   logger.exception.assert_called_with( test[ 'logged_message' ] )
 
 
-@patch( 'ycmd.server_utils._logger', autospec = True )
+@patch( 'ycmd.server_utils.LOGGER', autospec = True )
 def CompatibleWithCurrentCore_Compatible_test( logger ):
   assert_that( CompatibleWithCurrentCore(), equal_to( 0 ) )
   assert_that( logger.method_calls, empty() )
@@ -111,7 +111,7 @@ def CompatibleWithCurrentCore_Python3_test():
 
 
 @patch( 'ycm_core.YcmCoreVersion', side_effect = AttributeError() )
-@patch( 'ycmd.server_utils._logger', autospec = True )
+@patch( 'ycmd.server_utils.LOGGER', autospec = True )
 def CompatibleWithCurrentCore_Outdated_NoYcmCoreVersionMethod_test( logger,
                                                                     *args ):
   assert_that( CompatibleWithCurrentCore(), equal_to( 7 ) )
@@ -123,7 +123,7 @@ def CompatibleWithCurrentCore_Outdated_NoYcmCoreVersionMethod_test( logger,
 
 @patch( 'ycm_core.YcmCoreVersion', return_value = 10 )
 @patch( 'ycmd.server_utils.ExpectedCoreVersion', return_value = 11 )
-@patch( 'ycmd.server_utils._logger', autospec = True )
+@patch( 'ycmd.server_utils.LOGGER', autospec = True )
 def CompatibleWithCurrentCore_Outdated_NoVersionMatch_test( logger, *args ):
   assert_that( CompatibleWithCurrentCore(), equal_to( 7 ) )
   assert_that( logger.method_calls, has_length( 1 ) )
