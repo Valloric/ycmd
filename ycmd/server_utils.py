@@ -74,7 +74,7 @@ ROOT_DIR = p.normpath( p.join( p.dirname( __file__ ), '..' ) )
 DIR_OF_THIRD_PARTY = p.join( ROOT_DIR, 'third_party' )
 DIR_PACKAGES_REGEX = re.compile( '(site|dist)-packages$' )
 
-_logger = logging.getLogger( __name__ )
+LOGGER = logging.getLogger( __name__ )
 
 
 def ExpectedCoreVersion():
@@ -98,25 +98,25 @@ def CompatibleWithCurrentCore():
   except ImportError as error:
     message = str( error )
     if CORE_MISSING_ERROR_REGEX.match( message ):
-      _logger.exception( CORE_MISSING_MESSAGE )
+      LOGGER.exception( CORE_MISSING_MESSAGE )
       return CORE_MISSING_STATUS
     if CORE_PYTHON2_ERROR_REGEX.match( message ):
-      _logger.exception( CORE_PYTHON2_MESSAGE )
+      LOGGER.exception( CORE_PYTHON2_MESSAGE )
       return CORE_PYTHON2_STATUS
     if CORE_PYTHON3_ERROR_REGEX.match( message ):
-      _logger.exception( CORE_PYTHON3_MESSAGE )
+      LOGGER.exception( CORE_PYTHON3_MESSAGE )
       return CORE_PYTHON3_STATUS
-    _logger.exception( message )
+    LOGGER.exception( message )
     return CORE_UNEXPECTED_STATUS
 
   try:
     current_core_version = ycm_core.YcmCoreVersion()
   except AttributeError:
-    _logger.exception( CORE_OUTDATED_MESSAGE )
+    LOGGER.exception( CORE_OUTDATED_MESSAGE )
     return CORE_OUTDATED_STATUS
 
   if ExpectedCoreVersion() != current_core_version:
-    _logger.error( CORE_OUTDATED_MESSAGE )
+    LOGGER.error( CORE_OUTDATED_MESSAGE )
     return CORE_OUTDATED_STATUS
 
   return CORE_COMPATIBLE_STATUS

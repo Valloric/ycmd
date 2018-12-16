@@ -36,7 +36,7 @@ import tempfile
 import time
 import threading
 
-_logger = logging.getLogger( __name__ )
+LOGGER = logging.getLogger( __name__ )
 
 # Idiom to import pathname2url, url2pathname, urljoin, and urlparse on Python 2
 # and 3. By exposing these functions here, we can import them directly from this
@@ -542,7 +542,7 @@ def ListDirectory( path ):
     # Path must be a Unicode string to get Unicode strings out of listdir.
     return os.listdir( ToUnicode( path ) )
   except Exception:
-    _logger.exception( 'Error while listing %s folder.', path )
+    LOGGER.exception( 'Error while listing %s folder', path )
     return []
 
 
@@ -550,5 +550,5 @@ def GetModificationTime( path ):
   try:
     return os.path.getmtime( path )
   except OSError:
-    _logger.exception( 'Cannot get modification time for path %s.', path )
+    LOGGER.exception( 'Cannot get modification time for path %s', path )
     return 0

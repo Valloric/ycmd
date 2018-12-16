@@ -31,12 +31,9 @@ import threading
 
 from ycmd import responses
 from ycmd import utils
-from ycmd.utils import ToBytes, ToUnicode, ExecutableName
+from ycmd.utils import LOGGER, ToBytes, ToUnicode, ExecutableName
 from ycmd.completers.completer import Completer
 
-BINARY_NOT_FOUND_MESSAGE = ( '{0} binary not found. Did you build it? '
-                             'You can do so by running '
-                             '"./install.py --go-completer".' )
 SHELL_ERROR_MESSAGE = ( 'Command {command} failed with code {code} and error '
                         '"{error}".' )
 COMPUTE_OFFSET_ERROR_MESSAGE = ( 'Go completer could not compute byte offset '
@@ -59,8 +56,6 @@ GO_BINARIES = dict( {
 } )
 
 LOGFILE_FORMAT = 'gocode_{port}_{std}_'
-
-_logger = logging.getLogger( __name__ )
 
 
 def FindBinary( binary, user_options ):
@@ -92,7 +87,7 @@ def ShouldEnableGoCompleter( user_options ):
   def _HasBinary( binary ):
     binary_path = FindBinary( binary, user_options )
     if not binary_path:
-      _logger.error( BINARY_NOT_FOUND_MESSAGE.format( binary ) )
+      LOGGER.error( '%s binary not found', binary_path )
     return binary_path
 
   return all( _HasBinary( binary ) for binary in [ 'gocode', 'godef' ] )
@@ -127,7 +122,7 @@ class GoCompleter( Completer ):
 
   def ComputeCandidatesInner( self, request_data ):
     filename = request_data[ 'filepath' ]
-    _logger.info( 'Gocode completion request {0}'.format( filename ) )
+    LOGGER.info( 'Gocode completion request %s', filename )
 
     contents = utils.ToBytes(
         request_data[ 'file_data' ][ filename ][ 'contents' ] )
@@ -148,11 +143,11 @@ class GoCompleter( Completer ):
     try:
       resultdata = json.loads( ToUnicode( stdoutdata ) )
     except ValueError:
-      _logger.error( GOCODE_PARSE_ERROR_MESSAGE )
+      LOGGER.error( GOCODE_PARSE_ERROR_MESSAGE )
       raise RuntimeError( GOCODE_PARSE_ERROR_MESSAGE )
 
     if not isinstance( resultdata, list ) or len( resultdata ) != 2:
-      _logger.error( GOCODE_NO_COMPLETIONS_MESSAGE )
+      LOGGER.error( GOCODE_NO_COMPLETIONS_MESSAGE )
       raise RuntimeError( GOCODE_NO_COMPLETIONS_MESSAGE )
     for result in resultdata[ 1 ]:
       if result.get( 'class' ) == 'PANIC':
@@ -194,7 +189,7 @@ class GoCompleter( Completer ):
           command = ' '.join( command ),
           code = phandle.returncode,
           error = ToUnicode( stderrdata.strip() ) )
-      _logger.error( message )
+      LOGGER.error( message )
       raise RuntimeError( message )
 
     return stdoutdata
@@ -203,7 +198,7 @@ class GoCompleter( Completer ):
   def _StartServer( self ):
     """Start the Gocode server."""
     with self._gocode_lock:
-      _logger.info( 'Starting Gocode server' )
+      LOGGER.info( 'Starting Gocode server' )
 
       self._gocode_port = utils.GetUnusedLocalhostPort()
       self._gocode_host = '127.0.0.1:{0}'.format( self._gocode_port )
@@ -213,7 +208,7 @@ class GoCompleter( Completer ):
                   '-sock', 'tcp',
                   '-addr', self._gocode_host ]
 
-      if _logger.isEnabledFor( logging.DEBUG ):
+      if LOGGER.isEnabledFor( logging.DEBUG ):
         command.append( '-debug' )
 
       self._gocode_stdout = utils.CreateLogfile(
@@ -232,17 +227,17 @@ class GoCompleter( Completer ):
     """Stop the Gocode server."""
     with self._gocode_lock:
       if self._ServerIsRunning():
-        _logger.info( 'Stopping Gocode server with PID {0}'.format(
-                          self._gocode_handle.pid ) )
+        LOGGER.info( 'Stopping Gocode server with PID %s',
+                     self._gocode_handle.pid )
         try:
           self._ExecuteCommand( [ self._gocode_binary_path,
                                   '-sock', 'tcp',
                                   '-addr', self._gocode_host,
                                   'close' ] )
           utils.WaitUntilProcessIsTerminated( self._gocode_handle, timeout = 5 )
-          _logger.info( 'Gocode server stopped' )
+          LOGGER.info( 'Gocode server stopped' )
         except Exception:
-          _logger.exception( 'Error while stopping Gocode server' )
+          LOGGER.exception( 'Error while stopping Gocode server' )
 
       self._CleanUp()
 
@@ -269,7 +264,7 @@ class GoCompleter( Completer ):
 
   def _GoToDefinition( self, request_data ):
     filename = request_data[ 'filepath' ]
-    _logger.info( 'Godef GoTo request {0}'.format( filename ) )
+    LOGGER.info( 'Godef GoTo request %s', filename )
 
     contents = utils.ToBytes(
       request_data[ 'file_data' ][ filename ][ 'contents' ] )
@@ -279,14 +274,14 @@ class GoCompleter( Completer ):
     try:
       stdout = self._ExecuteCommand( [ self._godef_binary_path,
                                        '-i',
-                                       '-f={0}'.format( filename ),
+                                       '-f={}'.format( filename ),
                                        '-json',
-                                       '-o={0}'.format( offset ) ],
+                                       '-o={}'.format( offset ) ],
                                      contents = contents )
     # We catch this exception type and not a more specific one because we
     # raise it in _ExecuteCommand when the command fails.
-    except RuntimeError as error:
-      _logger.exception( error )
+    except RuntimeError:
+      LOGGER.exception( 'Failed to jump to definition' )
       raise RuntimeError( 'Can\'t find a definition.' )
 
     return self._ConstructGoToFromResponse( stdout )
@@ -348,7 +343,7 @@ def _ComputeOffset( contents, line, column ):
       current_column = 1
   message = COMPUTE_OFFSET_ERROR_MESSAGE.format( line = line,
                                                  column = column )
-  _logger.error( message )
+  LOGGER.error( message )
   raise RuntimeError( message )
 
 
