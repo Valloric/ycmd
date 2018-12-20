@@ -779,9 +779,9 @@ class LanguageServerCompleter( Completer ):
     else:
       items = response[ 'result' ][ 'items' ]
 
-    return self._ResolveCompletionItems( items,
-                                         False, # don't do resolve
-                                         request_data )
+    return self._CandidatesFromCompletionItems( items,
+                                                False, # don't do resolve
+                                                request_data )
 
 
   def DetailCandidates( self, request_data, completions ):
@@ -794,10 +794,10 @@ class LanguageServerCompleter( Completer ):
     # simply resolve each completion item we get. Should this be a performance
     # issue, we could restrict it in future.
     #
-    # Note: _ResolveCompletionItems does a lot of work on the actual completion
-    # text to ensure that the returned text and start_codepoint are applicable
-    # to our model of a single start column.
-    return self._ResolveCompletionItems(
+    # Note: _CandidatesFromCompletionItems does a lot of work on the actual
+    # completion text to ensure that the returned text and start_codepoint are
+    # applicable to our model of a single start column.
+    return self._CandidatesFromCompletionItems(
       [ c[ 'extra_data' ][ 'item' ] for c in completions ],
       True, # Do a full resolve
       request_data )
@@ -830,7 +830,7 @@ class LanguageServerCompleter( Completer ):
                False ) )
 
 
-  def _ResolveCompletionItems( self, items, resolve, request_data ):
+  def _CandidatesFromCompletionItems( self, items, resolve, request_data ):
     """Issue the resolve request for each completion item in |items|, then fix
     up the items such that a single start codepoint is used."""
 
