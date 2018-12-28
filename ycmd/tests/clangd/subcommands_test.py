@@ -44,17 +44,30 @@ from ycmd.utils import ReadFile
 # from cache.
 @IsolatedYcmd()
 def Subcommands_DefinedSubcommands_test( app ):
-  subcommands_data = BuildRequest( completer_target = 'objcpp' )
-  eq_( sorted( [ 'FixIt',
-                 'GetType',
-                 'GetTypeImprecise',
-                 'GoTo',
-                 'GoToDeclaration',
-                 'GoToDefinition',
-                 'GoToImprecise',
-                 'GoToInclude' ] ),
-       app.post_json( '/defined_subcommands',
-                      subcommands_data ).json )
+  file_path = PathToTestFile( 'GoTo_Clang_ZeroBasedLineAndColumn_test.cc' )
+  RunAfterInitialized( app, {
+      'request': {
+        'completer_target': 'filetype_default',
+        'line_num': 10,
+        'column_num': 3,
+        'filetype': 'objcpp',
+        'filepath': file_path
+      },
+      'expect': {
+        'response': requests.codes.ok,
+        'data': contains( *sorted( [ 'FixIt',
+                                     'Format',
+                                     'GetType',
+                                     'GetTypeImprecise',
+                                     'GoTo',
+                                     'GoToDeclaration',
+                                     'GoToDefinition',
+                                     'GoToImprecise',
+                                     'GoToInclude',
+                                     'RefactorRename' ] ) )
+      },
+      'route': '/defined_subcommands',
+  } )
 
 
 @SharedYcmd

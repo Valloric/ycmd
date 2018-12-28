@@ -48,6 +48,55 @@ CONNECTION_TIMEOUT         = 5
 # Size of the notification ring buffer
 MAX_QUEUED_MESSAGES = 250
 
+DEFAULT_SUBCOMMANDS_MAP = {
+  'GoToDefinition': {
+    'checker': lambda caps: caps.get( 'definitionProvider', False ),
+    'handler': (
+      lambda self, request_data, args: self.GoToDeclaration( request_data )
+    ),
+  },
+  'GoToDeclaration': {
+    'checker': lambda caps: caps.get( 'definitionProvider', False ),
+    'handler': (
+      lambda self, request_data, args: self.GoToDeclaration( request_data )
+    ),
+  },
+  'GoTo': {
+    'checker': lambda caps: caps.get( 'definitionProvider', False ),
+    'handler': (
+      lambda self, request_data, args: self.GoToDeclaration( request_data )
+    ),
+  },
+  'GoToImprecise': {
+    'checker': lambda caps: caps.get( 'definitionProvider', False ),
+    'handler': (
+      lambda self, request_data, args: self.GoToDeclaration( request_data )
+    ),
+  },
+  'GoToReferences': {
+    'checker': lambda caps: caps.get( 'referencesProvider', False ),
+    'handler': (
+      lambda self, request_data, args: self.GoToReferences( request_data )
+    ),
+  },
+  'RefactorRename': {
+    # This can be boolean | RenameOptions. But either way a simple if
+    # works (i.e. if RenameOptions is supplied and nonempty, then boom we have
+    # truthiness).
+    'checker': lambda caps: caps.get( 'renameProvider', False ),
+    'handler': (
+      lambda self, request_data, args: self.RefactorRename( request_data,
+                                                            args )
+    ),
+  },
+  'Format': {
+    'checker': lambda caps: caps.get( 'documentFormattingProvider', False ),
+    'handler': (
+      lambda self, request_data, args: self.Format( request_data )
+    ),
+  }
+}
+
 
 class ResponseTimeoutException( Exception ):
   """Raised by LanguageServerConnection if a request exceeds the supplied
@@ -830,10 +879,9 @@ class LanguageServerCompleter( Completer ):
     # We might not actually need to issue the resolve request if the server
     # claims that it doesn't support it. However, we still might need to fix up
     # the completion items.
-    return ( 'completionProvider' in self._server_capabilities and
-             self._server_capabilities[ 'completionProvider' ].get(
-               'resolveProvider',
-               False ) )
+    return self._server_capabilities.get( 'completionProvider', {} ).get(
+      'resolveProvider',
+      False )
 
 
   def _CandidatesFromCompletionItems( self, items, resolve, request_data ):
@@ -920,6 +968,48 @@ class LanguageServerCompleter( Completer ):
 
     request_data[ 'start_codepoint' ] = min_start_codepoint
     return completions
+
+
+  def GetSubcommandsMap( self ):
+    commands = {}
+    commands.update( DEFAULT_SUBCOMMANDS_MAP )
+    commands.update( {
+      'StopServer': (
+        lambda self, request_data, args: self.Shutdown()
+      ),
+    } )
+    commands.update( self.GetCustomSubcommands() )
+
+    return self._DiscoverSubcommandSupport( commands )
+
+
+  def _DiscoverSubcommandSupport( self, commands ):
+    if not self._server_capabilities:
+      LOGGER.warning( "Can't determine subcommands: not initialized yet" )
+      capabilities = {}
+    else:
+      capabilities = self._server_capabilities
+
+    subcommands_map = {}
+    for command, handler in iteritems( commands ):
+      if isinstance( handler, dict ):
+        if handler[ 'checker' ]( capabilities ):
+          LOGGER.info( 'Found support for command %s in %s',
+                        command,
+                        self.Language() )
+
+          subcommands_map[ command ] = handler[ 'handler' ]
+        else:
+          LOGGER.info( 'No support for %s command in server for %s',
+                        command,
+                        self.Language() )
+      else:
+        LOGGER.info( 'Always supporting %s for %s',
+                      command,
+                      self.Language() )
+        subcommands_map[ command ] = handler
+
+    return subcommands_map
 
 
   def _GetSettings( self, module, client_data ):
