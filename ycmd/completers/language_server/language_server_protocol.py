@@ -22,6 +22,7 @@ from __future__ import absolute_import
 # Not installing aliases from python-future; it's unreliable and slow.
 from builtins import *  # noqa
 
+import collections
 import os
 import json
 import hashlib
@@ -34,6 +35,32 @@ from ycmd.utils import ( ByteOffsetToCodepointOffset,
                          url2pathname,
                          urlparse,
                          urljoin )
+
+
+RequestError = collections.namedtuple( 'RequestError', [ 'code', 'reason' ] )
+
+
+class ProtocolErrors( object ):
+  # From https://microsoft.github.io/language-server-protocol/specification
+  #
+  # JSON RPC
+  ParseError = RequestError( -32700, "Parse error" )
+  InvalidRequest = RequestError( -32600, "Invalid request" )
+  MethodNotFound = RequestError( -32601, "Method not found" )
+  InvalidParams = RequestError( -32602, "Invalid parameters" )
+  InternalError = RequestError( -32603, "Internal error" )
+
+  # The following are not actually useful
+  #
+  # export const serverErrorStart: number = -32099;
+  # export const serverErrorEnd: number = -32000;
+
+  ServerNotInitialized = RequestError( -32002, "Server not initialized" )
+  UnknownErrorCode = RequestError( -32001, "Unknown error code" )
+
+  # LSP
+  RequestCancelled = RequestError( -32800, "The request was canceled" )
+  ContentModified = RequestError( -32801, "Content was modified" )
 
 
 INSERT_TEXT_FORMAT = [
@@ -194,6 +221,17 @@ def BuildNotification( method, parameters ):
   } )
 
 
+def BuildResponse( request, parameters ):
+  """Builds a JSON RPC response message to respond to the supplied |request|
+  message. |parameters| should contain either 'error' or 'result'"""
+  message = {
+    'id': request[ 'id' ],
+    'method': request[ 'method' ],
+  }
+  message.update( parameters )
+  return _BuildMessageData( message )
+
+
 def Initialize( request_id, project_directory, settings ):
   """Build the Language Server initialize request"""
 
@@ -225,6 +263,19 @@ def Shutdown( request_id ):
 
 def Exit():
   return BuildNotification( 'exit', None )
+
+
+def Reject( request, request_error, data = None ):
+  msg = {
+    'error': {
+      'code': request_error.code,
+      'reason': request_error.reason,
+    }
+  }
+  if data is not None:
+    msg[ 'error' ][ 'data' ] = data
+
+  return BuildResponse( request, msg )
 
 
 def DidChangeConfiguration( config ):
