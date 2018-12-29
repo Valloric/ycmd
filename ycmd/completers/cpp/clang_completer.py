@@ -170,8 +170,7 @@ class ClangCompleter( Completer ):
 
     return [ responses.BuildCompletionData(
                insertion_text = x.TextToInsertInBuffer(),
-               # extra_data needs to be a dictionary
-               extra_data = { 'entry': x } ) for x in results ]
+               extra_data = x ) for x in results ]
 
 
   def DetailCandidates( self, request_data, candidates ):
@@ -179,7 +178,7 @@ class ClangCompleter( Completer ):
       if 'extra_menu_info' in candidate:
         # This candidate is already detailed.
         continue
-      completion = candidate[ 'extra_data' ][ 'entry' ]
+      completion = candidate[ 'extra_data' ]
       candidate[ 'menu_text' ] = completion.MainCompletionText()
       candidate[ 'extra_menu_info' ] = completion.ExtraMenuInfo()
       candidate[ 'kind' ] = completion.kind_.name
@@ -500,7 +499,7 @@ class ClangCompleter( Completer ):
 
 def BuildExtraData( completion_data ):
   extra_data = {}
-  fixit = completion_data.fixit_
+  fixit = completion_data.BuildCompletionFixit()
   if fixit.chunks:
     extra_data.update( responses.BuildFixItResponse( [ fixit ] ) )
   if completion_data.DocString():
