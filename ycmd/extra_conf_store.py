@@ -232,3 +232,10 @@ def _RandomName():
 def _GlobalYcmExtraConfFileLocation():
   return ExpandVariablesInPath(
     user_options_store.Value( 'global_ycm_extra_conf' ) )
+
+
+def IsGlobalExtraConfModule( module ):
+  try:
+    return module.is_global_ycm_extra_conf
+  except AttributeError:
+    return False

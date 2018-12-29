@@ -303,7 +303,7 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
              super( JavaCompleter, self ).ServerIsReady() )
 
 
-  def _GetProjectDirectory( self, request_data ):
+  def _GetProjectDirectory( self, *args, **kwargs ):
     return self._java_project_dir
 
 

@@ -29,7 +29,7 @@ from hamcrest import ( assert_that, calling, equal_to, has_length, has_property,
                        none, raises, same_instance )
 from ycmd import extra_conf_store
 from ycmd.responses import UnknownExtraConf
-from ycmd.tests import IsolatedYcmd, PathToTestFile
+from ycmd.tests import IsolatedYcmd, PathToTestFile, SharedYcmd
 from ycmd.tests.test_utils import TemporarySymlink, UnixOnly, WindowsOnly
 
 
@@ -57,6 +57,8 @@ def ExtraConfStore_ModuleForSourceFile_NoConfirmation_test( app ):
   assert_that( inspect.getfile( module ), equal_to( PROJECT_EXTRA_CONF ) )
   assert_that( module, has_property( 'is_global_ycm_extra_conf' ) )
   assert_that( module.is_global_ycm_extra_conf, equal_to( False ) )
+  assert_that( extra_conf_store.IsGlobalExtraConfModule( module ),
+               equal_to( False ) )
 
 
 @IsolatedYcmd( { 'extra_conf_globlist': [ PROJECT_EXTRA_CONF ] } )
@@ -67,6 +69,8 @@ def ExtraConfStore_ModuleForSourceFile_Whitelisted_test( app ):
   assert_that( inspect.getfile( module ), equal_to( PROJECT_EXTRA_CONF ) )
   assert_that( module, has_property( 'is_global_ycm_extra_conf' ) )
   assert_that( module.is_global_ycm_extra_conf, equal_to( False ) )
+  assert_that( extra_conf_store.IsGlobalExtraConfModule( module ),
+               equal_to( False ) )
 
 
 @IsolatedYcmd( { 'extra_conf_globlist': [ '!' + PROJECT_EXTRA_CONF ] } )
@@ -84,6 +88,8 @@ def ExtraConfStore_ModuleForSourceFile_UnixVarEnv_test( app ):
   assert_that( inspect.getfile( module ), equal_to( PROJECT_EXTRA_CONF ) )
   assert_that( module, has_property( 'is_global_ycm_extra_conf' ) )
   assert_that( module.is_global_ycm_extra_conf, equal_to( False ) )
+  assert_that( extra_conf_store.IsGlobalExtraConfModule( module ),
+               equal_to( False ) )
 
 
 @WindowsOnly
@@ -96,6 +102,8 @@ def ExtraConfStore_ModuleForSourceFile_WinVarEnv_test( app ):
   assert_that( inspect.getfile( module ), equal_to( PROJECT_EXTRA_CONF ) )
   assert_that( module, has_property( 'is_global_ycm_extra_conf' ) )
   assert_that( module.is_global_ycm_extra_conf, equal_to( False ) )
+  assert_that( extra_conf_store.IsGlobalExtraConfModule( module ),
+               equal_to( False ) )
 
 
 @UnixOnly
@@ -110,6 +118,8 @@ def ExtraConfStore_ModuleForSourceFile_SupportSymlink_test( app ):
     assert_that( inspect.getfile( module ), equal_to( PROJECT_EXTRA_CONF ) )
     assert_that( module, has_property( 'is_global_ycm_extra_conf' ) )
     assert_that( module.is_global_ycm_extra_conf, equal_to( False ) )
+  assert_that( extra_conf_store.IsGlobalExtraConfModule( module ),
+               equal_to( False ) )
 
 
 @IsolatedYcmd( { 'global_ycm_extra_conf': GLOBAL_EXTRA_CONF } )
@@ -120,6 +130,8 @@ def ExtraConfStore_ModuleForSourceFile_GlobalExtraConf_test( app ):
   assert_that( inspect.getfile( module ), equal_to( GLOBAL_EXTRA_CONF ) )
   assert_that( module, has_property( 'is_global_ycm_extra_conf' ) )
   assert_that( module.is_global_ycm_extra_conf, equal_to( True ) )
+  assert_that( extra_conf_store.IsGlobalExtraConfModule( module ),
+               equal_to( True ) )
 
 
 @patch.dict( 'os.environ', { 'YCMD_TEST': GLOBAL_EXTRA_CONF } )
@@ -131,6 +143,8 @@ def ExtraConfStore_ModuleForSourceFile_GlobalExtraConf_UnixEnvVar_test( app ):
   assert_that( inspect.getfile( module ), equal_to( GLOBAL_EXTRA_CONF ) )
   assert_that( module, has_property( 'is_global_ycm_extra_conf' ) )
   assert_that( module.is_global_ycm_extra_conf, equal_to( True ) )
+  assert_that( extra_conf_store.IsGlobalExtraConfModule( module ),
+               equal_to( True ) )
 
 
 @WindowsOnly
@@ -143,6 +157,8 @@ def ExtraConfStore_ModuleForSourceFile_GlobalExtraConf_WinEnvVar_test( app ):
   assert_that( inspect.getfile( module ), equal_to( GLOBAL_EXTRA_CONF ) )
   assert_that( module, has_property( 'is_global_ycm_extra_conf' ) )
   assert_that( module.is_global_ycm_extra_conf, equal_to( True ) )
+  assert_that( extra_conf_store.IsGlobalExtraConfModule( module ),
+               equal_to( True ) )
 
 
 @IsolatedYcmd( { 'global_ycm_extra_conf': NO_EXTRA_CONF } )
@@ -210,6 +226,8 @@ def Load_DoNotReloadExtraConf_NoForce_test( app ):
     assert_that( inspect.getfile( module ), equal_to( PROJECT_EXTRA_CONF ) )
     assert_that( module, has_property( 'is_global_ycm_extra_conf' ) )
     assert_that( module.is_global_ycm_extra_conf, equal_to( False ) )
+    assert_that( extra_conf_store.IsGlobalExtraConfModule( module ),
+                 equal_to( False ) )
     assert_that(
       extra_conf_store.Load( PROJECT_EXTRA_CONF ),
       same_instance( module )
@@ -224,7 +242,15 @@ def Load_DoNotReloadExtraConf_ForceEqualsTrue_test( app ):
     assert_that( inspect.getfile( module ), equal_to( PROJECT_EXTRA_CONF ) )
     assert_that( module, has_property( 'is_global_ycm_extra_conf' ) )
     assert_that( module.is_global_ycm_extra_conf, equal_to( False ) )
+    assert_that( extra_conf_store.IsGlobalExtraConfModule( module ),
+                 equal_to( False ) )
     assert_that(
       extra_conf_store.Load( PROJECT_EXTRA_CONF, force = True ),
       same_instance( module )
     )
+
+
+@SharedYcmd
+def ExtraConfStore_IsGlobalExtraConfStore_NotAExtraConf_test( app ):
+  assert_that( extra_conf_store.IsGlobalExtraConfModule( extra_conf_store ),
+               equal_to( False ) )
