@@ -67,27 +67,21 @@ struct CompletionData {
   // the completion is, say, a data member. So for a function like "int foo(int
   // x)", this would be "foo(int x)". For a data member like "count_", it would
   // be just "count_".
-  std::string MainCompletionText() const {
-    return everything_except_return_type_;
-  }
+  YCM_EXPORT std::string MainCompletionText();
 
   // This is extra info shown in the pop-up completion menu, after the
   // completion text and the kind. Currently we put the return type of the
   // function here, if any.
-  std::string ExtraMenuInfo() const {
-    return return_type_;
-  }
+  std::string ExtraMenuInfo();
 
   // This is used to show extra information in vim's preview window. This is the
   // window that vim usually shows at the top of the buffer. This should be used
   // for extra information about the completion.
-  std::string DetailedInfoForPreviewWindow() const {
-    return detailed_info_;
-  }
+  std::string DetailedInfoForPreviewWindow();
 
-  std::string DocString() const {
-    return doc_string_;
-  }
+  FixIt BuildCompletionFixIt();
+
+  YCM_EXPORT std::string DocString();
 
   std::string detailed_info_;
 
@@ -109,13 +103,10 @@ struct CompletionData {
 
 private:
 
-  void ExtractDataFromChunk( CXCompletionString completion_string,
-                             size_t chunk_num,
-                             bool &saw_left_paren,
-                             bool &saw_function_params,
-                             bool &saw_placeholder );
-
-  void BuildCompletionFixIt( CXCodeCompleteResults *results, size_t index );
+  CXCompletionString completion_string_;
+  size_t index_;
+  CXCodeCompleteResults *results_;
+  std::vector< CXCompletionChunkKind > completion_chunk_kinds_;
 };
 
 } // namespace YouCompleteMe
