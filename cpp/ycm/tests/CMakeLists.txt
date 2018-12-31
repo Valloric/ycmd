@@ -49,6 +49,7 @@ endif()
 
 include_directories(
   ${ycm_core_SOURCE_DIR}
+  ${ycm_core_SOURCE_DIR}/../whereami
   )
 
 include_directories(
