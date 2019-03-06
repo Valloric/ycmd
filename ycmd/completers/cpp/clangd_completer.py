@@ -279,8 +279,11 @@ class ClangdCompleter( language_server_completer.LanguageServerCompleter ):
       'GoToInclude': (
         lambda self, request_data, args: self.GoToDeclaration( request_data )
       ),
+      'RestartServer': (
+        lambda self, request_data, args: self._RestartServer( request_data )
+      ),
       'StopServer': (
-        lambda self, request_data, args: self.Shutdown()
+        lambda self, request_data, args: self._StopServer()
       ),
       # To handle the commands below we need extensions to LSP. One way to
       # provide those could be to use workspace/executeCommand requset.
@@ -383,7 +386,7 @@ class ClangdCompleter( language_server_completer.LanguageServerCompleter ):
     return True
 
 
-  def Shutdown( self ):
+  def _StopServer( self ):
     with self._server_state_mutex:
       LOGGER.info( 'Shutting down clangd...' )
 
@@ -423,6 +426,16 @@ class ClangdCompleter( language_server_completer.LanguageServerCompleter ):
       # Tidy up our internal state, even if the completer server didn't close
       # down cleanly.
       self._Reset()
+
+
+  def Shutdown( self ):
+    self._StopServer()
+
+
+  def _RestartServer( self, request_data ):
+    with self._server_state_mutex:
+      self._StopServer()
+      self._StartAndInitializeServer( request_data )
 
 
   def GetDetailedDiagnostic( self, request_data ):
