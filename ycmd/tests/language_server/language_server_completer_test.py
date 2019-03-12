@@ -545,8 +545,13 @@ def LanguageServerCompleter_GetCompletions_List_test():
                        'GetResponse',
                        side_effect = [ completion_response ] +
                                      resolve_responses ):
-      assert_that( completer.ComputeCandidatesInner( request_data ),
-                   has_items( has_entries( { 'insertion_text': 'test' } ) ) )
+      assert_that(
+        completer.ComputeCandidatesInner( request_data, 1 ),
+        contains(
+          has_items( has_entries( { 'insertion_text': 'test' } ) ),
+          False
+        )
+      )
 
 
 def LanguageServerCompleter_GetCompletions_UnsupportedKinds_test():
@@ -565,9 +570,14 @@ def LanguageServerCompleter_GetCompletions_UnsupportedKinds_test():
                        'GetResponse',
                        side_effect = [ completion_response ] +
                                      resolve_responses ):
-      assert_that( completer.ComputeCandidatesInner( request_data ),
-                   has_items( all_of( has_entry( 'insertion_text', 'test' ),
-                                      is_not( has_key( 'kind' ) ) ) ) )
+      assert_that(
+        completer.ComputeCandidatesInner( request_data, 1 ),
+        contains(
+          has_items( all_of( has_entry( 'insertion_text', 'test' ),
+                             is_not( has_key( 'kind' ) ) ) ),
+          False
+        )
+      )
 
 
 def FindOverlapLength_test():
