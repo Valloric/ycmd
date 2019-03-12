@@ -304,15 +304,17 @@ class ClangdCompleter( language_server_completer.LanguageServerCompleter ):
 
 
   def GetCodepointForCompletionRequest( self, request_data ):
-    """Overriden to pass the actual cursor position to clangd."""
-
+    """Overriden to pass the actual cursor position to Clangd when ycmd caching
+    is disabled."""
     # There are two types of codepoint offsets on the current line in ycmd:
-    #   - start_codepoint: where the completion identifier starts.
-    #   - column_codepoint: where the current cursor is placed.
-    # ycmd uses the start_codepoint by default -- because it caches completion
-    # items and does filtering/ranking. Instead, we use the filtering/ranking
-    # results from clangd, thus we pass "column_codepoint" (which includes the
-    # whole query string e.g. "std::u_p") to clangd.
+    #   - 'start_codepoint': where the completion identifier starts.
+    #   - 'column_codepoint': where the current cursor is placed.
+    # ycmd uses 'start_codepoint' by default because it caches completion items
+    # and applies its own filtering and sorting on them. If ycmd cache is
+    # disabled, pass 'column_codepoint' (which includes the whole query string
+    # e.g. "std::u_p") to use the filtering and sorting results from Clangd.
+    if self._use_ycmd_caching:
+      return request_data[ 'start_codepoint' ]
     return request_data[ 'column_codepoint' ]
 
 
@@ -325,9 +327,10 @@ class ClangdCompleter( language_server_completer.LanguageServerCompleter ):
 
 
   def ShouldUseNow( self, request_data ):
-    """Overriden to avoid ycmd's caching/filtering logic."""
+    """Overriden to use Clangd filtering and sorting when ycmd caching is
+    disabled."""
     # Clangd should be able to provide completions in any context.
-    # FIXME: Empty queries provide spammy results, fix this in clangd.
+    # FIXME: Empty queries provide spammy results, fix this in Clangd.
     # FIXME: Add triggers for include completion with release of LLVM8.
     if self._use_ycmd_caching:
       return super( ClangdCompleter, self ).ShouldUseNow( request_data )
@@ -336,8 +339,8 @@ class ClangdCompleter( language_server_completer.LanguageServerCompleter ):
 
 
   def ComputeCandidates( self, request_data ):
-    """Orverriden to bypass ycmd's cache."""
-    # Caching results means reranking them, and ycmd has fewer signals.
+    """Overriden to bypass ycmd cache if disabled."""
+    # Caching results means resorting them, and ycmd has fewer signals.
     if self._use_ycmd_caching:
       return super( ClangdCompleter, self ).ComputeCandidates( request_data )
     return super( ClangdCompleter, self ).ComputeCandidatesInner( request_data )
