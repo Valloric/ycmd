@@ -22,10 +22,11 @@ from __future__ import absolute_import
 # Not installing aliases from python-future; it's unreliable and slow.
 from builtins import *  # noqa
 
-import subprocess
+import logging
 import os
-import threading
 import re
+import subprocess
+import threading
 
 from ycmd import responses, utils
 from ycmd.completers.completer_utils import GetFileLines
@@ -161,18 +162,22 @@ def GetClangdCommand( user_options ):
   put_resource_dir = False
   put_limit_results = False
   put_header_insertion_decorators = False
+  put_log = False
   for arg in clangd_args:
     CLANGD_COMMAND.append( arg )
     put_resource_dir = put_resource_dir or arg.startswith( '-resource-dir' )
     put_limit_results = put_limit_results or arg.startswith( '-limit-results' )
     put_header_insertion_decorators = ( put_header_insertion_decorators or
                         arg.startswith( '-header-insertion-decorators' ) )
+    put_log = put_log or arg.startswith( '-log' )
   if not put_header_insertion_decorators:
     CLANGD_COMMAND.append( '-header-insertion-decorators=0' )
   if resource_dir and not put_resource_dir:
     CLANGD_COMMAND.append( '-resource-dir=' + resource_dir )
   if user_options[ 'clangd_uses_ycmd_caching' ] and not put_limit_results:
     CLANGD_COMMAND.append( '-limit-results=500' )
+  if LOGGER.isEnabledFor( logging.DEBUG ) and not put_log:
+    CLANGD_COMMAND.append( '-log=verbose' )
 
   return CLANGD_COMMAND
 
