@@ -311,6 +311,12 @@ class ClangdCompleter( language_server_completer.LanguageServerCompleter ):
     return INCLUDE_REGEX.match( current_line[ : column_codepoint ] )
 
 
+  def ShouldUseNowInner( self, request_data ):
+    if self.ShouldCompleteIncludeStatement( request_data ):
+      return True
+    return super( ClangdCompleter, self ).ShouldUseNowInner( request_data )
+
+
   def ShouldUseNow( self, request_data ):
     """Overridden to use Clangd filtering and sorting when ycmd caching is
     disabled."""
