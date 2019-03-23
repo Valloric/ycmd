@@ -273,7 +273,7 @@ def LanguageServerCompleter_Initialise_Shutdown_test():
     assert_that( completer.ServerIsReady(), equal_to( False ) )
 
 
-def LanguageServerCompleter_GoToDeclaration_test():
+def LanguageServerCompleter_GoTo_test():
   if utils.OnWindows():
     filepath = 'C:\\test.test'
     uri = 'file:///c:/test.test'
@@ -287,22 +287,24 @@ def LanguageServerCompleter_GoToDeclaration_test():
   request_data = RequestWrap( BuildRequest(
     filetype = 'ycmtest',
     filepath = filepath,
-    contents = contents
+    contents = contents,
+    line_num = 2,
+    column_num = 3
   ) )
 
   @patch.object( completer, 'ServerIsReady', return_value = True )
-  def Test( response, checker, throws, *args ):
+  def Test( responses, goto_handlers, checker, throws, *args ):
     with patch.object( completer.GetConnection(),
                        'GetResponse',
-                       return_value = response ):
+                       side_effect = responses ):
       if throws:
         assert_that(
-          calling( completer.GoToDeclaration ).with_args( request_data ),
+          calling( completer.GoTo ).with_args( request_data, goto_handlers ),
           raises( checker )
         )
       else:
-        result = completer.GoToDeclaration( request_data )
-        print( 'Result: {0}'.format( result ) )
+        result = completer.GoTo( request_data, goto_handlers )
+        print( 'Result: {}'.format( result ) )
         assert_that( result, checker )
 
 
@@ -322,24 +324,25 @@ def LanguageServerCompleter_GoToDeclaration_test():
   } )
 
   cases = [
-    ( { 'result': None }, RuntimeError, True ),
-    ( { 'result': location }, goto_response, False ),
-    ( { 'result': {} }, RuntimeError, True ),
-    ( { 'result': [] }, RuntimeError, True ),
-    ( { 'result': [ location ] }, goto_response, False ),
-    ( { 'result': [ location, location ] },
+    ( [ { 'result': None } ], [ 'Definition' ], RuntimeError, True ),
+    ( [ { 'result': location } ], [ 'Declaration' ], goto_response, False ),
+    ( [ { 'result': {} } ], [ 'TypeDefinition' ], RuntimeError, True ),
+    ( [ { 'result': [] } ], [ 'Implementation' ], RuntimeError, True ),
+    ( [ { 'result': [ location ] } ], [ 'References' ], goto_response, False ),
+    ( [ { 'result': [ location, location ] } ],
+      [ 'References' ],
       contains( goto_response, goto_response ),
       False ),
   ]
 
-  for response, checker, throws in cases:
-    yield Test, response, checker, throws
+  for response, goto_handlers, checker, throws in cases:
+    yield Test, response, goto_handlers, checker, throws
 
 
   with patch(
     'ycmd.completers.language_server.language_server_protocol.UriToFilePath',
     side_effect = lsp.InvalidUriException ):
-    yield Test, {
+    yield Test, [ {
       'result': {
         'uri': uri,
         'range': {
@@ -347,15 +350,11 @@ def LanguageServerCompleter_GoToDeclaration_test():
           'end': { 'line': 0, 'character': 0 },
         }
       }
-    }, has_entries( {
-      'filepath': '',
-      'column_num': 1,
-      'line_num': 1,
-    } ), False
+    } ], [ 'Definition' ], LocationMatcher( '', 1, 1 ), False
 
   with patch( 'ycmd.completers.completer_utils.GetFileContents',
               side_effect = lsp.IOError ):
-    yield Test, {
+    yield Test, [ {
       'result': {
         'uri': uri,
         'range': {
@@ -363,11 +362,98 @@ def LanguageServerCompleter_GoToDeclaration_test():
           'end': { 'line': 0, 'character': 0 },
         }
       }
-    }, has_entries( {
-      'filepath': filepath,
-      'column_num': 1,
-      'line_num': 1,
-    } ), False
+    } ], [ 'Definition' ], LocationMatcher( filepath, 1, 1 ), False
+
+  # Two handlers returning the location where the cursor is.
+  yield Test, [ {
+    'result': {
+      'uri': uri,
+      'range': {
+        'start': { 'line': 1, 'character': 0 },
+        'end': { 'line': 1, 'character': 4 },
+      }
+    }
+  }, {
+    'result': {
+      'uri': uri,
+      'range': {
+        'start': { 'line': 1, 'character': 0 },
+        'end': { 'line': 1, 'character': 4 },
+      }
+    }
+  } ], [ 'Definition', 'Declaration' ], LocationMatcher( filepath, 2, 1 ), False
+
+  # First handler returns two locations.
+  yield Test, [ {
+    'result': [ {
+      'uri': uri,
+      'range': {
+        'start': { 'line': 0, 'character': 0 },
+        'end': { 'line': 0, 'character': 4 },
+      }
+    }, {
+      'uri': uri,
+      'range': {
+        'start': { 'line': 1, 'character': 0 },
+        'end': { 'line': 1, 'character': 4 },
+      }
+    } ],
+  } ], [ 'Definition', 'Declaration' ], contains(
+    LocationMatcher( filepath, 1, 1 ),
+    LocationMatcher( filepath, 2, 1 )
+  ), False
+
+  # First handler return the location where the cursor is and second handler
+  # returns a different URI.
+  if utils.OnWindows():
+    other_filepath = 'C:\\another.test'
+    other_uri = 'file:///c:/another.test'
+  else:
+    other_filepath = '/another.test'
+    other_uri = 'file:/another.test'
+
+  yield Test, [ {
+    'result': {
+      'uri': uri,
+      'range': {
+        'start': { 'line': 1, 'character': 0 },
+        'end': { 'line': 1, 'character': 4 },
+      }
+    }
+  }, {
+    'result': {
+      'uri': other_uri,
+      'range': {
+        'start': { 'line': 1, 'character': 0 },
+        'end': { 'line': 1, 'character': 4 },
+      }
+    }
+  } ], [ 'Definition',
+         'Declaration' ], LocationMatcher( other_filepath, 2, 1 ), False
+
+  # First handler return a location before the cursor.
+  yield Test, [ {
+    'result': {
+      'uri': uri,
+      'range': {
+        'start': { 'line': 0, 'character': 1 },
+        'end': { 'line': 1, 'character': 1 },
+      }
+    }
+  } ], [ 'Definition',
+         'Declaration' ], LocationMatcher( filepath, 1, 2 ), False
+
+  # First handler return a location after the cursor.
+  yield Test, [ {
+    'result': {
+      'uri': uri,
+      'range': {
+        'start': { 'line': 1, 'character': 3 },
+        'end': { 'line': 2, 'character': 3 },
+      }
+    }
+  } ], [ 'Definition',
+         'Declaration' ], LocationMatcher( filepath, 2, 4 ), False
 
 
 def GetCompletions_RejectInvalid_test():
