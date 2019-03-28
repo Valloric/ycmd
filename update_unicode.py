@@ -50,7 +50,7 @@ UNICODE_TABLE_TEMPLATE = (
   """// This file was automatically generated with the update_unicode.py script
 // using version {unicode_version} of the Unicode Character Database.
 #include <array>
-struct RawCodePointArray {{
+struct {{
 std::array< char[{original_size}], {size} > original;
 std::array< char[{normal_size}], {size} > normal;
 std::array< char[{folded_case_size}], {size} > folded_case;
@@ -60,8 +60,7 @@ std::array< bool, {size} > is_punctuation;
 std::array< bool, {size} > is_uppercase;
 std::array< uint8_t, {size} > break_property;
 std::array< uint8_t, {size} > combining_class;
-}};
-static const RawCodePointArray code_points = {{
+}} static const code_points = {{
 {code_points}
 }};""" )
 UNICODE_VERSION_REGEX = re.compile( r'Version (?P<version>\d+(?:\.\d+){2})' )
@@ -534,9 +533,6 @@ def GenerateUnicodeTable( header_path, code_points ):
     'combining_class': { 'output': StringIO(), 'converter': str },
   }
 
-  for d in table.values():
-    d[ 'output' ].write( '{{' )
-
   for code_point in code_points:
     for t, d in table.items():
       cp = code_point[ t ]
@@ -547,9 +543,9 @@ def GenerateUnicodeTable( header_path, code_points ):
 
   for t, d in table.items():
     if t == 'combining_class':
-      d[ 'output' ] = d[ 'output' ].getvalue().rstrip( ',' ) + '}}'
+      d[ 'output' ] = d[ 'output' ].getvalue().rstrip( ',' )
     else:
-      d[ 'output' ] = d[ 'output' ].getvalue().rstrip( ',' ) + '}},'
+      d[ 'output' ] = d[ 'output' ].getvalue()
 
   code_points = '\n'.join( [ table[ 'original' ][ 'output' ],
                              table[ 'normal' ][ 'output' ],

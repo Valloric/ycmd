@@ -46,7 +46,7 @@ int GetCodePointLength( uint8_t leading_byte ) {
 }
 
 
-const RawCodePoint FindCodePoint( const char *text ) {
+RawCodePoint FindCodePoint( const char *text ) {
 #include "UnicodeTable.inc"
 
   // Do a binary search on the array of code points to find the raw code point
