@@ -1,4 +1,4 @@
-# Copyright (C) 2017-2018 ycmd contributors
+# Copyright (C) 2017-2019 ycmd contributors
 #
 # This file is part of ycmd.
 #
@@ -1087,10 +1087,12 @@ class LanguageServerCompleter( Completer ):
     return subcommands_map
 
 
-  def _GetSettings( self, module, client_data ):
+  def GetSettings( self, module, request_data ):
     if hasattr( module, 'Settings' ):
-      settings = module.Settings( language = self.Language(),
-                                  client_data = client_data )
+      settings = module.Settings(
+        language = self.Language(),
+        filename = request_data[ 'filepath' ],
+        client_data = request_data[ 'extra_conf_data' ] )
       if settings is not None:
         return settings
 
@@ -1102,7 +1104,7 @@ class LanguageServerCompleter( Completer ):
   def _GetSettingsFromExtraConf( self, request_data ):
     module = extra_conf_store.ModuleForSourceFile( request_data[ 'filepath' ] )
     if module:
-      settings = self._GetSettings( module, request_data[ 'extra_conf_data' ] )
+      settings = self.GetSettings( module, request_data )
       self._settings = settings.get( 'ls' ) or {}
       # Only return the dir if it was found in the paths; we don't want to use
       # the path of the global extra conf as a project root dir.
@@ -1130,7 +1132,7 @@ class LanguageServerCompleter( Completer ):
       self._SendInitialize( request_data, extra_conf_dir )
 
 
-  def OnFileReadyToParse( self, request_data ):
+  def OnFileReadyToParse( self, request_data, handlers = None ):
     if not self.ServerIsHealthy() and not self._server_started:
       # We have to get the settings before starting the server, as this call
       # might throw UnknownExtraConf.
@@ -1139,17 +1141,23 @@ class LanguageServerCompleter( Completer ):
     if not self.ServerIsHealthy():
       return
 
-    # If we haven't finished initializing yet, we need to queue up a call to
-    # _UpdateServerWithFileContents. This ensures that the server is up to date
-    # as soon as we are able to send more messages. This is important because
-    # server start up can be quite slow and we must not block the user, while we
-    # must keep the server synchronized.
+    # If we haven't finished initializing yet, we need to queue up
+    # all functions from |handlers| and _UpdateServerWithFileContents. This
+    # ensures that the server is up to date as soon as we are able to send more
+    # messages. This is important because server start up can be quite slow and
+    # we must not block the user, while we must keep the server synchronized.
+    if handlers is None:
+      handlers = []
+    handlers.append(
+      lambda self: self._UpdateServerWithFileContents( request_data ) )
+
     if not self._initialize_event.is_set():
-      self._OnInitializeComplete(
-        lambda self: self._UpdateServerWithFileContents( request_data ) )
+      for handler in handlers:
+        self._OnInitializeComplete( handler )
       return
 
-    self._UpdateServerWithFileContents( request_data )
+    for handler in handlers:
+      handler( self )
 
     # Return the latest diagnostics that we have received.
     #
