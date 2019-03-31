@@ -1632,10 +1632,13 @@ class LanguageServerCompleter( Completer ):
 
   def _GoToRequest( self, request_data, handler ):
     request_id = self.GetConnection().NextRequestId()
-    result = self.GetConnection().GetResponse(
-      request_id,
-      getattr( lsp, handler )( request_id, request_data ),
-      REQUEST_TIMEOUT_COMMAND )[ 'result' ]
+    try:
+      result = self.GetConnection().GetResponse(
+        request_id,
+        getattr( lsp, handler )( request_id, request_data ),
+        REQUEST_TIMEOUT_COMMAND )[ 'result' ]
+    except ResponseFailedException:
+      raise RuntimeError( 'Cannot jump to location' )
     if not result:
       raise RuntimeError( 'Cannot jump to location' )
     if not isinstance( result, list ):
