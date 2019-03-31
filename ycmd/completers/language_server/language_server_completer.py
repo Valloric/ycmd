@@ -1632,10 +1632,13 @@ class LanguageServerCompleter( Completer ):
 
   def _GoToRequest( self, request_data, handler ):
     request_id = self.GetConnection().NextRequestId()
-    result = self.GetConnection().GetResponse(
-      request_id,
-      getattr( lsp, handler )( request_id, request_data ),
-      REQUEST_TIMEOUT_COMMAND )[ 'result' ]
+    try:
+      result = self.GetConnection().GetResponse(
+        request_id,
+        getattr( lsp, handler )( request_id, request_data ),
+        REQUEST_TIMEOUT_COMMAND )[ 'result' ]
+    except ResponseFailedException:
+      raise RuntimeError( 'Cannot jump to location' )
     if not result:
       raise RuntimeError( 'Cannot jump to location' )
     if not isinstance( result, list ):
@@ -1726,8 +1729,11 @@ class LanguageServerCompleter( Completer ):
           [] ),
         REQUEST_TIMEOUT_COMMAND )
 
-    response = [ self.HandleServerCommand( request_data, c )
-                 for c in code_actions[ 'result' ] ]
+    result = code_actions[ 'result' ]
+    if result is None:
+      result = []
+
+    response = [ self.HandleServerCommand( request_data, c ) for c in result ]
 
     # Show a list of actions to the user to select which one to apply.
     # This is (probably) a more common workflow for "code action".
