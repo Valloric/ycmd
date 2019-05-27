@@ -92,14 +92,14 @@ def GetCompletions():
 
   errors = None
   completions = None
-  signatures = None
+  signature_info = None
 
   if do_filetype_completion:
     try:
       filetype_completer = _server_state.GetFiletypeCompleter(
         request_data[ 'filetypes' ] )
       completions = filetype_completer.ComputeCandidates( request_data )
-      signatures = filetype_completer.ComputeSignatures( request_data )
+      signature_info = filetype_completer.ComputeSignatures( request_data )
     except Exception as exception:
       if request_data[ 'force_semantic' ]:
         # user explicitly asked for semantic completion, so just pass the error
@@ -112,16 +112,15 @@ def GetCompletions():
       stack = traceback.format_exc()
       errors = [ BuildExceptionResponse( exception, stack ) ]
 
-  if not completions and not signatures:
-    if not request_data[ 'force_semantic' ]:
-      completions = _server_state.GetGeneralCompleter().ComputeCandidates(
-        request_data )
-      signatures = _server_state.GetGeneralCompleter().ComputeSignatures(
-        request_data )
+  if not completions and not request_data[ 'force_semantic' ]:
+    completions = _server_state.GetGeneralCompleter().ComputeCandidates(
+      request_data )
+
+  # FIXME: no fallback for signature? Makes sense i guess
 
   return _JsonResponse(
       BuildCompletionResponse( completions if completions else [],
-                               signatures if signatures else [],
+                               signature_info if signature_info else {},
                                request_data[ 'start_column' ],
                                errors = errors ) )
 
