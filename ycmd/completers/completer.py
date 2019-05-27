@@ -26,6 +26,7 @@ import abc
 import threading
 from ycmd.completers import completer_utils
 from ycmd.responses import NoDiagnosticSupport
+from ycmd.utils import LOGGER
 from future.utils import with_metaclass
 
 NO_USER_COMMANDS = 'This completer does not define any commands.'
@@ -180,6 +181,18 @@ class Completer( with_metaclass( abc.ABCMeta, object ) ):
             user_trigger_map = user_options[ 'semantic_triggers' ],
             filetype_set = set( self.SupportedFiletypes() ) )
         if user_options[ 'auto_trigger' ] else None )
+
+    # FIXME: these .get() are required due to the OmniCompleter, which somehow
+    # doesn't seem to load the default settings. I guess there is a subset of
+    # settings which the Vim client is hard-coded to know about.
+    self.signature_triggers = (
+        completer_utils.PreparedTriggers(
+            user_trigger_map = (
+              user_options.get( 'signature_triggers' ) or {} ),
+            filetype_set = set( self.SupportedFiletypes() ),
+            default_triggers = {} )
+        if not user_options.get( 'disable_signature_help' ) else None )
+
     self._completions_cache = CompletionsCache()
     self._max_candidates = user_options[ 'max_num_candidates' ]
 
@@ -208,13 +221,44 @@ class Completer( with_metaclass( abc.ABCMeta, object ) ):
   def ShouldUseNowInner( self, request_data ):
     if not self.completion_triggers:
       return False
+
     current_line = request_data[ 'line_value' ]
     start_codepoint = request_data[ 'start_codepoint' ] - 1
     column_codepoint = request_data[ 'column_codepoint' ] - 1
     filetype = self._CurrentFiletype( request_data[ 'filetypes' ] )
 
-    return self.completion_triggers.MatchesForFiletype(
-        current_line, start_codepoint, column_codepoint, filetype )
+    return self.completion_triggers.MatchesForFiletype( current_line,
+                                                        start_codepoint,
+                                                        column_codepoint,
+                                                        filetype )
+
+
+  def ShouldUseSignatureHelpNow( self, request_data ):
+    if not self.signature_triggers:
+      return False
+
+    state = request_data.get( 'signature_help_state', 'INACTIVE' )
+
+    current_line = request_data[ 'line_value' ]
+    # Note: We use the cursor column for all triggering of signature help, not
+    # the calculated "start" codepoint. This is because the semantic triggering
+    # isn't so useful for signatures as it is for members (for example).
+    column_codepoint = request_data[ 'column_codepoint' ] - 1
+    filetype = self._CurrentFiletype( request_data[ 'filetypes' ] )
+
+    LOGGER.debug( 'Signature trigger state = %s, line=%s, col=%s',
+                  state,
+                  current_line,
+                  column_codepoint )
+
+    if state == 'ACTIVE':
+      LOGGER.debug( 'Triggering signatures due to existing state' )
+      return True
+
+    return self.signature_triggers.MatchesForFiletype( current_line,
+                                                       column_codepoint,
+                                                       column_codepoint,
+                                                       filetype )
 
 
   def QueryLengthAboveMinThreshold( self, request_data ):
@@ -255,7 +299,18 @@ class Completer( with_metaclass( abc.ABCMeta, object ) ):
 
 
   def ComputeCandidatesInner( self, request_data ):
-    pass # pragma: no cover
+    return [] # pragma: no cover
+
+
+  def ComputeSignatures( self, request_data ):
+    if not self.ShouldUseSignatureHelpNow( request_data ):
+      return {}
+
+    return self.ComputeSignaturesInner( request_data )
+
+
+  def ComputeSignaturesInner( self, request_data ):
+    return {}
 
 
   def DefinedSubcommands( self ):
