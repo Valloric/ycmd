@@ -1607,6 +1607,26 @@ class LanguageServerCompleter( Completer ):
           self.completion_triggers.SetServerSemanticTriggers(
             trigger_characters )
 
+      if self.signature_triggers is not None:
+        server_trigger_characters = (
+          ( self._server_capabilities.get( 'signatureHelpProvider' ) or {} )
+                                     .get( 'triggerCharacters' ) or []
+        )
+        LOGGER.debug( '%s: Server declares signature trigger characters: %s',
+                      self.Language(),
+                      server_trigger_characters )
+
+        trigger_characters = self._GetTriggerCharacters(
+          server_trigger_characters )
+
+        if trigger_characters:
+          LOGGER.info( '%s: Using characters for signature triggers: %s',
+                       self.Language(),
+                       ','.join( trigger_characters ) )
+
+          self.signature_triggers.SetServerSemanticTriggers(
+            trigger_characters )
+
       # We must notify the server that we received the initialize response (for
       # no apparent reason, other than that's what the protocol says).
       self.GetConnection().SendNotification( lsp.Initialized() )
