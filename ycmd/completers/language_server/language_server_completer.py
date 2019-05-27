@@ -50,21 +50,20 @@ CONNECTION_TIMEOUT         = 5
 MAX_QUEUED_MESSAGES = 250
 
 PROVIDERS_MAP = {
-  'definitionProvider': (
-    lambda self, request_data, args: self.GoTo( request_data, [ 'Definition' ] )
-  ),
   'declarationProvider': (
     lambda self, request_data, args: self.GoTo( request_data,
                                                 [ 'Declaration' ] )
+  ),
+  'definitionProvider': (
+    lambda self, request_data, args: self.GoTo( request_data, [ 'Definition' ] )
   ),
   ( 'definitionProvider', 'declarationProvider' ): (
     lambda self, request_data, args: self.GoTo( request_data,
                                                 [ 'Definition',
                                                   'Declaration' ] )
   ),
-  'typeDefinitionProvider': (
-    lambda self, request_data, args: self.GoTo( request_data,
-                                                [ 'TypeDefinition' ] )
+  'documentFormattingProvider': (
+    lambda self, request_data, args: self.Format( request_data )
   ),
   'implementationProvider': (
     lambda self, request_data, args: self.GoTo( request_data,
@@ -77,9 +76,10 @@ PROVIDERS_MAP = {
   'renameProvider': (
     lambda self, request_data, args: self.RefactorRename( request_data, args )
   ),
-  'documentFormattingProvider': (
-    lambda self, request_data, args: self.Format( request_data )
-  )
+  'typeDefinitionProvider': (
+    lambda self, request_data, args: self.GoTo( request_data,
+                                                [ 'TypeDefinition' ] )
+  ),
 }
 
 # Each command is mapped to a list of providers. This allows a command to use
