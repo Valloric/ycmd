@@ -259,10 +259,15 @@ def Initialize( request_id, project_directory, settings ):
           ]
         },
         'signatureHelp': {
-          'documentationFormat': [
-            'plaintext',
-            'markdown'
-          ],
+          'signatureInformation': {
+            'parameterInformation': {
+              'labelOffsetSupport': False, # For now.
+            },
+            'documentationFormat': [
+              'plaintext',
+              'markdown'
+            ],
+          },
         },
       },
     },
