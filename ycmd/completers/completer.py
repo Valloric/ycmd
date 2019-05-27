@@ -180,6 +180,13 @@ class Completer( with_metaclass( abc.ABCMeta, object ) ):
             user_trigger_map = user_options[ 'semantic_triggers' ],
             filetype_set = set( self.SupportedFiletypes() ) )
         if user_options[ 'auto_trigger' ] else None )
+
+    self.signature_triggers = (
+        completer_utils.PreparedTriggers(
+            user_trigger_map = user_options[ 'signature_triggers' ],
+            filetype_set = set( self.SupportedFiletypes() ) )
+        if not user_options[ 'disable_signature_help' ] else None )
+
     self._completions_cache = CompletionsCache()
     self._max_candidates = user_options[ 'max_num_candidates' ]
 
@@ -206,16 +213,26 @@ class Completer( with_metaclass( abc.ABCMeta, object ) ):
 
 
   def ShouldUseNowInner( self, request_data ):
-    if not self.completion_triggers:
+    return self._TriggerMatches( request_data, self.completion_triggers )
+
+
+  def ShouldUseSignatureHelpNow( self, request_data ):
+    return self._TriggerMatches( request_data, self.signature_triggers )
+
+
+  def _TriggerMatches( self, request_data, prepared_triggers ):
+    if not prepared_triggers:
       return False
+
     current_line = request_data[ 'line_value' ]
     start_codepoint = request_data[ 'start_codepoint' ] - 1
     column_codepoint = request_data[ 'column_codepoint' ] - 1
     filetype = self._CurrentFiletype( request_data[ 'filetypes' ] )
 
-    return self.completion_triggers.MatchesForFiletype(
-        current_line, start_codepoint, column_codepoint, filetype )
-
+    return prepared_triggers.MatchesForFiletype( current_line,
+                                                 start_codepoint,
+                                                 column_codepoint,
+                                                 filetype )
 
   def QueryLengthAboveMinThreshold( self, request_data ):
     # Note: calculation in 'characters' not bytes.
@@ -255,7 +272,18 @@ class Completer( with_metaclass( abc.ABCMeta, object ) ):
 
 
   def ComputeCandidatesInner( self, request_data ):
-    pass # pragma: no cover
+    return [] # pragma: no cover
+
+
+  def ComputeSignatures( self, request_data ):
+    if not self.ShouldUseSignatureHelpNow( request_data ):
+      return None
+
+    return self.ComputeSignaturesInner( request_data )
+
+
+  def ComputeSignaturesInner( self, request_data ):
+    return []
 
 
   def DefinedSubcommands( self ):
