@@ -4,6 +4,7 @@
   "min_num_of_chars_for_completion": 2,
   "min_num_identifier_candidate_chars": 0,
   "semantic_triggers": {},
+  "signature_triggers": {},
   "filetype_specific_completion_to_disable": {
     "gitcommit": 1
   },
@@ -35,5 +36,6 @@
   "use_clangd": 1,
   "clangd_binary_path": "",
   "clangd_args": [],
-  "clangd_uses_ycmd_caching": 1
+  "clangd_uses_ycmd_caching": 1,
+  "disable_signature_help": 0
 }
