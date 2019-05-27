@@ -181,11 +181,16 @@ class Completer( with_metaclass( abc.ABCMeta, object ) ):
             filetype_set = set( self.SupportedFiletypes() ) )
         if user_options[ 'auto_trigger' ] else None )
 
+    # FIXME: these .get() are required due to the OmniCompleter, which somehow
+    # doesn't seem to load the default settings. I guess there is a subset of
+    # settings which the Vim client is hard-coded to know about.
     self.signature_triggers = (
         completer_utils.PreparedTriggers(
-            user_trigger_map = user_options[ 'signature_triggers' ],
-            filetype_set = set( self.SupportedFiletypes() ) )
-        if not user_options[ 'disable_signature_help' ] else None )
+            user_trigger_map = (
+              user_options.get( 'signature_triggers' ) or {} ),
+            filetype_set = set( self.SupportedFiletypes() ),
+            default_triggers = {} )
+        if not user_options.get( 'disable_signature_help' ) else None )
 
     self._completions_cache = CompletionsCache()
     self._max_candidates = user_options[ 'max_num_candidates' ]
