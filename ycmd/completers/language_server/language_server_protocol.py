@@ -344,6 +344,12 @@ def ResolveCompletion( request_id, completion ):
   return BuildRequest( request_id, 'completionItem/resolve', completion )
 
 
+def SignatureHelp( request_id, request_data ):
+  return BuildRequest( request_id,
+                       'textDocument/signatureHelp',
+                       BuildTextDocumentPositionParams( request_data ) )
+
+
 def Hover( request_id, request_data ):
   return BuildRequest( request_id,
                        'textDocument/hover',
