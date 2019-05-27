@@ -1064,6 +1064,23 @@ class LanguageServerCompleter( Completer ):
     return completions
 
 
+  def ComputeSignaturesInner( self, request_data ):
+    if not self.ServerIsReady():
+      return None, False
+
+    # Assume that we already did this:
+    #   self._UpdateServerWithFileContents( request_data )
+
+    request_id = self.GetConnection().NextRequestId()
+    msg = lsp.SignatureHelp( request_id, request_data )
+
+    response = self.GetConnection().GetResponse( request_id,
+                                                 msg,
+                                                 REQUEST_TIMEOUT_COMPLETION )
+
+    return response[ 'result' ]
+
+
   def GetCustomSubcommands( self ):
     """Return a list of subcommand definitions to be used in conjunction with
     the subcommands detected by _DiscoverSubcommandSupport. The return is a dict
@@ -1596,6 +1613,11 @@ class LanguageServerCompleter( Completer ):
     return server_trigger_characters
 
 
+  def _GetSignatureTriggerCharacters( self, server_trigger_characters ):
+    """Same as _GetTriggerCharacters but for signature help."""
+    return server_trigger_characters
+
+
   def _HandleInitializeInPollThread( self, response ):
     """Called within the context of the LanguageServerConnection's message pump
     when the initialize request receives a response."""
@@ -1653,7 +1675,7 @@ class LanguageServerCompleter( Completer ):
                       self.Language(),
                       server_trigger_characters )
 
-        trigger_characters = self._GetTriggerCharacters(
+        trigger_characters = self._GetSignatureTriggerCharacters(
           server_trigger_characters )
 
         if trigger_characters:
