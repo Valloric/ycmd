@@ -1066,7 +1066,10 @@ class LanguageServerCompleter( Completer ):
 
   def ComputeSignaturesInner( self, request_data ):
     if not self.ServerIsReady():
-      return None, False
+      return {}
+
+    if not self._server_capabilities.get( 'signatureHelpProvider' ):
+      return {}
 
     # Assume that we already did this:
     #   self._UpdateServerWithFileContents( request_data )
