@@ -26,6 +26,7 @@ import abc
 import threading
 from ycmd.completers import completer_utils
 from ycmd.responses import NoDiagnosticSupport
+from ycmd.utils import LOGGER
 from future.utils import with_metaclass
 
 NO_USER_COMMANDS = 'This completer does not define any commands.'
@@ -218,15 +219,7 @@ class Completer( with_metaclass( abc.ABCMeta, object ) ):
 
 
   def ShouldUseNowInner( self, request_data ):
-    return self._TriggerMatches( request_data, self.completion_triggers )
-
-
-  def ShouldUseSignatureHelpNow( self, request_data ):
-    return self._TriggerMatches( request_data, self.signature_triggers )
-
-
-  def _TriggerMatches( self, request_data, prepared_triggers ):
-    if not prepared_triggers:
+    if not self.completion_triggers:
       return False
 
     current_line = request_data[ 'line_value' ]
@@ -234,10 +227,39 @@ class Completer( with_metaclass( abc.ABCMeta, object ) ):
     column_codepoint = request_data[ 'column_codepoint' ] - 1
     filetype = self._CurrentFiletype( request_data[ 'filetypes' ] )
 
-    return prepared_triggers.MatchesForFiletype( current_line,
-                                                 start_codepoint,
-                                                 column_codepoint,
-                                                 filetype )
+    return self.completion_triggers.MatchesForFiletype( current_line,
+                                                        start_codepoint,
+                                                        column_codepoint,
+                                                        filetype )
+
+
+  def ShouldUseSignatureHelpNow( self, request_data ):
+    if not self.signature_triggers:
+      return False
+
+    state = request_data.get( 'signature_help_state', 'INACTIVE' )
+
+    current_line = request_data[ 'line_value' ]
+    # Note: We use the cursor column for all triggering of signature help, not
+    # the calculated "start" codepoint. This is because the semantic triggering
+    # isn't so useful for signatures as it is for members (for example).
+    column_codepoint = request_data[ 'column_codepoint' ] - 1
+    filetype = self._CurrentFiletype( request_data[ 'filetypes' ] )
+
+    LOGGER.debug( 'Signature trigger state = %s, line=%s, col=%s',
+                  state,
+                  current_line,
+                  column_codepoint )
+
+    if state == 'ACTIVE':
+      LOGGER.debug( 'Triggering signatures due to existing state' )
+      return True
+
+    return self.signature_triggers.MatchesForFiletype( current_line,
+                                                       column_codepoint,
+                                                       column_codepoint,
+                                                       filetype )
+
 
   def QueryLengthAboveMinThreshold( self, request_data ):
     # Note: calculation in 'characters' not bytes.
@@ -282,13 +304,13 @@ class Completer( with_metaclass( abc.ABCMeta, object ) ):
 
   def ComputeSignatures( self, request_data ):
     if not self.ShouldUseSignatureHelpNow( request_data ):
-      return None
+      return {}
 
     return self.ComputeSignaturesInner( request_data )
 
 
   def ComputeSignaturesInner( self, request_data ):
-    return []
+    return {}
 
 
   def DefinedSubcommands( self ):

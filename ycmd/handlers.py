@@ -116,7 +116,8 @@ def GetCompletions():
     completions = _server_state.GetGeneralCompleter().ComputeCandidates(
       request_data )
 
-  # FIXME: no fallback for signature? Makes sense i guess
+  # No fallback for signature help. The general completer is unlikely to be able
+  # to offer anything of for that here.
 
   return _JsonResponse(
       BuildCompletionResponse( completions if completions else [],
