@@ -1070,8 +1070,7 @@ class LanguageServerCompleter( Completer ):
     if not self._server_capabilities.get( 'signatureHelpProvider' ):
       return {}
 
-    # Assume that we already did this:
-    #   self._UpdateServerWithFileContents( request_data )
+    self._UpdateServerWithFileContents( request_data )
 
     request_id = self.GetConnection().NextRequestId()
     msg = lsp.SignatureHelp( request_id, request_data )
