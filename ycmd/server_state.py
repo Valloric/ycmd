@@ -119,9 +119,10 @@ class ServerState( object ):
       # use semantic, and it was forced
       return True
 
+    filetype_completer = self.GetFiletypeCompleter( filetypes )
     # was not forced. check the conditions for triggering
-    return self.GetFiletypeCompleter( filetypes ).ShouldUseNow(
-      request_data )
+    return ( filetype_completer.ShouldUseNow( request_data ) or
+             filetype_completer.ShouldUseSignatureHelpNow( request_data ) )
 
 
   def GetGeneralCompleter( self ):
