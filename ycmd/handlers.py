@@ -32,7 +32,9 @@ from bottle import request
 
 import ycm_core
 from ycmd import extra_conf_store, hmac_plugin, server_state, user_options_store
-from ycmd.responses import ( BuildExceptionResponse, BuildCompletionResponse,
+from ycmd.responses import ( BuildExceptionResponse,
+                             BuildCompletionResponse,
+                             BuildSignatureHelpResponse,
                              UnknownExtraConf )
 from ycmd.request_wrap import RequestWrap
 from ycmd.bottle_utils import SetResponseHeader
@@ -92,14 +94,12 @@ def GetCompletions():
 
   errors = None
   completions = None
-  signature_info = None
 
   if do_filetype_completion:
     try:
       filetype_completer = _server_state.GetFiletypeCompleter(
         request_data[ 'filetypes' ] )
       completions = filetype_completer.ComputeCandidates( request_data )
-      signature_info = filetype_completer.ComputeSignatures( request_data )
     except Exception as exception:
       if request_data[ 'force_semantic' ]:
         # user explicitly asked for semantic completion, so just pass the error
@@ -116,14 +116,36 @@ def GetCompletions():
     completions = _server_state.GetGeneralCompleter().ComputeCandidates(
       request_data )
 
-  # No fallback for signature help. The general completer is unlikely to be able
-  # to offer anything of for that here.
-
   return _JsonResponse(
       BuildCompletionResponse( completions if completions else [],
-                               signature_info if signature_info else {},
                                request_data[ 'start_column' ],
                                errors = errors ) )
+
+
+@app.post( '/signature_help' )
+def GetSignatureHelp():
+  LOGGER.info( 'Received signature help request' )
+  request_data = RequestWrap( request.json )
+
+  if not  _server_state.ShouldUseFiletypeCompleter( request_data ):
+    return _JsonResponse( {} )
+
+  errors = None
+  signature_info = None
+
+  try:
+    filetype_completer = _server_state.GetFiletypeCompleter(
+      request_data[ 'filetypes' ] )
+    signature_info = filetype_completer.ComputeSignatures( request_data )
+  except Exception as exception:
+    LOGGER.exception( 'Exception from semantic completer during sig help' )
+    errors = [ BuildExceptionResponse( exception, traceback.format_exc() ) ]
+
+  # No fallback for signature help. The general completer is unlikely to be able
+  # to offer anything of for that here.
+  return _JsonResponse(
+      BuildSignatureHelpResponse( signature_info if signature_info else {},
+                                  errors = errors ) )
 
 
 @app.post( '/filter_and_sort_candidates' )
