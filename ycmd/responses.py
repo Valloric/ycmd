@@ -124,13 +124,18 @@ def BuildCompletionData( insertion_text,
 
 # start_column is a byte offset
 def BuildCompletionResponse( completions,
-                             signature_info,
                              start_column,
                              errors=None ):
   return {
     'completions': completions,
-    'signature_info': signature_info,
     'completion_start_column': start_column,
+    'errors': errors if errors else [],
+  }
+
+
+def BuildSignatureHelpResponse( signature_info, errors = None ):
+  return {
+    'signature_help': signature_info,
     'errors': errors if errors else [],
   }
 
