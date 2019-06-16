@@ -24,20 +24,22 @@ from builtins import *  # noqa
 
 from hamcrest import ( assert_that,
                        contains,
+                       equal_to,
                        has_entry,
                        has_entries,
                        instance_of )
 
 from mock import patch
-from ycmd import handlers
 from ycmd.tests.java import ( DEFAULT_PROJECT_DIR,
                               IsolatedYcmd,
                               PathToTestFile,
                               SharedYcmd,
                               StartJavaCompleterServerInDirectory )
-from ycmd.tests.test_utils import BuildRequest
+from ycmd.tests.test_utils import BuildRequest, WaitUntilCompleterServerReady
+from ycmd.completers.language_server import language_server_completer as lsc
 
 import json
+import threading
 
 
 @IsolatedYcmd()
@@ -48,20 +50,32 @@ def DebugInfo_HandleNotificationInPollThread_Throw_test( app ):
                              'youcompleteme',
                              'Test.java' )
   StartJavaCompleterServerInDirectory( app, filepath )
-  completer = handlers._server_state.GetFiletypeCompleter( [ 'java' ] )
-  event_data = BuildRequest( event_name = 'FileReadyToParse',
-                             contents = "",
-                             filepath = filepath,
-                             filetype = 'java' )
-  request_data = BuildRequest( filetype = 'java' )
-  with patch.object( completer,
+
+  # This mock will be called in the message pump thread, so syncronize the
+  # result (thrown) using an Event
+  thrown = threading.Event()
+  def ThrowOnLogMessage( msg ):
+    thrown.set()
+    raise RuntimeError( "ThrowOnLogMessage" )
+
+  with patch.object( lsc.LanguageServerCompleter,
                      'HandleNotificationInPollThread',
-                     side_effect = RuntimeError ):
-    app.post_json( '/event_notification', event_data ).json
-    assert_that(
-        app.post_json( '/debug_info', request_data ).json,
-        has_entry( 'completer', has_entry(
-          'servers', contains( has_entry( 'is_running', True ) ) ) ) )
+                     side_effect = ThrowOnLogMessage ):
+    app.post_json(
+      '/run_completer_command',
+      BuildRequest(
+        filepath = filepath,
+        filetype = 'java',
+        command_arguments = [ 'RestartServer' ],
+      ),
+    )
+
+    # Ensure that we still process and handle messages even though a
+    # message-pump-thread-handler raised an error.
+    WaitUntilCompleterServerReady( app, 'java' )
+
+  # Prove that the exception was thrown.
+  assert_that( thrown.is_set(), equal_to( True ) )
 
 
 @SharedYcmd
