@@ -238,7 +238,7 @@ class ClangdCompleter( simple_language_server_completer.SimpleLSPCompleter ):
 
     self._clangd_command = GetClangdCommand( user_options )
     self._use_ycmd_caching = user_options[ 'clangd_uses_ycmd_caching' ]
-    self._flags_for_file = {}
+    self._compilation_commands = {}
 
     self.RegisterOnFileReadyToParse(
       lambda self, request_data: self._SendFlagsFromExtraConf( request_data )
@@ -248,7 +248,7 @@ class ClangdCompleter( simple_language_server_completer.SimpleLSPCompleter ):
   def _Reset( self ):
     with self._server_state_mutex:
       super( ClangdCompleter, self )._Reset()
-      self._flags_for_file = {}
+      self._compilation_commands = {}
 
 
   def GetCompleterName( self ):
@@ -435,29 +435,32 @@ class ClangdCompleter( simple_language_server_completer.SimpleLSPCompleter ):
         # No flags returned. Let Clangd find the flags.
         return
 
-      if settings.get( 'do_cache', True ) and filepath in self._flags_for_file:
+      if ( settings.get( 'do_cache', True ) and
+           filepath in self._compilation_commands ):
         # Flags for this file have already been sent to Clangd.
         return
 
-      flags = settings[ 'flags' ]
+      flags = BuildCompilationCommand( settings[ 'flags' ], filepath )
 
       self.GetConnection().SendNotification( lsp.DidChangeConfiguration( {
         'compilationDatabaseChanges': {
           filepath: {
-            'compilationCommand': BuildCompilationCommand( flags, filepath ),
+            'compilationCommand': flags,
             'workingDirectory': settings.get( 'include_paths_relative_to_dir',
                                               self._project_directory )
           }
         }
       } ) )
 
-      self._flags_for_file[ filepath ] = flags
+      self._compilation_commands[ filepath ] = flags
 
 
   def ExtraDebugItems( self, request_data ):
-    return [ responses.DebugInfoItem(
-      'Extra Configuration Flags',
-      self._flags_for_file.get( request_data[ 'filepath' ], False ) ) ]
+    return [
+      responses.DebugInfoItem(
+        'Compilation Command',
+        self._compilation_commands.get( request_data[ 'filepath' ], False ) )
+    ]
 
 
 def CompilationDatabaseExists( file_dir ):

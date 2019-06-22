@@ -22,7 +22,12 @@ from __future__ import absolute_import
 # Not installing aliases from python-future; it's unreliable and slow.
 from builtins import *  # noqa
 
-from hamcrest import assert_that, contains, empty, has_entries, has_entry
+from hamcrest import ( assert_that,
+                       contains,
+                       empty,
+                       has_entries,
+                       has_entry,
+                       has_items )
 
 from ycmd.tests.clangd import ( IsolatedYcmd, PathToTestFile, SharedYcmd,
                                 RunAfterInitialized )
@@ -59,7 +64,7 @@ def DebugInfo_NotInitialized_test( app ):
             'value': '{}',
           } ),
           has_entries( {
-            'key': 'Extra Configuration Flags',
+            'key': 'Compilation Command',
             'value': False,
           } ),
         ),
@@ -96,7 +101,7 @@ def DebugInfo_Initialized_test( app ):
             'value': '{}',
           } ),
           has_entries( {
-            'key': 'Extra Configuration Flags',
+            'key': 'Compilation Command',
             'value': False,
           } ),
         ),
@@ -135,8 +140,8 @@ def DebugInfo_ExtraConf_ReturningFlags_test( app ):
             'value': '{}',
           } ),
           has_entries( {
-            'key': 'Extra Configuration Flags',
-            'value': contains( '-I', 'include', '-DFOO' ),
+            'key': 'Compilation Command',
+            'value': has_items( '-I', 'include', '-DFOO' ),
           } ),
         ),
       } ) ),
@@ -175,7 +180,7 @@ def DebugInfo_ExtraConf_NotReturningFlags_test( app ):
             'value': '{}',
           } ),
           has_entries( {
-            'key': 'Extra Configuration Flags',
+            'key': 'Compilation Command',
             'value': False
           } ),
         ),
@@ -217,8 +222,8 @@ def DebugInfo_ExtraConf_Global_test( app ):
             'value': '{}',
           } ),
           has_entries( {
-            'key': 'Extra Configuration Flags',
-            'value': contains( '-I', 'test' ),
+            'key': 'Compilation Command',
+            'value': has_items( '-I', 'test' ),
           } ),
         ),
       } ) ),
@@ -260,8 +265,8 @@ def DebugInfo_ExtraConf_LocalOverGlobal_test( app ):
             'value': '{}',
           } ),
           has_entries( {
-            'key': 'Extra Configuration Flags',
-            'value': contains( '-I', 'include', '-DFOO' ),
+            'key': 'Compilation Command',
+            'value': has_items( '-I', 'include', '-DFOO' ),
           } ),
         ),
       } ) ),
@@ -309,7 +314,7 @@ def DebugInfo_ExtraConf_Database_test( app ):
                 'value': '{}',
               } ),
               has_entries( {
-                'key': 'Extra Configuration Flags',
+                'key': 'Compilation Command',
                 'value': False
               } ),
             ),
@@ -366,8 +371,8 @@ def Settings( **kwargs ):
                   'value': '{}',
                 } ),
                 has_entries( {
-                  'key': 'Extra Configuration Flags',
-                  'value': contains( '-x', 'c++', '-I', 'ycm' )
+                  'key': 'Compilation Command',
+                  'value': has_items( '-x', 'c++', '-I', 'ycm' )
                 } ),
               ),
             } ) ),
@@ -420,7 +425,7 @@ def DebugInfo_ExtraConf_UseDatabaseOverGlobal_test( app ):
                 'value': '{}',
               } ),
               has_entries( {
-                'key': 'Extra Configuration Flags',
+                'key': 'Compilation Command',
                 'value': False
               } ),
             ),
