@@ -33,7 +33,8 @@ from ycmd.tests.clangd import ( IsolatedYcmd, PathToTestFile, SharedYcmd,
                                 RunAfterInitialized )
 from ycmd.tests.test_utils import ( BuildRequest,
                                     TemporaryClangProject,
-                                    TemporaryTestDir )
+                                    TemporaryTestDir,
+                                    MacOnly )
 
 import os
 
@@ -433,3 +434,43 @@ def DebugInfo_ExtraConf_UseDatabaseOverGlobal_test( app ):
           'items': empty()
         } ) )
       )
+
+
+@MacOnly
+@IsolatedYcmd( { 'extra_conf_globlist': [
+  PathToTestFile( 'extra_conf', '.ycm_extra_conf.py' ) ] } )
+def DebugInfo_ExtraConf_MacIncludeFlags_test( app ):
+  request_data = BuildRequest( filepath = PathToTestFile( 'extra_conf',
+                                                          'foo.cpp' ),
+                               filetype = 'cpp' )
+  test = { 'request': request_data }
+  RunAfterInitialized( app, test )
+  assert_that(
+    app.post_json( '/debug_info', request_data ).json,
+    has_entry( 'completer', has_entries( {
+      'name': 'C-family',
+      'servers': contains( has_entries( {
+        'name': 'Clangd',
+        'is_running': True,
+        'extras': contains(
+          has_entries( {
+            'key': 'Server State',
+            'value': 'Initialized',
+          } ),
+          has_entries( {
+            'key': 'Project Directory',
+            'value': PathToTestFile( 'extra_conf' ),
+          } ),
+          has_entries( {
+            'key': 'Settings',
+            'value': '{}',
+          } ),
+          has_entries( {
+            'key': 'Compilation Command',
+            'value': has_items( '-isystem', '-iframework' )
+          } ),
+        ),
+      } ) ),
+      'items': empty()
+    } ) )
+  )
