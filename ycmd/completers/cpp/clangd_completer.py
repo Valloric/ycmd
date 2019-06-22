@@ -38,6 +38,7 @@ from ycmd.utils import ( CLANG_RESOURCE_DIR,
                          ExpandVariablesInPath,
                          FindExecutable,
                          LOGGER,
+                         PathsToAllParentFolders,
                          re )
 
 MIN_SUPPORTED_VERSION = '7.0.0'
@@ -412,11 +413,23 @@ class ClangdCompleter( simple_language_server_completer.SimpleLSPCompleter ):
     filepath = request_data[ 'filepath' ]
 
     with self._server_info_mutex:
-      module = extra_conf_store.ModuleForSourceFile( filepath )
-      if not module:
-        return
+      # Replicate the logic from flags.py _GetFlagsFromCompilationDatabase:
+      #  - if there's a local extra conf, use it
+      #  - otherwise if there's no database, try and use a global extra conf
 
-      settings = self.GetSettings( module, request_data )
+      module = extra_conf_store.ModuleForSourceFile( filepath )
+      if module and not extra_conf_store.IsGlobalExtraConfModule( module ):
+        # Use the local extra conf
+        settings = self.GetSettings( module, request_data )
+      elif CompilationDatabaseExists( filepath ):
+        # Allow clangd to Use the database
+        return
+      elif module:
+        # Use the global extra conf
+        settings = self.GetSettings( module, request_data )
+      else:
+        # No extra conf and no database. Use whatever clangd makes up.
+        return
 
       if 'flags' not in settings:
         # No flags returned. Let Clangd find the flags.
@@ -445,3 +458,11 @@ class ClangdCompleter( simple_language_server_completer.SimpleLSPCompleter ):
     return [ responses.DebugInfoItem(
       'Extra Configuration Flags',
       self._flags_for_file.get( request_data[ 'filepath' ], False ) ) ]
+
+
+def CompilationDatabaseExists( file_dir ):
+  for folder in PathsToAllParentFolders( file_dir ):
+    if os.path.exists( os.path.join( folder, 'compile_commands.json' ) ):
+      return True
+
+  return False
