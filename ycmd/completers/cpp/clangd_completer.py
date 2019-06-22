@@ -28,7 +28,8 @@ import subprocess
 
 from ycmd import extra_conf_store, responses
 from ycmd.completers.completer_utils import GetFileLines
-from ycmd.completers.cpp.flags import ( RemoveUnusedFlags,
+from ycmd.completers.cpp.flags import ( AddMacIncludePaths,
+                                        RemoveUnusedFlags,
                                         ShouldAllowWinStyleFlags )
 from ycmd.completers.language_server import simple_language_server_completer
 from ycmd.completers.language_server import language_server_completer
@@ -38,6 +39,7 @@ from ycmd.utils import ( CLANG_RESOURCE_DIR,
                          ExpandVariablesInPath,
                          FindExecutable,
                          LOGGER,
+                         OnMac,
                          PathsToAllParentFolders,
                          re )
 
@@ -205,7 +207,7 @@ def ShouldEnableClangdCompleter( user_options ):
 
 def PrependCompilerToFlags( flags, enable_windows_style_flags ):
   """Removes everything before the first flag and returns the remaining flags
-  prepended with clangd."""
+  prepended with clang-tool."""
   for index, flag in enumerate( flags ):
     if ( flag.startswith( '-' ) or
          ( enable_windows_style_flags and
@@ -221,6 +223,8 @@ def BuildCompilationCommand( flags, filepath ):
   enable_windows_style_flags = ShouldAllowWinStyleFlags( flags )
   flags = PrependCompilerToFlags( flags, enable_windows_style_flags )
   flags = RemoveUnusedFlags( flags, filepath, enable_windows_style_flags )
+  if OnMac():
+    flags = AddMacIncludePaths( flags )
   return flags + [ filepath ]
 
 

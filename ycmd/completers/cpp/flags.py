@@ -317,7 +317,7 @@ def PrepareFlagsForClang( flags,
     if OnWindows():
       flags.append( '-fno-delayed-template-parsing' )
     if OnMac():
-      flags = _AddMacIncludePaths( flags )
+      flags = AddMacIncludePaths( flags )
     flags = _EnableTypoCorrection( flags )
 
   vector = ycm_core.StringVector()
@@ -555,7 +555,7 @@ def _FindMacToolchain():
 # https://github.com/llvm-mirror/clang/blob/2709c8b804eb38dbdc8ae05b8fcf4f95c01b4102/lib/Frontend/InitHeaderSearch.cpp#L453-L510
 # This has also the benefit of allowing completion of system header paths and
 # navigation to these headers when the cursor is on an include statement.
-def _AddMacIncludePaths( flags ):
+def AddMacIncludePaths( flags ):
   use_standard_cpp_includes = '-nostdinc++' not in flags
   use_standard_system_includes = '-nostdinc' not in flags
   use_builtin_includes = '-nobuiltininc' not in flags
