@@ -422,18 +422,18 @@ class ClangdCompleter( simple_language_server_completer.SimpleLSPCompleter ):
       #  - otherwise if there's no database, try and use a global extra conf
 
       module = extra_conf_store.ModuleForSourceFile( filepath )
-      if module and not extra_conf_store.IsGlobalExtraConfModule( module ):
-        # Use the local extra conf
-        settings = self.GetSettings( module, request_data )
-      elif CompilationDatabaseExists( filepath ):
-        # Allow clangd to Use the database
+      if not module:
+        # No extra conf and no global extra conf. Just let clangd handle it.
         return
-      elif module:
-        # Use the global extra conf
-        settings = self.GetSettings( module, request_data )
-      else:
-        # No extra conf and no database. Use whatever clangd makes up.
+
+      if ( extra_conf_store.IsGlobalExtraConfModule( module ) and
+           CompilationDatabaseExists( filepath ) ):
+        # No local extra conf, database exists: use database (i.e. clangd)
         return
+
+      # Use our module (either local extra conf or global extra conf when no
+      # database is found)
+      settings = self.GetSettings( module, request_data )
 
       if 'flags' not in settings:
         # No flags returned. Let Clangd find the flags.
