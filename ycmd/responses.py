@@ -133,9 +133,17 @@ def BuildCompletionResponse( completions,
   }
 
 
+EMPTY_SIGNATURE_INFO = {
+  'activeSignature': 0,
+  'activeParameter': 0,
+  'signatures': []
+}
+
+
 def BuildSignatureHelpResponse( signature_info, errors = None ):
   return {
-    'signature_help': signature_info,
+    'signature_help':
+      signature_info if signature_info else EMPTY_SIGNATURE_INFO,
     'errors': errors if errors else [],
   }
 
