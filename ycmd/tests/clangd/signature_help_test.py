@@ -31,21 +31,16 @@ from nose.tools import eq_
 from hamcrest import ( assert_that,
                        contains,
                        empty,
-                       equal_to,
                        has_entries )
 
 from ycmd.tests.clangd import PathToTestFile, SharedYcmd
-from ycmd.tests.test_utils import ( BuildRequest,
+from ycmd.tests.test_utils import ( EMPTY_SIGNATURE_HELP,
+                                    BuildRequest,
                                     CombineRequest,
+                                    ParameterMatcher,
+                                    SignatureMatcher,
                                     WaitUntilCompleterServerReady )
 from ycmd.utils import ReadFile
-
-
-EMPTY_SIGNATURE_HELP = has_entries( {
-  'activeParameter': 0,
-  'activeSignature': 0,
-  'signatures': empty(),
-} )
 
 
 def RunTest( app, test ):
@@ -95,19 +90,6 @@ def RunTest( app, test ):
     response.json, indent = 2 ) ) )
 
   assert_that( response.json, test[ 'expect' ][ 'data' ] )
-
-
-def SignatureMatcher( label, parameters ):
-  return has_entries( {
-    'label': equal_to( label ),
-    'parameters': contains( *parameters )
-  } )
-
-
-def ParameterMatcher( label ):
-  return has_entries( {
-    'label': equal_to( label )
-  } )
 
 
 @SharedYcmd
