@@ -231,6 +231,7 @@ class PythonCompleter( Completer ):
         'activeParameter': active_parameter,
         'signatures': [
           {
+            # We remove 'param ' from the start of each parameter (hence the 6:)
             'label': s.description + '( ' + ', '.join(
               [ p.description[ 6: ] for p in s.params ] ) + ' )',
             'parameters': [
