@@ -128,7 +128,7 @@ def GetSignatureHelp():
   request_data = RequestWrap( request.json )
 
   if not _server_state.ShouldUseFiletypeCompleter( request_data ):
-    return _JsonResponse( {} )
+    return _JsonResponse( BuildSignatureHelpResponse( None ) )
 
   errors = None
   signature_info = None
@@ -144,8 +144,7 @@ def GetSignatureHelp():
   # No fallback for signature help. The general completer is unlikely to be able
   # to offer anything of for that here.
   return _JsonResponse(
-      BuildSignatureHelpResponse( signature_info if signature_info else {},
-                                  errors = errors ) )
+      BuildSignatureHelpResponse( signature_info, errors = errors ) )
 
 
 @app.post( '/filter_and_sort_candidates' )
