@@ -32,14 +32,20 @@ from hamcrest import ( assert_that,
                        contains,
                        empty,
                        equal_to,
-                       has_entries,
-                       is_not )
+                       has_entries )
 
 from ycmd.tests.clangd import PathToTestFile, SharedYcmd
 from ycmd.tests.test_utils import ( BuildRequest,
                                     CombineRequest,
                                     WaitUntilCompleterServerReady )
 from ycmd.utils import ReadFile
+
+
+EMPTY_SIGNATURE_HELP = has_entries( {
+  'activeParameter': 0,
+  'activeSignature': 0,
+  'signatures': empty(),
+} )
 
 
 def RunTest( app, test ):
@@ -79,7 +85,8 @@ def RunTest( app, test ):
 
   # We also ignore errors here, but then we check the response code ourself.
   # This is to allow testing of requests returning errors.
-  response = app.post_json( '/completions', BuildRequest( **request ),
+  response = app.post_json( '/signature_help',
+                            BuildRequest( **request ),
                             expect_errors = True )
 
   eq_( response.status_code, test[ 'expect' ][ 'response' ] )
@@ -118,9 +125,8 @@ def Signature_Help_Trigger_test( app ):
     'expect': {
       'response': requests.codes.ok,
       'data': has_entries( {
-        'completions': empty(),
         'errors': empty(),
-        'signature_info': has_entries( {
+        'signature_help': has_entries( {
           'activeSignature': 0,
           'activeParameter': 0,
           'signatures': contains(
@@ -160,9 +166,8 @@ def Signature_Help_NoTrigger_test( app ):
     'expect': {
       'response': requests.codes.ok,
       'data': has_entries( {
-        'completions': is_not( empty() ),
         'errors': empty(),
-        'signature_info': empty(),
+        'signature_help': EMPTY_SIGNATURE_HELP,
       } ),
     },
   } )
@@ -183,9 +188,8 @@ def Signature_Help_NoTrigger_After_Trigger_test( app ):
     'expect': {
       'response': requests.codes.ok,
       'data': has_entries( {
-        'completions': empty(),
         'errors': empty(),
-        'signature_info': empty(),
+        'signature_help': EMPTY_SIGNATURE_HELP,
       } ),
     },
   } )
@@ -206,9 +210,8 @@ def Signature_Help_Trigger_After_Trigger_test( app ):
     'expect': {
       'response': requests.codes.ok,
       'data': has_entries( {
-        'completions': empty(),
         'errors': empty(),
-        'signature_info': has_entries( {
+        'signature_help': has_entries( {
           'activeSignature': 0,
           'activeParameter': 0,
           'signatures': contains(
@@ -248,9 +251,8 @@ def Signature_Help_Trigger_After_Trigger_PlusText_test( app ):
     'expect': {
       'response': requests.codes.ok,
       'data': has_entries( {
-        'completions': is_not( empty() ),
         'errors': empty(),
-        'signature_info': has_entries( {
+        'signature_help': has_entries( {
           'activeSignature': 0,
           'activeParameter': 0,
           'signatures': contains(
@@ -290,9 +292,8 @@ def Signature_Help_Trigger_After_Trigger_PlusCompletion_test( app ):
     'expect': {
       'response': requests.codes.ok,
       'data': has_entries( {
-        'completions': is_not( empty() ),
         'errors': empty(),
-        'signature_info': has_entries( {
+        'signature_help': has_entries( {
           'activeSignature': 0,
           'activeParameter': 0,
           'signatures': contains(
@@ -332,9 +333,8 @@ def Signature_Help_Trigger_After_OtherTrigger_test( app ):
     'expect': {
       'response': requests.codes.ok,
       'data': has_entries( {
-        'completions': empty(),
         'errors': empty(),
-        'signature_info': has_entries( {
+        'signature_help': has_entries( {
           'activeSignature': 0,
           'activeParameter': 1,
           'signatures': contains(
@@ -374,9 +374,8 @@ def Signature_Help_Trigger_After_Arguments_Narrow_test( app ):
     'expect': {
       'response': requests.codes.ok,
       'data': has_entries( {
-        'completions': empty(),
         'errors': empty(),
-        'signature_info': has_entries( {
+        'signature_help': has_entries( {
           'activeSignature': 0,
           'activeParameter': 2,
           'signatures': contains(
@@ -409,9 +408,8 @@ def Signature_Help_Trigger_After_Arguments_Narrow2_test( app ):
     'expect': {
       'response': requests.codes.ok,
       'data': has_entries( {
-        'completions': empty(),
         'errors': empty(),
-        'signature_info': has_entries( {
+        'signature_help': has_entries( {
           'activeSignature': 0,
           'activeParameter': 2,
           'signatures': contains(
@@ -444,9 +442,8 @@ def Signature_Help_Trigger_After_OtherTrigger_ReTrigger_test( app ):
     'expect': {
       'response': requests.codes.ok,
       'data': has_entries( {
-        'completions': empty(),
         'errors': empty(),
-        'signature_info': has_entries( {
+        'signature_help': has_entries( {
           'activeSignature': 0,
           'activeParameter': 1,
           'signatures': contains(
@@ -486,9 +483,8 @@ def Signature_Help_Trigger_JustBeforeClose( app ):
     'expect': {
       'response': requests.codes.ok,
       'data': has_entries( {
-        'completions': empty(),
         'errors': empty(),
-        'signature_info': has_entries( {
+        'signature_help': has_entries( {
           'activeSignature': 0,
           'activeParameter': 2,
           'signatures': contains(
@@ -521,13 +517,8 @@ def Signature_Help_Clears_After_EndFunction( app ):
     'expect': {
       'response': requests.codes.ok,
       'data': has_entries( {
-        'completions': empty(),
         'errors': empty(),
-        'signature_info': has_entries( {
-          'activeSignature': 0,
-          'activeParameter': 0,
-          'signatures': empty(),
-        } ),
+        'signature_help': EMPTY_SIGNATURE_HELP,
       } ),
     },
   } )
@@ -548,13 +539,8 @@ def Signature_Help_Clears_After_Function_Call( app ):
     'expect': {
       'response': requests.codes.ok,
       'data': has_entries( {
-        'completions': empty(),
         'errors': empty(),
-        'signature_info': has_entries( {
-          'activeSignature': 0,
-          'activeParameter': 0,
-          'signatures': empty(),
-        } ),
+        'signature_help': EMPTY_SIGNATURE_HELP,
       } ),
     },
   } )
