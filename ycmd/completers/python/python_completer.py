@@ -217,6 +217,9 @@ class PythonCompleter( Completer ):
   def ComputeSignaturesInner( self, request_data ):
     with self._jedi_lock:
       signatures = self._GetJediScript( request_data ).call_signatures()
+      # Sorting bu the number or arguments makes the order stable for the tests
+      # and isn't harmful. The order returned by jedi seems to be arbitrary.
+      signatures = sorted( signatures, key=lambda s: len( s.params ) )
 
       active_signature = 0
       active_parameter = 0
