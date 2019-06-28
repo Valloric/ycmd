@@ -161,43 +161,29 @@ def MatchesSemanticTrigger_RegexTrigger_test():
   ok_( not cu._MatchesSemanticTrigger( 'foo . bar', 5, 8, triggers ) )
 
 
-def MatchingSemanticTrigger_Basic_test():
-  triggers = [ cu._PrepareTrigger( '.' ), cu._PrepareTrigger( ';' ),
-               cu._PrepareTrigger( '::' ) ]
-
-  eq_( cu._MatchingSemanticTrigger( 'foo->bar', 5, 9, triggers ), None )
-  eq_( cu._MatchingSemanticTrigger( 'foo::bar', 5, 9, triggers ).pattern,
-       re.escape( '::' ) )
-
-
 def PreparedTriggers_Basic_test():
   triggers = cu.PreparedTriggers()
 
   ok_( triggers.MatchesForFiletype( 'foo.bar', 4, 8, 'c' ) )
-  eq_( triggers.MatchingTriggerForFiletype( 'foo.bar', 4, 8, 'c' ).pattern,
-       re.escape( '.' ) )
+  eq_( triggers.MatchCodepointForFileType( 'foo.bar', 4, 8, 'c' ), 4 )
   ok_( triggers.MatchesForFiletype( 'foo->bar', 5, 9, 'cpp' ) )
-  eq_( triggers.MatchingTriggerForFiletype( 'foo->bar', 5, 9, 'cpp' ).pattern,
-       re.escape( '->' ) )
+  eq_( triggers.MatchCodepointForFileType( 'foo->bar', 5, 9, 'cpp' ), 5 )
 
 
 def PreparedTriggers_OnlySomeFiletypesSelected_test():
   triggers = cu.PreparedTriggers( filetype_set = set( 'c' ) )
 
   ok_( triggers.MatchesForFiletype( 'foo.bar', 4, 7, 'c' ) )
-  eq_( triggers.MatchingTriggerForFiletype( 'foo.bar', 4, 7, 'c' ).pattern,
-       re.escape( '.' ) )
+  eq_( triggers.MatchCodepointForFileType( 'foo.bar', 4, 7, 'c' ), 4 )
   ok_( not triggers.MatchesForFiletype( 'foo->bar', 5, 8, 'cpp' ) )
-  eq_( triggers.MatchingTriggerForFiletype( 'foo->bar', 5, 8, 'cpp' ),
-       None )
+  eq_( triggers.MatchCodepointForFileType( 'foo->bar', 5, 8, 'cpp' ), None )
 
 
 def PreparedTriggers_UserTriggers_test():
   triggers = cu.PreparedTriggers( user_trigger_map = { 'c': [ '->' ] } )
 
   ok_( triggers.MatchesForFiletype( 'foo->bar', 5, 8, 'c' ) )
-  eq_( triggers.MatchingTriggerForFiletype( 'foo->bar', 5, 8, 'c' ).pattern,
-       re.escape( '->' ) )
+  eq_( triggers.MatchCodepointForFileType( 'foo->bar', 5, 8, 'c' ), 5 )
 
 
 def PreparedTriggers_ObjectiveC_test():

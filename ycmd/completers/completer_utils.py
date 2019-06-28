@@ -46,6 +46,39 @@ class PreparedTriggers( object ):
     self._CombineTriggers()
 
 
+  def SetServerSemanticTriggers( self, server_trigger_characters ):
+    self._server_trigger_map = {
+      ','.join( self._filetype_set ): server_trigger_characters
+    }
+    self._CombineTriggers()
+
+
+  def MatchesForFiletype( self,
+                          current_line,
+                          start_codepoint,
+                          column_codepoint,
+                          filetype ):
+    return self.MatchCodepointForFileType( current_line,
+                                           start_codepoint,
+                                           column_codepoint,
+                                           filetype ) is not None
+
+  def MatchCodepointForFileType( self,
+                                current_line,
+                                start_codepoint,
+                                column_codepoint,
+                                filetype ):
+
+    try:
+      triggers = self._filetype_to_prepared_triggers[ filetype ]
+    except KeyError:
+      return None
+    return _MatchingSemanticTriggerCodepoint( current_line,
+                                              start_codepoint,
+                                              column_codepoint,
+                                              triggers )
+
+
   def _CombineTriggers( self ):
     user_prepared_triggers = ( _FiletypeTriggerDictFromSpec(
       dict( self._user_trigger_map ) ) if self._user_trigger_map else
@@ -65,38 +98,6 @@ class PreparedTriggers( object ):
 
     self._filetype_to_prepared_triggers = final_triggers
 
-
-  def SetServerSemanticTriggers( self, server_trigger_characters ):
-    self._server_trigger_map = {
-      ','.join( self._filetype_set ): server_trigger_characters
-    }
-    self._CombineTriggers()
-
-
-  def MatchingTriggerForFiletype( self,
-                                  current_line,
-                                  start_codepoint,
-                                  column_codepoint,
-                                  filetype ):
-    try:
-      triggers = self._filetype_to_prepared_triggers[ filetype ]
-    except KeyError:
-      return None
-    return _MatchingSemanticTrigger( current_line,
-                                     start_codepoint,
-                                     column_codepoint,
-                                     triggers )
-
-
-  def MatchesForFiletype( self,
-                          current_line,
-                          start_codepoint,
-                          column_codepoint,
-                          filetype ):
-    return self.MatchingTriggerForFiletype( current_line,
-                                            start_codepoint,
-                                            column_codepoint,
-                                            filetype ) is not None
 
 
 def _FiletypeTriggerDictFromSpec( trigger_dict_spec ):
@@ -127,10 +128,10 @@ def _FiletypeDictUnion( *args ):
 
 # start_codepoint and column_codepoint are codepoint offsets in the unicode
 # string line_value.
-def _RegexTriggerMatches( trigger,
-                          line_value,
-                          start_codepoint,
-                          column_codepoint ):
+def _RegexTriggerMatchCodepoint( trigger,
+                                 line_value,
+                                 start_codepoint,
+                                 column_codepoint ):
   for match in trigger.finditer( line_value ):
     # By definition of 'start_codepoint', we know that the character just before
     # 'start_codepoint' is not an identifier character but all characters
@@ -140,14 +141,16 @@ def _RegexTriggerMatches( trigger,
     # if it doesn't, its tail must match exactly at 'start_codepoint'. Both
     # cases are mutually exclusive hence the following condition.
     if start_codepoint <= match.end() and match.end() <= column_codepoint:
-      return True
-  return False
+      return match.end()
+  return None
 
 
 # start_codepoint and column_codepoint are 0-based and are codepoint offsets
 # into the unicode string line_value.
-def _MatchingSemanticTrigger( line_value, start_codepoint, column_codepoint,
-                              trigger_list ):
+def _MatchingSemanticTriggerCodepoint( line_value,
+                                       start_codepoint,
+                                       column_codepoint,
+                                       trigger_list ):
   if start_codepoint < 0 or column_codepoint < 0:
     return None
 
@@ -159,20 +162,24 @@ def _MatchingSemanticTrigger( line_value, start_codepoint, column_codepoint,
   line_value = line_value[ : column_codepoint ]
 
   for trigger in trigger_list:
-    if _RegexTriggerMatches( trigger,
-                             line_value,
-                             start_codepoint,
-                             column_codepoint ):
-      return trigger
+    codepoint = _RegexTriggerMatchCodepoint( trigger,
+                                             line_value,
+                                             start_codepoint,
+                                             column_codepoint )
+    if codepoint is not None:
+      return codepoint
+
   return None
 
 
-def _MatchesSemanticTrigger( line_value, start_codepoint, column_codepoint,
+def _MatchesSemanticTrigger( line_value,
+                             start_codepoint,
+                             column_codepoint,
                              trigger_list ):
-  return _MatchingSemanticTrigger( line_value,
-                                   start_codepoint,
-                                   column_codepoint,
-                                   trigger_list ) is not None
+  return _MatchingSemanticTriggerCodepoint( line_value,
+                                            start_codepoint,
+                                            column_codepoint,
+                                            trigger_list ) is not None
 
 
 def _PrepareTrigger( trigger ):
