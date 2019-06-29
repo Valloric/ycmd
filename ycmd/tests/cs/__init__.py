@@ -179,6 +179,9 @@ def IsolatedYcmd( custom_options = {} ):
     @functools.wraps( test )
     def Wrapper( *args, **kwargs ):
       with IsolatedApp( custom_options ) as app:
-        test( app, *args, **kwargs )
+        try:
+          test( app, *args, **kwargs )
+        finally:
+          StopCompleterServer( app, 'cs' )
     return Wrapper
   return Decorator
