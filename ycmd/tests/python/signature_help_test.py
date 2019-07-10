@@ -1,6 +1,6 @@
 # coding: utf-8
 #
-# Copyright (C) 2015-2019 ycmd contributors
+# Copyright (C) 2019 ycmd contributors
 #
 # This file is part of ycmd.
 #
