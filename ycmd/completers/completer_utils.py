@@ -64,10 +64,10 @@ class PreparedTriggers( object ):
                                            filetype ) is not None
 
   def MatchCodepointForFileType( self,
-                                current_line,
-                                start_codepoint,
-                                column_codepoint,
-                                filetype ):
+                                 current_line,
+                                 start_codepoint,
+                                 column_codepoint,
+                                 filetype ):
 
     try:
       triggers = self._filetype_to_prepared_triggers[ filetype ]
