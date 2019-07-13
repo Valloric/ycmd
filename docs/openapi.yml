@@ -912,7 +912,7 @@ paths:
       description: |-
         Returns a list of method signatures relevant to the current cursor
         position, along with an indication of which signature and argument
-        is 'active'.
+        are 'active'.
 
         Only returned by semantic engines.
 
@@ -938,7 +938,7 @@ paths:
 
         The first signature and the first argument are both 0.
 
-        Identifying the positoin of an argument in the `label` for a signature
+        Identifying the position of an argument in the `label` for a signature
         required matching the position of the text supplied in the `label` for
         the active parameter of the active signature.
       produces:
