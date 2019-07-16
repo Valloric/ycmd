@@ -214,6 +214,8 @@ def PythonSysPath( **kwargs ):
                                                   'certifi' ),
                       p.join( DIR_OF_THIRD_PARTY, 'requests_deps',
                                                   'idna' ),
+                      p.join( DIR_OF_THIRD_PARTY, 'watchdog', 'build', 'lib3' ),
+                      p.join( DIR_OF_THIRD_PARTY, 'watchdog_deps', 'pathtools' ),
                       p.join( DIR_OF_THIRD_PARTY, 'waitress' ) ]
 
   sys_path.append( p.join( DIR_OF_THIRD_PARTY, 'jedi_deps', 'numpydoc' ) )

@@ -34,7 +34,8 @@ from hamcrest import ( all_of,
 from ycmd.completers.language_server import language_server_completer as lsc
 from ycmd.completers.language_server.language_server_completer import (
     NoHoverInfoException,
-    NO_HOVER_INFORMATION )
+    NO_HOVER_INFORMATION,
+    WatchdogHandler )
 from ycmd.completers.language_server import language_server_protocol as lsp
 from ycmd.tests.language_server import MockConnection
 from ycmd.request_wrap import RequestWrap
@@ -54,7 +55,8 @@ class MockCompleter( lsc.LanguageServerCompleter, DummyCompleter ):
     user_options.update( custom_options )
     super().__init__( user_options )
 
-    self._connection = MockConnection()
+    self._connection = MockConnection(
+      lambda globs: WatchdogHandler( self, globs ) )
     self._started = False
 
   def Language( self ):
@@ -63,6 +65,7 @@ class MockCompleter( lsc.LanguageServerCompleter, DummyCompleter ):
 
   def StartServer( self, request_data, **kwargs ):
     self._started = True
+    self._project_directory = self.GetProjectDirectory( request_data )
     return True
 
 

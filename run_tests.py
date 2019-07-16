@@ -23,6 +23,8 @@ python_path = [
   p.join( DIR_OF_THIRD_PARTY, 'requests_deps', 'idna' ),
   p.join( DIR_OF_THIRD_PARTY, 'requests_deps', 'requests' ),
   p.join( DIR_OF_THIRD_PARTY, 'requests_deps', 'urllib3', 'src' ),
+  p.join( DIR_OF_THIRD_PARTY, 'watchdog', 'build', 'lib3' ),
+  p.join( DIR_OF_THIRD_PARTY, 'watchdog_deps', 'pathtools' ),
   p.join( DIR_OF_THIRD_PARTY, 'waitress' ),
 ]
 if os.environ.get( 'PYTHONPATH' ) is not None:
