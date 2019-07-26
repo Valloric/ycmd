@@ -112,6 +112,7 @@ def DebugInfo_test( app ):
             'key': 'Settings',
             'value': json.dumps( { 'bundles': [] },
                                  indent = 2,
+                                 separators = ( ',', ':' ),
                                  sort_keys = True )
           } )
         )
@@ -167,6 +168,7 @@ def Subcommands_ExtraConf_SettingsValid_test( app ):
             'value': json.dumps(
               { 'java.rename.enabled': False, 'bundles': [] },
               indent = 2,
+              separators = ( ',', ':' ),
               sort_keys = True )
           } ),
         )
