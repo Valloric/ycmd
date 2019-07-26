@@ -1888,8 +1888,8 @@ class LanguageServerCompleter( Completer ):
     if response is not None:
       return response
 
-    return responses.BuildDetailedInfoResponse( json.dumps( command_response,
-                                                            indent = 2 ) )
+    return responses.BuildDetailedInfoResponse(
+        json.dumps( command_response, separators = ( ',', ':' ), indent = 2 ) )
 
 
   def GetCommandResponse( self, request_data, command, arguments ):
@@ -1922,6 +1922,7 @@ class LanguageServerCompleter( Completer ):
                                       self._project_directory ),
              responses.DebugInfoItem( 'Settings',
                                       json.dumps( self._settings,
+                                                  separators = ( ',', ':' ),
                                                   indent = 2,
                                                   sort_keys = True ) ) ]
 
