@@ -35,7 +35,8 @@ from ycmd.utils import ReadFile
 from ycmd.tests.java import PathToTestFile, SharedYcmd
 from ycmd.tests.test_utils import ( CombineRequest,
                                     ParameterMatcher,
-                                    SignatureMatcher )
+                                    SignatureMatcher,
+                                    WithRetry )
 
 
 def ProjectPath( *args ):
@@ -78,6 +79,7 @@ def RunTest( app, test ):
   assert_that( response.json, test[ 'expect' ][ 'data' ] )
 
 
+@WithRetry
 @SharedYcmd
 def SignatureHelp_MethodTrigger_test( app ):
   RunTest( app, {
@@ -105,6 +107,7 @@ def SignatureHelp_MethodTrigger_test( app ):
   } )
 
 
+@WithRetry
 @SharedYcmd
 def SignatureHelp_ArgTrigger_test( app ):
   RunTest( app, {
@@ -136,6 +139,7 @@ def SignatureHelp_ArgTrigger_test( app ):
   } )
 
 
+@WithRetry
 @SharedYcmd
 def SignatureHelp_Constructor_test( app ):
   RunTest( app, {
