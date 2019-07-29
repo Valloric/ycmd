@@ -121,7 +121,7 @@ def ClangdCompleter_GetClangdCommand_CustomBinary_test():
 
 @patch( 'ycmd.completers.cpp.clangd_completer.GetVersion',
         side_effect = [ None,
-                        (5, 0, 0),
+                        ( 5, 0, 0 ),
                         clangd_completer.MIN_SUPPORTED_VERSION ] )
 def ClangdCompleter_CheckClangdVersion_test( *args ):
   eq_( clangd_completer.CheckClangdVersion( 'clangd' ), True )
