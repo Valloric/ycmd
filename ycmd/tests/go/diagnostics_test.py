@@ -23,16 +23,22 @@ from __future__ import division
 from builtins import *  # noqa
 
 from future.utils import iterkeys
-from hamcrest import assert_that, contains, contains_inanyorder, has_entries
+from hamcrest import ( assert_that,
+                       contains,
+                       contains_inanyorder,
+                       has_entries,
+                       matches_regexp )
 from pprint import pformat
 import json
 
 from ycmd.tests.go import PathToTestFile, SharedYcmd
-from ycmd.tests.test_utils import ( LocationMatcher,
+from ycmd.tests.test_utils import ( ExpectedFailure,
+                                    LocationMatcher,
                                     PollForMessages,
                                     PollForMessagesTimeoutException,
                                     RangeMatcher,
-                                    WaitForDiagnosticsToBeReady )
+                                    WaitForDiagnosticsToBeReady,
+                                    WithRetry )
 from ycmd.utils import ReadFile
 
 
@@ -53,6 +59,7 @@ DIAG_MATCHERS_PER_FILE = {
 }
 
 
+@WithRetry
 @SharedYcmd
 def Diagnostics_FileReadyToParse_test( app ):
   filepath = PathToTestFile( 'goto.go' )
@@ -65,6 +72,8 @@ def Diagnostics_FileReadyToParse_test( app ):
   assert_that( results, DIAG_MATCHERS_PER_FILE[ filepath ] )
 
 
+@ExpectedFailure( 'GOPLS 0.1.3 sometimes returns bad diagnostics',
+                  matches_regexp( "expected ';', found 'EOF'" ) )
 @SharedYcmd
 def Diagnostics_Poll_test( app ):
   filepath = PathToTestFile( 'goto.go' )
