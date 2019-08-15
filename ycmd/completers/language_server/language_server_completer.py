@@ -849,18 +849,21 @@ class LanguageServerCompleter( Completer ):
     """Returns True if the server is running and the initialization exchange has
     completed successfully. Implementations must not issue requests until this
     method returns True."""
-    if not self.ServerIsHealthy():
-      return False
+    # if not self.ServerIsHealthy():
+    #   LOGGER.debug( "Server is not running" )
+    #   return False
 
     if self._initialize_event.is_set():
       # We already got the initialize response
       return True
 
     if self._initialize_response is None:
+      LOGGER.debug( "Initialize request not sent yet" )
       # We never sent the initialize response
       return False
 
     # Initialize request in progress. Will be handled asynchronously.
+    LOGGER.debug( "Initialize in progress" )
     return False
 
 
