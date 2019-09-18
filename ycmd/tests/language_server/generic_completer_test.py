@@ -28,6 +28,7 @@ import json
 import requests
 from hamcrest import ( assert_that,
                        contains,
+                       empty,
                        equal_to,
                        has_entries,
                        has_entry,
@@ -243,3 +244,32 @@ def GenericLSPCompleter_DebugInfo_CustomRoot_test( app, *args ):
       } ) ),
     } ) )
   )
+
+
+@IsolatedYcmd( { 'language_server':
+  [ { 'name': 'foo',
+      'filetypes': [ 'foo' ],
+      'project_root_files': [ 'proj_root' ],
+      'cmdline': [ 'node', PATH_TO_GENERIC_COMPLETER, '--stdio' ] } ] } )
+def GenericLSPCompleter_SignatureHelp_NoTriggers_test( app ):
+  test_file = PathToTestFile(
+      'generic_server', 'foo', 'bar', 'baz', 'test_file' )
+  request = BuildRequest( filepath = test_file,
+                          filetype = 'foo',
+                          line_num = 1,
+                          column_num = 1,
+                          contents = '',
+                          event_name = 'FileReadyToParse' )
+
+  app.post_json( '/event_notification', request )
+  WaitUntilCompleterServerReady( app, 'foo' )
+  request.pop( 'event_name' )
+  response = app.post_json( '/signature_help', request ).json
+  assert_that( response, has_entries( {
+    'signature_help': has_entries( {
+      'activeSignature': 0,
+      'activeParameter': 0,
+      'signatures': empty()
+    } ),
+    'errors': empty()
+  } ) )

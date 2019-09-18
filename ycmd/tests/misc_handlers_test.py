@@ -25,10 +25,14 @@ from builtins import *  # noqa
 
 from hamcrest import ( any_of, assert_that, contains, empty, equal_to,
                        has_entries, instance_of )
+from mock import patch
 import requests
 
 from ycmd.tests import IsolatedYcmd, PathToTestFile, SharedYcmd
-from ycmd.tests.test_utils import BuildRequest, DummyCompleter, PatchCompleter
+from ycmd.tests.test_utils import ( BuildRequest,
+                                    DummyCompleter,
+                                    PatchCompleter,
+                                    ErrorMatcher )
 
 
 @SharedYcmd
@@ -212,3 +216,40 @@ def MiscHandlers_ReceiveMessages_NotSupportedByCompleter_test( app ):
     request_data = BuildRequest( filetype = 'dummy_filetype' )
     assert_that( app.post_json( '/receive_messages', request_data ).json,
                  equal_to( False ) )
+
+
+@SharedYcmd
+@patch( 'ycmd.completers.completer.Completer.ShouldUseSignatureHelpNow',
+        return_value = True )
+def MiscHandlers_SignatureHelp_DefaultEmptyResponse_test( app, *args ):
+  with PatchCompleter( DummyCompleter, filetype = 'dummy_filetype' ):
+    request_data = BuildRequest( filetype = 'dummy_filetype' )
+    response = app.post_json( '/signature_help', request_data ).json
+    assert_that( response, has_entries( {
+      'signature_help': has_entries( {
+        'activeSignature': 0,
+        'activeParameter': 0,
+        'signatures': empty()
+      } ),
+      'errors': empty()
+    } ) )
+
+
+@SharedYcmd
+@patch( 'ycmd.completers.completer.Completer.ComputeSignatures',
+        side_effect = RuntimeError )
+def MiscHandlers_SignatureHelp_ComputeSignatureThrows_test( app, *args ):
+  with PatchCompleter( DummyCompleter, filetype = 'dummy_filetype' ):
+    request_data = BuildRequest( filetype = 'dummy_filetype' )
+    response = app.post_json( '/signature_help', request_data ).json
+    print( response )
+    assert_that( response, has_entries( {
+      'signature_help': has_entries( {
+        'activeSignature': 0,
+        'activeParameter': 0,
+        'signatures': empty()
+      } ),
+      'errors': contains(
+        ErrorMatcher( RuntimeError, '' )
+      )
+    } ) )
