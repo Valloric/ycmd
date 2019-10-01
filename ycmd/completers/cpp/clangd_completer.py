@@ -279,9 +279,30 @@ class ClangdCompleter( simple_language_server_completer.SimpleLSPCompleter ):
     return ( 'c', 'cpp', 'objc', 'objcpp', 'cuda' )
 
 
+  def _GetHover( self, request_data ):
+    # Clangd's hover response looks like this:
+    #     Declared in namespace <namespace name>
+    #
+    #     <declaration line>
+    #
+    #     <docstring>
+    # GetType gets the first two lines and GetDoc gets the rest.
+    value = self.GetHoverResponse( request_data )[ 'value' ]
+    second_new_line_index = value.find( '\n\n', value.find( '\n\n' ) + 1 )
+    return value, second_new_line_index
+
+
   def GetType( self, request_data ):
-    hover_response = self.GetHoverResponse( request_data )
-    return responses.BuildDisplayMessageResponse( hover_response[ 'value' ] )
+    value, split_index = self._GetHover( request_data )
+    value = value if split_index == -1 else value[ : split_index ]
+    return responses.BuildDisplayMessageResponse( value )
+
+
+  def GetDoc( self, request_data ):
+    value, split_index = self._GetHover( request_data )
+    if split_index == -1:
+      raise RuntimeError( 'No docstring found' )
+    return responses.BuildDisplayMessageResponse( value[ split_index + 2 : ] )
 
 
   def GetTriggerCharacters( self, server_trigger_characters ):
@@ -317,11 +338,14 @@ class ClangdCompleter( simple_language_server_completer.SimpleLSPCompleter ):
       'RestartServer': (
         lambda self, request_data, args: self._RestartServer( request_data )
       ),
+      'GetDoc': (
+        lambda self, request_data, args: self.GetDoc( request_data )
+      ),
+      'GetDocImprecise': (
+        lambda self, request_data, args: self.GetDoc( request_data )
+      ),
       # To handle the commands below we need extensions to LSP. One way to
       # provide those could be to use workspace/executeCommand requset.
-      # 'GetDoc': (
-      #   lambda self, request_data, args: self.GetType( request_data )
-      # ),
       # 'GetParent': (
       #   lambda self, request_data, args: self.GetType( request_data )
       # )
