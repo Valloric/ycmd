@@ -280,8 +280,19 @@ class ClangdCompleter( simple_language_server_completer.SimpleLSPCompleter ):
 
 
   def GetType( self, request_data ):
-    hover_response = self.GetHoverResponse( request_data )
-    return responses.BuildDisplayMessageResponse( hover_response[ 'value' ] )
+    # First two lines of the response - separated by \n\n
+    value = self.GetHoverResponse( request_data )[ 'value' ].split( '\n\n', 2 )
+    if len( value ) < 3:
+      return responses.BuildDisplayMessageResponse( '\n\n'.join( value ) )
+    return responses.BuildDisplayMessageResponse( '\n\n'.join( value[ : 2 ] ) )
+
+
+  def GetDoc( self, request_data ):
+    # From third line to the end - lines separated by \n\n.
+    value = self.GetHoverResponse( request_data )[ 'value' ].split( '\n\n', 2 )
+    if len( value ) < 3:
+      raise RuntimeError( 'No docstring found' )
+    return responses.BuildDisplayMessageResponse( value[ 2 ] )
 
 
   def GetTriggerCharacters( self, server_trigger_characters ):
@@ -317,11 +328,14 @@ class ClangdCompleter( simple_language_server_completer.SimpleLSPCompleter ):
       'RestartServer': (
         lambda self, request_data, args: self._RestartServer( request_data )
       ),
+      'GetDoc': (
+        lambda self, request_data, args: self.GetDoc( request_data )
+      ),
+      'GetDocImprecise': (
+        lambda self, request_data, args: self.GetDoc( request_data )
+      ),
       # To handle the commands below we need extensions to LSP. One way to
       # provide those could be to use workspace/executeCommand requset.
-      # 'GetDoc': (
-      #   lambda self, request_data, args: self.GetType( request_data )
-      # ),
       # 'GetParent': (
       #   lambda self, request_data, args: self.GetType( request_data )
       # )
