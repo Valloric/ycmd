@@ -471,6 +471,14 @@ class ClangdCompleter( simple_language_server_completer.SimpleLSPCompleter ):
     ]
 
 
+  def OnBufferVisit( self, request_data ):
+    # In case a header has been changed, we need to make clangd reparse the TU.
+    file_state = self._server_file_state[ request_data[ 'filepath' ] ]
+    msg = lsp.DidChangeTextDocument( file_state )
+    self.GetConnection().SendNotification( msg )
+
+
+
 def CompilationDatabaseExists( file_dir ):
   for folder in PathsToAllParentFolders( file_dir ):
     if os.path.exists( os.path.join( folder, 'compile_commands.json' ) ):

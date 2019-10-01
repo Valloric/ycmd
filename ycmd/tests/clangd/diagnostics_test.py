@@ -22,6 +22,7 @@ from __future__ import division
 # Not installing aliases from python-future; it's unreliable and slow.
 from builtins import *  # noqa
 
+from pprint import pformat
 from hamcrest import ( assert_that,
                        contains,
                        contains_string,
@@ -36,7 +37,10 @@ from pprint import pprint
 from ycmd.tests.clangd import ( IsolatedYcmd,
                                 PathToTestFile,
                                 RunAfterInitialized )
-from ycmd.tests.test_utils import BuildRequest, LocationMatcher, RangeMatcher
+from ycmd.tests.test_utils import ( BuildRequest,
+                                    LocationMatcher,
+                                    RangeMatcher,
+                                    PollForMessages )
 from ycmd.utils import ReadFile
 from ycmd import handlers
 
@@ -437,3 +441,67 @@ struct Foo {
     results = app.post_json( '/detailed_diagnostic', diag_data ).json
     assert_that( results,
                has_entry( 'message', contains_string( "are not ready yet" ) ) )
+
+
+@IsolatedYcmd()
+def Diagnostic_UpdatedOnBufferVisit_test( app ):
+  source_file = PathToTestFile( 'on_buffer_visit', 'source.cpp' )
+  header_file = PathToTestFile( 'on_buffer_visit', 'header.h' )
+  old_header_content = ReadFile( header_file )
+  source_contents = ReadFile( source_file )
+
+  messages_request = { 'contents': source_contents,
+                       'filepath': source_file,
+                       'filetype': 'cpp' }
+
+  test = { 'request': messages_request, 'route': '/receive_messages' }
+  response = RunAfterInitialized( app, test )
+  assert_that( response, contains(
+    has_entries( { 'diagnostics': empty() } ) ) )
+
+  # Overwrite header.cpp
+  new_header_content = """#pragma once
+static int h();
+"""
+  with open( header_file, 'w' ) as f:
+    f.write( new_header_content )
+
+  # Send BufferVisit notification
+  buffer_visit_request = { "event_name": "BufferVisit",
+                           "filepath": source_file,
+                           "filetype": 'cpp' }
+  app.post_json( '/event_notification', BuildRequest( **buffer_visit_request ) )
+  # Assert diagnostics
+  for message in PollForMessages( app, messages_request ):
+    if 'diagnostics' in message:
+      assert_that( message,
+        has_entries( { 'diagnostics': contains(
+          has_entries( {
+            'kind': equal_to( 'ERROR' ),
+            'text': "Use of undeclared identifier 'S'",
+            'ranges': contains(
+                        RangeMatcher( source_file, ( 4, 9 ), ( 4, 10 ) ) ),
+            'location': LocationMatcher( source_file, 4, 9 ),
+            'location_extent': RangeMatcher( source_file, ( 4, 9 ), ( 4, 10 ) )
+          } )
+        ) } ) )
+      break
+
+  # Restore original content
+  with open( header_file, 'w' ) as f:
+    f.write( old_header_content )
+
+  # Send BufferVisit notification
+  app.post_json( '/event_notification', BuildRequest( **buffer_visit_request ) )
+
+  # Assert no diagnostics
+  for message in PollForMessages( app, messages_request ):
+    print( 'Message {}'.format( pformat( message ) ) )
+    if 'diagnostics' in message:
+      assert_that( message,
+        has_entries( { 'diagnostics': empty() } ) )
+      break
+
+  # Assert no dirty files
+  with open( header_file, 'r' ) as f:
+    assert_that( f.read(), equal_to( old_header_content ) )

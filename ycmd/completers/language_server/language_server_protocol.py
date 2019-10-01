@@ -308,7 +308,7 @@ def DidOpenTextDocument( file_state, file_types, file_contents ):
   } )
 
 
-def DidChangeTextDocument( file_state, file_contents ):
+def DidChangeTextDocument( file_state, file_contents = None ):
   return BuildNotification( 'textDocument/didChange', {
     'textDocument': {
       'uri': FilePathToUri( file_state.filename ),
@@ -316,7 +316,7 @@ def DidChangeTextDocument( file_state, file_contents ):
     },
     'contentChanges': [
       { 'text': file_contents },
-    ],
+    ] if file_contents else [],
   } )
 
 
