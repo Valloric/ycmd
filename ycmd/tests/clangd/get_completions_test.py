@@ -23,7 +23,7 @@ from __future__ import print_function
 from __future__ import division
 # Not installing aliases from python-future; it's unreliable and slow.
 from builtins import *  # noqa
-
+from time import sleep
 import json
 import requests
 from nose.tools import eq_
@@ -77,6 +77,7 @@ def RunTest( app, test ):
 
   # We also ignore errors here, but then we check the response code ourself.
   # This is to allow testing of requests returning errors.
+  sleep( 0.02 )
   response = app.post_json( '/completions', BuildRequest( **request ),
                             expect_errors = True )
 
@@ -445,7 +446,7 @@ def GetCompletions_ClangCLDriverFlag_SimpleCompletion_test( app ):
           CompletionEntryMatcher( 'driver_mode_cl_include_func',
                                   'void\n"driver_mode_cl_include.h"' ),
           CompletionEntryMatcher( 'driver_mode_cl_include_int',
-                                  'void\n"driver_mode_cl_include.h"' ),
+                                  'int\n"driver_mode_cl_include.h"' ),
         ),
         'errors': empty(),
       } )
@@ -473,8 +474,10 @@ def GetCompletions_ClangCLDriverExec_SimpleCompletion_test( app ):
       'data': has_entries( {
         'completion_start_column': 3,
         'completions': contains_inanyorder(
-          CompletionEntryMatcher( 'driver_mode_cl_include_func', 'void' ),
-          CompletionEntryMatcher( 'driver_mode_cl_include_int', 'int' ),
+          CompletionEntryMatcher( 'driver_mode_cl_include_func',
+                                  'void\n"driver_mode_cl_include.h"' ),
+          CompletionEntryMatcher( 'driver_mode_cl_include_int',
+                                  'int\n"driver_mode_cl_include.h"' ),
         ),
         'errors': empty(),
       } )
@@ -871,7 +874,6 @@ def GetCompletions_SupportExtraConf_test( app ):
     }
   } )
 
-  # TODO: Figure out why this doesn't work
   RunTest( app, {
     'description': 'Flags for bar.cpp from extra conf file are used',
     'request': {
