@@ -442,8 +442,10 @@ def GetCompletions_ClangCLDriverFlag_SimpleCompletion_test( app ):
       'data': has_entries( {
         'completion_start_column': 3,
         'completions': contains_inanyorder(
-          CompletionEntryMatcher( 'driver_mode_cl_include_func', 'void' ),
-          CompletionEntryMatcher( 'driver_mode_cl_include_int', 'int' ),
+          CompletionEntryMatcher( 'driver_mode_cl_include_func',
+                                  'void\n"driver_mode_cl_include.h"' ),
+          CompletionEntryMatcher( 'driver_mode_cl_include_int',
+                                  'void\n"driver_mode_cl_include.h"' ),
         ),
         'errors': empty(),
       } )
