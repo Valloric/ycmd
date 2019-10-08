@@ -351,6 +351,9 @@ class ClangdCompleter( simple_language_server_completer.SimpleLSPCompleter ):
         command[ 'arguments' ][ 0 ],
         text = command[ 'title' ] )
 
+    if command[ 'command' ] == 'clangd.applyTweak':
+      return responses.UnresolvedFixIt( command, command[ 'title' ] )
+
     return None
 
 
@@ -479,6 +482,29 @@ class ClangdCompleter( simple_language_server_completer.SimpleLSPCompleter ):
       self._compilation_commands[ filepath ] = flags
 
 
+  def ResolveFixit( self, request_data ):
+    fixit = request_data[ 'fixit' ]
+    if not fixit[ 'resolve' ]:
+      return { 'fixits': [ fixit ] }
+
+    unresolved_fixit = fixit[ 'command' ]
+    collector = EditCollector()
+    with self.GetConnection().HandleServerToClientRequests( collector ):
+      self.GetCommandResponse(
+        request_data,
+        unresolved_fixit[ 'command' ],
+        unresolved_fixit[ 'arguments' ] )
+
+    # Return a ycmd fixit
+    response = collector._requests
+    assert len( response ) == 1
+    fixit = language_server_completer.WorkspaceEditToFixIt(
+      request_data,
+      response[ 0 ][ 'edit' ],
+      unresolved_fixit[ 'title' ] )
+    return responses.BuildFixItResponse( [ fixit ] )
+
+
   def ExtraDebugItems( self, request_data ):
     return [
       responses.DebugInfoItem(
@@ -493,3 +519,14 @@ def CompilationDatabaseExists( file_dir ):
       return True
 
   return False
+
+
+class EditCollector( object ):
+  def __init__( self ):
+    self._requests = []
+
+
+  def HandleServerToClientRequest( self, request, connection ):
+    assert request[ 'method' ] == 'workspace/applyEdit'
+    self._requests.append( request[ 'params' ] )
+    connection.SendResponse( lsp.ApplyEdit( request ) )

@@ -291,6 +291,11 @@ def Reject( request, request_error, data = None ):
   return BuildResponse( request, msg )
 
 
+def ApplyEdit( request ):
+  msg = { 'applied': True }
+  return BuildResponse( request, msg )
+
+
 def DidChangeConfiguration( config ):
   return BuildNotification( 'workspace/didChangeConfiguration', {
     'settings': config,
