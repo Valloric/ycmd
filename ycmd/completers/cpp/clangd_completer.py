@@ -351,6 +351,9 @@ class ClangdCompleter( simple_language_server_completer.SimpleLSPCompleter ):
         command[ 'arguments' ][ 0 ],
         text = command[ 'title' ] )
 
+    if command[ 'command' ] == 'clangd.applyTweak':
+      return responses.UnresolvedFixIt( command, command[ 'title' ] )
+
     return None
 
 
@@ -477,6 +480,29 @@ class ClangdCompleter( simple_language_server_completer.SimpleLSPCompleter ):
       } ) )
 
       self._compilation_commands[ filepath ] = flags
+
+
+  def ResolveFixit( self, request_data ):
+    fixit = request_data[ 'fixit' ]
+    if not fixit[ 'resolve' ]:
+      return { 'fixits': [ fixit ] }
+
+    unresolved_fixit = fixit[ 'command' ]
+    collector = language_server_completer.EditCollector()
+    with self.GetConnection().HandleServerToClientRequests( collector ):
+      self.GetCommandResponse(
+        request_data,
+        unresolved_fixit[ 'command' ],
+        unresolved_fixit[ 'arguments' ] )
+
+    # Return a ycmd fixit
+    response = collector.requests
+    assert len( response ) == 1
+    fixit = language_server_completer.WorkspaceEditToFixIt(
+      request_data,
+      response[ 0 ][ 'edit' ],
+      unresolved_fixit[ 'title' ] )
+    return responses.BuildFixItResponse( [ fixit ] )
 
 
   def ExtraDebugItems( self, request_data ):

@@ -26,6 +26,7 @@ from functools import partial
 from future.utils import iteritems, iterkeys
 import abc
 import collections
+import contextlib
 import json
 import logging
 import os
@@ -305,6 +306,18 @@ class LanguageServerConnection( threading.Thread ):
     self._stop_event = threading.Event()
     self._notification_handler = notification_handler
 
+    self._collector = RejectCollector()
+
+
+  @contextlib.contextmanager
+  def HandleServerToClientRequests( self, collector ):
+    old_collector = self._collector
+    self._collector = collector
+    try:
+      yield
+    finally:
+      self._collector = old_collector
+
 
   def run( self ):
     try:
@@ -538,9 +551,7 @@ class LanguageServerConnection( threading.Thread ):
     if 'id' in message:
       if 'method' in message:
         # This is a server->client request, which requires a response.
-        # We don't support any such messages right now.
-        message = lsp.Reject( message, lsp.Errors.MethodNotFound )
-        self.SendResponse( message )
+        self._collector.HandleServerToClientRequest( message, self )
       else:
         # This is a response to the message with id message[ 'id' ]
         with self._response_mutex:
@@ -1823,8 +1834,6 @@ class LanguageServerCompleter( Completer ):
     line_num_ls = request_data[ 'line_num' ] - 1
     request_id = self.GetConnection().NextRequestId()
     if 'range' in request_data:
-      LOGGER.debug( 'Lines1 = %s', request_data[ 'lines' ] )
-      LOGGER.debug( 'CAR = %s', request_data[ 'range' ] )
       code_actions = self.GetConnection().GetResponse(
         request_id,
         lsp.CodeAction( request_id,
@@ -1971,10 +1980,13 @@ class LanguageServerCompleter( Completer ):
     # We don't have any actual knowledge of the responses here. Unfortunately,
     # the LSP "comamnds" require client/server specific understanding of the
     # commands.
-    command_response = self.GetCommandResponse( request_data,
-                                                args[ 0 ],
-                                                args[ 1: ] )
+    collector = EditCollector()
+    with self.GetConnection().HandleServerToClientRequests( collector ):
+      self.GetCommandResponse( request_data,
+                               args[ 0 ],
+                               args[ 1: ] )
 
+    command_response = collector.requests
     response = self.HandleServerCommandResponse( request_data,
                                                  command_response )
     if response is not None:
@@ -2467,3 +2479,20 @@ class LanguageServerCompletionsCache( CompletionsCache ):
         return super( LanguageServerCompletionsCache,
                       self ).GetCompletionsIfCacheValid( request_data )
       return None
+
+
+class RejectCollector( object ):
+  def HandleServerToClientRequest( self, request, connection ):
+    message = lsp.Reject( request, lsp.Errors.MethodNotFound )
+    connection.SendResponse( message )
+
+
+class EditCollector( object ):
+  def __init__( self ):
+    self.requests = []
+
+
+  def HandleServerToClientRequest( self, request, connection ):
+    assert request[ 'method' ] == 'workspace/applyEdit'
+    self.requests.append( request[ 'params' ] )
+    connection.SendResponse( lsp.ApplyEditResponse( request ) )
