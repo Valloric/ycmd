@@ -738,14 +738,17 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
 
 
   def OrganizeImports( self, request_data ):
-    workspace_edit = self.GetCommandResponse(
-      request_data,
-      'java.edit.organizeImports',
-      [ lsp.FilePathToUri( request_data[ 'filepath' ] ) ] )
-
-    fixit = language_server_completer.WorkspaceEditToFixIt( request_data,
-                                                            workspace_edit )
-    return responses.BuildFixItResponse( [ fixit ] )
+    request_data._request.update( {
+      'fixit': {
+        'resolve': True,
+        'command': {
+          'title': 'Organize Imports',
+          'command': 'java.edit.organizeImports',
+          'arguments': [ lsp.FilePathToUri( request_data[ 'filepath' ] ) ]
+        }
+      },
+    } )
+    return self.ResolveFixit( request_data )
 
 
   def HandleServerCommand( self, request_data, command ):
