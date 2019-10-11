@@ -47,6 +47,7 @@ from ycmd.tests.test_utils import ( BuildRequest,
                                     ErrorMatcher,
                                     LocationMatcher,
                                     RangeMatcher,
+                                    SignatureAvailableMatcher,
                                     WaitUntilCompleterServerReady )
 from ycmd.utils import ReadFile
 
@@ -251,6 +252,7 @@ def GenericLSPCompleter_DebugInfo_CustomRoot_test( app, *args ):
       'filetypes': [ 'foo' ],
       'project_root_files': [ 'proj_root' ],
       'cmdline': [ 'node', PATH_TO_GENERIC_COMPLETER, '--stdio' ] } ] } )
+<<<<<<< HEAD
 def GenericLSPCompleter_SignatureHelp_NoTriggers_test( app ):
   test_file = PathToTestFile(
       'generic_server', 'foo', 'bar', 'baz', 'test_file' )
@@ -303,3 +305,20 @@ def GenericLSPCompleter_SignatureHelp_NotASigHelpProvider_test( app, *args ):
     } ),
     'errors': empty()
   } ) )
+=======
+def GenericLSPCompleter_SignatureHelp_NotSupported_test( app ):
+  test_file = PathToTestFile(
+      'generic_server', 'foo', 'bar', 'baz', 'test_file' )
+  app.post_json( '/event_notification',
+                 BuildRequest( **{
+                   'filepath': test_file,
+                   'event_name': 'FileReadyToParse',
+                   'filetype': 'foo'
+                 } ),
+                 expect_errors = True )
+  WaitUntilCompleterServerReady( app, 'foo' )
+
+  response = app.get( '/signature_help_available',
+                      { 'subserver': 'foo' } ).json
+  assert_that( response, SignatureAvailableMatcher( 'NO' ) )
+>>>>>>> Provide a way for clients to query if signature help is available

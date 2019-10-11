@@ -31,12 +31,14 @@ from mock import patch
 from nose.tools import eq_
 from hamcrest import assert_that, contains, empty, has_entries
 
+from ycmd import handlers
 from ycmd.tests.clangd import PathToTestFile, SharedYcmd, IsolatedYcmd
 from ycmd.tests.test_utils import ( EMPTY_SIGNATURE_HELP,
                                     BuildRequest,
                                     CombineRequest,
                                     ParameterMatcher,
                                     SignatureMatcher,
+                                    SignatureAvailableMatcher,
                                     WaitUntilCompleterServerReady )
 from ycmd.utils import ReadFile
 
@@ -599,3 +601,46 @@ def Signature_Help_Server_Not_Initialized_test( app, *args ):
         'errors': empty(),
         'signature_help': EMPTY_SIGNATURE_HELP,
       } ) )
+
+
+def Signature_Help_Available_Server_Not_Initialized_test():
+  completer = handlers._server_state.GetFiletypeCompleter( [ 'cpp' ] )
+
+  @SharedYcmd
+  @patch.object( completer, '_ServerIsInitialized', return_value = False )
+  def Test( app ):
+    response = app.get( '/signature_help_available',
+                        { 'subserver': 'cpp' } ).json
+    assert_that( response, SignatureAvailableMatcher( 'PENDING' ) )
+
+
+@SharedYcmd
+def Signature_Help_Supported_test( app ):
+  request = { 'filepath' : PathToTestFile( 'goto.cc' ) }
+  app.post_json( '/event_notification',
+                 CombineRequest( request, {
+                   'event_name': 'FileReadyToParse',
+                   'filetype': 'cpp'
+                 } ),
+                 expect_errors = True )
+  WaitUntilCompleterServerReady( app, 'cpp' )
+
+  response = app.get( '/signature_help_available',
+                      { 'subserver': 'cpp' } ).json
+  assert_that( response, SignatureAvailableMatcher( 'YES' ) )
+
+
+@IsolatedYcmd( { 'disable_signature_help': 1 } )
+def Signature_Help_Available_Disabled_By_User_test( app, *args ):
+  request = { 'filepath' : PathToTestFile( 'goto.cc' ) }
+  app.post_json( '/event_notification',
+                 CombineRequest( request, {
+                   'event_name': 'FileReadyToParse',
+                   'filetype': 'cpp'
+                 } ),
+                 expect_errors = True )
+  WaitUntilCompleterServerReady( app, 'cpp' )
+
+  response = app.get( '/signature_help_available',
+                      { 'subserver': 'cpp' } ).json
+  assert_that( response, SignatureAvailableMatcher( 'NO' ) )

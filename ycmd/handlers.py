@@ -35,6 +35,7 @@ from ycmd import extra_conf_store, hmac_plugin, server_state, user_options_store
 from ycmd.responses import ( BuildExceptionResponse,
                              BuildCompletionResponse,
                              BuildSignatureHelpResponse,
+                             BuildSignatureHelpAvailableResponse,
                              UnknownExtraConf )
 from ycmd.request_wrap import RequestWrap
 from ycmd.bottle_utils import SetResponseHeader
@@ -71,6 +72,18 @@ def EventNotification():
   if response_data:
     return _JsonResponse( response_data )
   return _JsonResponse( {} )
+
+
+@app.get( '/signature_help_available' )
+def GetSignatureHelpAvailable():
+  LOGGER.info( 'Received signature help available request' )
+  if request.query.subserver:
+    filetype = request.query.subserver
+    completer = _server_state.GetFiletypeCompleter( [ filetype ] )
+    value = completer.SignatureHelpAvailable()
+    return _JsonResponse( BuildSignatureHelpAvailableResponse( value ) )
+  else:
+    raise RuntimeError( 'Subserver not specified' )
 
 
 @app.post( '/run_completer_command' )

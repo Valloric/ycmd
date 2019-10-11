@@ -45,6 +45,12 @@ EMPTY_SIGNATURE_INFO = {
 }
 
 
+class SignatureHelpAvailalability:
+  AVAILABLE = 'YES'
+  NOT_AVAILABLE = 'NO'
+  PENDING = 'PENDING'
+
+
 class ServerError( Exception ):
   def __init__( self, message ):
     super( ServerError, self ).__init__( message )
@@ -374,3 +380,7 @@ def BuildDebugInfoResponse( name, servers = [], items = [] ):
     'servers': [ BuildServerData( server ) for server in servers ],
     'items': [ BuildItemData( item ) for item in items ]
   }
+
+
+def BuildSignatureHelpAvailableResponse( value ):
+  return { 'available': value }

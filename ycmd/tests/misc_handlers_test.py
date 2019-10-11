@@ -32,6 +32,7 @@ from ycmd.tests import IsolatedYcmd, PathToTestFile, SharedYcmd
 from ycmd.tests.test_utils import ( BuildRequest,
                                     DummyCompleter,
                                     PatchCompleter,
+                                    SignatureAvailableMatcher,
                                     ErrorMatcher )
 
 
@@ -45,6 +46,21 @@ def MiscHandlers_Healthy_Subserver_test( app ):
   with PatchCompleter( DummyCompleter, filetype = 'dummy_filetype' ):
     assert_that( app.get( '/healthy', { 'subserver': 'dummy_filetype' } ).json,
                  equal_to( True ) )
+
+
+@SharedYcmd
+def MiscHandlers_SignatureHelpAvailable_test( app ):
+  response = app.get( '/signature_help_available', expect_errors = True ).json
+  assert_that( response,
+               ErrorMatcher( RuntimeError, 'Subserver not specified' ) )
+
+
+@SharedYcmd
+def MiscHandlers_SignatureHelpAvailable_Subserver_test( app ):
+  with PatchCompleter( DummyCompleter, filetype = 'dummy_filetype' ):
+    assert_that( app.get( '/signature_help_available',
+                          { 'subserver': 'dummy_filetype' } ).json,
+                 SignatureAvailableMatcher( 'NO' ) )
 
 
 @SharedYcmd

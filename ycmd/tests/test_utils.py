@@ -198,6 +198,10 @@ def SignatureMatcher( label, parameters ):
   } )
 
 
+def SignatureAvailableMatcher( available ):
+  return has_entries( { 'available': equal_to( available ) } )
+
+
 def ParameterMatcher( begin, end ):
   return has_entries( {
     'label': contains( begin, end )

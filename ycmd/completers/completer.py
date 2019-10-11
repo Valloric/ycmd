@@ -25,7 +25,7 @@ from builtins import *  # noqa
 import abc
 import threading
 from ycmd.completers import completer_utils
-from ycmd.responses import NoDiagnosticSupport
+from ycmd.responses import NoDiagnosticSupport, SignatureHelpAvailalability
 from future.utils import with_metaclass
 
 NO_USER_COMMANDS = 'This completer does not define any commands.'
@@ -434,6 +434,10 @@ class Completer( with_metaclass( abc.ABCMeta, object ) ):
 
   def ServerIsReady( self ):
     return self.ServerIsHealthy()
+
+
+  def SignatureHelpAvailable( self ):
+    return SignatureHelpAvailalability.NOT_AVAILABLE
 
 
   def ServerIsHealthy( self ):
