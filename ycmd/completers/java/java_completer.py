@@ -32,6 +32,7 @@ import threading
 from subprocess import PIPE
 
 from ycmd import responses, utils
+from ycmd import extra_conf_store
 from ycmd.completers.language_server import language_server_completer
 from ycmd.completers.language_server import language_server_protocol as lsp
 from ycmd.utils import LOGGER
@@ -752,3 +753,11 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
         text = command[ 'title' ] )
 
     return None
+
+  def AdditionalFormattingOptions( self, request_data ):
+    module = extra_conf_store.ModuleForSourceFile( request_data[ 'filepath' ] )
+    try:
+      settings = self.GetSettings( module, request_data )
+      return settings.get( 'formatter', {} )
+    except AttributeError:
+      return {}
