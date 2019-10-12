@@ -32,6 +32,7 @@ import threading
 from subprocess import PIPE
 
 from ycmd import responses, utils
+from ycmd import extra_conf_store
 from ycmd.completers.language_server import language_server_completer
 from ycmd.completers.language_server import language_server_protocol as lsp
 from ycmd.utils import LOGGER
