@@ -232,9 +232,6 @@ class Completer( with_metaclass( abc.ABCMeta, object ) ):
     if self.user_options[ 'disable_signature_help' ]:
       return False
 
-    if not self.signature_triggers:
-      return False
-
     state = request_data.get( 'signature_help_state', 'INACTIVE' )
 
     current_line = request_data[ 'line_value' ]
