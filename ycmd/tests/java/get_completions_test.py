@@ -501,24 +501,27 @@ def GetCompletions_ServerNotInitialized_test( app ):
   completer = handlers._server_state.GetFiletypeCompleter( [ 'java' ] )
 
   with patch.object( completer, '_ServerIsInitialized', return_value = False ):
-    RunTest( app, {
-      'description': 'Completion works for unicode identifier',
-      'request': {
-        'filetype'      : 'java',
-        'filepath'      : filepath,
-        'line_num'      : 16,
-        'column_num'    : 35,
-        'force_semantic': True
-      },
-      'expect': {
-        'response': requests.codes.ok,
-        'data': has_entries( {
-          'errors': empty(),
-          'completions': empty(),
-          'completion_start_column': 6
-        } ),
-      }
-    } )
+    with patch.object( completer,
+                       '_is_completion_provider',
+                       return_value = False ):
+      RunTest( app, {
+        'description': 'Completion works for unicode identifier',
+        'request': {
+          'filetype'      : 'java',
+          'filepath'      : filepath,
+          'line_num'      : 16,
+          'column_num'    : 35,
+          'force_semantic': True
+        },
+        'expect': {
+          'response': requests.codes.ok,
+          'data': has_entries( {
+            'errors': empty(),
+            'completions': empty(),
+            'completion_start_column': 6
+          } ),
+        }
+      } )
 
 
 @SharedYcmd

@@ -788,6 +788,7 @@ class LanguageServerCompleter( Completer ):
       self._initialize_event = threading.Event()
       self._on_initialize_complete_handlers = []
       self._server_capabilities = None
+      self._is_completion_provider = True
       self._resolve_completion_items = False
       self._project_directory = None
       self._settings = {}
@@ -873,6 +874,7 @@ class LanguageServerCompleter( Completer ):
   def ShouldUseNowInner( self, request_data ):
     # We should only do _anything_ after the initialize exchange has completed.
     return ( self._ServerIsInitialized() and
+             self._is_completion_provider and
              super( LanguageServerCompleter, self ).ShouldUseNowInner(
                request_data ) )
 
@@ -1652,6 +1654,9 @@ class LanguageServerCompleter( Completer ):
     with self._server_info_mutex:
       self._server_capabilities = response[ 'result' ][ 'capabilities' ]
       self._resolve_completion_items = self._ShouldResolveCompletionItems()
+
+      if 'completionProvider' not in self._server_capabilities:
+        self._is_completion_provider = True
 
       if 'textDocumentSync' in self._server_capabilities:
         sync = self._server_capabilities[ 'textDocumentSync' ]

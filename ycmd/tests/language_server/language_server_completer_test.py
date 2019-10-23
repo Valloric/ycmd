@@ -634,17 +634,20 @@ def LanguageServerCompleter_GetCompletions_List_test():
   ]
 
   with patch.object( completer, '_ServerIsInitialized', return_value = True ):
-    with patch.object( completer.GetConnection(),
-                       'GetResponse',
-                       side_effect = [ completion_response ] +
-                                     resolve_responses ):
-      assert_that(
-        completer.ComputeCandidatesInner( request_data, 1 ),
-        contains(
-          has_items( has_entries( { 'insertion_text': 'test' } ) ),
-          False
+    with patch.object( completer,
+                       '_is_completion_provider',
+                       return_value = True ):
+      with patch.object( completer.GetConnection(),
+                         'GetResponse',
+                         side_effect = [ completion_response ] +
+                                       resolve_responses ):
+        assert_that(
+          completer.ComputeCandidatesInner( request_data, 1 ),
+          contains(
+            has_items( has_entries( { 'insertion_text': 'test' } ) ),
+            False
+          )
         )
-      )
 
 
 def LanguageServerCompleter_GetCompletions_UnsupportedKinds_test():
@@ -659,18 +662,21 @@ def LanguageServerCompleter_GetCompletions_UnsupportedKinds_test():
   ]
 
   with patch.object( completer, '_ServerIsInitialized', return_value = True ):
-    with patch.object( completer.GetConnection(),
-                       'GetResponse',
-                       side_effect = [ completion_response ] +
-                                     resolve_responses ):
-      assert_that(
-        completer.ComputeCandidatesInner( request_data, 1 ),
-        contains(
-          has_items( all_of( has_entry( 'insertion_text', 'test' ),
-                             is_not( has_key( 'kind' ) ) ) ),
-          False
+    with patch.object( completer,
+                       '_is_completion_provider',
+                       return_value = True ):
+      with patch.object( completer.GetConnection(),
+                         'GetResponse',
+                         side_effect = [ completion_response ] +
+                                       resolve_responses ):
+        assert_that(
+          completer.ComputeCandidatesInner( request_data, 1 ),
+          contains(
+            has_items( all_of( has_entry( 'insertion_text', 'test' ),
+                               is_not( has_key( 'kind' ) ) ) ),
+            False
+          )
         )
-      )
 
 
 def LanguageServerCompleter_GetCompletions_CompleteOnStartColumn_test():
@@ -688,47 +694,50 @@ def LanguageServerCompleter_GetCompletions_CompleteOnStartColumn_test():
   }
 
   with patch.object( completer, '_ServerIsInitialized', return_value = True ):
-    request_data = RequestWrap( BuildRequest(
-      column_num = 2,
-      contents = 'a',
-      force_semantic = True
-    ) )
+    with patch.object( completer,
+                       '_is_completion_provider',
+                       return_value = True ):
+      request_data = RequestWrap( BuildRequest(
+        column_num = 2,
+        contents = 'a',
+        force_semantic = True
+      ) )
 
-    with patch.object( completer.GetConnection(),
-                       'GetResponse',
-                       return_value = complete_response ) as response:
-      assert_that(
-        completer.ComputeCandidates( request_data ),
-        contains(
-          has_entry( 'insertion_text', 'aa' ),
-          has_entry( 'insertion_text', 'ab' ),
-          has_entry( 'insertion_text', 'ac' )
+      with patch.object( completer.GetConnection(),
+                         'GetResponse',
+                         return_value = complete_response ) as response:
+        assert_that(
+          completer.ComputeCandidates( request_data ),
+          contains(
+            has_entry( 'insertion_text', 'aa' ),
+            has_entry( 'insertion_text', 'ab' ),
+            has_entry( 'insertion_text', 'ac' )
+          )
         )
-      )
 
-      # Nothing cached yet.
-      assert_that( response.call_count, equal_to( 1 ) )
+        # Nothing cached yet.
+        assert_that( response.call_count, equal_to( 1 ) )
 
-    request_data = RequestWrap( BuildRequest(
-      column_num = 3,
-      contents = 'ab',
-      force_semantic = True
-    ) )
+      request_data = RequestWrap( BuildRequest(
+        column_num = 3,
+        contents = 'ab',
+        force_semantic = True
+      ) )
 
-    with patch.object( completer.GetConnection(),
-                       'GetResponse',
-                       return_value = complete_response ) as response:
-      assert_that(
-        completer.ComputeCandidates( request_data ),
-        contains(
-          has_entry( 'insertion_text', 'ab' )
+      with patch.object( completer.GetConnection(),
+                         'GetResponse',
+                         return_value = complete_response ) as response:
+        assert_that(
+          completer.ComputeCandidates( request_data ),
+          contains(
+            has_entry( 'insertion_text', 'ab' )
+          )
         )
-      )
 
-      # Since the server returned a complete list of completions on the starting
-      # column, no request should be sent to the server and the cache should be
-      # used instead.
-      assert_that( response.call_count, equal_to( 0 ) )
+        # Since the server returned a complete list of
+        # completions on the starting column, no request should be
+        # sent to the server and the cache should be used instead.
+        assert_that( response.call_count, equal_to( 0 ) )
 
 
 def LanguageServerCompleter_GetCompletions_CompleteOnCurrentColumn_test():
@@ -773,141 +782,144 @@ def LanguageServerCompleter_GetCompletions_CompleteOnCurrentColumn_test():
   }
 
   with patch.object( completer, '_ServerIsInitialized', return_value = True ):
-    # User starts by typing the character "a".
-    request_data = RequestWrap( BuildRequest(
-      column_num = 2,
-      contents = 'a',
-      force_semantic = True
-    ) )
+    with patch.object( completer,
+                       '_is_completion_provider',
+                       return_value = True ):
+      # User starts by typing the character "a".
+      request_data = RequestWrap( BuildRequest(
+        column_num = 2,
+        contents = 'a',
+        force_semantic = True
+      ) )
 
-    with patch.object( completer.GetConnection(),
-                       'GetResponse',
-                       return_value = a_response ) as response:
-      assert_that(
-        completer.ComputeCandidates( request_data ),
-        contains(
-          has_entry( 'insertion_text', 'aaa' ),
-          has_entry( 'insertion_text', 'aab' ),
-          has_entry( 'insertion_text', 'aba' )
+      with patch.object( completer.GetConnection(),
+                         'GetResponse',
+                         return_value = a_response ) as response:
+        assert_that(
+          completer.ComputeCandidates( request_data ),
+          contains(
+            has_entry( 'insertion_text', 'aaa' ),
+            has_entry( 'insertion_text', 'aab' ),
+            has_entry( 'insertion_text', 'aba' )
+          )
         )
-      )
 
-      # Nothing cached yet.
-      assert_that( response.call_count, equal_to( 1 ) )
+        # Nothing cached yet.
+        assert_that( response.call_count, equal_to( 1 ) )
 
-    # User types again the character "a".
-    request_data = RequestWrap( BuildRequest(
-      column_num = 3,
-      contents = 'aa',
-      force_semantic = True
-    ) )
+      # User types again the character "a".
+      request_data = RequestWrap( BuildRequest(
+        column_num = 3,
+        contents = 'aa',
+        force_semantic = True
+      ) )
 
-    with patch.object( completer.GetConnection(),
-                       'GetResponse',
-                       return_value = aa_response ) as response:
-      assert_that(
-        completer.ComputeCandidates( request_data ),
-        contains(
-          has_entry( 'insertion_text', 'aaa' ),
-          has_entry( 'insertion_text', 'aab' )
+      with patch.object( completer.GetConnection(),
+                         'GetResponse',
+                         return_value = aa_response ) as response:
+        assert_that(
+          completer.ComputeCandidates( request_data ),
+          contains(
+            has_entry( 'insertion_text', 'aaa' ),
+            has_entry( 'insertion_text', 'aab' )
+          )
         )
-      )
 
-      # The server returned an incomplete list of completions the first time so
-      # a new completion request should have been sent.
-      assert_that( response.call_count, equal_to( 1 ) )
+        # The server returned an incomplete list of completions the first time
+        # so a new completion request should have been sent.
+        assert_that( response.call_count, equal_to( 1 ) )
 
-    # User types the character "a" a third time.
-    request_data = RequestWrap( BuildRequest(
-      column_num = 4,
-      contents = 'aaa',
-      force_semantic = True
-    ) )
+      # User types the character "a" a third time.
+      request_data = RequestWrap( BuildRequest(
+        column_num = 4,
+        contents = 'aaa',
+        force_semantic = True
+      ) )
 
-    with patch.object( completer.GetConnection(),
-                       'GetResponse',
-                       return_value = aaa_response ) as response:
+      with patch.object( completer.GetConnection(),
+                         'GetResponse',
+                         return_value = aaa_response ) as response:
 
-      assert_that(
-        completer.ComputeCandidates( request_data ),
-        contains(
-          has_entry( 'insertion_text', 'aaa' )
+        assert_that(
+          completer.ComputeCandidates( request_data ),
+          contains(
+            has_entry( 'insertion_text', 'aaa' )
+          )
         )
-      )
 
-      # The server returned a complete list of completions the second time and
-      # the new query is a prefix of the cached one ("aa" is a prefix of "aaa")
-      # so the cache should be used.
-      assert_that( response.call_count, equal_to( 0 ) )
+        # The server returned a complete list of completions the second time and
+        # the new query is a prefix of the cached one ("aa" is a prefix of
+        # "aaa") so the cache should be used.
+        assert_that( response.call_count, equal_to( 0 ) )
 
-    # User deletes the third character.
-    request_data = RequestWrap( BuildRequest(
-      column_num = 3,
-      contents = 'aa',
-      force_semantic = True
-    ) )
+      # User deletes the third character.
+      request_data = RequestWrap( BuildRequest(
+        column_num = 3,
+        contents = 'aa',
+        force_semantic = True
+      ) )
 
-    with patch.object( completer.GetConnection(),
-                       'GetResponse',
-                       return_value = aa_response ) as response:
+      with patch.object( completer.GetConnection(),
+                         'GetResponse',
+                         return_value = aa_response ) as response:
 
-      assert_that(
-        completer.ComputeCandidates( request_data ),
-        contains(
-          has_entry( 'insertion_text', 'aaa' ),
-          has_entry( 'insertion_text', 'aab' )
+        assert_that(
+          completer.ComputeCandidates( request_data ),
+          contains(
+            has_entry( 'insertion_text', 'aaa' ),
+            has_entry( 'insertion_text', 'aab' )
+          )
         )
-      )
 
-      # The new query is still a prefix of the cached one ("aa" is a prefix of
-      # "aa") so the cache should again be used.
-      assert_that( response.call_count, equal_to( 0 ) )
+        # The new query is still a prefix of the cached one ("aa" is a prefix of
+        # "aa") so the cache should again be used.
+        assert_that( response.call_count, equal_to( 0 ) )
 
-    # User deletes the second character.
-    request_data = RequestWrap( BuildRequest(
-      column_num = 2,
-      contents = 'a',
-      force_semantic = True
-    ) )
+      # User deletes the second character.
+      request_data = RequestWrap( BuildRequest(
+        column_num = 2,
+        contents = 'a',
+        force_semantic = True
+      ) )
 
-    with patch.object( completer.GetConnection(),
-                       'GetResponse',
-                       return_value = a_response ) as response:
+      with patch.object( completer.GetConnection(),
+                         'GetResponse',
+                         return_value = a_response ) as response:
 
-      assert_that(
-        completer.ComputeCandidates( request_data ),
-        contains(
-          has_entry( 'insertion_text', 'aaa' ),
-          has_entry( 'insertion_text', 'aab' ),
-          has_entry( 'insertion_text', 'aba' )
+        assert_that(
+          completer.ComputeCandidates( request_data ),
+          contains(
+            has_entry( 'insertion_text', 'aaa' ),
+            has_entry( 'insertion_text', 'aab' ),
+            has_entry( 'insertion_text', 'aba' )
+          )
         )
-      )
 
-      # The new query is not anymore a prefix of the cached one ("aa" is not a
-      # prefix of "a") so the cache is invalidated and a new request is sent.
-      assert_that( response.call_count, equal_to( 1 ) )
+        # The new query is not anymore a prefix of the cached one ("aa" is not a
+        # prefix of "a") so the cache is invalidated and a new request is sent.
+        assert_that( response.call_count, equal_to( 1 ) )
 
-    # Finally, user inserts the "b" character.
-    request_data = RequestWrap( BuildRequest(
-      column_num = 3,
-      contents = 'ab',
-      force_semantic = True
-    ) )
+      # Finally, user inserts the "b" character.
+      request_data = RequestWrap( BuildRequest(
+        column_num = 3,
+        contents = 'ab',
+        force_semantic = True
+      ) )
 
-    with patch.object( completer.GetConnection(),
-                       'GetResponse',
-                       return_value = ab_response ) as response:
+      with patch.object( completer.GetConnection(),
+                         'GetResponse',
+                         return_value = ab_response ) as response:
 
-      assert_that(
-        completer.ComputeCandidates( request_data ),
-        contains(
-          has_entry( 'insertion_text', 'aba' ),
-          has_entry( 'insertion_text', 'abb' )
+        assert_that(
+          completer.ComputeCandidates( request_data ),
+          contains(
+            has_entry( 'insertion_text', 'aba' ),
+            has_entry( 'insertion_text', 'abb' )
+          )
         )
-      )
 
-      # Last response was incomplete so the cache should not be used.
-      assert_that( response.call_count, equal_to( 1 ) )
+        # Last response was incomplete so the cache should not be used.
+        assert_that( response.call_count, equal_to( 1 ) )
 
 
 def FindOverlapLength_test():
