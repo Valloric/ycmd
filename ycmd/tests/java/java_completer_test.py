@@ -24,7 +24,13 @@ from builtins import *  # noqa
 
 import os
 
-from hamcrest import assert_that, equal_to, calling, has_entries, is_not, raises
+from hamcrest import ( assert_that,
+                       equal_to,
+                       calling,
+                       has_entries,
+                       has_properties,
+                       is_not,
+                       raises )
 from mock import patch
 
 from ycmd import handlers
@@ -224,10 +230,13 @@ def JavaCompleter_UnknownCommand_test( app ):
 
   notification = {
     'command': 'this_is_not_a_real_command',
-    'params': {}
+    'title': 'Unknown command',
+    'arguments': []
   }
-  assert_that( completer.HandleServerCommand( BuildRequest(), notification ),
-               equal_to( None ) )
+  assert_that( completer.CommandToFixIt( BuildRequest(), notification ),
+               has_properties( { 'resolve': True,
+                                 'text': 'Unknown command',
+                                 'command': notification } ) )
 
 
 
