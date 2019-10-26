@@ -52,6 +52,9 @@ CONNECTION_TIMEOUT         = 5
 MAX_QUEUED_MESSAGES = 250
 
 PROVIDERS_MAP = {
+  'codeActionProvider': (
+    lambda self, request_data, args: self.GetCodeActions( request_data, args )
+  ),
   'declarationProvider': (
     lambda self, request_data, args: self.GoTo( request_data,
                                                 [ 'Declaration' ] )
@@ -96,6 +99,7 @@ PROVIDERS_MAP = {
 # definition and vice versa.
 DEFAULT_SUBCOMMANDS_MAP = {
   'ExecuteCommand':     [ 'executeCommandProvider' ],
+  'FixIt':              [ 'codeActionProvider' ],
   'GoToDefinition':     [ 'definitionProvider' ],
   'GoToDeclaration':    [ 'declarationProvider', 'definitionProvider' ],
   'GoTo':               [ ( 'definitionProvider', 'declarationProvider' ),
@@ -733,11 +737,6 @@ class LanguageServerCompleter( Completer ):
     """Method that must be implemented by derived classes to return an instance
     of LanguageServerConnection appropriate for the language server in
     question"""
-    pass # pragma: no cover
-
-
-  @abc.abstractmethod
-  def HandleServerCommand( self, request_data, command ):
     pass # pragma: no cover
 
 
@@ -1904,7 +1903,51 @@ class LanguageServerCompleter( Completer ):
 
     # Show a list of actions to the user to select which one to apply.
     # This is (probably) a more common workflow for "code action".
-    return responses.BuildFixItResponse( [ r for r in response if r ] )
+    result = [ r for r in response if r ]
+    if len( result ) == 1:
+      try:
+        # Be nice and resolve the fixit to save on roundtrips
+        unresolved_fixit = {
+          'command': result[ 0 ].command,
+          'text': result[ 0 ].text,
+          'resolve': result[ 0 ].resolve
+        }
+        return self.ResolveFixit( {
+          'fixit': unresolved_fixit,
+          'file_data': request_data[ 'file_data' ],
+          'column_num': request_data[ 'column_num' ],
+          'line_num': request_data[ 'line_num' ],
+          'lines': request_data[ 'lines' ],
+          'filepath': request_data[ 'filepath' ]
+        } )
+      except AttributeError:
+        # Ooops, this wasn't an UnresolvedFixIt instance
+        pass
+    return responses.BuildFixItResponse( result )
+
+
+  def HandleServerCommand( self, request_data, command ):
+    try:
+      code_action_edit = command.get( 'edit' )
+      code_action_command = command.get( 'command' )
+      # Assert that this is not a combination of literal WorkspaceEdits
+      # and Commands, because @bstaletic didn't know how to combine those.
+      assert ( ( code_action_command and not code_action_edit ) or
+               ( code_action_edit and not code_action_command ) )
+      if code_action_edit:
+        # Literal code action - what gopls does anyway
+        return WorkspaceEditToFixIt(
+          request_data,
+          command[ 'edit' ],
+          text = command[ 'title' ] )
+      if code_action_command:
+        if isinstance( code_action_command, dict ):
+          # CodeAction containing `command` property
+          command = code_action_command
+        return responses.UnresolvedFixIt( command, command[ 'title' ] )
+    except Exception:
+      # Got garbage
+      return None
 
 
   def RefactorRename( self, request_data, args ):

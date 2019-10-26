@@ -337,10 +337,6 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
 
   def GetCustomSubcommands( self ):
     return {
-      'FixIt': (
-        lambda self, request_data, args: self.GetCodeActions( request_data,
-                                                              args )
-      ),
       'GetDoc': (
         lambda self, request_data, args: self.GetDoc( request_data )
       ),
@@ -750,10 +746,14 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
 
 
   def HandleServerCommand( self, request_data, command ):
-    if command[ 'command' ] == "java.apply.workspaceEdit":
-      return language_server_completer.WorkspaceEditToFixIt(
-        request_data,
-        command[ 'arguments' ][ 0 ],
-        text = command[ 'title' ] )
-
-    return None
+    # JDT wants us to special case `java.apply.workspaceEdit`
+    # https://github.com/eclipse/eclipse.jdt.ls/issues/376
+    try:
+      if command[ 'command' ][ 'command' ] == 'java.apply.workspaceEdit':
+        command[ 'edit' ] = command.pop( 'command' )[ 'arguments' ][ 0 ]
+    except TypeError:
+      # This was a Command literal, not a CodeAction
+      pass
+    return super( JavaCompleter, self ).HandleServerCommand(
+      request_data,
+      command )
