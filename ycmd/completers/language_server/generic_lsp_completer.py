@@ -23,11 +23,10 @@ from __future__ import absolute_import
 from builtins import *  # noqa
 
 from ycmd import responses, utils
-from ycmd.completers.language_server.simple_language_server_completer import (
-    SimpleLSPCompleter )
+from ycmd.completers.language_server import language_server_completer
 
 
-class GenericLSPCompleter( SimpleLSPCompleter ):
+class GenericLSPCompleter( language_server_completer.LanguageServerCompleter ):
   def __init__( self, user_options, server_settings ):
     self._name = server_settings[ 'name' ]
     self._supported_filetypes = server_settings[ 'filetypes' ]

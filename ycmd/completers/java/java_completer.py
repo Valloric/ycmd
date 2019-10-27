@@ -32,7 +32,7 @@ import threading
 
 from ycmd import responses, utils
 from ycmd.completers.language_server import language_server_protocol as lsp
-from ycmd.completers.language_server import simple_language_server_completer
+from ycmd.completers.language_server import language_server_completer
 from ycmd.utils import LOGGER
 
 NO_DOCUMENTATION_MESSAGE = 'No documentation available for current context'
@@ -286,7 +286,7 @@ def _WorkspaceDirForProject( workspace_root_path,
                        utils.ToUnicode( project_dir_hash.hexdigest() ) )
 
 
-class JavaCompleter( simple_language_server_completer.SimpleLSPCompleter ):
+class JavaCompleter( language_server_completer.LanguageServerCompleter ):
   def __init__( self, user_options ):
     self._workspace_path = None
     super( JavaCompleter, self ).__init__( user_options )

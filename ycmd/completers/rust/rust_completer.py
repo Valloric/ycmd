@@ -28,7 +28,7 @@ from future.utils import itervalues
 from subprocess import PIPE
 
 from ycmd import responses, utils
-from ycmd.completers.language_server import simple_language_server_completer
+from ycmd.completers.language_server import language_server_completer
 from ycmd.utils import LOGGER, re
 
 
@@ -67,7 +67,7 @@ def ShouldEnableRustCompleter():
   return True
 
 
-class RustCompleter( simple_language_server_completer.SimpleLSPCompleter ):
+class RustCompleter( language_server_completer.LanguageServerCompleter ):
 
   def _Reset( self ):
     with self._server_state_mutex:

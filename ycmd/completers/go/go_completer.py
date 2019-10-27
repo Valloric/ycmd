@@ -28,7 +28,6 @@ import os
 
 from ycmd import responses
 from ycmd import utils
-from ycmd.completers.language_server import simple_language_server_completer
 from ycmd.completers.language_server import language_server_completer
 
 
@@ -55,7 +54,7 @@ def ShouldEnableGoCompleter( user_options ):
   return False
 
 
-class GoCompleter( simple_language_server_completer.SimpleLSPCompleter ):
+class GoCompleter( language_server_completer.LanguageServerCompleter ):
   def __init__( self, user_options ):
     super( GoCompleter, self ).__init__( user_options )
 
