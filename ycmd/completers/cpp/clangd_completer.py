@@ -257,21 +257,32 @@ class ClangdCompleter( simple_language_server_completer.SimpleLSPCompleter ):
 
 
   def GetType( self, request_data ):
-    # Clangd's hover response looks like this:
-    #     Declared in namespace <namespace name>
-    #
-    #     <declaration line>
-    #
-    #     <docstring>
-    # GetType gets the first two lines.
-    value = self.GetHoverResponse( request_data )[ 'value' ].split( '\n\n', 2 )
-    return responses.BuildDisplayMessageResponse( '\n\n'.join( value[ : 2 ] ) )
+    try:
+      # Clangd's hover response looks like this:
+      #     Declared in namespace <namespace name>
+      #
+      #     <declaration line>
+      #
+      #     <docstring>
+      # GetType gets the first two lines.
+      hover_value = self.GetHoverResponse( request_data )[ 'value' ]
+      type_info = '\n\n'.join( hover_value.split( '\n\n', 2 )[ : 2 ] )
+      return responses.BuildDisplayMessageResponse( type_info )
+    except RuntimeError as e:
+      if e.args[ 0 ] == 'No hover information.':
+        raise RuntimeError( 'Unknown type.' )
+      raise
 
 
   def GetDoc( self, request_data ):
-    # Just pull `value` out of the textDocument/hover response
-    return responses.BuildDisplayMessageResponse(
-        self.GetHoverResponse( request_data )[ 'value' ] )
+    try:
+      # Just pull `value` out of the textDocument/hover response
+      return responses.BuildDisplayMessageResponse(
+          self.GetHoverResponse( request_data )[ 'value' ] )
+    except RuntimeError as e:
+      if e.args[ 0 ] == 'No hover information.':
+        raise RuntimeError( 'No documentation available.' )
+      raise
 
 
   def GetTriggerCharacters( self, server_trigger_characters ):
