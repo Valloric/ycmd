@@ -29,10 +29,12 @@ from hamcrest import ( assert_that,
                        has_entries,
                        has_entry,
                        matches_regexp )
+from mock import patch
 from pprint import pprint
 import requests
 import os.path
 
+from ycmd import handlers
 from ycmd.tests.clangd import ( IsolatedYcmd,
                                 SharedYcmd,
                                 PathToTestFile,
@@ -81,6 +83,47 @@ def Subcommands_DefinedSubcommands_test( app ):
       },
       'route': '/defined_subcommands',
   } )
+
+
+def Subcommands_ServerNotInitialized_test():
+
+  completer = handlers._server_state.GetFiletypeCompleter( [ 'cpp' ] )
+
+  @SharedYcmd
+  @patch.object( completer, '_ServerIsInitialized', return_value = False )
+  def Test( app, cmd, *args ):
+    request = {
+      'line_num': 1,
+      'column_num': 1,
+      'event_name': 'FileReadyToParse',
+      'filetype': 'cpp',
+      'command_arguments': [ cmd ]
+    }
+    app.post_json( '/event_notification',
+                   BuildRequest( **request ),
+                   expect_errors = True )
+    response = app.post_json(
+      '/run_completer_command',
+      BuildRequest( **request ),
+      expect_errors = True
+    )
+    assert_that( response.status_code, equal_to( requests.codes.server_error ) )
+    assert_that( response.json,
+                 ErrorMatcher( RuntimeError,
+                               'Server is initializing. Please wait.' ) )
+
+  yield Test, 'FixIt'
+  yield Test, 'Format'
+  yield Test, 'GetDoc'
+  yield Test, 'GetDocImprecise'
+  yield Test, 'GetType'
+  yield Test, 'GetTypeImprecise'
+  yield Test, 'GoTo'
+  yield Test, 'GoToDeclaration'
+  yield Test, 'GoToDefinition'
+  yield Test, 'GoToInclude'
+  yield Test, 'GoToReferences'
+  yield Test, 'RefactorRename'
 
 
 @SharedYcmd
@@ -309,11 +352,11 @@ def Subcommands_GetType_test():
 
     # Function
     # [ { 'line_num': 22, 'column_num':  2 }, 'int main()' ],
-    [ { 'line_num': 22, 'column_num':  6 }, 'int main()' ],
+    [ { 'line_num': 22, 'column_num':  6 }, 'int main()', requests.codes.ok ],
 
     # Declared and canonical type
     # On Ns::
-    [ { 'line_num': 25, 'column_num':  3 }, 'namespace Ns' ],
+    [ { 'line_num': 25, 'column_num':  3 }, 'namespace Ns', requests.codes.ok ],
     # On Type (Type)
     # [ { 'line_num': 25, 'column_num':  8 },
     # 'Ns::Type => Ns::BasicType<char>' ],
@@ -408,7 +451,8 @@ def Subcommands_GetType_test():
               PathToTestFile( 'GetType_Clang_test.cc' ),
               'cpp',
               test,
-              [ subcommand ] )
+              [ subcommand ],
+              test[ 2 ] )
 
 
 def Subcommands_GetDoc_test():
@@ -427,7 +471,7 @@ def Subcommands_GetDoc_test():
       requests.codes.ok ],
     # no hover
     [ { 'line_num': 8, 'column_num': 1 },
-      ErrorMatcher( RuntimeError, 'No hover information.' ),
+      ErrorMatcher( RuntimeError, 'No documentation available.' ),
       requests.codes.server_error ]
   ]
   for subcommand in [ 'GetDoc', 'GetDocImprecise' ]:
