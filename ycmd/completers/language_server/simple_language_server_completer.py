@@ -184,9 +184,3 @@ class SimpleLSPCompleter( lsc.LanguageServerCompleter ):
       # Tidy up our internal state, even if the completer server didn't close
       # down cleanly.
       self._Reset()
-
-
-  def _RestartServer( self, request_data ):
-    with self._server_state_mutex:
-      self.Shutdown()
-      self._StartAndInitializeServer( request_data )
