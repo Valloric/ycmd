@@ -191,11 +191,11 @@ def CompleterProjectDirectoryMatcher( project_directory ):
   )
 
 
-def SignatureMatcher( label, parameters ):
-  return has_entries( {
-    'label': equal_to( label ),
-    'parameters': contains( *parameters )
-  } )
+def SignatureMatcher( label, parameters = None ):
+  sig = { 'label': equal_to( label ) }
+  if parameters is not None:
+    sig[ 'parameters' ] = contains( *parameters )
+  return has_entries( sig )
 
 
 def SignatureAvailableMatcher( available ):
