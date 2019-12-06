@@ -268,10 +268,8 @@ class ClangdCompleter( simple_language_server_completer.SimpleLSPCompleter ):
       hover_value = self.GetHoverResponse( request_data )[ 'value' ]
       type_info = '\n\n'.join( hover_value.split( '\n\n', 2 )[ : 2 ] )
       return responses.BuildDisplayMessageResponse( type_info )
-    except RuntimeError as e:
-      if e.args[ 0 ] == 'No hover information.':
-        raise RuntimeError( 'Unknown type.' )
-      raise
+    except language_server_completer.NoHoverInfoException:
+      raise RuntimeError( 'Unknown type.' )
 
 
   def GetDoc( self, request_data ):
@@ -279,10 +277,8 @@ class ClangdCompleter( simple_language_server_completer.SimpleLSPCompleter ):
       # Just pull `value` out of the textDocument/hover response
       return responses.BuildDisplayMessageResponse(
           self.GetHoverResponse( request_data )[ 'value' ] )
-    except RuntimeError as e:
-      if e.args[ 0 ] == 'No hover information.':
-        raise RuntimeError( 'No documentation available.' )
-      raise
+    except language_server_completer.NoHoverInfoException:
+      raise RuntimeError( 'Unknown type.' )
 
 
   def GetTriggerCharacters( self, server_trigger_characters ):
