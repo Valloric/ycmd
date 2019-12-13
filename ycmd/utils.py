@@ -266,6 +266,15 @@ def FindExecutable( executable ):
   return None
 
 
+def FindExecutableWithFallback( executable_path, fallback ):
+  if executable_path:
+    executable_path = FindExecutable( ExpandVariablesInPath( executable_path ) )
+    if not executable_path:
+      return None
+  else:
+    return fallback
+
+
 def ExecutableName( executable ):
   return executable + ( '.exe' if OnWindows() else '' )
 
@@ -432,6 +441,10 @@ class HashableDict( Mapping ):
 
   def __ne__( self, other ):
     return not self == other
+
+
+  def copy( self, **add_or_replace ):
+    return self.__class__( self, **add_or_replace )
 
 
 def ListDirectory( path ):
