@@ -975,9 +975,9 @@ class LanguageServerCompleter( Completer ):
       self._initialize_event.set()
 
 
-  @abc.abstractmethod
-  def _RestartServer( self, request_data ):
-    pass # pragma: no cover
+  def _RestartServer( self, request_data, *args, **kwargs ):
+    self.Shutdown()
+    self._StartAndInitializeServer( request_data, *args, **kwargs )
 
 
   def _ServerIsInitialized( self ):
@@ -1360,11 +1360,6 @@ class LanguageServerCompleter( Completer ):
     commands.update( self.GetCustomSubcommands() )
 
     return self._DiscoverSubcommandSupport( commands )
-
-
-  def _RestartServer( self, request_data, *args, **kwargs ):
-    self.Shutdown()
-    self._StartAndInitializeServer( request_data, *args, **kwargs )
 
 
   def _GetSubcommandProvider( self, provider_list ):
