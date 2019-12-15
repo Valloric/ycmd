@@ -70,7 +70,7 @@ def ShouldEnableRustCompleter():
 class RustCompleter( language_server_completer.LanguageServerCompleter ):
 
   def _Reset( self ):
-    with self._server_state_mutex:
+    with self._server_info_mutex:
       super( RustCompleter, self )._Reset()
       self._server_progress = {}
 

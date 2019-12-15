@@ -230,7 +230,7 @@ class ClangdCompleter( language_server_completer.LanguageServerCompleter ):
 
 
   def _Reset( self ):
-    with self._server_state_mutex:
+    with self._server_info_mutex:
       super( ClangdCompleter, self )._Reset()
       self._compilation_commands = {}
 

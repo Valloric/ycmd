@@ -314,7 +314,8 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
     self._connection = None
     self._server_handle = None
     self._stderr_file = None
-    self._Reset()
+    with self._server_info_mutex:
+      self._Reset()
     self._command = []
 
 
@@ -388,11 +389,9 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
     if len( args ) > 0 and '--with-config' in args:
       with_config = True
 
-    with self._server_state_mutex:
-      self.Shutdown()
-      self._StartAndInitializeServer( request_data,
-                                      wipe_workspace = True,
-                                      wipe_config = with_config )
+    self._RestartServer( request_data,
+                         wipe_workspace = True,
+                         wipe_config = with_config )
 
 
   def _OpenProject( self, request_data, args ):
@@ -411,10 +410,7 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
         request_data[ 'working_dir' ],
         project_directory ) )
 
-    with self._server_state_mutex:
-      self.Shutdown()
-      self._StartAndInitializeServer( request_data,
-                                      project_directory = project_directory )
+    self._RestartServer( request_data, project_directory = project_directory )
 
 
   def _Reset( self ):
@@ -443,7 +439,7 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
                    project_directory = None,
                    wipe_workspace = False,
                    wipe_config = False ):
-    with self._server_state_mutex:
+    with self._server_info_mutex:
       LOGGER.info( 'Starting jdt.ls Language Server...' )
 
       if project_directory:
