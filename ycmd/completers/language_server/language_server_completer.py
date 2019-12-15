@@ -890,7 +890,7 @@ class LanguageServerCompleter( Completer ):
       if self._connection:
         self._connection.Stop()
 
-      if not self.ServerIsHealthy():
+      if not self._ServerIsHealthyNoLock():
         LOGGER.info( '%s is not running', self.GetServerName() )
         self._Reset()
         return
@@ -964,7 +964,7 @@ class LanguageServerCompleter( Completer ):
         # anyway
         LOGGER.exception( 'Shutdown request failed. Ignoring' )
 
-    if self.ServerIsHealthy():
+    if self._ServerIsHealthyNoLock():
       self.GetConnection().SendNotification( lsp.Exit() )
 
     # If any threads are waiting for the initialize exchange to complete,
@@ -984,7 +984,7 @@ class LanguageServerCompleter( Completer ):
     """Returns True if the server is running and the initialization exchange has
     completed successfully. Implementations must not issue requests until this
     method returns True."""
-    if not self.ServerIsHealthy():
+    if not self._ServerIsHealthyNoLock():
       return False
 
     if self._initialize_event.is_set():
@@ -1000,16 +1000,22 @@ class LanguageServerCompleter( Completer ):
 
 
   def ServerIsHealthy( self ):
+    with self._server_info_mutex:
+      return self._ServerIsHealthyNoLock()
+
+
+  def _ServerIsHealthyNoLock( self ):
     return utils.ProcessIsRunning( self._server_handle )
 
 
   def ServerIsReady( self ):
-    return self._ServerIsInitialized()
+    with self._server_info_mutex:
+      return self._ServerIsInitialized()
 
 
   def ShouldUseNowInner( self, request_data ):
     # We should only do _anything_ after the initialize exchange has completed.
-    return ( self._ServerIsInitialized() and
+    return ( self.ServerIsReady() and
              super( LanguageServerCompleter, self ).ShouldUseNowInner(
                request_data ) )
 
@@ -2027,7 +2033,7 @@ class LanguageServerCompleter( Completer ):
     multiple locations or a location the cursor does not belong since the user
     wants to jump somewhere else. If that's the last handler, the location is
     returned anyway."""
-    if not self._ServerIsInitialized():
+    if not self.ServerIsReady():
       raise RuntimeError( 'Server is initializing. Please wait.' )
 
     self._UpdateServerWithFileContents( request_data )
@@ -2047,7 +2053,7 @@ class LanguageServerCompleter( Completer ):
   def GetCodeActions( self, request_data, args ):
     """Performs the codeAction request and returns the result as a FixIt
     response."""
-    if not self._ServerIsInitialized():
+    if not self.ServerIsReady():
       raise RuntimeError( 'Server is initializing. Please wait.' )
 
     self._UpdateServerWithFileContents( request_data )
@@ -2180,7 +2186,7 @@ class LanguageServerCompleter( Completer ):
 
   def RefactorRename( self, request_data, args ):
     """Issues the rename request and returns the result as a FixIt response."""
-    if not self._ServerIsInitialized():
+    if not self.ServerIsReady():
       raise RuntimeError( 'Server is initializing. Please wait.' )
 
     if len( args ) != 1:
@@ -2216,7 +2222,7 @@ class LanguageServerCompleter( Completer ):
   def Format( self, request_data ):
     """Issues the formatting or rangeFormatting request (depending on the
     presence of a range) and returns the result as a FixIt response."""
-    if not self._ServerIsInitialized():
+    if not self.ServerIsReady():
       raise RuntimeError( 'Server is initializing. Please wait.' )
 
     self._UpdateServerWithFileContents( request_data )
@@ -2305,7 +2311,7 @@ class LanguageServerCompleter( Completer ):
 
 
   def GetCommandResponse( self, request_data, command, arguments ):
-    if not self._ServerIsInitialized():
+    if not self.ServerIsReady():
       raise RuntimeError( 'Server is initializing. Please wait.' )
 
     self._UpdateServerWithFileContents( request_data )
@@ -2320,7 +2326,7 @@ class LanguageServerCompleter( Completer ):
 
   def CommonDebugItems( self ):
     def ServerStateDescription():
-      if not self.ServerIsHealthy():
+      if not self._ServerIsHealthyNoLock():
         return 'Dead'
 
       if not self._ServerIsInitialized():
