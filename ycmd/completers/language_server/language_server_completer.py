@@ -771,7 +771,7 @@ class LanguageServerCompleter( Completer ):
     #     server file state, and stored data about the server itself) when we
     #     are calling methods on this object from the message pump). We
     #     synchronise on this mutex for that.
-    self._server_info_mutex = threading.RLock()
+    self._server_info_mutex = threading.Lock()
     self.ServerReset()
 
     # LSP allows servers to return an incomplete list of completions. The cache
@@ -841,37 +841,41 @@ class LanguageServerCompleter( Completer ):
 
   def StartServer( self, request_data ):
     with self._server_info_mutex:
-      LOGGER.info( 'Starting %s: %s',
-                   self.GetServerName(),
-                   self.GetCommandLine() )
+      return self._StartServerNoLock( request_data )
 
-      self._stderr_file = utils.CreateLogfile( '{}_stderr'.format(
-        utils.MakeSafeFileNameString( self.GetServerName() ) ) )
 
-      with utils.OpenForStdHandle( self._stderr_file ) as stderr:
-        self._server_handle = utils.SafePopen(
-          self.GetCommandLine(),
-          stdin = subprocess.PIPE,
-          stdout = subprocess.PIPE,
-          stderr = stderr,
-          env = self.GetServerEnvironment() )
+  def _StartServerNoLock( self, request_data ):
+    LOGGER.info( 'Starting %s: %s',
+                 self.GetServerName(),
+                 self.GetCommandLine() )
 
-      self._connection = (
-        StandardIOLanguageServerConnection(
-          self._server_handle.stdin,
-          self._server_handle.stdout,
-          self.GetDefaultNotificationHandler() )
-      )
+    self._stderr_file = utils.CreateLogfile( '{}_stderr'.format(
+      utils.MakeSafeFileNameString( self.GetServerName() ) ) )
 
-      self._connection.Start()
+    with utils.OpenForStdHandle( self._stderr_file ) as stderr:
+      self._server_handle = utils.SafePopen(
+        self.GetCommandLine(),
+        stdin = subprocess.PIPE,
+        stdout = subprocess.PIPE,
+        stderr = stderr,
+        env = self.GetServerEnvironment() )
 
-      try:
-        self._connection.AwaitServerConnection()
-      except LanguageServerConnectionTimeout:
-        LOGGER.error( '%s failed to start, or did not connect successfully',
-                      self.GetServerName() )
-        self.Shutdown()
-        return False
+    self._connection = (
+      StandardIOLanguageServerConnection(
+        self._server_handle.stdin,
+        self._server_handle.stdout,
+        self.GetDefaultNotificationHandler() )
+    )
+
+    self._connection.Start()
+
+    try:
+      self._connection.AwaitServerConnection()
+    except LanguageServerConnectionTimeout:
+      LOGGER.error( '%s failed to start, or did not connect successfully',
+                    self.GetServerName() )
+      self.Shutdown()
+      return False
 
     LOGGER.info( '%s started', self.GetServerName() )
 
