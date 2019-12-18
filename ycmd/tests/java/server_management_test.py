@@ -34,7 +34,8 @@ from hamcrest import assert_that, contains, equal_to, has_entry
 from ycmd.tests.java import ( PathToTestFile,
                               IsolatedYcmd,
                               SharedYcmd,
-                              StartJavaCompleterServerInDirectory )
+                              StartJavaCompleterServerInDirectory,
+                              StartJavaCompleterServerWithFile )
 from ycmd.tests.test_utils import ( BuildRequest,
                                     CompleterProjectDirectoryMatcher,
                                     ErrorMatcher,
@@ -190,6 +191,29 @@ def ServerManagement_WipeWorkspace_WithConfig_test():
         CompleterProjectDirectoryMatcher( project ) )
 
     yield ServerManagement_WipeWorkspace_WithConfig
+
+
+@IsolatedYcmd( {
+  'extra_conf_globlist': PathToTestFile( 'multiple_projects', '*' )
+} )
+def ServerManagement_ProjectDetection_MultipleProjects_test( app ):
+  # The ycm_extra_conf.py file should set the project path to
+  # multiple_projects/src
+  project = PathToTestFile( 'multiple_projects', 'src' )
+  StartJavaCompleterServerWithFile( app,
+                                    os.path.join( project,
+                                                  'core',
+                                                  'java',
+                                                  'com',
+                                                  'puremourning',
+                                                  'widget',
+                                                  'core',
+                                                  'Utils.java' ) )
+
+  # Run the debug info to check that we have the correct project dir
+  request_data = BuildRequest( filetype = 'java' )
+  assert_that( app.post_json( '/debug_info', request_data ).json,
+               CompleterProjectDirectoryMatcher( project ) )
 
 
 @IsolatedYcmd()
