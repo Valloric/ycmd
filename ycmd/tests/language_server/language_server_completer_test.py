@@ -108,10 +108,10 @@ def LanguageServerCompleter_ExtraConf_ServerReset_test( app ):
 
   completer.OnFileReadyToParse( request_data )
   assert_that( completer._project_directory, is_not( None ) )
-  assert_that( completer._settings, is_not( empty() ) )
+  assert_that( completer._settings.get( 'ls', {} ), is_not( empty() ) )
 
   completer.ServerReset()
-  assert_that( completer._settings, empty() )
+  assert_that( completer._settings.get( 'ls', {} ), empty() )
   eq_( None, completer._project_directory )
 
 
@@ -125,7 +125,7 @@ def LanguageServerCompleter_ExtraConf_FileEmpty_test( app ):
                                             filetype = 'ycmtest',
                                             contents = '' ) )
   completer.OnFileReadyToParse( request_data )
-  eq_( {}, completer._settings )
+  eq_( {}, completer._settings.get( 'ls', {} ) )
 
   # Simulate receipt of response and initialization complete
   initialize_response = {
@@ -134,7 +134,7 @@ def LanguageServerCompleter_ExtraConf_FileEmpty_test( app ):
     }
   }
   completer._HandleInitializeInPollThread( initialize_response )
-  eq_( {}, completer._settings )
+  eq_( {}, completer._settings.get( 'ls', {} ) )
   # We shouldn't have used the extra_conf path for the project directory, but
   # that _also_ happens to be the path of the file we opened.
   eq_( PathToTestFile( 'extra_confs' ), completer._project_directory )
@@ -151,7 +151,7 @@ def LanguageServerCompleter_ExtraConf_SettingsReturnsNone_test( app ):
                                             filetype = 'ycmtest',
                                             contents = '' ) )
   completer.OnFileReadyToParse( request_data )
-  eq_( {}, completer._settings )
+  eq_( {}, completer._settings.get( 'ls', {} ) )
   # We shouldn't have used the extra_conf path for the project directory, but
   # that _also_ happens to be the path of the file we opened.
   eq_( PathToTestFile( 'extra_confs' ), completer._project_directory )
@@ -168,9 +168,9 @@ def LanguageServerCompleter_ExtraConf_SettingValid_test( app ):
                                             working_dir = PathToTestFile(),
                                             contents = '' ) )
 
-  eq_( {}, completer._settings )
+  eq_( {}, completer._settings.get( 'ls', {} ) )
   completer.OnFileReadyToParse( request_data )
-  eq_( { 'java.rename.enabled' : False }, completer._settings )
+  eq_( { 'java.rename.enabled' : False }, completer._settings.get( 'ls', {} ) )
   # We use the working_dir not the path to the global extra conf (which is
   # ignored)
   eq_( PathToTestFile(), completer._project_directory )
@@ -186,9 +186,9 @@ def LanguageServerCompleter_ExtraConf_NoExtraConf_test( app ):
                                             working_dir = PathToTestFile(),
                                             contents = '' ) )
 
-  eq_( {}, completer._settings )
+  eq_( {}, completer._settings.get( 'ls', {} ) )
   completer.OnFileReadyToParse( request_data )
-  eq_( {}, completer._settings )
+  eq_( {}, completer._settings.get( 'ls', {} ) )
 
   # Simulate receipt of response and initialization complete
   initialize_response = {
@@ -197,7 +197,7 @@ def LanguageServerCompleter_ExtraConf_NoExtraConf_test( app ):
     }
   }
   completer._HandleInitializeInPollThread( initialize_response )
-  eq_( {}, completer._settings )
+  eq_( {}, completer._settings.get( 'ls', {} ) )
   # We use the client working directory
   eq_( PathToTestFile(), completer._project_directory )
 
@@ -215,9 +215,9 @@ def LanguageServerCompleter_ExtraConf_NonGlobal_test( app ):
                                             working_dir = 'ignore_this',
                                             contents = '' ) )
 
-  eq_( {}, completer._settings )
+  eq_( {}, completer._settings.get( 'ls', {} ) )
   completer.OnFileReadyToParse( request_data )
-  eq_( { 'java.rename.enabled' : False }, completer._settings )
+  eq_( { 'java.rename.enabled' : False }, completer._settings.get( 'ls', {} ) )
 
   # Simulate receipt of response and initialization complete
   initialize_response = {
