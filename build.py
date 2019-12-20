@@ -576,7 +576,7 @@ def RunYcmdBenchmarks( args, build_dir ):
     cmd = [ 'valgrind',
             '--error-exitcode=1',
             '--leak-check=full',
-            '--show-possibly-lost=no',
+            '--suppressions=' p.join( DIR_OF_THIS_SCRIPT, 'supp' ),
             p.join( benchmarks_dir, 'ycm_core_benchmarks' ),
             '--benchmark_filter=PythonSupportFixture/'
                 'FilterAndSortStoredCandidatesWithCommonPrefix/1/0' ]
