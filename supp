@@ -36,6 +36,15 @@
 {
 	Python default invocation - possibly lost
 	Memcheck:Leak
+	match-leak-kinds: possible
+	fun:malloc
+	fun:new_keys_object
+	fun:insert_to_emptydict
+	fun:PyDict_SetItem
+}
+{
+	Python default invocation - possibly lost
+	Memcheck:Leak
 	fun:malloc
 	fun:PyFloat_FromDouble
 }
