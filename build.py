@@ -430,6 +430,10 @@ def ParseArguments():
   parser.add_argument( '--no-regex',
                        action = 'store_true',
                        help = "Don't build the regex module" )
+  parser.add_argument( '--valgrind',
+                       action = 'store_true',
+                       help = 'For developers: '
+                              'Run benchmarks inside valgrind.' )
   parser.add_argument( '--clang-tidy',
                        action = 'store_true',
                        help = 'For developers: Run clang-tidy static analysis '
@@ -549,7 +553,7 @@ def RunYcmdTests( args, build_dir ):
              status_message = 'Running ycmd tests' )
 
 
-def RunYcmdBenchmarks( build_dir ):
+def RunYcmdBenchmarks( args, build_dir ):
   benchmarks_dir = p.join( build_dir, 'ycm', 'benchmarks' )
   new_env = os.environ.copy()
 
@@ -565,7 +569,19 @@ def RunYcmdBenchmarks( build_dir ):
 
   # Note we don't pass the quiet flag here because the output of the benchmark
   # is the only useful info.
-  CheckCall( p.join( benchmarks_dir, 'ycm_core_benchmarks' ), env = new_env )
+  if not args.valgrind:
+    CheckCall( p.join( benchmarks_dir, 'ycm_core_benchmarks' ), env = new_env )
+  else:
+    CheckCall( p.join( benchmarks_dir, 'ycm_core_benchmarks' ), env = new_env )
+    new_env[ 'PYTHONMALLOC' ] = 'malloc'
+    cmd = [ 'valgrind',
+            '--error-exitcode=1',
+            '--leak-check=full',
+            '--show-possibly-lost=no',
+            p.join( build_dir, 'ycm_core_benchmarks' ),
+            '--benchmark_filter=PythonSupportFixture/'
+                'FilterAndSortStoredCandidatesWithCommonPrefix/1/0' ]
+    CheckCall( cmd, env = new_env )
 
 
 # On Windows, if the ycmd library is in use while building it, a LNK1104
@@ -636,7 +652,7 @@ def BuildYcmdLib( cmake, cmake_common_args, script_args ):
     if script_args.core_tests:
       RunYcmdTests( script_args, build_dir )
     if 'YCM_BENCHMARK' in os.environ:
-      RunYcmdBenchmarks( build_dir )
+      RunYcmdBenchmarks( script_args, build_dir )
   finally:
     os.chdir( DIR_OF_THIS_SCRIPT )
 

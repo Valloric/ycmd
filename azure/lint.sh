@@ -16,8 +16,5 @@ test ${python_version} == ${YCM_PYTHON_VERSION}
 
 YCM_BENCHMARK=1 python build.py --clang-completer --clang-tidy --no-regex --build-dir build
 echo Running benchmarks in valgrind
-cd build
-PYTHONMALLOC=malloc valgrind --error-exitcode=1 --leak-check=full --show-possibly-lost=no ./ycm/benchmarks/ycm_core_benchmarks --benchmark_filter=PythonSupportFixture/FilterAndSortStoredCandidatesWithCommonPrefix/1/0
-cd ..
 
 set +e
