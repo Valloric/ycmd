@@ -32,7 +32,7 @@
    Default python invocation - possibly lost
    Memcheck:Leak
    fun:malloc
-   obj:/usr/lib/libpython3.8.so.1.0
+   obj:libpython3.8.so.1.0
    fun:PyDict_SetItem
 }
 {
@@ -52,14 +52,14 @@
    Default python invocation - possibly lost
    Memcheck:Leak
    fun:malloc
-   obj:/usr/lib/libpython3.8.so.1.0
+   obj:libpython3.8.so.1.0
    fun:PyDict_SetDefault
 }
 {
    Default python invocation - possibly lost
    Memcheck:Leak
    fun:malloc
-   obj:/usr/lib/libpython3.8.so.1.0
+   obj:libpython3.8.so.1.0
    fun:_PyDict_NewPresized
 }
 {
@@ -67,8 +67,8 @@
    Memcheck:Leak
    match-leak-kinds: possible
    fun:malloc
-   obj:/usr/lib/libpython3.8.so.1.0
-   obj:/usr/lib/libpython3.8.so.1.0
+   obj:libpython3.8.so.1.0
+   obj:libpython3.8.so.1.0
    fun:PyImport_Cleanup
    fun:Py_FinalizeEx
    fun:Py_RunMain
