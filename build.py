@@ -572,15 +572,16 @@ def RunYcmdBenchmarks( args, build_dir ):
   if not args.valgrind:
     CheckCall( p.join( benchmarks_dir, 'ycm_core_benchmarks' ), env = new_env )
   else:
-    cmd = [ 'valgrind',
-            '--gen-suppressions=all',
-            '--error-exitcode=1',
-            '--leak-check=full',
-            '--suppressions=' + p.join( DIR_OF_THIS_SCRIPT, 'supp' ),
-            p.join( benchmarks_dir, 'ycm_core_benchmarks' ),
-            '--benchmark_filter=PythonSupportFixture/'
-                'FilterAndSortStoredCandidatesWithCommonPrefix/1/0' ]
-    CheckCall( cmd, env = new_env )
+    new_env[ 'PYTHONMALLOC' ] = 'malloc'
+    CheckCall( [ 'valgrind',
+                 '--gen-suppressions=all',
+                 '--error-exitcode=1',
+                 '--leak-check=full',
+                 '--suppressions=' + p.join( DIR_OF_THIS_SCRIPT, 'supp' ),
+                 p.join( benchmarks_dir, 'ycm_core_benchmarks' ),
+                 '--benchmark_filter=PythonSupportFixture/'
+                     'FilterAndSortStoredCandidatesWithCommonPrefix/1/0' ] ,
+               env = new_env )
 
 
 # On Windows, if the ycmd library is in use while building it, a LNK1104
