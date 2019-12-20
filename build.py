@@ -577,6 +577,7 @@ def RunYcmdBenchmarks( args, build_dir ):
     cmd = [ 'valgrind',
             '--leak-check=full',
             '--gen-suppressions=all',
+            '--suppressions=' + p.join( DIR_OF_THIS_SCRIPT, 'supp' ),
             'python',
             '-c',
             "''" ]
