@@ -1,1 +1,97 @@
-
+{
+	Python default invocation - possibly lost
+	Memcheck:Leak
+	fun:malloc
+	fun:_PyLong_New
+}
+{
+	Python default invocation - possibly lost
+	Memcheck:Leak
+	fun:malloc
+	fun:_PyBytes_FromSize
+}
+{
+	Python default invocation - possibly lost
+	Memcheck:Leak
+	fun:malloc
+	fun:_PyObject_GC_Alloc
+}
+{
+	Python default invocation - possibly lost
+	Memcheck:Leak
+	fun:malloc
+	fun:new_dict_with_shared_keys
+	fun:_PyObjectDict_SetItem
+}
+{
+	Python default invocation - possibly lost
+	Memcheck:Leak
+	fun:malloc
+	fun:new_keys_object
+	fun:dictresize
+	fun:insertion_resize
+	fun:insertdict
+	fun:PyDict_SetItem
+}
+{
+	Python default invocation - possibly lost
+	Memcheck:Leak
+	fun:malloc
+	fun:PyFloat_FromDouble
+}
+{
+	Python default invocation - possibly lost
+	Memcheck:Leak
+	fun:malloc
+	fun:PyUnicode_New
+}
+{
+	Python default invocation - possibly lost
+	Memcheck:Leak
+	fun:malloc
+	fun:clone_combined_dict
+	fun:PyDict_Copy
+}
+{
+	Python default invocation - possibly lost
+	Memcheck:Leak
+	fun:realloc
+	fun:_PyObject_GC_Resize
+}
+{
+	Python default invocation - possibly lost
+	Memcheck:Leak
+	fun:malloc
+	fun:PyCode_NewWithPosOnlyArgs
+}
+{
+	Python default invocation - possibly lost
+	Memcheck:Leak
+	fun:malloc
+	fun:new_keys_object
+	fun:_PyDict_NewPresized
+}
+{
+	Python default invocation - possibly lost
+	Memcheck:Leak
+	fun:malloc
+	fun:new_keys_object
+	fun:dictresize
+	fun:insertion_resize
+	fun:PyDict_SetDefault
+}
+{
+	Python default invocation - possibly lost
+	Memcheck:Leak
+	fun:malloc
+	fun:new_keys_object
+	fun:dictresize
+	fun:dict_merge
+	fun:PyDict_Update
+	fun:PyImport_Cleanup
+	fun:Py_FinalizeEx
+	fun:Py_RunMain
+	fun:pymain_main
+	fun:Py_BytesMain
+	fun:(below main)
+}
