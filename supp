@@ -36,7 +36,6 @@
 {
 	Python default invocation - possibly lost
 	Memcheck:Leak
-	match-leak-kinds: possible
 	fun:malloc
 	fun:new_keys_object
 	fun:insert_to_emptydict
@@ -103,4 +102,17 @@
 	fun:pymain_main
 	fun:Py_BytesMain
 	fun:(below main)
+}
+{
+	Could be python, could be pybind. Isn't ycmd
+	Memcheck:Leak
+	fun:malloc
+	fun:new_keys_object
+	fun:dictresize
+	fun:dict_merge
+	fun:PyDict_Update
+	fun:PyImport_Cleanup
+	fun:Py_FinalizeEx
+	fun:_ZN8pybind1120finalize_interpreterEv
+	fun:main
 }
