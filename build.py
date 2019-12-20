@@ -577,7 +577,7 @@ def RunYcmdBenchmarks( args, build_dir ):
             '--error-exitcode=1',
             '--leak-check=full',
             '--show-possibly-lost=no',
-            p.join( build_dir, 'ycm_core_benchmarks' ),
+            p.join( benchmarks_dir, 'ycm_core_benchmarks' ),
             '--benchmark_filter=PythonSupportFixture/'
                 'FilterAndSortStoredCandidatesWithCommonPrefix/1/0' ]
     CheckCall( cmd, env = new_env )
