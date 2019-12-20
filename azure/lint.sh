@@ -14,6 +14,8 @@ python_version=$(python -c 'import sys; print( "{}.{}.{}".format( *sys.version_i
 echo "Checking python version (actual ${python_version} vs expected ${YCM_PYTHON_VERSION})"
 test ${python_version} == ${YCM_PYTHON_VERSION}
 
-python build.py --clang-completer --clang-tidy --no-regex
+YCM_BENCHMARK=1 python build.py --clang-completer --clang-tidy --no-regex --build-dir build
+echo Running benchmarks in valgrind
+PYTHONMALLOC=malloc valgrind --error-exitcode=1 --leak-check=full --show-possibly-lost=no ./build/ycm/benchmarks/ycm_core_benchmarks --benchmark_filter=PythonSupportFixture/FilterAndSortStoredCandidatesWithCommonPrefix/1/0
 
 set +e
