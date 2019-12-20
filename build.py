@@ -572,7 +572,6 @@ def RunYcmdBenchmarks( args, build_dir ):
   if not args.valgrind:
     CheckCall( p.join( benchmarks_dir, 'ycm_core_benchmarks' ), env = new_env )
   else:
-    CheckCall( p.join( benchmarks_dir, 'ycm_core_benchmarks' ), env = new_env )
     new_env[ 'PYTHONMALLOC' ] = 'malloc'
     cmd = [ 'valgrind',
             '--error-exitcode=1',
