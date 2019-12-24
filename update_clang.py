@@ -271,11 +271,7 @@ def ExtractGZIP( compressed_data, destination ):
 def Extract7Z( llvm_package, archive, destination ):
   # Extract with appropriate tool
   if OnWindows():
-    # The winreg module is named _winreg on Python 2.
-    try:
-      import winreg
-    except ImportError:
-      import _winreg as winreg
+    import winreg
 
     with winreg.OpenKey( winreg.HKEY_LOCAL_MACHINE, 'SOFTWARE\\7-Zip' ) as key:
       executable = os.path.join( winreg.QueryValueEx( key, "Path" )[ 0 ],

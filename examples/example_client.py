@@ -304,8 +304,6 @@ def SecureBytesEqual( a, b ):
   """Returns the equivalent of 'a == b', but avoids content based short
   circuiting to reduce the vulnerability to timing attacks."""
   # Consistent timing matters more here than data type flexibility
-  # We do NOT want to support py2's str type because iterating over them
-  # (below) produces different results.
   if type( a ) != bytes or type( b ) != bytes:
     raise TypeError( "inputs must be bytes instances" )
 

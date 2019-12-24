@@ -482,12 +482,7 @@ def ImportAndCheckCore_Unexpected_test():
 
 
 def ImportAndCheckCore_Missing_test():
-  import_errors = [
-    # Raised by Python 2.
-    'No module named ycm_core',
-    # Raised by Python 3.
-    "No module named 'ycm_core'"
-  ]
+  import_errors = [ "No module named 'ycm_core'" ]
 
   for error in import_errors:
     yield RunImportAndCheckCoreException, {
@@ -496,40 +491,6 @@ def ImportAndCheckCore_Missing_test():
       'logged_message': 'ycm_core library not detected; you need to compile it '
                         'by running the build.py script. See the documentation '
                         'for more details.'
-    }
-
-
-def ImportAndCheckCore_Python2_test():
-  import_exception_messages = [
-    # Raised on Linux and OS X.
-    'dynamic module does not define module export function (PyInit_ycm_core).',
-    # Raised on Windows.
-    'Module use of python27.dll conflicts with this version of Python.'
-  ]
-
-  for message in import_exception_messages:
-    yield RunImportAndCheckCoreException, {
-      'exception_message': message,
-      'exit_status': 5,
-      'logged_message': 'ycm_core library compiled for Python 2 '
-                        'but loaded in Python 3.'
-    }
-
-
-def ImportAndCheckCore_Python3_test():
-  import_exception_messages = [
-    # Raised on Linux and OS X.
-    'dynamic module does not define init function (initycm_core).',
-    # Raised on Windows.
-    'Module use of python35.dll conflicts with this version of Python.'
-  ]
-
-  for message in import_exception_messages:
-    yield RunImportAndCheckCoreException, {
-      'exception_message': message,
-      'exit_status': 6,
-      'logged_message': 'ycm_core library compiled for Python 3 '
-                        'but loaded in Python 2.'
     }
 
 

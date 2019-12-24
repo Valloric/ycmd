@@ -571,11 +571,7 @@ def _BuildGetDocResponse( doc_data ):
   # useful pieces of documentation available to the developer. Perhaps in
   # future, we can use this XML for more interesting things.
   try:
-    # Only python2 actually requires bytes here.
-    # Doing the same on python3 makes the code simpler,
-    # but introduces unnecessary, though quite acceptable overhead
-    # (compared to XML processing).
-    root = xml.etree.ElementTree.fromstring( ToBytes( doc_data.comment_xml ) )
+    root = xml.etree.ElementTree.fromstring( doc_data.comment_xml )
   except XmlParseError:
     raise ValueError( NO_DOCUMENTATION_MESSAGE )
 

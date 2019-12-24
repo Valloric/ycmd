@@ -22,7 +22,6 @@ import hashlib
 
 
 def CreateHmac( content, hmac_secret ):
-  # Note that py2's str type passes this check (and that's ok)
   if not isinstance( content, bytes ):
     raise TypeError( 'content was not of bytes type; you have a bug!' )
   if not isinstance( hmac_secret, bytes ):
@@ -34,7 +33,6 @@ def CreateHmac( content, hmac_secret ):
 
 
 def CreateRequestHmac( method, path, body, hmac_secret ):
-  # Note that py2's str type passes this check (and that's ok)
   if not isinstance( body, bytes ):
     raise TypeError( 'body was not of bytes type; you have a bug!' )
   if not isinstance( hmac_secret, bytes ):
@@ -58,8 +56,6 @@ def SecureBytesEqual( a, b ):
   """Returns the equivalent of 'a == b', but avoids content based short
   circuiting to reduce the vulnerability to timing attacks."""
   # Consistent timing matters more here than data type flexibility
-  # We do NOT want to support py2's str type because iterating over them
-  # (below) produces different results.
   if type( a ) != bytes or type( b ) != bytes:
     raise TypeError( "inputs must be bytes instances" )
 

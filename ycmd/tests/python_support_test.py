@@ -40,7 +40,6 @@ def GetUtf8String_Str_test():
   eq_( b'fo\xc3\xb8', ycm_core.GetUtf8String( 'foø' ) )
 
 
-# bytes is identical to str on Python 2.
 def GetUtf8String_Bytes_test():
   eq_( b'fo\xc3\xb8', ycm_core.GetUtf8String( bytes( 'foø', 'utf8' ) ) )
 

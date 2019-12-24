@@ -60,8 +60,6 @@ ClangOnly = skipIf( not ycm_core.HasClangSupport(),
                     'Only when Clang support available' )
 MacOnly = skipIf( not OnMac(), 'Mac only' )
 UnixOnly = skipIf( OnWindows(), 'Unix only' )
-NoWinPy2 = skipIf( OnWindows() and False, 'Disabled on Windows with Python 2' )
-
 
 EMPTY_SIGNATURE_HELP = has_entries( {
   'activeParameter': 0,

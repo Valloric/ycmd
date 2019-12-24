@@ -39,11 +39,10 @@ from urllib.parse import urljoin, urlparse, unquote, quote  # noqa
 from urllib.request import pathname2url, url2pathname  # noqa
 
 
-# We replace the re module with regex as it has better support for characters on
-# multiple code points. However, this module has a compiled component so we
-# can't import it in YCM if it is built for a different version of Python (e.g.
-# if YCM is running on Python 2 while ycmd on Python 3). We fall back to the re
-# module in that case.
+# We replace the re module with regex as it has better support for characters
+# on multiple code points. However, this module has a compiled component so we
+# can't import it in YCM if it is built for a different version of Python. We
+# fall back to the re module in that case.
 try:
   import regex as re
 except ImportError: # pragma: no cover
@@ -57,21 +56,10 @@ CREATE_NO_WINDOW = 0x08000000
 EXECUTABLE_FILE_MASK = os.F_OK | os.X_OK
 
 CORE_MISSING_ERROR_REGEX = re.compile( "No module named '?ycm_core'?" )
-CORE_PYTHON2_ERROR_REGEX = re.compile(
-  'dynamic module does not define (?:init|module export) '
-  'function \\(PyInit_ycm_core\\)|'
-  'Module use of python2[0-9]\\.dll conflicts with this version of Python\\.$' )
-CORE_PYTHON3_ERROR_REGEX = re.compile(
-  'dynamic module does not define init function \\(initycm_core\\)|'
-  'Module use of python3[0-9]\\.dll conflicts with this version of Python\\.$' )
 
 CORE_MISSING_MESSAGE = (
   'ycm_core library not detected; you need to compile it by running the '
   'build.py script. See the documentation for more details.' )
-CORE_PYTHON2_MESSAGE = (
-  'ycm_core library compiled for Python 2 but loaded in Python 3.' )
-CORE_PYTHON3_MESSAGE = (
-  'ycm_core library compiled for Python 3 but loaded in Python 2.' )
 CORE_OUTDATED_MESSAGE = (
   'ycm_core library too old; PLEASE RECOMPILE by running the build.py script. '
   'See the documentation for more details.' )
@@ -80,10 +68,6 @@ CORE_OUTDATED_MESSAGE = (
 #  - CORE_COMPATIBLE_STATUS: ycm_core is compatible;
 #  - CORE_UNEXPECTED_STATUS: unexpected error while loading ycm_core;
 #  - CORE_MISSING_STATUS   : ycm_core is missing;
-#  - CORE_PYTHON2_STATUS   : ycm_core is compiled with Python 2 but loaded with
-#    Python 3;
-#  - CORE_PYTHON3_STATUS   : ycm_core is compiled with Python 3 but loaded with
-#    Python 2;
 #  - CORE_OUTDATED_STATUS  : ycm_core version is outdated.
 # Values 1 and 2 are not used because 1 is for general errors and 2 has often a
 # special meaning for Unix programs. See
@@ -91,8 +75,6 @@ CORE_OUTDATED_MESSAGE = (
 CORE_COMPATIBLE_STATUS  = 0
 CORE_UNEXPECTED_STATUS  = 3
 CORE_MISSING_STATUS     = 4
-CORE_PYTHON2_STATUS     = 5
-CORE_PYTHON3_STATUS     = 6
 CORE_OUTDATED_STATUS    = 7
 
 
@@ -273,7 +255,7 @@ def GetExecutable( filename ):
   return None
 
 
-# Adapted from https://hg.python.org/cpython/file/3.5/Lib/shutil.py#l1081
+# Adapted from https://github.com/python/cpython/blob/v3.5.0/Lib/shutil.py#L1072
 # to be backward compatible with Python2 and more consistent to our codebase.
 def FindExecutable( executable ):
   # If we're given a path with a directory part, look it up directly rather
@@ -417,7 +399,7 @@ def GetShortPathName( path ):
       output_buf_size = needed
 
 
-# Shim for imp.load_source so that it works on both Py2 & Py3. See upstream
+# Shim for imp.load_source. See upstream
 # Python docs for info on what this does.
 def LoadPythonSource( name, pathname ):
   import importlib
@@ -544,12 +526,6 @@ def ImportAndCheckCore():
     if CORE_MISSING_ERROR_REGEX.match( message ):
       LOGGER.exception( CORE_MISSING_MESSAGE )
       return CORE_MISSING_STATUS
-    if CORE_PYTHON2_ERROR_REGEX.match( message ):
-      LOGGER.exception( CORE_PYTHON2_MESSAGE )
-      return CORE_PYTHON2_STATUS
-    if CORE_PYTHON3_ERROR_REGEX.match( message ):
-      LOGGER.exception( CORE_PYTHON3_MESSAGE )
-      return CORE_PYTHON3_STATUS
     LOGGER.exception( message )
     return CORE_UNEXPECTED_STATUS
 
