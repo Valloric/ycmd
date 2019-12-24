@@ -102,7 +102,8 @@ class RustCompleter( simple_language_server_completer.SimpleLSPCompleter ):
     # for detail on the progress steps.
     return ( super().ServerIsReady() and
              self._server_progress and
-             set( self._server_progress.values() ) == { 'building done', 'indexing done' } )
+             set( self._server_progress.values() ) == { 'building done',
+                                                        'indexing done' } )
 
 
   def SupportedFiletypes( self ):

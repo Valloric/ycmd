@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with ycmd.  If not, see <http://www.gnu.org/licenses/>.
 
+
 # Provided for backwards compatibility with old ycm_extra_conf files.
 def PrepareClangFlags( flags, filename ):
   return flags

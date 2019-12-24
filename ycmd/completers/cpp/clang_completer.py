@@ -25,7 +25,6 @@ import ycm_core
 from ycmd import responses
 from ycmd.utils import ( PathLeftSplit,
                          re,
-                         ToBytes,
                          ToCppStringCompatible,
                          ToUnicode )
 from ycmd.completers.completer import Completer

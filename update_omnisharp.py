@@ -136,9 +136,9 @@ def Main():
       output = Process( temp_dir, version )
 
   print( "Omnisharp configration for {} is:".format( version ) )
-  for os_name, os_data in iteritems( output ):
+  for os_name, os_data in output.items():
     print( "    {}: {{".format( repr( os_name ) ) )
-    for key, value in iteritems( os_data ):
+    for key, value in os_data.items():
       line = "      {}: {},".format( repr( key ), repr( value ) )
       if len( line ) > 80:
         line = "      {}: ( {} ),".format( repr( key ), repr( value ) )

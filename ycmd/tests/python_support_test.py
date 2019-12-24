@@ -23,7 +23,7 @@ from nose.tools import eq_
 
 import ycm_core
 from ycmd.tests.test_utils import ClangOnly
-from ycmd.utils import ToBytes, ToUnicode, OnWindows
+from ycmd.utils import ToBytes, OnWindows
 
 
 # We don't use PathToTestFile from test_utils module because this module

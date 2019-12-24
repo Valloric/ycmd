@@ -63,7 +63,7 @@ class NoExtraConfDetected( ServerError ):
 
 class NoDiagnosticSupport( ServerError ):
   def __init__( self ):
-    super().__init__( NO_DIAGNOSTIC_SUPPORT_MESSAGE ) 
+    super().__init__( NO_DIAGNOSTIC_SUPPORT_MESSAGE )
 
 
 # column_num is a byte offset

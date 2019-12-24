@@ -24,7 +24,6 @@ from ycmd.utils import ( OnMac,
                          PathsToAllParentFolders,
                          re,
                          ToCppStringCompatible,
-                         ToBytes,
                          ToUnicode,
                          CLANG_RESOURCE_DIR )
 from ycmd.responses import NoExtraConfDetected
