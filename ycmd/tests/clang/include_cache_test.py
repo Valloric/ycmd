@@ -1,5 +1,6 @@
 # Copyright (C) 2017 Davit Samvelyan davitsamvelyan@gmail.com
 #                    Synopsys.
+#               2020 ycmd contributors
 #
 # This file is part of ycmd.
 #

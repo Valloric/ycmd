@@ -1,4 +1,4 @@
-// Copyright (C) 2011-2018 ycmd contributors
+// Copyright (C) 2011-2020 ycmd contributors
 //
 // This file is part of ycmd.
 //

@@ -1,4 +1,4 @@
-# Copyright (C) 2011, 2012 Chiel ten Brinke <ctenbrinke@gmail.com>
+# Copyright (C) 2020 ycmd contributors
 #
 # This file is part of ycmd.
 #

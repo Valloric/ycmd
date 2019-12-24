@@ -1,5 +1,5 @@
 # Copyright (C) 2013 Google Inc.
-#               2015 ycmd contributors
+#               2020 ycmd contributors
 #
 # This file is part of ycmd.
 #

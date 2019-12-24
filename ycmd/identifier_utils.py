@@ -1,6 +1,4 @@
-# encoding: utf-8
-#
-# Copyright (C) 2014-2018 ycmd contributors
+# Copyright (C) 2014-2020 ycmd contributors
 #
 # This file is part of ycmd.
 #

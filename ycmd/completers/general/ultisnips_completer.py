@@ -1,5 +1,4 @@
-# Copyright (C) 2013 Stanislav Golovanov <stgolovanov@gmail.com>
-#                    Google Inc.
+# Copyright (C) 2020 ycmd contributors
 #
 # This file is part of ycmd.
 #

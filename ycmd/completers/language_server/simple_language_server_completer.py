@@ -1,4 +1,4 @@
-# Copyright (C) 2018-2019 ycmd contributors
+# Copyright (C) 2018-2020 ycmd contributors
 #
 # This file is part of ycmd.
 #

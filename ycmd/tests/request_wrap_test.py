@@ -1,4 +1,4 @@
-# Copyright (C) 2014 Google Inc.
+# Copyright (C) 2020 ycmd contributors
 #
 # This file is part of ycmd.
 #
