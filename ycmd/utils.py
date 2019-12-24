@@ -161,10 +161,10 @@ def CreateLogfile( prefix = '' ):
 # plugins. For other code, you likely want to use ToBytes below.
 def ToCppStringCompatible( value ):
   if isinstance( value, str ):
-    return native( value.encode( 'utf8' ) )
+    return native( value.encode() )
   if isinstance( value, bytes ):
     return native( value )
-  return native( str( value ).encode( 'utf8' ) )
+  return native( str( value ).encode() )
 
 
 # Returns a unicode type; either the new python-future str type or the real

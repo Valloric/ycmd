@@ -327,7 +327,7 @@ def SecureBytesEqual( a, b ):
 # unicode objects to utf-8 encoded bytes.
 def RecursiveEncodeUnicodeToUtf8( value ):
   if isinstance( value, str ):
-    return value.encode( 'utf8' )
+    return value.encode()
   if isinstance( value, bytes ):
     return value
   elif isinstance( value, collections.Mapping ):
@@ -340,7 +340,7 @@ def RecursiveEncodeUnicodeToUtf8( value ):
 
 
 def ToUtf8Json( data ):
-  return json.dumps( data, ensure_ascii = False ).encode( 'utf8' )
+  return json.dumps( data, ensure_ascii = False ).encode()
 
 
 def PathToTestFile( filename ):
