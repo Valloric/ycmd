@@ -27,7 +27,6 @@ from base64 import b64decode, b64encode
 from bottle import request, abort
 from ycmd import hmac_utils
 from ycmd.utils import LOGGER, ToBytes, urlparse
-from ycmd.bottle_utils import SetResponseHeader
 
 _HMAC_HEADER = 'x-ycm-hmac'
 _HOST_HEADER = 'host'
@@ -92,4 +91,4 @@ def RequestAuthenticated( method, path, body, hmac_secret ):
 def SetHmacHeader( body, hmac_secret ):
   value = b64encode( hmac_utils.CreateHmac( ToBytes( body ),
                                             ToBytes( hmac_secret ) ) )
-  SetResponseHeader( _HMAC_HEADER, value )
+  bottle.response.set_header( ToUnicode( _HMAC_HEADER ), ToUnicode( value ) )

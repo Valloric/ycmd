@@ -39,7 +39,6 @@ from ycmd.responses import ( BuildExceptionResponse,
                              SignatureHelpAvailalability,
                              UnknownExtraConf )
 from ycmd.request_wrap import RequestWrap
-from ycmd.bottle_utils import SetResponseHeader
 from ycmd.completers.completer_utils import FilterAndSortCandidatesWrap
 from ycmd.utils import LOGGER, StartThread
 
@@ -330,7 +329,7 @@ app.default_error_handler = ErrorHandler
 
 
 def _JsonResponse( data ):
-  SetResponseHeader( 'Content-Type', 'application/json' )
+  bottle.response.set_header( 'Content-Type', 'application/json' )
   return json.dumps( data,
                      separators = ( ',', ':' ),
                      default = _UniversalSerialize )
