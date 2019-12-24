@@ -145,7 +145,7 @@ class LanguageServerConnectionStopped( Exception ):
   pass # pragma: no cover
 
 
-class Response( object ):
+class Response:
   """Represents a blocking pending request.
 
   LanguageServerCompleter handles create an instance of this class for each
@@ -2660,13 +2660,13 @@ class LanguageServerCompletionsCache( CompletionsCache ):
       return None
 
 
-class RejectCollector( object ):
+class RejectCollector:
   def HandleServerToClientRequest( self, request, connection ):
     message = lsp.Reject( request, lsp.Errors.MethodNotFound )
     connection.SendResponse( message )
 
 
-class EditCollector( object ):
+class EditCollector:
   def __init__( self ):
     self.requests = []
 

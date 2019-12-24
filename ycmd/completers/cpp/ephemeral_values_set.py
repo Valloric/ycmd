@@ -32,7 +32,7 @@ ALREADY_PARSING_MESSAGE = 'File already being parsed.'
 #    ...
 #    with path as paths.GetExclusive('/foo'):
 #       ...
-class EphemeralValuesSet( object ):
+class EphemeralValuesSet:
   def __init__( self ):
     self._values = set()
     self._values_lock = threading.Lock()
@@ -42,7 +42,7 @@ class EphemeralValuesSet( object ):
 
 
 # Implements the Python context manager API.
-class EphemeralValue( object ):
+class EphemeralValue:
   def __init__( self, value, parent_set, parent_lock ):
     self._value = value
     self._parent_set = parent_set

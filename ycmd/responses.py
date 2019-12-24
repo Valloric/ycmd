@@ -162,7 +162,7 @@ def BuildRangeData( source_range ):
   }
 
 
-class Diagnostic( object ):
+class Diagnostic:
   def __init__( self,
                 ranges,
                 location,
@@ -178,14 +178,14 @@ class Diagnostic( object ):
     self.fixits_ = fixits
 
 
-class UnresolvedFixIt( object ):
+class UnresolvedFixIt:
   def __init__( self, command, text ):
     self.command = command
     self.text = text
     self.resolve = True
 
 
-class FixIt( object ):
+class FixIt:
   """A set of replacements (of type FixItChunk) to be applied to fix a single
   diagnostic. This can be used for any type of refactoring command, not just
   quick fixes. The individual chunks may span multiple files.
@@ -201,7 +201,7 @@ class FixIt( object ):
     self.text = text
 
 
-class FixItChunk( object ):
+class FixItChunk:
   """An individual replacement within a FixIt (aka Refactor)"""
 
   def __init__( self, replacement_text, range ):
@@ -210,7 +210,7 @@ class FixItChunk( object ):
     self.range = range
 
 
-class Range( object ):
+class Range:
   """Source code range relating to a diagnostic or FixIt (aka Refactor)."""
 
   def __init__( self, start, end ):
@@ -219,7 +219,7 @@ class Range( object ):
     self.end_ = end
 
 
-class Location( object ):
+class Location:
   """Source code location for a diagnostic or FixIt (aka Refactor)."""
 
   def __init__( self, line, column, filename ):
@@ -313,7 +313,7 @@ def BuildExceptionResponse( exception, traceback ):
   }
 
 
-class DebugInfoServer( object ):
+class DebugInfoServer:
   """Store debugging information on a server:
   - name: the server name;
   - is_running: True if the server process is alive, False otherwise;
@@ -347,7 +347,7 @@ class DebugInfoServer( object ):
     self.extras = extras
 
 
-class DebugInfoItem( object ):
+class DebugInfoItem:
 
   def __init__( self, key, value ):
     self.key = key

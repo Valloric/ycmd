@@ -44,7 +44,7 @@ TSSERVER_DIR = os.path.abspath(
 LOGFILE_FORMAT = 'tsserver_'
 
 
-class DeferredResponse( object ):
+class DeferredResponse:
   """
   A deferred that resolves to a response from TSServer.
   """

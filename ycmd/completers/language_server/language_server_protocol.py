@@ -30,7 +30,7 @@ from ycmd.utils import ( ByteOffsetToCodepointOffset,
 Error = collections.namedtuple( 'RequestError', [ 'code', 'reason' ] )
 
 
-class Errors( object ):
+class Errors:
   # From
   # https://microsoft.github.io/language-server-protocol/specification#response-message
   #
@@ -116,7 +116,7 @@ class ServerFileStateStore( dict ):
     return self[ key ]
 
 
-class ServerFileState( object ):
+class ServerFileState:
   """State machine for a particular file from the server's perspective,
   including version."""
 

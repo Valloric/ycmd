@@ -83,7 +83,7 @@ def IsolatedYcmd( custom_options = {} ):
 
 
 # A mock of ycm_core.ClangCompleter with translation units still being parsed.
-class MockCoreClangCompleter( object ):
+class MockCoreClangCompleter:
 
   def GetDefinitionLocation( self, *args ):
     pass

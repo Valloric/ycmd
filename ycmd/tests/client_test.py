@@ -44,7 +44,7 @@ PATH_TO_YCMD = os.path.join( DIR_OF_THIS_SCRIPT, '..' )
 LOGFILE_FORMAT = 'server_{port}_{std}_'
 
 
-class Client_test( object ):
+class Client_test:
 
   def __init__( self ):
     self._location = None

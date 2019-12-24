@@ -35,7 +35,7 @@ _HOST_HEADER = 'host'
 # The x-ycm-hmac value is encoded as base64 during transport instead of sent raw
 # because https://tools.ietf.org/html/rfc5987 says header values must be in the
 # ISO-8859-1 character set.
-class HmacPlugin( object ):
+class HmacPlugin:
   name = 'hmac'
   api = 2
 

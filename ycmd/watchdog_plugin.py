@@ -33,7 +33,7 @@ from ycmd.utils import LOGGER, StartThread
 #
 # We want to do this so that if something goes bonkers in Vim and the server
 # never gets killed by the client, we don't end up with lots of zombie servers.
-class WatchdogPlugin( object ):
+class WatchdogPlugin:
   name = 'watchdog'
   api = 2
 

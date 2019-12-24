@@ -22,7 +22,7 @@ from ycmd.utils import ( LOGGER, ToCppStringCompatible, ToUnicode, re, ReadFile,
                          SplitLines )
 
 
-class PreparedTriggers( object ):
+class PreparedTriggers:
   def __init__( self,
                 user_trigger_map = None,
                 filetype_set = None,

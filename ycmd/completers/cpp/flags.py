@@ -91,7 +91,7 @@ MAC_FOUNDATION_HEADERS_RELATIVE_DIR = (
   'System/Library/Frameworks/Foundation.framework/Headers' )
 
 
-class Flags( object ):
+class Flags:
   """Keeps track of the flags necessary to compile a file.
   The flags are loaded from user-created python files (hereafter referred to as
   'modules') that contain a method Settings( **kwargs )."""

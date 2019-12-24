@@ -464,7 +464,7 @@ class Completer( metaclass = abc.ABCMeta ):
     return False
 
 
-class CompletionsCache( object ):
+class CompletionsCache:
   """Cache of computed completions for a particular request."""
 
   def __init__( self ):

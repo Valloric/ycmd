@@ -32,7 +32,7 @@ def _GetGenericLSPCompleter( user_options, filetype ):
   return None
 
 
-class ServerState( object ):
+class ServerState:
   def __init__( self, user_options ):
     self._user_options = user_options
     self._filetype_completers = {}

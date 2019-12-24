@@ -34,7 +34,7 @@ entry_type is an integer indicating whether the candidate is a
 IncludeEntry = namedtuple( 'IncludeEntry', [ 'name', 'entry_type' ] )
 
 
-class IncludeList( object ):
+class IncludeList:
   """
   Helper class for combining include completion candidates from
   several include paths.
@@ -59,7 +59,7 @@ class IncludeList( object ):
     return includes
 
 
-class IncludeCache( object ):
+class IncludeCache:
   """
   Holds a dictionary representing the include path cache.
   Dictionary keys are the include path directories.

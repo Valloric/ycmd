@@ -61,7 +61,7 @@ class CsharpCompleter( Completer ):
     self._completer_per_solution = {}
     self._diagnostic_store = None
     self._solution_state_lock = threading.Lock()
-    self.signature_triggers.SetServerSemanticTriggers( [ '(', ',' ] )
+    self.signature_triggers.SetServerSemanticTriggers
 
     if not os.path.isfile( PATH_TO_ROSLYN_OMNISHARP_BINARY ):
       raise RuntimeError(
@@ -348,7 +348,7 @@ class CsharpCompleter( Completer ):
     return self._solution_for_file[ filepath ]
 
 
-class CsharpSolutionCompleter( object ):
+class CsharpSolutionCompleter:
   def __init__( self, solution_path, keep_logfiles, desired_omnisharp_port ):
     self._solution_path = solution_path
     self._keep_logfiles = keep_logfiles

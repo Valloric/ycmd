@@ -30,7 +30,7 @@ from ycmd.request_validation import EnsureRequestValid
 
 # TODO: Change the custom computed (and other) keys to be actual properties on
 # the object.
-class RequestWrap( object ):
+class RequestWrap:
   def __init__( self, request, validate = True ):
     if validate:
       EnsureRequestValid( request )
