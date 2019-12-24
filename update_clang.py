@@ -52,7 +52,6 @@ sys.path.insert( GetStandardLibraryIndexInSysPath() + 1,
 import requests
 # Not installing aliases from python-future; it's unreliable and slow.
 from builtins import *  # noqa
-from future.utils import iteritems
 from io import BytesIO
 
 
@@ -588,7 +587,7 @@ def Main():
     hashes = {}
     with TemporaryDirectory( args.keep_temp ) as temp_dir:
       license_file_name = DownloadClangLicense( args.version, temp_dir )
-      for os_name, download_data in iteritems( LLVM_DOWNLOAD_DATA ):
+      for os_name, download_data in LLVM_DOWNLOAD_DATA.items():
         BundleAndUpload( args, temp_dir, output_dir, os_name, download_data,
                          license_file_name, hashes )
       UpdateClangHeaders( args, temp_dir )
@@ -596,7 +595,7 @@ def Main():
     if not args.output_dir:
       shutil.rmtree( output_dir )
 
-  for bundle_file_name, sha256 in iteritems( hashes ):
+  for bundle_file_name, sha256 in hashes.items():
     print( 'Checksum for {bundle_file_name}: {sha256}'.format(
       bundle_file_name = bundle_file_name,
       sha256 = sha256 ) )

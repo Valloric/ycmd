@@ -23,7 +23,6 @@ from __future__ import absolute_import
 from builtins import *  # noqa
 
 from collections import defaultdict
-from future.utils import iteritems
 from nose.tools import eq_, ok_
 
 from ycmd.completers import completer_utils as cu
@@ -35,7 +34,7 @@ def _ExtractPatternsFromFiletypeTriggerDict( triggerDict ):
   each set value replaced with the pattern strings. Needed for equality test of
   two filetype trigger dictionaries."""
   copy = triggerDict.copy()
-  for key, values in iteritems( triggerDict ):
+  for key, values in triggerDict.items():
     copy[ key ] = { sre_pattern.pattern for sre_pattern in values }
   return copy
 

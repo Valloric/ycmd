@@ -23,7 +23,6 @@ from __future__ import absolute_import
 from builtins import *  # noqa
 
 from base64 import b64decode, b64encode
-from future.utils import native
 from hamcrest import assert_that, empty, equal_to, is_in
 from tempfile import NamedTemporaryFile
 import functools
@@ -221,7 +220,7 @@ class Client_test( object ):
 
 
   def _BuildUri( self, handler ):
-    return native( ToBytes( urljoin( self._location, handler ) ) )
+    return ToBytes( urljoin( self._location, handler ) )
 
 
   def _ExtraHeaders( self, method, request_uri, request_body = None ):

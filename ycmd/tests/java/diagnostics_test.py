@@ -25,7 +25,6 @@ from builtins import *  # noqa
 
 import contextlib
 import json
-from future.utils import iterkeys
 import time
 from hamcrest import ( assert_that,
                        contains,
@@ -352,7 +351,7 @@ def Poll_Diagnostics_ProjectWide_Eclipse_test( app ):
   contents = ReadFile( filepath )
 
   # Poll until we receive _all_ the diags asynchronously
-  to_see = sorted( iterkeys( DIAG_MATCHERS_PER_FILE ) )
+  to_see = sorted( DIAG_MATCHERS_PER_FILE.keys() )
   seen = {}
 
   try:
@@ -372,11 +371,11 @@ def Poll_Diagnostics_ProjectWide_Eclipse_test( app ):
           'filepath': message[ 'filepath' ]
         } ) )
 
-      if sorted( iterkeys( seen ) ) == to_see:
+      if sorted( seen.keys() ) == to_see:
         break
       else:
         print( 'Seen diagnostics for {0}, still waiting for {1}'.format(
-          json.dumps( sorted( iterkeys( seen ) ), indent=2 ),
+          json.dumps( sorted( seen.keys() ), indent=2 ),
           json.dumps( [ x for x in to_see if x not in seen ], indent=2 ) ) )
 
       # Eventually PollForMessages will throw
@@ -388,7 +387,7 @@ def Poll_Diagnostics_ProjectWide_Eclipse_test( app ):
       'Timed out waiting for full set of diagnostics. '
       'Expected to see diags for {0}, but only saw {1}.'.format(
         json.dumps( to_see, indent=2 ),
-        json.dumps( sorted( iterkeys( seen ) ), indent=2 ) ) )
+        json.dumps( sorted( seen.keys() ), indent=2 ) ) )
 
 
 @contextlib.contextmanager

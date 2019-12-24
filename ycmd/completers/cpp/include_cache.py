@@ -24,8 +24,6 @@ from __future__ import absolute_import
 # Not installing aliases from python-future; it's unreliable and slow.
 from builtins import *  # noqa
 
-from future.utils import iteritems
-
 import os
 import threading
 
@@ -62,7 +60,7 @@ class IncludeList( object ):
 
   def GetIncludes( self ):
     includes = []
-    for name, include_type in iteritems( self._includes ):
+    for name, include_type in self._includes.items():
       includes.append( responses.BuildCompletionData(
         name, GetPathTypeName( include_type ) ) )
     return includes

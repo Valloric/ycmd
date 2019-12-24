@@ -25,7 +25,6 @@ from builtins import *  # noqa
 import ycm_core
 import os
 import inspect
-from future.utils import native
 from ycmd import extra_conf_store
 from ycmd.utils import ( OnMac,
                          OnWindows,
@@ -263,14 +262,7 @@ def ShouldAllowWinStyleFlags( flags ):
 
 
 def _CallExtraConfFlagsForFile( module, filename, client_data ):
-  # We want to ensure we pass a native py2 `str` on py2 and a native py3 `str`
-  # (unicode) object on py3. That's the API we provide.
-  # In a vacuum, always passing a unicode object (`unicode` on py2 and `str` on
-  # py3) would be better, but we can't do that because that would break all the
-  # ycm_extra_conf files already out there that expect a py2 `str` object on
-  # py2, and WE DO NOT BREAK BACKWARDS COMPATIBILITY.
-  # Hindsight is 20/20.
-  filename = native( ToUnicode( filename ) )
+  filename = ToUnicode( filename )
 
   if hasattr( module, 'Settings' ):
     results = module.Settings( language = 'cfamily',

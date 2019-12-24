@@ -23,7 +23,6 @@ from __future__ import division
 from builtins import *  # noqa
 
 from collections import defaultdict
-from future.utils import itervalues
 import os
 import errno
 import time
@@ -78,7 +77,7 @@ class CsharpCompleter( Completer ):
 
   def Shutdown( self ):
     if self.user_options[ 'auto_stop_csharp_server' ]:
-      for solutioncompleter in itervalues( self._completer_per_solution ):
+      for solutioncompleter in self._completer_per_solution.values():
         solutioncompleter._StopServer()
 
 
@@ -339,7 +338,7 @@ class CsharpCompleter( Completer ):
 
 
   def _CheckAllRunning( self, action ):
-    solutioncompleters = itervalues( self._completer_per_solution )
+    solutioncompleters = self._completer_per_solution.values()
     return all( action( completer ) for completer in solutioncompleters
                 if completer._ServerIsRunning() )
 

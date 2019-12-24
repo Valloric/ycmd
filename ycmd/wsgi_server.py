@@ -22,7 +22,6 @@ from __future__ import absolute_import
 # Not installing aliases from python-future; it's unreliable and slow.
 from builtins import *  # noqa
 
-from future.utils import listvalues
 from waitress.server import TcpWSGIServer
 import select
 
@@ -57,10 +56,9 @@ class StoppableWSGIServer( TcpWSGIServer ):
     # Shutdown waitress threads.
     self.task_dispatcher.shutdown()
     # Close asyncore channels.
-    # We don't use itervalues here because _map is modified while looping
-    # through it.
+    # We use list() here because _map is modified while looping through it.
     # NOTE: _map is an attribute from the asyncore.dispatcher class, which is a
     # base class of TcpWSGIServer. This may change in future versions of
     # waitress so extra care should be taken when updating waitress.
-    for channel in listvalues( self._map ):
+    for channel in list( self._map.values() ):
       channel.close()

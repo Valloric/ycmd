@@ -23,7 +23,6 @@ from __future__ import absolute_import
 from builtins import *  # noqa
 
 from collections import defaultdict
-from future.utils import iteritems
 import os.path
 import textwrap
 import xml.etree.ElementTree
@@ -71,7 +70,7 @@ class ClangCompleter( Completer ):
 
   def GetUnsavedFilesVector( self, request_data ):
     files = ycm_core.UnsavedFileVector()
-    for filename, file_data in iteritems( request_data[ 'file_data' ] ):
+    for filename, file_data in request_data[ 'file_data' ].items():
       if not ClangAvailableForFiletypes( file_data[ 'filetypes' ] ):
         continue
       contents = file_data[ 'contents' ]

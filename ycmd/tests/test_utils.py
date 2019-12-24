@@ -23,7 +23,6 @@ from __future__ import absolute_import
 # Not installing aliases from python-future; it's unreliable and slow.
 from builtins import *  # noqa
 
-from future.utils import iteritems
 from hamcrest import ( assert_that,
                        contains,
                        contains_string,
@@ -96,7 +95,7 @@ def BuildRequest( **kwargs ):
     }
   }
 
-  for key, value in iteritems( kwargs ):
+  for key, value in kwargs.items():
     if key in [ 'contents', 'filetype', 'filepath' ]:
       continue
 

@@ -24,7 +24,6 @@ from __future__ import absolute_import
 # Not installing aliases from python-future; it's unreliable and slow.
 from builtins import *  # noqa
 
-from future.utils import native
 import copy
 import json
 import logging
@@ -143,10 +142,10 @@ def CreateLogfile( prefix = '' ):
 # plugins. For other code, you likely want to use ToBytes below.
 def ToCppStringCompatible( value ):
   if isinstance( value, str ):
-    return native( value.encode() )
+    return value.encode()
   if isinstance( value, bytes ):
-    return native( value )
-  return native( str( value ).encode() )
+    return value
+  return str( value ).encode()
 
 
 def ToUnicode( value ):

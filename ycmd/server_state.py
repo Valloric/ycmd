@@ -23,7 +23,6 @@ from __future__ import absolute_import
 from builtins import *  # noqa
 
 import threading
-from future.utils import itervalues
 from importlib import import_module
 from ycmd.completers.general.general_completer_store import (
     GeneralCompleterStore )
@@ -103,7 +102,7 @@ class ServerState( object ):
   def GetLoadedFiletypeCompleters( self ):
     with self._filetype_completers_lock:
       return { completer for completer in
-               itervalues( self._filetype_completers ) if completer }
+               self._filetype_completers.values() if completer }
 
 
   def FiletypeCompletionAvailable( self, filetypes, silent = False ):

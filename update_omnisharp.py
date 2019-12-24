@@ -43,7 +43,6 @@ AddRequestDependencies()
 
 # Not installing aliases from python-future; it's unreliable and slow.
 from builtins import *  # noqa
-from future.utils import iteritems
 import requests
 
 
@@ -120,7 +119,7 @@ def FetchAndHash( download_url, output_dir, file_name ):
 def Process( output_dir, version ):
   result = {}
 
-  for os_name, file_name in iteritems( FILE_NAME ):
+  for os_name, file_name in FILE_NAME.items():
     download_url = GetDownloadUrl( version, file_name )
     result[ os_name ] = {
         'version': version,

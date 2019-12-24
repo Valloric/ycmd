@@ -28,7 +28,6 @@ import os
 import subprocess
 import tempfile
 import ycm_core
-from future.utils import native
 from hamcrest import ( assert_that,
                        calling,
                        empty,

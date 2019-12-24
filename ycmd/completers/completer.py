@@ -26,7 +26,6 @@ import abc
 import threading
 from ycmd.completers import completer_utils
 from ycmd.responses import NoDiagnosticSupport, SignatureHelpAvailalability
-from future.utils import with_metaclass
 
 NO_USER_COMMANDS = 'This completer does not define any commands.'
 
@@ -34,7 +33,7 @@ NO_USER_COMMANDS = 'This completer does not define any commands.'
 MESSAGE_POLL_TIMEOUT = 10
 
 
-class Completer( with_metaclass( abc.ABCMeta, object ) ):
+class Completer( metaclass = abc.ABCMeta ):
   """A base class for all Completers in YCM.
 
   Here's several important things you need to know if you're writing a custom

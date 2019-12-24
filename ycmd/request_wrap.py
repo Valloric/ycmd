@@ -24,8 +24,6 @@ from __future__ import absolute_import
 # Not installing aliases from python-future; it's unreliable and slow.
 from builtins import *  # noqa
 
-from future.utils import iteritems
-
 from ycmd.utils import ( ByteOffsetToCodepointOffset,
                          CodepointOffsetToByteOffset,
                          HashableDict,
@@ -134,7 +132,7 @@ class RequestWrap( object ):
          len( self[ 'file_data' ] ) != len( other[ 'file_data' ] ) ):
       return False
 
-    for filename, file_data in iteritems( self[ 'file_data' ] ):
+    for filename, file_data in self[ 'file_data' ].items():
       if filename == self[ 'filepath' ]:
         lines = self[ 'lines' ]
         other_lines = other[ 'lines' ]

@@ -27,9 +27,6 @@ from __future__ import absolute_import
 import os
 
 from nose.tools import eq_
-from future.types.newbytes import newbytes
-from future.types.newstr import newstr
-from future.utils import native
 
 import ycm_core
 from ycmd.tests.test_utils import ClangOnly
@@ -61,9 +58,9 @@ def GetUtf8String_Int_test():
 
 @ClangOnly
 def CompilationDatabase_Py3Bytes_test():
-  cc_dir = native( ToBytes( PATH_TO_COMPILE_COMMANDS ) )
-  cc_filename = native( ToBytes( os.path.join( COMPILE_COMMANDS_WORKING_DIR,
-                                               'example.cc' ) ) )
+  cc_dir = ToBytes( PATH_TO_COMPILE_COMMANDS )
+  cc_filename = ToBytes( os.path.join( COMPILE_COMMANDS_WORKING_DIR,
+                                       'example.cc' ) )
 
   # Ctor reads ycmd/tests/testdata/[unix|windows]/compile_commands.json
   db = ycm_core.CompilationDatabase( cc_dir )
