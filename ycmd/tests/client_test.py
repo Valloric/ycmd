@@ -34,6 +34,7 @@ import requests
 import subprocess
 import sys
 import time
+from urllib.parse import urljoin, urlparse
 
 from ycmd.hmac_utils import CreateHmac, CreateRequestHmac, SecureBytesEqual
 from ycmd.tests import PathToTestFile
@@ -41,8 +42,7 @@ from ycmd.tests.test_utils import BuildRequest
 from ycmd.user_options_store import DefaultOptions
 from ycmd.utils import ( CloseStandardStreams, CreateLogfile,
                          GetUnusedLocalhostPort, ReadFile, RemoveIfExists,
-                         SafePopen, SetEnviron, ToBytes, ToUnicode, urljoin,
-                         urlparse )
+                         SafePopen, ToBytes, ToUnicode )
 
 HEADERS = { 'content-type': 'application/json' }
 HMAC_HEADER = 'x-ycm-hmac'
@@ -91,7 +91,7 @@ class Client_test( object ):
     # Define environment variable to enable subprocesses coverage. See:
     # http://coverage.readthedocs.org/en/coverage-4.0.3/subprocess.html
     env = os.environ.copy()
-    SetEnviron( env, 'COVERAGE_PROCESS_START', '.coveragerc' )
+    env[ 'COVERAGE_PROCESS_START' ] = '.coveragerc'
 
     ycmd_args = [
       sys.executable,

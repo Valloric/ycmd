@@ -203,7 +203,7 @@ class TypeScriptCompleter( Completer ):
       # looking at the source code it seems like this is the way:
       # https://github.com/Microsoft/TypeScript/blob/8a93b489454fdcbdf544edef05f73a913449be1d/src/server/server.ts#L136
       environ = os.environ.copy()
-      utils.SetEnviron( environ, 'TSS_LOG', tsserver_log )
+      environ[ 'TSS_LOG' ] = tsserver_log
 
       LOGGER.info( 'TSServer log file: %s', self._logfile )
 

@@ -23,20 +23,20 @@ from __future__ import division
 from builtins import *  # noqa
 
 from collections import defaultdict
-from future.utils import itervalues, PY2
+from future.utils import itervalues
 import os
 import errno
 import time
 import requests
 import threading
+from urllib.parse import urljoin
 
 from ycmd.completers.completer import Completer
 from ycmd.completers.completer_utils import GetFileLines
 from ycmd.completers.cs import solutiondetection
 from ycmd.utils import ( ByteOffsetToCodepointOffset,
                          CodepointOffsetToByteOffset,
-                         LOGGER,
-                         urljoin )
+                         LOGGER )
 from ycmd import responses
 from ycmd import utils
 
@@ -389,10 +389,6 @@ class CsharpSolutionCompleter( object ):
 
       self._ChooseOmnisharpPort()
 
-      # Roslyn fails unless you open it in shell in Window on Python 2
-      # Shell isn't preferred, but I don't see any other way to resolve
-      shell_required = PY2 and utils.OnWindows()
-
       command = [ PATH_TO_ROSLYN_OMNISHARP_BINARY,
                   '-p',
                   str( self._omnisharp_port ),
@@ -418,8 +414,7 @@ class CsharpSolutionCompleter( object ):
       with utils.OpenForStdHandle( self._filename_stderr ) as fstderr:
         with utils.OpenForStdHandle( self._filename_stdout ) as fstdout:
           self._omnisharp_phandle = utils.SafePopen(
-              command, stdout = fstdout, stderr = fstderr,
-              shell = shell_required )
+              command, stdout = fstdout, stderr = fstderr )
 
       LOGGER.info( 'Started OmniSharp server' )
 

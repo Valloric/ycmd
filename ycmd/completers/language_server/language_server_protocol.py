@@ -26,15 +26,12 @@ import collections
 import os
 import json
 import hashlib
+from urllib.parse import urljoin, urlparse, unquote
+from urllib.request import pathname2url, url2pathname
 
 from ycmd.utils import ( ByteOffsetToCodepointOffset,
-                         pathname2url,
                          ToBytes,
-                         ToUnicode,
-                         unquote,
-                         url2pathname,
-                         urlparse,
-                         urljoin )
+                         ToUnicode )
 
 
 Error = collections.namedtuple( 'RequestError', [ 'code', 'reason' ] )

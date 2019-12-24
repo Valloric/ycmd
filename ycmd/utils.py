@@ -24,7 +24,7 @@ from __future__ import absolute_import
 # Not installing aliases from python-future; it's unreliable and slow.
 from builtins import *  # noqa
 
-from future.utils import PY2, native
+from future.utils import native
 import copy
 import json
 import logging
@@ -42,20 +42,9 @@ DIR_OF_THIRD_PARTY = os.path.join( ROOT_DIR, 'third_party' )
 LIBCLANG_DIR = os.path.join( DIR_OF_THIRD_PARTY, 'clang', 'lib' )
 
 
-# Idiom to import pathname2url, url2pathname, urljoin, and urlparse on Python 2
-# and 3. By exposing these functions here, we can import them directly from this
-# module:
-#
-#   from ycmd.utils import pathname2url, url2pathname, urljoin, urlparse
-#
-if PY2:
-  from collections import Mapping
-  from urlparse import urljoin, urlparse, unquote
-  from urllib import pathname2url, url2pathname, quote
-else:
-  from collections.abc import Mapping  # noqa
-  from urllib.parse import urljoin, urlparse, unquote, quote  # noqa
-  from urllib.request import pathname2url, url2pathname  # noqa
+from collections.abc import Mapping
+from urllib.parse import urljoin, urlparse, unquote, quote  # noqa
+from urllib.request import pathname2url, url2pathname  # noqa
 
 
 # We replace the re module with regex as it has better support for characters on
@@ -125,16 +114,9 @@ def ReadFile( filepath ):
 
 # Returns a file object that can be used to replace sys.stdout or sys.stderr
 def OpenForStdHandle( filepath ):
-  # Need to open the file in binary mode on py2 because of bytes vs unicode.
-  # If we open in text mode (default), then third-party code that uses `print`
-  # (we're replacing sys.stdout!) with an `str` object on py2 will cause
-  # tracebacks because text mode insists on unicode objects. (Don't forget,
-  # `open` is actually `io.open` because of future builtins.)
   # Since this function is used for logging purposes, we don't want the output
-  # to be delayed. This means no buffering for binary mode and line buffering
-  # for text mode. See https://docs.python.org/2/library/io.html#io.open
-  if PY2:
-    return open( filepath, mode = 'wb', buffering = 0 )
+  # to be delayed. This means line buffering for text mode.
+  # See https://docs.python.org/2/library/io.html#io.open
   return open( filepath, mode = 'w', buffering = 1 )
 
 
@@ -167,11 +149,9 @@ def ToCppStringCompatible( value ):
   return native( str( value ).encode() )
 
 
-# Returns a unicode type; either the new python-future str type or the real
-# unicode type. The difference shouldn't matter.
 def ToUnicode( value ):
   if not value:
-    return str()
+    return ''
   if isinstance( value, str ):
     return value
   if isinstance( value, bytes ):
@@ -196,43 +176,18 @@ def JoinLinesAsUnicode( lines ):
   raise ValueError( 'lines must contain either strings or bytes.' )
 
 
-# Consistently returns the new bytes() type from python-future. Assumes incoming
-# strings are either UTF-8 or unicode (which is converted to UTF-8).
 def ToBytes( value ):
   if not value:
-    return bytes()
+    return b''
 
-  # This is tricky. On py2, the bytes type from builtins (from python-future) is
-  # a subclass of str. So all of the following are true:
-  #   isinstance(str(), bytes)
-  #   isinstance(bytes(), str)
-  # But they don't behave the same in one important aspect: iterating over a
-  # bytes instance yields ints, while iterating over a (raw, py2) str yields
-  # chars. We want consistent behavior so we force the use of bytes().
   if type( value ) == bytes:
     return value
 
-  # This is meant to catch Python 2's native str type.
-  if isinstance( value, bytes ):
-    return bytes( value, encoding = 'utf8' )
-
   if isinstance( value, str ):
-    # On py2, with `from builtins import *` imported, the following is true:
-    #
-    #   bytes(str(u'abc'), 'utf8') == b"b'abc'"
-    #
-    # Obviously this is a bug in python-future. So we work around it. Also filed
-    # upstream at: https://github.com/PythonCharmers/python-future/issues/193
-    # We can't just return value.encode( 'utf8' ) on both py2 & py3 because on
-    # py2 that *sometimes* returns the built-in str type instead of the newbytes
-    # type from python-future.
-    if PY2:
-      return bytes( value.encode( 'utf8' ), encoding = 'utf8' )
-    else:
-      return bytes( value, encoding = 'utf8' )
+    return value.encode()
 
   # This is meant to catch `int` and similar non-string/bytes types.
-  return ToBytes( str( value ) )
+  return str( value ).encode()
 
 
 def ByteOffsetToCodepointOffset( line_value, byte_offset ):
@@ -439,37 +394,9 @@ def SafePopen( args, **kwargs ):
       kwargs[ 'stdin' ] = subprocess.PIPE
     # Do not create a console window
     kwargs[ 'creationflags' ] = CREATE_NO_WINDOW
-    # Python 2 fails to spawn a process from a command containing unicode
-    # characters on Windows.  See https://bugs.python.org/issue19264 and
-    # http://bugs.python.org/issue1759845.
-    # Since paths are likely to contains such characters, we convert them to
-    # short ones to obtain paths with only ascii characters.
-    if PY2:
-      args = ConvertArgsToShortPath( args )
 
   kwargs.pop( 'stdin_windows', None )
   return subprocess.Popen( args, **kwargs )
-
-
-# We need to convert environment variables to native strings on Windows and
-# Python 2 to prevent a TypeError when passing them to a subprocess.
-def SetEnviron( environ, variable, value ):
-  if OnWindows() and PY2:
-    environ[ native( ToBytes( variable ) ) ] = native( ToBytes( value ) )
-  else:
-    environ[ variable ] = value
-
-
-# Convert paths in arguments command to short path ones
-def ConvertArgsToShortPath( args ):
-  def ConvertIfPath( arg ):
-    if os.path.exists( arg ):
-      return GetShortPathName( arg )
-    return arg
-
-  if isinstance( args, str ) or isinstance( args, bytes ):
-    return ConvertIfPath( args )
-  return [ ConvertIfPath( arg ) for arg in args ]
 
 
 # Get the Windows short path name.
@@ -501,18 +428,6 @@ def GetShortPathName( path ):
 # Shim for imp.load_source so that it works on both Py2 & Py3. See upstream
 # Python docs for info on what this does.
 def LoadPythonSource( name, pathname ):
-  if PY2:
-    import imp
-    try:
-      return imp.load_source( name, pathname )
-    except UnicodeEncodeError:
-      # imp.load_source doesn't handle non-ASCII characters in pathname. See
-      # http://bugs.python.org/issue9425
-      source = ReadFile( pathname )
-      module = imp.new_module( name )
-      module.__file__ = pathname
-      exec( source, module.__dict__ )
-      return module
   import importlib
   return importlib.machinery.SourceFileLoader( name, pathname ).load_module()
 
@@ -534,13 +449,8 @@ def GetCurrentDirectory():
   """Returns the current directory as an unicode object. If the current
   directory does not exist anymore, returns the temporary folder instead."""
   try:
-    if PY2:
-      return os.getcwdu()
     return os.getcwd()
-  # os.getcwdu throws an OSError exception when the current directory has been
-  # deleted while os.getcwd throws a FileNotFoundError, which is a subclass of
-  # OSError.
-  except OSError:
+  except FileNotFoundError:
     return tempfile.gettempdir()
 
 

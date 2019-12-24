@@ -23,7 +23,7 @@ from __future__ import absolute_import
 # Not installing aliases from python-future; it's unreliable and slow.
 from builtins import *  # noqa
 
-from future.utils import iteritems, PY2
+from future.utils import iteritems
 from hamcrest import ( assert_that,
                        contains,
                        contains_string,
@@ -63,14 +63,12 @@ except ImportError:
 
 TESTS_DIR = os.path.abspath( os.path.dirname( __file__ ) )
 
-Py2Only = skipIf( not PY2, 'Python 2 only' )
-Py3Only = skipIf( PY2, 'Python 3 only' )
 WindowsOnly = skipIf( not OnWindows(), 'Windows only' )
 ClangOnly = skipIf( not ycm_core.HasClangSupport(),
                     'Only when Clang support available' )
 MacOnly = skipIf( not OnMac(), 'Mac only' )
 UnixOnly = skipIf( OnWindows(), 'Unix only' )
-NoWinPy2 = skipIf( OnWindows() and PY2, 'Disabled on Windows with Python 2' )
+NoWinPy2 = skipIf( OnWindows() and False, 'Disabled on Windows with Python 2' )
 
 
 EMPTY_SIGNATURE_HELP = has_entries( {

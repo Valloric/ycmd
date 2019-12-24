@@ -87,10 +87,10 @@ class RustCompleter( simple_language_server_completer.SimpleLSPCompleter ):
     env = os.environ.copy()
     # Force RLS to use the rustc from the toolchain in third_party/rls.
     # TODO: allow users to pick a custom toolchain.
-    utils.SetEnviron( env, 'RUSTC', RUSTC_EXECUTABLE )
+    env[ 'RUSTC' ] = RUSTC_EXECUTABLE
     if LOGGER.isEnabledFor( logging.DEBUG ):
-      utils.SetEnviron( env, 'RUST_LOG', 'rls=trace' )
-      utils.SetEnviron( env, 'RUST_BACKTRACE', '1' )
+      env[ 'RUST_LOG' ] = 'rls=trace'
+      env[ 'RUST_BACKTRACE' ] = '1'
     return env
 
 

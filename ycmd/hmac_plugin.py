@@ -25,8 +25,9 @@ from builtins import *  # noqa
 import requests
 from base64 import b64decode, b64encode
 from bottle import request, abort
+from urllib.parse import urlparse
 from ycmd import hmac_utils
-from ycmd.utils import LOGGER, ToBytes, urlparse
+from ycmd.utils import LOGGER, ToBytes
 
 _HMAC_HEADER = 'x-ycm-hmac'
 _HOST_HEADER = 'host'

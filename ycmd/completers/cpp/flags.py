@@ -25,7 +25,7 @@ from builtins import *  # noqa
 import ycm_core
 import os
 import inspect
-from future.utils import PY2, native
+from future.utils import native
 from ycmd import extra_conf_store
 from ycmd.utils import ( OnMac,
                          OnWindows,
@@ -270,10 +270,7 @@ def _CallExtraConfFlagsForFile( module, filename, client_data ):
   # ycm_extra_conf files already out there that expect a py2 `str` object on
   # py2, and WE DO NOT BREAK BACKWARDS COMPATIBILITY.
   # Hindsight is 20/20.
-  if PY2:
-    filename = native( ToBytes( filename ) )
-  else:
-    filename = native( ToUnicode( filename ) )
+  filename = native( ToUnicode( filename ) )
 
   if hasattr( module, 'Settings' ):
     results = module.Settings( language = 'cfamily',
