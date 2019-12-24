@@ -1,5 +1,3 @@
-# coding: utf-8
-#
 # Copyright (C) 2013 Google Inc.
 #
 # This file is part of ycmd.

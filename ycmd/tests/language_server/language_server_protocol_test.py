@@ -1,5 +1,3 @@
-# coding: utf-8
-#
 # Copyright (C) 2017 ycmd contributors
 #
 # This file is part of ycmd.
