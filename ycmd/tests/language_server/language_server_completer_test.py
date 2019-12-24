@@ -59,7 +59,7 @@ class MockCompleter( lsc.LanguageServerCompleter, DummyCompleter ):
   def __init__( self, custom_options = {} ):
     user_options = handlers._server_state._user_options.copy()
     user_options.update( custom_options )
-    super( MockCompleter, self ).__init__( user_options )
+    super().__init__( user_options )
 
     self._connection = MockConnection()
     self._started = False
@@ -78,8 +78,7 @@ class MockCompleter( lsc.LanguageServerCompleter, DummyCompleter ):
 
 
   def HandleServerCommand( self, request_data, command ):
-    return super( MockCompleter, self ).HandleServerCommand( request_data,
-                                                             command )
+    return super().HandleServerCommand( request_data, command )
 
 
   def ServerIsHealthy( self ):

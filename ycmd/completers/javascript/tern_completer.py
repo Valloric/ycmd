@@ -116,7 +116,7 @@ class TernCompleter( Completer ):
   The protocol is defined here: http://ternjs.net/doc/manual.html#protocol"""
 
   def __init__( self, user_options ):
-    super( TernCompleter, self ).__init__( user_options )
+    super().__init__( user_options )
 
     self._server_keep_logfiles = user_options[ 'server_keep_logfiles' ]
 

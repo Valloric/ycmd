@@ -53,25 +53,24 @@ class SignatureHelpAvailalability:
 
 class ServerError( Exception ):
   def __init__( self, message ):
-    super( ServerError, self ).__init__( message )
+    super().__init__( message )
 
 
 class UnknownExtraConf( ServerError ):
   def __init__( self, extra_conf_file ):
     message = CONFIRM_CONF_FILE_MESSAGE.format( extra_conf_file )
-    super( UnknownExtraConf, self ).__init__( message )
+    super().__init__( message )
     self.extra_conf_file = extra_conf_file
 
 
 class NoExtraConfDetected( ServerError ):
   def __init__( self ):
-    super( NoExtraConfDetected, self ).__init__(
-      NO_EXTRA_CONF_FILENAME_MESSAGE )
+    super().__init__( NO_EXTRA_CONF_FILENAME_MESSAGE )
 
 
 class NoDiagnosticSupport( ServerError ):
   def __init__( self ):
-    super( NoDiagnosticSupport, self ).__init__( NO_DIAGNOSTIC_SUPPORT_MESSAGE )
+    super().__init__( NO_DIAGNOSTIC_SUPPORT_MESSAGE ) 
 
 
 # column_num is a byte offset

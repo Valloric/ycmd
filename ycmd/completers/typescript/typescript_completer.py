@@ -138,7 +138,7 @@ class TypeScriptCompleter( Completer ):
 
 
   def __init__( self, user_options ):
-    super( TypeScriptCompleter, self ).__init__( user_options )
+    super().__init__( user_options )
 
     self._logfile = None
 

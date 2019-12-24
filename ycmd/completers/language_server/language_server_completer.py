@@ -305,7 +305,7 @@ class LanguageServerConnection( threading.Thread ):
 
 
   def __init__( self, notification_handler = None ):
-    super( LanguageServerConnection, self ).__init__()
+    super().__init__()
 
     self._last_id = 0
     self._responses = {}
@@ -612,8 +612,7 @@ class StandardIOLanguageServerConnection( LanguageServerConnection ):
                 server_stdin,
                 server_stdout,
                 notification_handler = None ):
-    super( StandardIOLanguageServerConnection, self ).__init__(
-      notification_handler )
+    super().__init__( notification_handler )
 
     self._server_stdin = server_stdin
     self._server_stdout = server_stdout
@@ -757,7 +756,7 @@ class LanguageServerCompleter( Completer ):
 
 
   def __init__( self, user_options ):
-    super( LanguageServerCompleter, self ).__init__( user_options )
+    super().__init__( user_options )
 
     # _server_info_mutex synchronises access to the state of the
     # LanguageServerCompleter object. There are a number of threads at play
@@ -901,8 +900,7 @@ class LanguageServerCompleter( Completer ):
   def ShouldUseNowInner( self, request_data ):
     # We should only do _anything_ after the initialize exchange has completed.
     return ( self._ServerIsInitialized() and
-             super( LanguageServerCompleter, self ).ShouldUseNowInner(
-               request_data ) )
+             super().ShouldUseNowInner( request_data ) )
 
 
   def GetCodepointForCompletionRequest( self, request_data ):
@@ -2637,15 +2635,14 @@ class LanguageServerCompletionsCache( CompletionsCache ):
 
   def Invalidate( self ):
     with self._access_lock:
-      super( LanguageServerCompletionsCache, self ).Invalidate()
+      super().Invalidate()
       self._is_incomplete = False
       self._use_start_column = True
 
 
   def Update( self, request_data, completions, is_incomplete ):
     with self._access_lock:
-      super( LanguageServerCompletionsCache, self ).Update( request_data,
-                                                            completions )
+      super().Update( request_data, completions )
       self._is_incomplete = is_incomplete
       if is_incomplete:
         self._use_start_column = False
@@ -2667,8 +2664,7 @@ class LanguageServerCompletionsCache( CompletionsCache ):
     with self._access_lock:
       if ( not self._is_incomplete and
            ( self._use_start_column or self._IsQueryPrefix( request_data ) ) ):
-        return super( LanguageServerCompletionsCache,
-                      self ).GetCompletionsIfCacheValid( request_data )
+        return super().GetCompletionsIfCacheValid( request_data )
       return None
 
 

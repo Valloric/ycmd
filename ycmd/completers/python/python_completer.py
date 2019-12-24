@@ -42,7 +42,7 @@ class PythonCompleter( Completer ):
   """
 
   def __init__( self, user_options ):
-    super( PythonCompleter, self ).__init__( user_options )
+    super().__init__( user_options )
     self._jedi_lock = Lock()
     self._settings_for_file = {}
     self._environment_for_file = {}

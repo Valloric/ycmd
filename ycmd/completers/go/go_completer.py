@@ -56,10 +56,6 @@ def ShouldEnableGoCompleter( user_options ):
 
 
 class GoCompleter( simple_language_server_completer.SimpleLSPCompleter ):
-  def __init__( self, user_options ):
-    super( GoCompleter, self ).__init__( user_options )
-
-
   def GetServerName( self ):
     return 'gopls'
 

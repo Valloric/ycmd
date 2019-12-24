@@ -73,7 +73,7 @@ class FilenameCompleter( Completer ):
   """
 
   def __init__( self, user_options ):
-    super( FilenameCompleter, self ).__init__( user_options )
+    super().__init__( user_options )
 
     if OnWindows():
       self._path_separators = r'/\\'

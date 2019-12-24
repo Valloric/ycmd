@@ -71,7 +71,7 @@ class RustCompleter( simple_language_server_completer.SimpleLSPCompleter ):
 
   def _Reset( self ):
     with self._server_state_mutex:
-      super( RustCompleter, self )._Reset()
+      super()._Reset()
       self._server_progress = {}
 
 
@@ -108,7 +108,7 @@ class RustCompleter( simple_language_server_completer.SimpleLSPCompleter ):
     # See
     # https://github.com/rust-lang/rls/blob/master/contributing.md#rls-to-lsp-client
     # for detail on the progress steps.
-    return ( super( RustCompleter, self ).ServerIsReady() and
+    return ( super().ServerIsReady() and
              self._server_progress and
              set( itervalues( self._server_progress ) ) == { 'building done',
                                                              'indexing done' } )
@@ -158,7 +158,7 @@ class RustCompleter( simple_language_server_completer.SimpleLSPCompleter ):
       with self._server_info_mutex:
         self._server_progress[ progress_id ] = message
 
-    super( RustCompleter, self ).HandleNotificationInPollThread( notification )
+    super().HandleNotificationInPollThread( notification )
 
 
   def GetType( self, request_data ):

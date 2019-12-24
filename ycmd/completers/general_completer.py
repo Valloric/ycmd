@@ -36,7 +36,7 @@ class GeneralCompleter( Completer ):
 
   """
   def __init__( self, user_options ):
-    super( GeneralCompleter, self ).__init__( user_options )
+    super().__init__( user_options )
 
 
   def SupportedFiletypes( self ):

@@ -57,7 +57,7 @@ INCLUDE_REGEX = re.compile(
 
 class ClangCompleter( Completer ):
   def __init__( self, user_options ):
-    super( ClangCompleter, self ).__init__( user_options )
+    super().__init__( user_options )
     self._completer = ycm_core.ClangCompleter()
     self._flags = Flags()
     self._include_cache = IncludeCache()
@@ -97,7 +97,7 @@ class ClangCompleter( Completer ):
   def ShouldUseNowInner( self, request_data ):
     if self.ShouldCompleteIncludeStatement( request_data ):
       return True
-    return super( ClangCompleter, self ).ShouldUseNowInner( request_data )
+    return super().ShouldUseNowInner( request_data )
 
 
   def GetIncludePaths( self, request_data ):

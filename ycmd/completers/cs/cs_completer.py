@@ -64,7 +64,7 @@ class CsharpCompleter( Completer ):
   """
 
   def __init__( self, user_options ):
-    super( CsharpCompleter, self ).__init__( user_options )
+    super().__init__( user_options )
     self._solution_for_file = {}
     self._completer_per_solution = {}
     self._diagnostic_store = None

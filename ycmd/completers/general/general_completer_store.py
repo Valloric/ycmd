@@ -37,7 +37,7 @@ class GeneralCompleterStore( Completer ):
   """
 
   def __init__( self, user_options ):
-    super( GeneralCompleterStore, self ).__init__( user_options )
+    super().__init__( user_options )
     self._identifier_completer = IdentifierCompleter( user_options )
     self._filename_completer = FilenameCompleter( user_options )
     self._ultisnips_completer = UltiSnipsCompleter( user_options )

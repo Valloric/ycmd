@@ -32,7 +32,7 @@ class GenericLSPCompleter( SimpleLSPCompleter ):
     self._name = server_settings[ 'name' ]
     self._supported_filetypes = server_settings[ 'filetypes' ]
     self._project_root_files = server_settings.get( 'project_root_files', [] )
-    super( GenericLSPCompleter, self ).__init__( user_options )
+    super().__init__( user_options )
     self._command_line = server_settings[ 'cmdline' ]
     self._command_line[ 0 ] = utils.FindExecutable( self._command_line[ 0 ] )
 
@@ -62,8 +62,7 @@ class GenericLSPCompleter( SimpleLSPCompleter ):
   def GetCodepointForCompletionRequest( self, request_data ):
     if request_data[ 'force_semantic' ]:
       return request_data[ 'column_codepoint' ]
-    return super( GenericLSPCompleter, self ).GetCodepointForCompletionRequest(
-      request_data )
+    return super().GetCodepointForCompletionRequest( request_data )
 
 
   def SupportedFiletypes( self ):

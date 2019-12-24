@@ -35,7 +35,7 @@ SYNTAX_FILENAME = 'YCM_PLACEHOLDER_FOR_SYNTAX'
 
 class IdentifierCompleter( GeneralCompleter ):
   def __init__( self, user_options ):
-    super( IdentifierCompleter, self ).__init__( user_options )
+    super().__init__( user_options )
     self._completer = ycm_core.IdentifierCompleter()
     self._tags_file_last_mtime = defaultdict( int )
     self._max_candidates = user_options[ 'max_num_identifier_candidates' ]

@@ -325,7 +325,7 @@ def ClearCompletionsCache():
 
 class DummyCompleter( Completer ):
   def __init__( self, user_options ):
-    super( DummyCompleter, self ).__init__( user_options )
+    super().__init__( user_options )
 
   def SupportedFiletypes( self ):
     return []

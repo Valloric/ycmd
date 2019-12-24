@@ -33,7 +33,7 @@ class UltiSnipsCompleter( GeneralCompleter ):
   """
 
   def __init__( self, user_options ):
-    super( UltiSnipsCompleter, self ).__init__( user_options )
+    super().__init__( user_options )
     self._candidates = None
     self._filtered_candidates = None
 

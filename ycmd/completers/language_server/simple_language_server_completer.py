@@ -52,7 +52,7 @@ class SimpleLSPCompleter( lsc.LanguageServerCompleter ):
 
 
   def __init__( self, user_options ):
-    super( SimpleLSPCompleter, self ).__init__( user_options )
+    super().__init__( user_options )
 
     self._server_state_mutex = threading.RLock()
     self._server_keep_logfiles = user_options[ 'server_keep_logfiles' ]
