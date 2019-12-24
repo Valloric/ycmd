@@ -17,13 +17,6 @@
 # You should have received a copy of the GNU General Public License
 # along with ycmd.  If not, see <http://www.gnu.org/licenses/>.
 
-# Intentionally not importing unicode_literals!
-from __future__ import print_function
-from __future__ import division
-from __future__ import absolute_import
-# Not installing aliases from python-future; it's unreliable and slow.
-# Intentionally not importing all builtins!
-
 import os
 
 from nose.tools import eq_

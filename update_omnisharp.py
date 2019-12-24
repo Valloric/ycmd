@@ -1,8 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-from __future__ import absolute_import
-from __future__ import unicode_literals
 
 import argparse
 import contextlib
@@ -17,13 +13,6 @@ DIR_OF_THIS_SCRIPT = p.dirname( p.abspath( __file__ ) )
 DIR_OF_THIRD_PARTY = p.join( DIR_OF_THIS_SCRIPT, 'third_party' )
 
 
-def GetStandardLibraryIndexInSysPath():
-  for index, path in enumerate( sys.path ):
-    if p.isfile( p.join( path, 'os.py' ) ):
-      return index
-  raise RuntimeError( 'Could not find standard library path in Python path.' )
-
-
 def AddRequestDependencies():
   request_dep_root = p.abspath( p.join( DIR_OF_THIRD_PARTY,
                                         'requests_deps' ) )
@@ -36,13 +25,8 @@ def AddRequestDependencies():
                                          'src' ) ) )
 
 
-sys.path.insert( GetStandardLibraryIndexInSysPath() + 1,
-                 p.abspath( p.join( DIR_OF_THIRD_PARTY, 'python-future',
-                                    'src' ) ) )
 AddRequestDependencies()
 
-# Not installing aliases from python-future; it's unreliable and slow.
-from builtins import *  # noqa
 import requests
 
 

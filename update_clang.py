@@ -1,12 +1,5 @@
 #!/usr/bin/env python
 
-# Passing an environment variable containing unicode literals to a subprocess
-# on Windows and Python2 raises a TypeError. Since there is no unicode
-# string in this script, we don't import unicode_literals to avoid the issue.
-from __future__ import print_function
-from __future__ import division
-from __future__ import absolute_import
-
 import argparse
 import contextlib
 import gzip
@@ -30,13 +23,6 @@ DIR_OF_THIS_SCRIPT = p.dirname( p.abspath( __file__ ) )
 DIR_OF_THIRD_PARTY = p.join( DIR_OF_THIS_SCRIPT, 'third_party' )
 
 
-def GetStandardLibraryIndexInSysPath():
-  for index, path in enumerate( sys.path ):
-    if p.isfile( p.join( path, 'os.py' ) ):
-      return index
-  raise RuntimeError( 'Could not find standard library path in Python path.' )
-
-
 sys.path[ 0:0 ] = [ p.join( DIR_OF_THIRD_PARTY, 'requests_deps', 'requests' ),
                     p.join( DIR_OF_THIRD_PARTY,
                             'requests_deps',
@@ -45,13 +31,8 @@ sys.path[ 0:0 ] = [ p.join( DIR_OF_THIRD_PARTY, 'requests_deps', 'requests' ),
                     p.join( DIR_OF_THIRD_PARTY, 'requests_deps', 'chardet' ),
                     p.join( DIR_OF_THIRD_PARTY, 'requests_deps', 'certifi' ),
                     p.join( DIR_OF_THIRD_PARTY, 'requests_deps', 'idna' ) ]
-sys.path.insert( GetStandardLibraryIndexInSysPath() + 1,
-                 p.abspath( p.join( DIR_OF_THIRD_PARTY, 'python-future',
-                                    'src' ) ) )
 
 import requests
-# Not installing aliases from python-future; it's unreliable and slow.
-from builtins import *  # noqa
 from io import BytesIO
 
 
