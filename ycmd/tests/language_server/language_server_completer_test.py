@@ -360,7 +360,7 @@ def LanguageServerCompleter_GoTo_test():
     } ], 'GoTo', LocationMatcher( '', 1, 1 ), False
 
   with patch( 'ycmd.completers.completer_utils.GetFileContents',
-              side_effect = lsp.IOError ):
+              side_effect = IOError ):
     yield Test, [ {
       'result': {
         'uri': uri,

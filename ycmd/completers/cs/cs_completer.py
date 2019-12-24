@@ -61,7 +61,7 @@ class CsharpCompleter( Completer ):
     self._completer_per_solution = {}
     self._diagnostic_store = None
     self._solution_state_lock = threading.Lock()
-    self.signature_triggers.SetServerSemanticTriggers
+    self.signature_triggers.SetServerSemanticTriggers( [ '(', ',' ] )
 
     if not os.path.isfile( PATH_TO_ROSLYN_OMNISHARP_BINARY ):
       raise RuntimeError(
@@ -741,6 +741,7 @@ class CsharpSolutionCompleter:
   def _GetResponse( self, handler, parameters = {}, timeout = None ):
     """ Handle communication with server """
     target = urljoin( self._ServerLocation(), handler )
+    LOGGER.debug( 'handler = %s', handler )
     LOGGER.debug( 'TX: %s', parameters )
     response = requests.post( target, json = parameters, timeout = timeout )
     LOGGER.debug( 'RX: %s', response.json() )
