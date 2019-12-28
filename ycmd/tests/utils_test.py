@@ -188,7 +188,6 @@ def SafePopen_ReplaceStdinWindowsPIPEOnWindows_test( *args ):
 
 
 @WindowsOnly
-@patch( 'ycmd.utils.GetShortPathName', side_effect = lambda x: x )
 @patch( 'subprocess.Popen' )
 def SafePopen_WindowsPath_test( *args ):
   tempfile = PathToTestFile( 'safe-popen-file' )

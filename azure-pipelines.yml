@@ -7,6 +7,9 @@ jobs:
     vmImage: 'ubuntu-16.04'
   strategy:
     matrix:
+      'Python 3.5 without libclang completer':
+        YCM_PYTHON_VERSION: '3.5.3'
+        USE_CLANG_COMPLETER: false
       'Python 3.5':
         YCM_PYTHON_VERSION: '3.5.3'
       'Python 3.5 using Clang compiler':

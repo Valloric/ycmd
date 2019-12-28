@@ -291,10 +291,6 @@ def OnWindows():
   return sys.platform == 'win32'
 
 
-def OnCygwin():
-  return sys.platform == 'cygwin'
-
-
 def OnMac():
   return sys.platform == 'darwin'
 
@@ -369,32 +365,6 @@ def SafePopen( args, **kwargs ):
 
   kwargs.pop( 'stdin_windows', None )
   return subprocess.Popen( args, **kwargs )
-
-
-# Get the Windows short path name.
-# Based on http://stackoverflow.com/a/23598461/200291
-def GetShortPathName( path ):
-  if not OnWindows():
-    return path
-
-  from ctypes import windll, wintypes, create_unicode_buffer
-
-  # Set the GetShortPathNameW prototype
-  _GetShortPathNameW = windll.kernel32.GetShortPathNameW
-  _GetShortPathNameW.argtypes = [ wintypes.LPCWSTR,
-                                  wintypes.LPWSTR,
-                                  wintypes.DWORD ]
-  _GetShortPathNameW.restype = wintypes.DWORD
-
-  output_buf_size = 0
-
-  while True:
-    output_buf = create_unicode_buffer( output_buf_size )
-    needed = _GetShortPathNameW( path, output_buf, output_buf_size )
-    if output_buf_size >= needed:
-      return output_buf.value
-    else:
-      output_buf_size = needed
 
 
 # Shim for imp.load_source. See upstream
