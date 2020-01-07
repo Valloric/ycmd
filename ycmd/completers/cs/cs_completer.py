@@ -602,6 +602,8 @@ class CsharpSolutionCompleter( object ):
     result = self._GetResponse( '/typelookup', request )
     message = result[ "Type" ]
 
+    if not message:
+      raise RuntimeError( 'No type info available.' )
     return responses.BuildDisplayMessageResponse( message )
 
 
@@ -702,6 +704,8 @@ class CsharpSolutionCompleter( object ):
     if ( result[ "Documentation" ] ):
       message += "\n" + result[ "Documentation" ]
 
+    if not message:
+      raise RuntimeError( 'No documentation available.' )
     return responses.BuildDetailedInfoResponse( message )
 
 
