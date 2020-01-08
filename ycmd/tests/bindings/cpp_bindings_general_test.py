@@ -22,11 +22,11 @@ from ycmd.tests.bindings import PathToTestFile
 from ycmd.tests.test_utils import ( ClangOnly, TemporaryTestDir,
                                     TemporaryClangProject )
 
-from nose.tools import eq_
 from hamcrest import ( assert_that,
                        contains,
                        contains_inanyorder,
                        contains_string,
+                       equal_to,
                        has_entries,
                        has_properties )
 import ycm_core
@@ -281,7 +281,7 @@ def CppBindings_GetType_test():
   del clang_completer
   del reparse
 
-  eq_( 'int ()', type_at_cursor )
+  assert_that( 'int ()', equal_to( type_at_cursor ) )
 
 
 @ClangOnly
@@ -314,7 +314,7 @@ def CppBindings_GetParent_test():
   del clang_completer
   del reparse
 
-  eq_( 'bar', enclosing_function )
+  assert_that( 'bar', equal_to( enclosing_function ) )
 
 
 @ClangOnly
@@ -476,9 +476,9 @@ def CppBindings_CompilationDatabase_test():
                               compile_commands[ 0 ][ 'file' ] )
       del db
       del compile_commands
-      eq_( db_successful, True )
-      eq_( db_busy, False )
-      eq_( db_dir, tmp_dir )
+      assert_that( db_successful, equal_to( True ) )
+      assert_that( db_busy, equal_to( False ) )
+      assert_that( db_dir, equal_to( tmp_dir ) )
       assert_that( compilation_info,
                    has_properties( {
                      'compiler_working_dir_': tmp_dir,
