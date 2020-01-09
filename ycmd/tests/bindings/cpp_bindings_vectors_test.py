@@ -22,7 +22,7 @@ from ycmd.tests.bindings import PathToTestFile
 from ycmd.tests.test_utils import ClangOnly
 
 from hamcrest import ( assert_that,
-                       contains,
+                       contains_exactly,
                        contains_inanyorder,
                        contains_string,
                        has_entries,
@@ -45,7 +45,7 @@ def CppBindings_StringVector_test():
   del str1
   del str2
   del str3
-  assert_that( string_vector, contains( 'foo', 'bar', 'baz' ) )
+  assert_that( string_vector, contains_exactly( 'foo', 'bar', 'baz' ) )
 
 
 @ClangOnly
@@ -59,7 +59,7 @@ def CppBindings_UnsavedFileVector_test():
   EmplaceBack( unsaved_file_vector, unsaved_file )
   del unsaved_file
   assert_that( unsaved_file_vector,
-               contains(
+               contains_exactly(
                  has_properties( {
                    'filename_': 'foo',
                    'contents_': 'bar',
@@ -97,7 +97,7 @@ def CppBindings_FixItVector_test():
   del clang_completer
   assert_that(
     fixits,
-    contains(
+    contains_exactly(
       has_properties( {
         'text': ( PathToTestFile( 'foo.c' ) +
                   ':3:16: error: expected \';\' at end of declaration' ),
@@ -106,7 +106,7 @@ def CppBindings_FixItVector_test():
           'column_number_': 16,
           'filename_': PathToTestFile( 'foo.c' )
         } ),
-        'chunks': contains( has_properties( {
+        'chunks': contains_exactly( has_properties( {
           'replacement_text': ';',
           'range': has_properties( {
             'start_': has_properties( {
@@ -128,7 +128,7 @@ def CppBindings_FixItVector_test():
           'column_number_': 16,
           'filename_': PathToTestFile( 'foo.c' )
         } ),
-        'chunks': contains( has_properties( {
+        'chunks': contains_exactly( has_properties( {
           'replacement_text': ';',
           'range': has_properties( {
             'start_': has_properties( {
@@ -167,7 +167,7 @@ def CppBindings_FixItChunkVector_test():
   del filename
   del clang_completer
   del fixits
-  assert_that( fixit_chunks, contains(
+  assert_that( fixit_chunks, contains_exactly(
                                has_properties( {
                                  'replacement_text': ';',
                                  'range': has_properties( {
@@ -222,7 +222,7 @@ def CppBindings_RangeVector_test():
   del clang_completer
   del fixits
   del fixit_range
-  assert_that( ranges, contains(
+  assert_that( ranges, contains_exactly(
                          has_properties( {
                            'start_': has_properties( {
                              'line_number_': 3,
@@ -272,11 +272,11 @@ def CppBindings_DiagnosticVector_test():
 
   assert_that(
     diags,
-    contains(
+    contains_exactly(
       has_entries( {
         'kind': 'ERROR',
         'text': contains_string( 'expected \';\' at end of declaration' ),
-        'ranges': contains(),
+        'ranges': contains_exactly(),
         'location': has_entries( {
           'line_num': 3,
           'column_num': 16,
@@ -295,7 +295,7 @@ def CppBindings_DiagnosticVector_test():
       has_entries( {
         'kind': 'ERROR',
         'text': contains_string( 'expected \';\' at end of declaration' ),
-        'ranges': contains(),
+        'ranges': contains_exactly(),
         'location': has_entries( {
           'line_num': 3,
           'column_num': 16,
