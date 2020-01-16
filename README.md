@@ -341,9 +341,14 @@ def Settings( **kwargs ):
   }
 ```
 
-##### Java settings
+##### Formatting settings
 
-[The java subserver][jdtls] allows [formatter configuration][jdt-formatter],
+The configuration for `Format` subcommand can be specified with an extra conf for
+[the java subserver][jdtls] and for the typescript subserver.
+The formatter options can be found below:
+
+- [Java configuration][jdt-formatter]
+- [TSServer configuration][ts-formatter],
 but it expects the configuration to be supplied in a different way than the rest.
 For this purpose the `Settings` function can return a `formatter` property.
 
@@ -497,6 +502,7 @@ This software is licensed under the [GPL v3 license][gpl].
 [nano-ycmd]: https://github.com/orsonteodoro/nano-ycmd
 [jdtls]: https://github.com/eclipse/eclipse.jdt.ls
 [jdt-formatter]: https://github.com/eclipse/eclipse.jdt.ls/blob/master/org.eclipse.jdt.ls.core/.settings/org.eclipse.jdt.core.prefs
+[ts-formatter]: https://github.com/Microsoft/TypeScript/blob/master/lib/protocol.d.ts#L2384-L2421
 [api-docs]: https://ycm-core.github.io/ycmd/
 [ycmd-extra-conf]: https://github.com/ycm-core/ycmd/blob/master/.ycm_extra_conf.py
 [clangd]: https://clang.llvm.org/extra/clangd.html
