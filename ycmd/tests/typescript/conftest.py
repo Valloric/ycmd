@@ -20,6 +20,7 @@ import pytest
 
 from ycmd.tests.test_utils import ( BuildRequest,
                                     ClearCompletionsCache,
+                                    IgnoreExtraConfOutsideTestsFolder,
                                     IsolatedApp,
                                     SetUpApp,
                                     StopCompleterServer,
@@ -36,15 +37,6 @@ def set_up_shared_app():
   StopCompleterServer( shared_app, 'typescript' )
 
 
-def StartGoCompleterServerInDirectory( app, directory ):
-  app.post_json( '/event_notification',
-                 BuildRequest(
-                   filepath = os.path.join( directory, 'goto.go' ),
-                   event_name = 'FileReadyToParse',
-                   filetype = 'go' ) )
-  WaitUntilCompleterServerReady( app, 'go' )
-
-
 @pytest.fixture
 def app( request ):
   which = request.param[ 0 ]
@@ -52,11 +44,12 @@ def app( request ):
   if which == 'isolated':
     with IsolatedApp( request.param[ 1 ] ) as app:
       yield app
-      StopCompleterServer( app, 'go' )
+      StopCompleterServer( app, 'typescript' )
   else:
     global shared_app
     ClearCompletionsCache()
-    yield shared_app
+    with IgnoreExtraConfOutsideTestsFolder():
+      yield shared_app
 
 
 """Defines a decorator to be attached to tests of this package. This decorator
