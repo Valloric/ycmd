@@ -17,6 +17,7 @@
 
 import os
 import pytest
+import shutil
 from ycmd.tests.test_utils import ( BuildRequest,
                                     ClearCompletionsCache,
                                     IgnoreExtraConfOutsideTestsFolder,
@@ -62,10 +63,16 @@ def app( request ):
   which = request.param[ 0 ]
   assert which == 'isolated' or which == 'shared'
   if which == 'isolated':
-    with IsolatedApp( request.param[ 1 ] ) as app:
+    custom_options = request.param[ 1 ]
+    with IsolatedApp( custom_options ) as app:
       try:
         yield app
       finally:
+        if 'java_jdtls_workspace_root_path' in custom_options:
+          try:
+            shutil.rmtree( custom_options[ 'java_jdtls_workspace_root_path' ] )
+          except OSError:
+            pass
         StopCompleterServer( app, 'java' )
   else:
     global shared_app
