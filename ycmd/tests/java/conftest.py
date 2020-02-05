@@ -70,7 +70,7 @@ def app( request ):
         yield app
       finally:
         if wipe_ws_dir:
-          shutil.rmtree( wipe_temp_dir )
+          shutil.rmtree( wipe_ws_dir )
         StopCompleterServer( app, 'java' )
   else:
     global shared_app
