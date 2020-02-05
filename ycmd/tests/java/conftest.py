@@ -69,9 +69,9 @@ def app( request ):
       try:
         yield app
       finally:
+        StopCompleterServer( app, 'java' )
         if wipe_ws_dir:
           shutil.rmtree( wipe_ws_dir )
-        StopCompleterServer( app, 'java' )
   else:
     global shared_app
     ClearCompletionsCache()
