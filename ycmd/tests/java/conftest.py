@@ -64,15 +64,13 @@ def app( request ):
   assert which == 'isolated' or which == 'shared'
   if which == 'isolated':
     custom_options = request.param[ 1 ]
+    wipe_ws_dir = custom_options.get( 'java_jdtls_workspace_root_path', None )
     with IsolatedApp( custom_options ) as app:
       try:
         yield app
       finally:
-        if 'java_jdtls_workspace_root_path' in custom_options:
-          try:
-            shutil.rmtree( custom_options[ 'java_jdtls_workspace_root_path' ] )
-          except OSError:
-            pass
+        if wipe_ws_dir:
+          shutil.rmtree( wipe_temp_dir )
         StopCompleterServer( app, 'java' )
   else:
     global shared_app
