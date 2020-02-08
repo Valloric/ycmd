@@ -61,6 +61,16 @@ def StartJavaCompleterServerInDirectory( app, directory ):
 
 @pytest.fixture
 def isolated_app():
+  """Defines a pytest fixture to be used in cases where it is easier to
+  specify user options of the isolated ycmdat some point inside the function.
+
+  Example usage:
+
+    def some_test( isolated_app ):
+      with TemporaryTestDir() as tmp_dir:
+        with isolated_app( user_options ) as app:
+
+  """
   @contextlib.contextmanager
   def manager( custom_options ):
     with IsolatedApp( custom_options ) as app:
