@@ -91,16 +91,16 @@ def Subcommands_GoTo( app, test, command ):
   } )
 
 
-@pytest.mark.parametrize( 'cmd', [ #'GoTo',
-                                   #'GoToDefinition',
+@pytest.mark.parametrize( 'cmd', [ 'GoTo',
+                                   'GoToDefinition',
                                    'GoToDeclaration' ] )
 @pytest.mark.parametrize( 'test', [
     # Nothing
     { 'request': ( 'basic.py', 3,  5 ), 'response': 'Can\'t jump to '
-                                                    'type definition.' },
+                                                    'definition.' },
     # Keyword
     { 'request': ( 'basic.py', 4,  3 ), 'response': 'Can\'t jump to '
-                                                    'type definition.' },
+                                                    'definition.' },
     # Builtin
     { 'request': ( 'basic.py', 1,  4 ), 'response': ( 'basic.py', 1, 1 ) },
     { 'request': ( 'basic.py', 1, 12 ), 'response': ( TYPESHED_PATH, 947, 7 ) },
@@ -118,20 +118,25 @@ def Subcommands_GoTo( app, test, command ):
     { 'request': ( 'basic.py', 8,  5 ), 'response': ( 'basic.py', 8, 1 ) },
     { 'request': ( 'basic.py', 9, 12 ), 'response': ( 'basic.py', 8, 1 ) },
     # Member access
-    { 'request':  ( 'child.py', 4, 12 ), 'response': ( 'parent.py', 2, 7 ) },
+    pytest.param( { 'request':  ( 'child.py', 4, 12 ),
+                    'response': ( 'parent.py', 2, 7 ) },
+                  marks = pytest.mark.xfail( reason = 'jedi regression' ) ),
     # Builtin from different file
-    { 'request':  ( 'multifile1.py', 2, 30 ),
-      'response': ( TYPESHED_PATH, 130, 7 ) },
+    pytest.param( { 'request':  ( 'multifile1.py', 2, 30 ),
+                    'response': ( 'multifile2.py', 1, 24 ) },
+                  marks = pytest.mark.xfail( reason = 'jedi regression' ) ),
     { 'request':  ( 'multifile1.py', 4,  5 ),
       'response': ( 'multifile1.py', 2, 24 ) },
     # Function from different file
-    { 'request':  ( 'multifile1.py', 1, 24 ),
-      'response': ( 'multifile3.py', 3,  5 ) },
+    pytest.param( { 'request':  ( 'multifile1.py', 1, 24 ),
+                    'response': ( 'multifile3.py', 3,  5 ) },
+                  marks = pytest.mark.xfail( reason = 'jedi regression' ) ),
     { 'request':  ( 'multifile1.py', 5,  4 ),
       'response': ( 'multifile1.py', 1, 24 ) },
     # Alias from different file
-    { 'request':  ( 'multifile1.py', 2, 47 ),
-      'response': ( 'multifile3.py', 3,  5 ) },
+    pytest.param( { 'request':  ( 'multifile1.py', 2, 47 ),
+                    'response': ( 'multifile2.py', 1, 52 ) },
+                  marks = pytest.mark.xfail( reason = 'jedi regression' ) ),
     { 'request':  ( 'multifile1.py', 6, 14 ),
       'response': ( 'multifile1.py', 2, 36 ) },
   ] )
@@ -219,14 +224,14 @@ def Subcommands_GetDoc_Class_test( app ):
   command_data = BuildRequest( filepath = filepath,
                                filetype = 'python',
                                line_num = 19,
-                               column_num = 2,
+                               column_num = 6,
                                contents = contents,
                                command_arguments = [ 'GetDoc' ] )
 
   response = app.post_json( '/run_completer_command', command_data ).json
 
   assert_that( response, has_entry(
-    'detailed_info', 'Class Documentation',
+    'detailed_info', 'TestClass()\n\nClass Documentation',
   ) )
 
 

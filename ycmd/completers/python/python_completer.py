@@ -273,6 +273,8 @@ class PythonCompleter( Completer ):
                            self._GoToDefinition( request_data ) ),
       'GoToReferences' : ( lambda self, request_data, args:
                            self._GoToReferences( request_data ) ),
+      'GoToType'       : ( lambda self, request_data, args:
+                           self._GoToType( request_data ) ),
       'GetType'        : ( lambda self, request_data, args:
                            self._GetType( request_data ) ),
       'GetDoc'         : ( lambda self, request_data, args:
@@ -297,11 +299,25 @@ class PythonCompleter( Completer ):
       if definition.column is not None:
         column += definition.column
       filepath = definition.module_path or request_data[ 'filepath' ]
-      gotos.append( responses.BuildGoToResponse( definition.module_path,
+      gotos.append( responses.BuildGoToResponse( filepath,
                                                  definition.line,
                                                  column,
                                                  definition.description ) )
     return gotos
+
+
+  def _GoToType( self, request_data ):
+    with self._jedi_lock:
+      line = request_data[ 'line_num' ]
+      # Jedi expects columns to start at 0, not 1, and for them to be Unicode
+      # codepoint offsets.
+      column = request_data[ 'start_codepoint' ] - 1
+      script = self._GetJediScript( request_data )
+      definitions = script.infer( line, column )
+      if definitions:
+        return self._BuildGoToResponse( definitions, request_data )
+
+    raise RuntimeError( 'Can\'t jump to type definition.' )
 
 
   def _GoToDefinition( self, request_data ):
@@ -315,7 +331,7 @@ class PythonCompleter( Completer ):
       if definitions:
         return self._BuildGoToResponse( definitions, request_data )
 
-    raise RuntimeError( 'Can\'t jump to type definition.' )
+    raise RuntimeError( 'Can\'t jump to definition.' )
 
 
   def _GoToReferences( self, request_data ):
