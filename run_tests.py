@@ -28,7 +28,10 @@ python_path = [
 ]
 if os.environ.get( 'PYTHONPATH' ) is not None:
   python_path.append( os.environ[ 'PYTHONPATH' ] )
-os.environ[ 'PYTHONPATH' ] = os.pathsep.join( python_path )
+os.environ[ 'PYTHONPATH' ] = (
+    os.pathsep.join( python_path ) +
+    os.pathsep +
+    p.join( DIR_OF_THIRD_PARTY, 'jedi_deps', 'numpydoc' ) )
 
 
 def OnWindows():
