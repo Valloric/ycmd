@@ -32,11 +32,14 @@ from distutils.sysconfig import get_python_inc
 import platform
 import os.path as p
 import subprocess
-import ycm_core
 
 DIR_OF_THIS_SCRIPT = p.abspath( p.dirname( __file__ ) )
 DIR_OF_THIRD_PARTY = p.join( DIR_OF_THIS_SCRIPT, 'third_party' )
 SOURCE_EXTENSIONS = [ '.cpp', '.cxx', '.cc', '.c', '.m', '.mm' ]
+if hasattr( os, 'add_dll_directory' ):
+  os.add_dll_directory( p.join( DIR_OF_THIRD_PARTY, 'clang', 'lib' ) )
+
+import ycm_core
 
 # These are the compilation flags that will be used in case there's no
 # compilation database set (by default, one is not set).
