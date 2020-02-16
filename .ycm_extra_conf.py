@@ -29,10 +29,10 @@
 # For more information, please refer to <http://unlicense.org/>
 
 from distutils.sysconfig import get_python_inc
+import os
 import platform
 import os.path as p
 import subprocess
-import ycm_core
 
 DIR_OF_THIS_SCRIPT = p.abspath( p.dirname( __file__ ) )
 DIR_OF_THIRD_PARTY = p.join( DIR_OF_THIS_SCRIPT, 'third_party' )
@@ -106,11 +106,6 @@ if platform.system() != 'Windows':
 # 'flags' list of compilation flags. Notice that YCM itself uses that approach.
 compilation_database_folder = ''
 
-if p.exists( compilation_database_folder ):
-  database = ycm_core.CompilationDatabase( compilation_database_folder )
-else:
-  database = None
-
 
 def IsHeaderFile( filename ):
   extension = p.splitext( filename )[ 1 ]
@@ -132,12 +127,19 @@ def PathToPythonUsedDuringBuild():
     filepath = p.join( DIR_OF_THIS_SCRIPT, 'PYTHON_USED_DURING_BUILDING' )
     with open( filepath ) as f:
       return f.read().strip()
-  # We need to check for IOError for Python 2 and OSError for Python 3.
-  except ( IOError, OSError ):
+  except OSError:
     return None
 
 
 def Settings( **kwargs ):
+  # Do NOT import ycm_core at module scope.
+  import ycm_core
+
+  if p.exists( compilation_database_folder ):
+    database = ycm_core.CompilationDatabase( compilation_database_folder )
+  else:
+    database = None
+
   language = kwargs[ 'language' ]
 
   if language == 'cfamily':
