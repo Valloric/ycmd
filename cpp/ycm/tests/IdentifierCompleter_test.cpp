@@ -254,7 +254,7 @@ TEST( IdentifierCompleterTest, NonAlnumStartChar ) {
 
 TEST( IdentifierCompleterTest, UnicodeCandidates ) {
   EXPECT_THAT( IdentifierCompleter( {
-                 "uni¢od€" } ).CandidatesForQuery( "¢" ),
+                 "uni¢𐍈d€" } ).CandidatesForQuery( "¢" ),
                ElementsAre( "uni¢𐍈d€" ) );
 }
 
