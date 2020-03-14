@@ -673,7 +673,14 @@ class LanguageServerCompleter( Completer ):
       HandleServerCommandResponse
     - Optionally override GetCustomSubcommands to return subcommand handlers
       that cannot be detected from the capabilities response.
+    - Optionally override AdditionalLogFiles for logs other than stderr
+    - Optionally override ExtraDebugItems for anything that should be in the
+      /debug_info response, that isn't covered by default
+    - Optionally override GetServerEnvironment if the server needs to be run
+      with specific environment variables.
     - Implement the following Completer abstract methods:
+      - GetServerName
+      - GetCommandLine
       - SupportedFiletypes
       - DebugInfo
       - Shutdown
@@ -733,7 +740,7 @@ class LanguageServerCompleter( Completer ):
       functions implementing GetType/GetDoc are named GetType/GetDoc.
   """
   def GetConnection( self ):
-    """Method that must be implemented by derived classes to return an instance
+    """Method that can be implemented by derived classes to return an instance
     of LanguageServerConnection appropriate for the language server in
     question"""
     return self._connection
@@ -1290,23 +1297,29 @@ class LanguageServerCompleter( Completer ):
 
   @abc.abstractmethod
   def GetServerName( self ):
+    """ A string representing a human readable name of the server."""
     pass # pragma: no cover
 
 
   def GetServerEnvironment( self ):
+    """ None or a dictionary containing the environment variables. """
     return None
 
 
   @abc.abstractmethod
   def GetCommandLine( self ):
+    """ An override in a concrete class needs to return a list of cli arguments
+        for starting the LSP server."""
     pass # pragma: no cover
 
 
   def AdditionalLogFiles( self ):
+    """ Returns the list of server logs other than stderr. """
     return []
 
 
   def ExtraDebugItems( self, request_data ):
+    """ A list of DebugInfoItems """
     return []
 
 
