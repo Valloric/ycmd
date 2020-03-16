@@ -17,7 +17,6 @@ python_path = [
   p.join( DIR_OF_THIRD_PARTY, 'cregex', 'regex_3' ),
   p.join( DIR_OF_THIRD_PARTY, 'frozendict' ),
   p.join( DIR_OF_THIRD_PARTY, 'jedi_deps', 'jedi' ),
-  p.join( DIR_OF_THIRD_PARTY, 'jedi_deps', 'numpydoc' ),
   p.join( DIR_OF_THIRD_PARTY, 'jedi_deps', 'parso' ),
   p.join( DIR_OF_THIRD_PARTY, 'requests_deps', 'certifi' ),
   p.join( DIR_OF_THIRD_PARTY, 'requests_deps', 'chardet' ),
@@ -28,7 +27,10 @@ python_path = [
 ]
 if os.environ.get( 'PYTHONPATH' ) is not None:
   python_path.append( os.environ[ 'PYTHONPATH' ] )
-os.environ[ 'PYTHONPATH' ] = os.pathsep.join( python_path )
+os.environ[ 'PYTHONPATH' ] = (
+    os.pathsep.join( python_path ) +
+    os.pathsep +
+    p.join( DIR_OF_THIRD_PARTY, 'jedi_deps', 'numpydoc' ) )
 
 
 def OnWindows():
@@ -147,6 +149,9 @@ def ParseArguments():
   parser.add_argument( '--quiet', action = 'store_true',
                        help = 'Quiet installation mode. Just print overall '
                               'progress and errors' )
+  parser.add_argument( '--valgrind',
+                       action = 'store_true',
+                       help = 'Run tests inside valgrind.' )
 
   parsed_args, pytests_args = parser.parse_known_args()
 
@@ -209,6 +214,37 @@ def BuildYcmdLibs( args ):
       build_cmd.append( '--quiet' )
 
     subprocess.check_call( build_cmd )
+
+
+def PytestValgrind( parsed_args, extra_pytests_args ):
+  pytests_args = [ '-v' ]
+  if extra_pytests_args:
+    pytests_args.extend( extra_pytests_args )
+  else:
+    pytests_args += glob.glob(
+      p.join( DIR_OF_THIS_SCRIPT, 'ycmd', 'tests', 'bindings', '*_test.py' ) )
+    pytests_args += glob.glob(
+      p.join( DIR_OF_THIS_SCRIPT, 'ycmd', 'tests', 'clang', '*_test.py' ) )
+    pytests_args += glob.glob(
+      p.join( DIR_OF_THIS_SCRIPT, 'ycmd', 'tests', '*_test.py' ) )
+    # Avoids needing all completers for a valgrind run
+    pytests_args += [ '-m', 'not valgrind_skip' ]
+
+  new_env = os.environ.copy()
+  new_env[ 'PYTHONMALLOC' ] = 'malloc'
+  new_env[ 'LD_LIBRARY_PATH' ] = LIBCLANG_DIR
+  cmd = [ 'valgrind',
+          '--gen-suppressions=all',
+          '--error-exitcode=1',
+          '--leak-check=full',
+          '--show-leak-kinds=all',
+          '--show-reachable=no',
+          '--suppressions=' + p.join( DIR_OF_THIS_SCRIPT,
+                                      'valgrind.suppressions' ) ]
+  subprocess.check_call( cmd +
+                         [ sys.executable, '-m', 'pytest' ] +
+                         pytests_args,
+                         env = new_env )
 
 
 def PytestTests( parsed_args, extra_pytests_args ):
@@ -303,7 +339,10 @@ def Main():
   if not parsed_args.no_flake8:
     RunFlake8()
   BuildYcmdLibs( parsed_args )
-  PytestTests( parsed_args, pytests_args )
+  if parsed_args.valgrind:
+    PytestValgrind( parsed_args, pytests_args )
+  else:
+    PytestTests( parsed_args, pytests_args )
 
 
 if __name__ == "__main__":

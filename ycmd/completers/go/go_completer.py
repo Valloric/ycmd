@@ -21,7 +21,6 @@ import os
 
 from ycmd import responses
 from ycmd import utils
-from ycmd.completers.language_server import simple_language_server_completer
 from ycmd.completers.language_server import language_server_completer
 
 
@@ -35,20 +34,28 @@ PATH_TO_GOPLS = os.path.abspath( os.path.join( os.path.dirname( __file__ ),
   'golang.org',
   'x',
   'tools',
-  'cmd',
   'gopls',
   utils.ExecutableName( 'gopls' ) ) )
 
 
 def ShouldEnableGoCompleter( user_options ):
-  server_exists = os.path.isfile( PATH_TO_GOPLS )
+  server_exists = utils.FindExecutableWithFallback(
+      user_options[ 'gopls_binary_path' ],
+      PATH_TO_GOPLS )
   if server_exists:
     return True
   utils.LOGGER.info( 'No gopls executable at %s.', PATH_TO_GOPLS )
   return False
 
 
-class GoCompleter( simple_language_server_completer.SimpleLSPCompleter ):
+class GoCompleter( language_server_completer.LanguageServerCompleter ):
+  def __init__( self, user_options ):
+    super().__init__( user_options )
+    self._gopls_path = utils.FindExecutableWithFallback(
+        user_options[ 'gopls_binary_path' ],
+        PATH_TO_GOPLS )
+
+
   def GetServerName( self ):
     return 'gopls'
 
@@ -62,7 +69,7 @@ class GoCompleter( simple_language_server_completer.SimpleLSPCompleter ):
 
 
   def GetCommandLine( self ):
-    cmdline = [ PATH_TO_GOPLS, '-logfile', self._stderr_file ]
+    cmdline = [ self._gopls_path, '-logfile', self._stderr_file ]
     if utils.LOGGER.isEnabledFor( logging.DEBUG ):
       cmdline.append( '-rpc.trace' )
     return cmdline
@@ -96,3 +103,16 @@ class GoCompleter( simple_language_server_completer.SimpleLSPCompleter ):
       'hoverKind': 'Structured',
       'fuzzyMatching': False,
     }
+
+
+  def CodeActionLiteralToFixIt( self, request_data, code_action_literal ):
+    document_changes = code_action_literal[ 'edit' ][ 'documentChanges' ]
+    for text_document_edit in document_changes:
+      for text_edit in text_document_edit[ 'edits' ]:
+        end_line = text_edit[ 'range' ][ 'end' ][ 'line' ]
+        # LSP offsets are zero based, plus `request_data[ 'lines' ]` contains
+        # a trailing empty line.
+        if end_line >= len( request_data[ 'lines' ] ) - 1:
+          return None
+
+    return super().CodeActionLiteralToFixIt( request_data, code_action_literal )

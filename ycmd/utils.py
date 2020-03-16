@@ -30,6 +30,8 @@ LOGGER = logging.getLogger( 'ycmd' )
 ROOT_DIR = os.path.normpath( os.path.join( os.path.dirname( __file__ ), '..' ) )
 DIR_OF_THIRD_PARTY = os.path.join( ROOT_DIR, 'third_party' )
 LIBCLANG_DIR = os.path.join( DIR_OF_THIRD_PARTY, 'clang', 'lib' )
+if hasattr( os, 'add_dll_directory' ):
+  os.add_dll_directory( LIBCLANG_DIR )
 
 
 from collections.abc import Mapping
@@ -266,6 +268,18 @@ def FindExecutable( executable ):
   return None
 
 
+def FindExecutableWithFallback( executable_path, fallback ):
+  if executable_path:
+    executable_path = FindExecutable( ExpandVariablesInPath( executable_path ) )
+    if not executable_path:
+      # If the user told us to use a non-existing path, report an error.
+      # Don't attempt to be too clever about the fallback.
+      return None
+    return executable_path
+  else:
+    return fallback
+
+
 def ExecutableName( executable ):
   return executable + ( '.exe' if OnWindows() else '' )
 
@@ -359,7 +373,7 @@ def SafePopen( args, **kwargs ):
 # Shim for importlib.machinery.SourceFileLoader.
 # See upstream Python docs for info on what this does.
 def LoadPythonSource( name, pathname ):
-  import importlib
+  import importlib.machinery
   return importlib.machinery.SourceFileLoader( name, pathname ).load_module()
 
 
@@ -432,6 +446,10 @@ class HashableDict( Mapping ):
 
   def __ne__( self, other ):
     return not self == other
+
+
+  def copy( self, **add_or_replace ):
+    return self.__class__( self, **add_or_replace )
 
 
 def ListDirectory( path ):
