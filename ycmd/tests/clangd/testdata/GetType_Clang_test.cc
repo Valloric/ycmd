@@ -55,3 +55,5 @@ int main()
 
   return 0;
 }
+unsigned long long long_function_name(unsigned long long first,
+                                      unsigned long long second);
