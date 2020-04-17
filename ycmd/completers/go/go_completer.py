@@ -30,11 +30,7 @@ PATH_TO_GOPLS = os.path.abspath( os.path.join( os.path.dirname( __file__ ),
   '..',
   'third_party',
   'go',
-  'src',
-  'golang.org',
-  'x',
-  'tools',
-  'gopls',
+  'bin',
   utils.ExecutableName( 'gopls' ) ) )
 
 
@@ -69,7 +65,10 @@ class GoCompleter( language_server_completer.LanguageServerCompleter ):
 
 
   def GetCommandLine( self ):
-    cmdline = [ self._gopls_path, '-logfile', self._stderr_file ]
+    cmdline = [ self._gopls_path,
+                '-remote=auto',
+                '-logfile',
+                self._stderr_file ]
     if utils.LOGGER.isEnabledFor( logging.DEBUG ):
       cmdline.append( '-rpc.trace' )
     return cmdline
