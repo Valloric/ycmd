@@ -635,7 +635,7 @@ definitions:
     properties:
       filpath:
         $ref: '#/definitions/FilePath'
-      diagnotics:
+      diagnostics:
         type: array
         items:
           $ref: "#/definitions/DiagnosticData"
@@ -1492,7 +1492,7 @@ paths:
               - message: 'Initializing: Done.'
               - diagonostics:
                   filepath: '/file'
-                  diagnotics:
+                  diagnostics:
                   - ranges:
                     - start: { line_num: 10, column_num: 11, filepath: '/file' }
                       end: { line_num: 10, column_num: 20, filepath: '/file' }
