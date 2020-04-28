@@ -528,7 +528,7 @@ def GetClangResourceDir():
 CLANG_RESOURCE_DIR = GetClangResourceDir()
 
 
-def AbsoluatePath( path, relative_to ):
+def AbsolutePath( path, relative_to ):
   """Returns a normalised, absolute path to |path|. If |path| is relative, it
   is resolved relative to |relative_to|."""
   if not os.path.isabs( path ):

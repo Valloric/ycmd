@@ -1910,7 +1910,7 @@ class LanguageServerCompleter( Completer ):
     """
 
     if 'project_directory' in self._settings:
-      return utils.AbsoluatePath( self._settings[ 'project_directory' ],
+      return utils.AbsolutePath( self._settings[ 'project_directory' ],
                                   self._extra_conf_dir )
 
     project_root_files = self.GetProjectRootFiles()

@@ -18,7 +18,7 @@
 import os
 import inspect
 from ycmd import extra_conf_store
-from ycmd.utils import ( AbsoluatePath,
+from ycmd.utils import ( AbsolutePath,
                          ImportCore,
                          OnMac,
                          OnWindows,
@@ -611,7 +611,7 @@ def _MakeRelativePathsInFlagsAbsolute( flags, working_directory ):
 
     if make_next_absolute:
       make_next_absolute = False
-      new_flag = AbsoluatePath( flag, working_directory )
+      new_flag = AbsolutePath( flag, working_directory )
     else:
       for path_flag in path_flags:
         # Single dash argument alone, e.g. -isysroot <path>
@@ -623,7 +623,7 @@ def _MakeRelativePathsInFlagsAbsolute( flags, working_directory ):
         # or double-dash argument, e.g. --isysroot=<path>
         if flag.startswith( path_flag ):
           path = flag[ len( path_flag ): ]
-          path = AbsoluatePath( path, working_directory )
+          path = AbsolutePath( path, working_directory )
           new_flag = '{0}{1}'.format( path_flag, path )
           break
 
