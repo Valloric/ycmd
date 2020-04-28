@@ -215,7 +215,7 @@ class Flags:
     # compilation database already for that path, or if a compile_commands.json
     # file exists in that directory.
     for folder in PathsToAllParentFolders( file_dir ):
-      # Try/catch to syncronise access to cache
+      # Try/catch to synchronise access to cache
       try:
         return self.compilation_database_dir_map[ folder ]
       except KeyError:
@@ -346,7 +346,7 @@ def _AddLanguageFlagWhenAppropriate( flags, enable_windows_style_flags ):
   """When flags come from the compile_commands.json file, the flag preceding the
   first flag starting with a dash is usually the path to the compiler that
   should be invoked. Since LibClang does not deduce the language from the
-  compiler name, we explicitely set the language to C++ if the compiler is a C++
+  compiler name, we explicitly set the language to C++ if the compiler is a C++
   one (g++, clang++, etc.). We also set the language to CUDA if any of the
   source files has a .cu or .cuh extension. Otherwise, we let LibClang guess the
   language from the file extension. This handles the case where the .h extension
