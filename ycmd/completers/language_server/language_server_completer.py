@@ -1634,9 +1634,10 @@ class LanguageServerCompleter( Completer ):
           # restarted while this loop is running.
           self._initialize_event.wait( timeout=timeout )
 
-          # If the timeout is hit waiting for the server to be ready, we return
-          # False and kill the message poll.
-          return self._initialize_event.is_set()
+          # If the timeout is hit waiting for the server to be ready, after we
+          # tried to start the server, we return False and kill the message
+          # poll.
+          return not self._server_started or self._initialize_event.is_set()
 
         if not self.GetConnection():
           # The server isn't running or something. Don't re-poll, as this will
