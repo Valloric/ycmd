@@ -416,12 +416,16 @@ class TypeScriptCompleter( Completer ):
       candidate = map_entries_to_candidates[ entry[ 'name' ] ]
       extra_menu_info, detailed_info = _BuildCompletionExtraMenuAndDetailedInfo(
         request_data, entry )
+      candidate[ 'extra_data' ], detailed_info = _BuildCompletionFixIts(
+        request_data,
+        detailed_info,
+        entry )
+
       if extra_menu_info:
         candidate[ 'extra_menu_info' ] = extra_menu_info
       if detailed_info:
         candidate[ 'detailed_info' ] = detailed_info
       candidate[ 'kind' ] = entry[ 'kind' ]
-      candidate[ 'extra_data' ] = _BuildCompletionFixIts( request_data, entry )
     return candidates
 
 
@@ -979,19 +983,25 @@ def _BuildCompletionExtraMenuAndDetailedInfo( request_data, entry ):
   return extra_menu_info, detailed_info
 
 
-def _BuildCompletionFixIts( request_data, entry ):
+def _BuildCompletionFixIts( request_data, detailed_info, entry ):
+  fixits = []
+  extra_lines = []
   if 'codeActions' in entry:
     location = responses.Location( request_data[ 'line_num' ],
                                    request_data[ 'column_num' ],
                                    request_data[ 'filepath' ] )
-    return responses.BuildFixItResponse( [
-      responses.FixIt( location,
-                       _BuildFixItForChanges( request_data,
-                                              action[ 'changes' ] ),
-                       action[ 'description' ] )
-      for action in entry[ 'codeActions' ]
-    ] )
-  return {}
+    for action in entry[ 'codeActions' ]:
+      fixits.append(
+        responses.FixIt( location,
+                         _BuildFixItForChanges( request_data,
+                                                action[ 'changes' ] ),
+                         action[ 'description' ] )
+      )
+      extra_lines.extend( [ '---', action[ 'description' ] ] )
+
+  return ( responses.BuildFixItResponse( fixits ),
+           ( detailed_info or '' ) + '\n'.join(
+             [''] + extra_lines if extra_lines else [] ) )
 
 
 def _BuildFixItChunkForRange( new_name,
