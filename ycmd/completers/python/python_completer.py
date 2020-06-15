@@ -291,9 +291,15 @@ class PythonCompleter( Completer ):
 
 
   def _BuildGoToResponse( self, definitions, request_data ):
+    print( definitions )
+    print( type( definitions[0] ) )
     if len( definitions ) == 1:
       definition = definitions[ 0 ]
       column = 1
+      if all( x is None for x in [ definition.column,
+                                   definition.line,
+                                   definition.module_path ] ):
+        return {}
       if definition.column is not None:
         column += definition.column
       filepath = definition.module_path or request_data[ 'filepath' ]
@@ -304,6 +310,10 @@ class PythonCompleter( Completer ):
     gotos = []
     for definition in definitions:
       column = 1
+      if all( x is None for x in [ definition.column,
+                                   definition.line,
+                                   definition.module_path ] ):
+        continue
       if definition.column is not None:
         column += definition.column
       filepath = definition.module_path or request_data[ 'filepath' ]
@@ -323,7 +333,9 @@ class PythonCompleter( Completer ):
       script = self._GetJediScript( request_data )
       definitions = script.infer( line, column )
       if definitions:
-        return self._BuildGoToResponse( definitions, request_data )
+        type_def = self._BuildGoToResponse( definitions, request_data )
+        if type_def != {}:
+          return type_def
 
     raise RuntimeError( 'Can\'t jump to type definition.' )
 
@@ -337,7 +349,9 @@ class PythonCompleter( Completer ):
       script = self._GetJediScript( request_data )
       definitions = script.goto( line, column )
       if definitions:
-        return self._BuildGoToResponse( definitions, request_data )
+        definitions = self._BuildGoToResponse( definitions, request_data )
+        if definitions != {}:
+          return definitions
 
     raise RuntimeError( 'Can\'t jump to definition.' )
 
@@ -351,7 +365,9 @@ class PythonCompleter( Completer ):
       definitions = self._GetJediScript( request_data ).get_references( line,
                                                                         column )
       if definitions:
-        return self._BuildGoToResponse( definitions, request_data )
+        references = self._BuildGoToResponse( definitions, request_data )
+        if references != {}:
+          return references
     raise RuntimeError( 'Can\'t find references.' )
 
 
