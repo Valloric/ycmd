@@ -179,10 +179,11 @@ class Diagnostic:
 
 
 class UnresolvedFixIt:
-  def __init__( self, command, text ):
+  def __init__( self, command, text, preferred = False ):
     self.command = command
     self.text = text
     self.resolve = True
+    self.is_preferred = preferred
 
 
 class FixIt:
@@ -194,11 +195,12 @@ class FixIt:
   must be byte offsets into the UTF-8 encoded version of the appropriate
   buffer.
   """
-  def __init__( self, location, chunks, text = '' ):
+  def __init__( self, location, chunks, text = '', preferred = False ):
     """location of type Location, chunks of type list<FixItChunk>"""
     self.location = location
     self.chunks = chunks
     self.text = text
+    self.is_preferred = preferred
 
 
 class FixItChunk:
@@ -290,6 +292,7 @@ def BuildFixItResponse( fixits ):
       return {
         'command': fixit.command,
         'text': fixit.text,
+        'is_preferred': fixit.is_preferred,
         'resolve': fixit.resolve
       }
     else:
@@ -297,6 +300,7 @@ def BuildFixItResponse( fixits ):
         'location': BuildLocationData( fixit.location ),
         'chunks' : [ BuildFixitChunkData( x ) for x in fixit.chunks ],
         'text': fixit.text,
+        'is_preferred': fixit.is_preferred,
         'resolve': False
       }
 

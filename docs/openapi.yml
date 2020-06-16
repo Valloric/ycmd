@@ -388,6 +388,7 @@ definitions:
       - location
       - resolve
       - chunks
+      - is_preferred
     properties:
       text:
         type: string
@@ -401,6 +402,10 @@ definitions:
         type: boolean
         description: |-
           Indicates whether the fixit requires additional processing.
+      is_preferred:
+        type: boolean
+        description: |-
+          If this is the only FixIt available, it should be automatically applied.
       chunks:
         type: array
         description: |-

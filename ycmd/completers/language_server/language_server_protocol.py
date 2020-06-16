@@ -258,7 +258,8 @@ def Initialize( request_id, project_directory, settings ):
                             'source',
                             'source.organizeImports' ]
             }
-          }
+          },
+          'isPreferredSupport': True,
         },
         'completion': {
           'completionItemKind': {
