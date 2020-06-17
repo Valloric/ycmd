@@ -34,7 +34,7 @@ shared_filepaths = []
 shared_log_indexes = {}
 
 
-@pytest.fixture( scope='module', autouse=True )
+@pytest.fixture( scope='package', autouse=True )
 def set_up_shared_app():
   global shared_app, shared_filepaths
   shared_app = SetUpApp()

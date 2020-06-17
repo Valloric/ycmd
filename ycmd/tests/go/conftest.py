@@ -27,14 +27,16 @@ from ycmd.tests.test_utils import ( BuildRequest,
 shared_app = None
 
 
-@pytest.fixture( scope='module', autouse=True )
+@pytest.fixture( scope='package', autouse=True )
 def set_up_shared_app():
   global shared_app
   shared_app = SetUpApp()
   with IgnoreExtraConfOutsideTestsFolder():
     StartGoCompleterServerInDirectory( shared_app, PathToTestFile() )
-  yield
-  StopCompleterServer( shared_app, 'go' )
+  try:
+    yield
+  finally:
+    StopCompleterServer( shared_app, 'go' )
 
 
 def StartGoCompleterServerInDirectory( app, directory ):
