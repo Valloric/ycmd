@@ -35,10 +35,8 @@ def set_up_shared_app():
               'ShouldEnableTernCompleter', return_value = False ):
     shared_app = SetUpApp()
     WaitUntilCompleterServerReady( shared_app, 'javascript' )
-  try:
-    yield
-  finally:
-    StopCompleterServer( shared_app, 'typescript' )
+  yield
+  StopCompleterServer( shared_app, 'typescript' )
 
 
 def StartGoCompleterServerInDirectory( app, directory ):
@@ -59,10 +57,8 @@ def app( request ):
     with patch( 'ycmd.completers.javascript.hook.'
                 'ShouldEnableTernCompleter', return_value = False ):
       with IsolatedApp( request.param[ 1 ] ) as app:
-        try:
-          yield app
-        finally:
-          StopCompleterServer( app, 'go' )
+        yield app
+        StopCompleterServer( app, 'go' )
   else:
     global shared_app
     ClearCompletionsCache()

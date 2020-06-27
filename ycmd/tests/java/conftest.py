@@ -43,10 +43,8 @@ def set_up_shared_app():
   with IgnoreExtraConfOutsideTestsFolder():
     StartJavaCompleterServerInDirectory(
         shared_app, PathToTestFile( DEFAULT_PROJECT_DIR ) )
-  try:
-    yield
-  finally:
-    StopCompleterServer( shared_app, 'java' )
+  yield
+  StopCompleterServer( shared_app, 'java' )
 
 
 def StartJavaCompleterServerInDirectory( app, directory ):
@@ -92,11 +90,8 @@ def app( request ):
   assert which == 'isolated' or which == 'shared'
   if which == 'isolated':
     with IsolatedApp( request.param[ 1 ] ) as app:
-      try:
-        yield app
-      finally:
-        StopCompleterServer( app, 'java' )
-        ShutdownSubservers( app )
+      yield app
+      StopCompleterServer( app, 'java' )
   else:
     global shared_app
     ClearCompletionsCache()

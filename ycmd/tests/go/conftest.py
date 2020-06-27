@@ -33,10 +33,8 @@ def set_up_shared_app():
   shared_app = SetUpApp()
   with IgnoreExtraConfOutsideTestsFolder():
     StartGoCompleterServerInDirectory( shared_app, PathToTestFile() )
-  try:
-    yield
-  finally:
-    StopCompleterServer( shared_app, 'go' )
+  yield
+  StopCompleterServer( shared_app, 'go' )
 
 
 def StartGoCompleterServerInDirectory( app, directory ):
@@ -54,10 +52,8 @@ def app( request ):
   assert which == 'isolated' or which == 'shared'
   if which == 'isolated':
     with IsolatedApp( {} ) as app:
-      try:
-        yield app
-      finally:
-        StopCompleterServer( app, 'go' )
+      yield app
+      StopCompleterServer( app, 'go' )
   else:
     global shared_app
     ClearCompletionsCache()

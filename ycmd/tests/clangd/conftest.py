@@ -30,10 +30,8 @@ shared_app = None
 def set_up_shared_app():
   global shared_app
   shared_app = SetUpApp()
-  try:
-    yield
-  finally:
-    StopCompleterServer( shared_app, 'cpp' )
+  yield
+  StopCompleterServer( shared_app, 'cpp' )
 
 
 @pytest.fixture
@@ -43,10 +41,8 @@ def app( request ):
   if which == 'isolated':
     with IsolatedApp( request.param[ 1 ] ) as app:
       clangd_completer.CLANGD_COMMAND = clangd_completer.NOT_CACHED
-      try:
-        yield app
-      finally:
-        StopCompleterServer( app, 'cpp' )
+      yield app
+      StopCompleterServer( app, 'cpp' )
   else:
     global shared_app
     ClearCompletionsCache()

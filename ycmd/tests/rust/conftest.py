@@ -34,10 +34,8 @@ def set_up_shared_app():
   with IgnoreExtraConfOutsideTestsFolder():
     StartRustCompleterServerInDirectory( shared_app,
                                          PathToTestFile( 'common', 'src' ) )
-  try:
-    yield
-  finally:
-    StopCompleterServer( shared_app, 'rust' )
+  yield
+  StopCompleterServer( shared_app, 'rust' )
 
 
 def StartRustCompleterServerInDirectory( app, directory ):
@@ -55,10 +53,8 @@ def app( request ):
   assert which == 'isolated' or which == 'shared'
   if which == 'isolated':
     with IsolatedApp( {} ) as app:
-      try:
-        yield app
-      finally:
-        StopCompleterServer( app, 'rust' )
+      yield app
+      StopCompleterServer( app, 'rust' )
   else:
     global shared_app
     ClearCompletionsCache()
