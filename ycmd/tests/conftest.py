@@ -18,8 +18,7 @@
 import pytest
 from ycmd.tests.test_utils import ( ClearCompletionsCache,
                                     IsolatedApp,
-                                    SetUpApp,
-                                    ShutdownSubservers )
+                                    SetUpApp )
 
 shared_app = None
 
@@ -28,8 +27,6 @@ shared_app = None
 def set_up_shared_app():
   global shared_app
   shared_app = SetUpApp()
-  yield
-  ShutdownSubservers( shared_app )
 
 
 @pytest.fixture
@@ -39,7 +36,6 @@ def app( request ):
   if which == 'isolated':
     with IsolatedApp( request.param[ 1 ] ) as app:
       yield app
-      ShutdownSubservers( app )
   else:
     global shared_app
     ClearCompletionsCache()

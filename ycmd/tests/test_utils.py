@@ -239,10 +239,6 @@ def SetUpApp( custom_options = {} ):
   return TestApp( handlers.app )
 
 
-def ShutdownSubservers( app ):
-  app.post( '/shutdown_servers', expect_errors=True )
-
-
 @contextlib.contextmanager
 def IgnoreExtraConfOutsideTestsFolder():
   with patch( 'ycmd.utils.IsRootDirectory',
