@@ -91,6 +91,7 @@ def Subcommands_DefinedSubcommands_test( app ):
                  'GoToImplementation',
                  'GoToReferences',
                  'GoToType',
+                 'GoToSymbol',
                  'OpenProject',
                  'OrganizeImports',
                  'RefactorRename',
