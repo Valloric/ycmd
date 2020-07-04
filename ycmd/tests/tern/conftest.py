@@ -23,7 +23,7 @@ from ycmd.tests.test_utils import ( BuildRequest, ClearCompletionsCache,
 shared_app = None
 
 
-@pytest.fixture( scope='module', autouse=True )
+@pytest.fixture( scope = 'package', autouse = True )
 def set_up_shared_app():
   """Initializes the ycmd server as a WebTest application that will be shared
   by all tests using the SharedYcmd decorator in this package. Additional
