@@ -26,7 +26,7 @@ from ycmd.completers.cpp import clangd_completer
 shared_app = None
 
 
-@pytest.fixture( scope='module', autouse=True )
+@pytest.fixture( scope = 'package', autouse = True )
 def set_up_shared_app():
   global shared_app
   shared_app = SetUpApp()
