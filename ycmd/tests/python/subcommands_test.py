@@ -33,6 +33,7 @@ from ycmd.utils import ReadFile
 from ycmd.tests.python import PathToTestFile, SharedYcmd
 from ycmd.tests.test_utils import ( BuildRequest,
                                     CombineRequest,
+                                    ChunkMatcher,
                                     LocationMatcher,
                                     ErrorMatcher )
 
@@ -463,3 +464,36 @@ def Subcommands_GoToReferences_InvalidJediReferences_test( app ):
       'line_num': 1,
       'column_num': 2, # Jedi columns are 0 based
       'filepath': PathToTestFile( 'foo.py' ) } ) ) )
+
+
+@SharedYcmd
+def Subcommands_RefactorRename_test( app ):
+  filepath = PathToTestFile( 'basic.py' )
+  contents = ReadFile( filepath )
+
+  command_data = BuildRequest( filepath = filepath,
+                               filetype = 'python',
+                               line_num = 3,
+                               column_num = 10,
+                               contents = contents,
+                               command_arguments = [ 'RefactorRename',
+                                                     'booo' ] )
+
+  response = app.post_json( '/run_completer_command',
+                            command_data ).json
+
+  assert_that( response, has_entries( {
+    'fixits': contains_exactly(
+      has_entries( {
+        'text': '',
+        'chunks': contains_exactly(
+          ChunkMatcher( 'booo',
+                        LocationMatcher( filepath, 3, 10 ),
+                        LocationMatcher( filepath, 3, 11 ) ),
+          ChunkMatcher( 'booo',
+                        LocationMatcher( filepath, 7, 3 ),
+                        LocationMatcher( filepath, 7, 4 ) )
+        )
+      } )
+    )
+  } ) )
