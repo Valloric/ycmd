@@ -33,7 +33,7 @@ def set_up_shared_app():
   shared_app = SetUpApp()
   with IgnoreExtraConfOutsideTestsFolder():
     StartRustCompleterServerInDirectory( shared_app,
-                                         PathToTestFile( 'common', 'src' ) )
+                                         PathToTestFile( 'common' ) )
   yield
   StopCompleterServer( shared_app, 'rust' )
 
@@ -41,10 +41,12 @@ def set_up_shared_app():
 def StartRustCompleterServerInDirectory( app, directory ):
   app.post_json( '/event_notification',
                  BuildRequest(
-                   filepath = os.path.join( directory, 'main.rs' ),
+                   filepath = os.path.join( directory, 'src', 'main.rs' ),
                    event_name = 'FileReadyToParse',
                    filetype = 'rust' ) )
   WaitUntilCompleterServerReady( app, 'rust' )
+  import time
+  time.sleep( 3 )
 
 
 @pytest.fixture
