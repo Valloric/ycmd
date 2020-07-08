@@ -24,13 +24,14 @@ from ycmd.completers.language_server import language_server_completer
 from ycmd.utils import LOGGER, re
 
 
-LOGFILE_FORMAT = 'rls_'
-RLS_BIN_DIR = os.path.abspath(
+LOGFILE_FORMAT = 'ra_'
+RA_BIN_DIR = os.path.abspath(
   os.path.join( os.path.dirname( __file__ ), '..', '..', '..', 'third_party',
-                'rls', 'bin' ) )
-RUSTC_EXECUTABLE = utils.FindExecutable( os.path.join( RLS_BIN_DIR, 'rustc' ) )
-RLS_EXECUTABLE = utils.FindExecutable( os.path.join( RLS_BIN_DIR, 'rls' ) )
-RLS_VERSION_REGEX = re.compile( r'^rls (?P<version>.*)$' )
+                'rust-analyzer', 'bin' ) )
+RUSTC_EXECUTABLE = utils.FindExecutable( os.path.join( RA_BIN_DIR, 'rustc' ) )
+RA_EXECUTABLE = utils.FindExecutable( os.path.join(
+    RA_BIN_DIR, 'rust-analyzer' ) )
+RA_VERSION_REGEX = re.compile( r'^rust-analyzer (?P<version>.*)$' )
 
 
 def _GetCommandOutput( command ):
@@ -41,11 +42,11 @@ def _GetCommandOutput( command ):
                      stderr = PIPE ).communicate()[ 0 ].rstrip() )
 
 
-def _GetRlsVersion( rls_path ):
-  rls_version = _GetCommandOutput( [ rls_path, '--version' ] )
-  match = RLS_VERSION_REGEX.match( rls_version )
+def _GetRAVersion( ra_path ):
+  ra_version = _GetCommandOutput( [ ra_path, '--version' ] )
+  match = RA_VERSION_REGEX.match( ra_version )
   if not match:
-    LOGGER.error( 'Cannot parse Rust Language Server version: %s', rls_version )
+    LOGGER.error( 'Cannot parse Rust Language Server version: %s', ra_version )
     return None
   return match.group( 'version' )
 
@@ -56,11 +57,11 @@ def ShouldEnableRustCompleter( user_options ):
     LOGGER.error( 'Not using Rust completer: RUSTC not specified' )
     return False
 
-  rls = utils.FindExecutableWithFallback( user_options[ 'rls_binary_path' ],
-                                          RLS_EXECUTABLE )
-  if not rls:
-    LOGGER.error( 'Not using Rust completer: no RLS executable found at %s',
-                  rls )
+  ra = utils.FindExecutableWithFallback( user_options[ 'rls_binary_path' ],
+                                         RA_EXECUTABLE )
+  if not ra:
+    LOGGER.error( 'Not using Rust completer: no RA executable found at %s',
+                  ra )
     return False
   LOGGER.info( 'Using Rust completer' )
   return True
@@ -69,9 +70,9 @@ def ShouldEnableRustCompleter( user_options ):
 class RustCompleter( language_server_completer.LanguageServerCompleter ):
   def __init__( self, user_options ):
     super().__init__( user_options )
-    self._rls_path = utils.FindExecutableWithFallback(
+    self._ra_path = utils.FindExecutableWithFallback(
         user_options[ 'rls_binary_path' ],
-        RLS_EXECUTABLE )
+        RA_EXECUTABLE )
     self._rustc_path = utils.FindExecutableWithFallback(
         user_options[ 'rustc_binary_path' ],
         RUSTC_EXECUTABLE )
@@ -87,36 +88,24 @@ class RustCompleter( language_server_completer.LanguageServerCompleter ):
 
 
   def GetCommandLine( self ):
-    return [ self._rls_path ]
+    return [ self._ra_path ]
 
 
   def GetServerEnvironment( self ):
     env = os.environ.copy()
     env[ 'RUSTC' ] = self._rustc_path
     if LOGGER.isEnabledFor( logging.DEBUG ):
-      env[ 'RUST_LOG' ] = 'rls=trace'
-      env[ 'RUST_BACKTRACE' ] = '1'
+      env[ 'RA_LOG' ] = 'rust_analyzer=trace'
     return env
 
 
   def GetProjectRootFiles( self ):
-    # Without LSP workspaces support, RLS relies on the rootUri to detect a
+    # Without LSP workspaces support, RA relies on the rootUri to detect a
     # project.
     # TODO: add support for LSP workspaces to allow users to change project
-    # without having to restart RLS.
+    # without having to restart RA.
     return [ 'Cargo.toml' ]
 
-
-
-  def ServerIsReady( self ):
-    # Assume RLS is ready once building and indexing are done.
-    # See
-    # https://github.com/rust-lang/rls/blob/master/contributing.md#rls-to-lsp-client
-    # for detail on the progress steps.
-    return ( super().ServerIsReady() and
-             self._server_progress and
-             set( self._server_progress.values() ) == { 'building done',
-                                                        'indexing done' } )
 
 
   def SupportedFiletypes( self ):
@@ -124,7 +113,7 @@ class RustCompleter( language_server_completer.LanguageServerCompleter ):
 
 
   def GetTriggerCharacters( self, server_trigger_characters ):
-    # The trigger characters supplied by RLS ('.' and ':') are worse than ycmd's
+    # The trigger characters supplied by RA ('.' and ':') are worse than ycmd's
     # own semantic triggers ('.' and '::') so we ignore them.
     return []
 
@@ -134,15 +123,9 @@ class RustCompleter( language_server_completer.LanguageServerCompleter ):
       set( self._server_progress.values() ) ).capitalize()
     return [
       responses.DebugInfoItem( 'Project State', project_state ),
-      responses.DebugInfoItem( 'Version', _GetRlsVersion( self._rls_path ) ),
+      responses.DebugInfoItem( 'Version', _GetRAVersion( self._ra_path ) ),
       responses.DebugInfoItem( 'RUSTC', self._rustc_path )
     ]
-
-
-  def _ShouldResolveCompletionItems( self ):
-    # RLS tells us that it can resolve a completion but there is no point since
-    # no additional information is returned.
-    return False
 
 
   def HandleNotificationInPollThread( self, notification ):
@@ -168,25 +151,26 @@ class RustCompleter( language_server_completer.LanguageServerCompleter ):
 
 
   def GetType( self, request_data ):
-    hover_response = self.GetHoverResponse( request_data )
+    try:
+      hover_response = self.GetHoverResponse( request_data )[ 'value' ]
+    except language_server_completer.NoHoverInfoException:
+      raise RuntimeError( 'Unknown type.' )
 
-    for item in hover_response:
-      if isinstance( item, dict ) and 'value' in item:
-        return responses.BuildDisplayMessageResponse( item[ 'value' ] )
-
-    raise RuntimeError( 'Unknown type.' )
+    hover_response = hover_response.split( '\n___\n', 2 )[ 0 ]
+    start = hover_response.rfind( '```rust\n' ) + len( '```rust\n' )
+    end = hover_response.rfind( '\n```' )
+    return responses.BuildDisplayMessageResponse( hover_response[ start:end ] )
 
 
   def GetDoc( self, request_data ):
-    hover_response = self.GetHoverResponse( request_data )
+    try:
+      hover_response = self.GetHoverResponse( request_data )
+    except language_server_completer.NoHoverInfoException:
+      raise RuntimeError( 'No documentation available.' )
 
-    # RLS returns a list that may contain the following elements:
-    # - a documentation string;
-    # - a documentation url;
-    # - [{language:rust, value:<type info>}].
-
+    lines = hover_response[ 'value' ].split( '\n' )
     documentation = '\n'.join(
-      [ item.strip() for item in hover_response if isinstance( item, str ) ] )
+      line for line in lines if line and not line.startswith( '```' ) ).strip()
 
     if not documentation:
       raise RuntimeError( 'No documentation available for current context.' )

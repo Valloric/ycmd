@@ -1306,6 +1306,8 @@ class LanguageServerCompleter( Completer ):
         arg[ 'label' ] = [
           utils.CodepointOffsetToByteOffset( sig_label, begin ),
           utils.CodepointOffsetToByteOffset( sig_label, end ) ]
+    if 'activeParameter' not in result:
+      result[ 'activeParameter' ] = 0
     return result
 
 
