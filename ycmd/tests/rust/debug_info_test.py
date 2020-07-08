@@ -55,15 +55,11 @@ def DebugInfo_RlsVersion_test( app ):
             'value': '{}'
           } ),
           has_entries( {
-            'key': 'Project State',
-            'value': instance_of( str )
-          } ),
-          has_entries( {
             'key': 'Version',
             'value': instance_of( str )
           } ),
           has_entries( {
-            'key': 'RUSTC',
+            'key': 'Rust Root',
             'value': instance_of( str )
           } )
         )
@@ -105,15 +101,11 @@ def DebugInfo_NoRlsVersion_test( get_command_output, app ):
             'value': '{}'
           } ),
           has_entries( {
-            'key': 'Project State',
-            'value': instance_of( str )
-          } ),
-          has_entries( {
             'key': 'Version',
             'value': none()
           } ),
           has_entries( {
-            'key': 'RUSTC',
+            'key': 'Rust Root',
             'value': instance_of( str )
           } )
         )
