@@ -259,78 +259,79 @@ def BuildResponse( request, parameters ):
   return _BuildMessageData( message )
 
 
-def Initialize( request_id, project_directory, settings ):
+def Initialize( request_id, project_directory, extra_capabilities, settings ):
   """Build the Language Server initialize request"""
 
+  capabilities = {
+    'workspace': {
+      'applyEdit': True,
+      'didChangeWatchedFiles': {
+        'dynamicRegistration': True
+      },
+      'workspaceEdit': { 'documentChanges': True, },
+      'symbol': {
+        'symbolKind': {
+          'valueSet': list( range( 1, len( SYMBOL_KIND ) ) ),
+        }
+      }
+    },
+    'textDocument': {
+      'codeAction': {
+        'codeActionLiteralSupport': {
+          'codeActionKind': {
+            'valueSet': [ '',
+                          'quickfix',
+                          'refactor',
+                          'refactor.extract',
+                          'refactor.inline',
+                          'refactor.rewrite',
+                          'source',
+                          'source.organizeImports' ]
+          }
+        }
+      },
+      'completion': {
+        'completionItemKind': {
+          # ITEM_KIND list is 1-based.
+          # valueSet is a list of the indices of items supported
+          'valueSet': list( range( 1, len( ITEM_KIND ) ) ),
+        },
+        'completionItem': {
+          'documentationFormat': [
+            'plaintext',
+            'markdown'
+          ],
+        },
+      },
+      'hover': {
+        'contentFormat': [
+          'plaintext',
+          'markdown'
+        ]
+      },
+      'signatureHelp': {
+        'signatureInformation': {
+          'parameterInformation': {
+            'labelOffsetSupport': True,
+          },
+          'documentationFormat': [
+            'plaintext',
+            'markdown'
+          ],
+        },
+      },
+      'synchronization': {
+        'didSave': True
+      },
+    },
+  }
+  capabilities.update( extra_capabilities )
   return BuildRequest( request_id, 'initialize', {
     'processId': os.getpid(),
     'rootPath': project_directory,
     'rootUri': FilePathToUri( project_directory ),
     'initializationOptions': settings,
-    'capabilities': {
-      'experimental': { 'statusNotification': True },
-      'workspace': {
-        'applyEdit': True,
-        'didChangeWatchedFiles': {
-          'dynamicRegistration': True
-        },
-        'workspaceEdit': { 'documentChanges': True, },
-        'symbol': {
-          'symbolKind': {
-            'valueSet': list( range( 1, len( SYMBOL_KIND ) ) ),
-          }
-        }
-      },
-      'textDocument': {
-        'codeAction': {
-          'codeActionLiteralSupport': {
-            'codeActionKind': {
-              'valueSet': [ '',
-                            'quickfix',
-                            'refactor',
-                            'refactor.extract',
-                            'refactor.inline',
-                            'refactor.rewrite',
-                            'source',
-                            'source.organizeImports' ]
-            }
-          }
-        },
-        'completion': {
-          'completionItemKind': {
-            # ITEM_KIND list is 1-based.
-            # valueSet is a list of the indices of items supported
-            'valueSet': list( range( 1, len( ITEM_KIND ) ) ),
-          },
-          'completionItem': {
-            'documentationFormat': [
-              'plaintext',
-              'markdown'
-            ],
-          },
-        },
-        'hover': {
-          'contentFormat': [
-            'plaintext',
-            'markdown'
-          ]
-        },
-        'signatureHelp': {
-          'signatureInformation': {
-            'parameterInformation': {
-              'labelOffsetSupport': True,
-            },
-            'documentationFormat': [
-              'plaintext',
-              'markdown'
-            ],
-          },
-        },
-        'synchronization': {
-          'didSave': True
-        },
-      },
-    },
+    'capabilities': capabilities,
   } )
 
 
