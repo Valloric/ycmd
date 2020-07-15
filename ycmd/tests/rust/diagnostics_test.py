@@ -81,7 +81,7 @@ def Diagnostics_FileReadyToParse_test( app ):
 
   # It can take a while for the diagnostics to be ready.
   results = WaitForDiagnosticsToBeReady( app, filepath, contents, 'rust' )
-  print( 'completer response: {}'.format( pformat( results ) ) )
+  print( f'completer response: {pformat( results )}' )
 
   assert_that( results, DIAG_MATCHERS_PER_FILE[ filepath ] )
 
@@ -102,7 +102,7 @@ def Diagnostics_Poll_test( app ):
                                     { 'filepath': filepath,
                                       'contents': contents,
                                       'filetype': 'rust' } ):
-      print( 'Message {}'.format( pformat( message ) ) )
+      print( f'Message {pformat( message )}' )
       if 'diagnostics' in message:
         if message[ 'diagnostics' ] == []:
           # Sometimes we get empty diagnostics before the real ones.
@@ -110,8 +110,8 @@ def Diagnostics_Poll_test( app ):
         seen[ message[ 'filepath' ] ] = True
         if message[ 'filepath' ] not in DIAG_MATCHERS_PER_FILE:
           raise AssertionError(
-            'Received diagnostics for unexpected file {}. '
-            'Only expected {}'.format( message[ 'filepath' ], to_see ) )
+            f'Received diagnostics for unexpected file {message[ "filepath" ]}.'
+            f' Only expected {to_see}' )
         assert_that( message, has_entries( {
           'diagnostics': DIAG_MATCHERS_PER_FILE[ message[ 'filepath' ] ],
           'filepath': message[ 'filepath' ]
@@ -126,6 +126,5 @@ def Diagnostics_Poll_test( app ):
     raise AssertionError(
       str( e ) +
       'Timed out waiting for full set of diagnostics. '
-      'Expected to see diags for {}, but only saw {}.'.format(
-        json.dumps( to_see, indent=2 ),
-        json.dumps( sorted( seen.keys() ), indent=2 ) ) )
+      f'Expected to see diags for {json.dumps( to_see, indent=2 )}, '
+      f'but only saw {json.dumps( sorted( seen.keys() ), indent=2 )}.' )
