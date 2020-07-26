@@ -552,6 +552,17 @@ class LanguageServerConnection( threading.Thread ):
             except Exception:
               LOGGER.exception( 'Received invalid protocol data from server: '
                                  + str( line ) )
+              LOGGER.debug( '///////////////////////////////////////////' )
+              LOGGER.debug( '//////////////// JDT .log /////////////////' )
+              LOGGER.debug( '///////////////////////////////////////////' )
+              with open( self.completer.AdditionalLogFiles()[0] ) as f:
+                contents = f.read()
+
+              LOGGER.debug( '%s', contents )
+              LOGGER.debug( '///////////////////////////////////////////' )
+              LOGGER.debug( '////////// END OF JDT .log ////////////////' )
+              LOGGER.debug( '///////////////////////////////////////////' )
+
               raise
 
         read_bytes += 1
@@ -657,11 +668,13 @@ class StandardIOLanguageServerConnection( LanguageServerConnection ):
                 watchdog_factory,
                 server_stdin,
                 server_stdout,
+                server,
                 notification_handler = None ):
     super().__init__( project_directory,
                       watchdog_factory,
                       notification_handler )
 
+    self.completer = server
     self._server_stdin = server_stdin
     self._server_stdout = server_stdout
 
@@ -929,7 +942,7 @@ class LanguageServerCompleter( Completer ):
         lambda globs: WatchdogHandler( self, globs ),
         self._server_handle.stdin,
         self._server_handle.stdout,
-        self.GetDefaultNotificationHandler() )
+        notification_handler = self.GetDefaultNotificationHandler() )
     )
 
     self._connection.Start()
