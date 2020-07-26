@@ -37,6 +37,14 @@ fi
 mkdir ${HOME}/.cache
 
 #
+# Java setup
+#
+export JAVA_HOME=/usr/lib/jvm/adoptopenjdk-11-hotspot-amd64
+export PATH=$JAVA_HOME/bin:$PATH
+java -version
+javac -version
+
+#
 # Python setup
 #
 
