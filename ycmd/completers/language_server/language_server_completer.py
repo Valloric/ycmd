@@ -943,6 +943,7 @@ class LanguageServerCompleter( Completer ):
         lambda globs: WatchdogHandler( self, globs ),
         self._server_handle.stdin,
         self._server_handle.stdout,
+        self,
         notification_handler = self.GetDefaultNotificationHandler() )
     )
 
