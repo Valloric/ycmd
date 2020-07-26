@@ -555,7 +555,7 @@ class LanguageServerConnection( threading.Thread ):
               LOGGER.debug( '///////////////////////////////////////////' )
               LOGGER.debug( '//////////////// JDT .log /////////////////' )
               LOGGER.debug( '///////////////////////////////////////////' )
-              with open( self.completer.AdditionalLogFiles()[0] ) as f:
+              with open( self.completer.AdditionalLogFiles()[ 0 ] ) as f:
                 contents = f.read()
 
               LOGGER.debug( '%s', contents )
