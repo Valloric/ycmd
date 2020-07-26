@@ -254,6 +254,8 @@ def FindExecutable( executable ):
     return GetExecutable( executable )
 
   paths = os.environ[ 'PATH' ].split( os.pathsep )
+  if executable == 'java':
+    LOGGER.debug( 'PATH = %s', paths )
 
   if OnWindows():
     # The current directory takes precedence on Windows.
