@@ -1,4 +1,10 @@
 ::
+:: Java configuration
+::
+java -version
+javac -version
+exit
+::
 :: Python configuration
 ::
 curl %YCM_PYTHON_INSTALLER_URL% -o C:\python-installer.exe
@@ -15,9 +21,3 @@ C:\Python\python -c "with open('C:\Python\Lib\site-packages\sitecustomize.py', '
 
 curl https://dl.google.com/go/go1.14.3.windows-amd64.msi -o C:\go-installer.msi
 msiexec /i C:\go-installer.msi TARGETDIR=C:\Go /qn
-
-::
-:: Java configuration
-::
-java -version
-javac -version

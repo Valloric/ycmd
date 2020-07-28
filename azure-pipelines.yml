@@ -34,8 +34,8 @@ jobs:
     maxParallel: 6
   variables:
     COVERAGE: true
-    JAVA_HOME: /usr/lib/jvm/adoptopenjdk-11-hotspot-amd64
-    PATH: $(JAVA_HOME)/bin:$(PATH)
+    JAVA_HOME: '/usr/lib/jvm/adoptopenjdk-11-hotspot-amd64'
+    PATH: "/usr/lib/jvm/adoptopenjdk-11-hotspot-amd64/bin:$(PATH)"
   steps:
   - checkout: self
     submodules: recursive
@@ -72,7 +72,7 @@ jobs:
     maxParallel: 3
   variables:
     COVERAGE: true
-    JAVA_HOME: /Library/Java/JavaVirtualMachines/adoptopenjdk-11.jdk/Contents/Home
+    JAVA_HOME: '/Library/Java/JavaVirtualMachines/adoptopenjdk-11.jdk/Contents/Home'
   steps:
   - checkout: self
     submodules: recursive
@@ -104,7 +104,7 @@ jobs:
     MSVC: 15
     MSBUILD_PATH: 'C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\MSBuild\15.0\Bin'
     JAVA_HOME: 'C:\Program Files\Java\jdk-11.0.7+10'
-    PATH: "$(JAVA_HOME)\\bin;$(PATH)"
+    PATH: "C:\\Program Files\\Java\\jdk-11.0.7+10\\bin;$(PATH)"
   steps:
   - checkout: self
     submodules: recursive
@@ -139,6 +139,7 @@ jobs:
     MSBUILD_PATH: 'C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin'
     COVERAGE: true
     JAVA_HOME: 'C:\Program Files\Java\jdk-11.0.7+10'
+    PATH: "C:\\Program Files\\Java\\jdk-11.0.7+10\\bin;$(PATH)"
   steps:
   - checkout: self
     submodules: recursive

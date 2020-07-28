@@ -1,5 +1,11 @@
 # Exit immediately if a command returns a non-zero status.
 set -e
+#
+# Java setup
+#
+java -version
+javac -version
+exit
 
 #
 # Python setup
@@ -22,11 +28,5 @@ pip install -r test_requirements.txt
 # http://coverage.readthedocs.io/en/latest/subprocess.html
 echo -e "import coverage\ncoverage.process_startup()" > \
 ${HOME}/.pyenv/versions/${YCM_PYTHON_VERSION}/lib/python${YCM_PYTHON_VERSION%.*}/site-packages/sitecustomize.py
-
-#
-# Java setup
-#
-java -version
-javac -version
 
 set +e
