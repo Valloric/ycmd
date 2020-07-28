@@ -43,6 +43,7 @@ mkdir ${HOME}/.cache
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/Linuxbrew/install/master/install.sh)"
 
 eval $(/home/linuxbrew/.linuxbrew/bin/brew shellenv)
+brew reinstall -s perl
 
 # We need to use openssl 1.0 because the versions of python we build don't
 # compile with openssl 1.1. We could bump python versions until they do, but
