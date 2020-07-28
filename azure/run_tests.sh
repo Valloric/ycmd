@@ -26,6 +26,7 @@ else
 fi
 java -version
 javac -version
+exit 1
 
 python run_tests.py
 
