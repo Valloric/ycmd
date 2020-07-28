@@ -7,86 +7,86 @@ pr:
     include:
     - '*'
 jobs:
-#- job: linux
-#  displayName: 'Linux'
-#  pool:
-#    # List of available software on this image:
-#    # https://github.com/Microsoft/azure-pipelines-image-generation/blob/master/images/linux/Ubuntu1604-README.md
-#    vmImage: 'ubuntu-18.04'
-#  strategy:
-#    matrix:
-#      'Python 3.6 without libclang completer':
-#        YCM_PYTHON_VERSION: '3.6.3'
-#        USE_CLANG_COMPLETER: false
-#      'Python 3.6':
-#        YCM_PYTHON_VERSION: '3.6.3'
-#      'Python 3.6 using Clang compiler':
-#        YCM_PYTHON_VERSION: '3.6.3'
-#        YCM_COMPILER: 'clang'
-#      'C++ benchmark':
-#        YCM_PYTHON_VERSION: '3.6.3'
-#        YCM_BENCHMARK: true
-#        COVERAGE: false
-#      'C++ linting':
-#        YCM_PYTHON_VERSION: '3.8.0'
-#        YCM_CLANG_TIDY: true
-#        COVERAGE: false
-#    maxParallel: 6
-#  variables:
-#    COVERAGE: true
-#  steps:
-#  - checkout: self
-#    submodules: recursive
-#  - script: ./azure/linux/install_dependencies.sh
-#    displayName: Install dependencies
-#  - script: ./azure/run_tests.sh
-#    displayName: Run tests
-#    condition: and(succeeded(), and(ne(variables['YCM_BENCHMARK'], 'true'), ne(variables['YCM_CLANG_TIDY'], 'true')))
-#  - script: ./azure/benchmark.sh
-#    displayName: Benchmark
-#    condition: and(succeeded(), eq(variables['YCM_BENCHMARK'], 'true'))
-#  - script: ./azure/lint.sh
-#    displayName: Lint
-#    condition: and(succeeded(), eq(variables['YCM_CLANG_TIDY'], 'true'))
-#  - script: ./azure/send_coverage.sh
-#    displayName: Send coverage
-#    condition: and(succeeded(), eq(variables['COVERAGE'], 'true'))
-#    env:
-#      CODECOV_TOKEN: $(CODECOV_TOKEN)
-#      CODECOV_JOB_NAME: '$(Agent.JobName)'
-#- job: macos
-#  displayName: 'macOS'
-#  pool:
-#    # List of available software on this image:
-#    # https://github.com/Microsoft/azure-pipelines-image-generation/blob/master/images/macos/macos-10.13-Readme.md
-#    vmImage: 'macOS-10.15'
-#  strategy:
-#    matrix:
-#      'Python 3.6':
-#        YCM_PYTHON_VERSION: '3.6.3'
-#      'C++ benchmark':
-#        YCM_PYTHON_VERSION: '3.6.3'
-#        YCM_BENCHMARK: true
-#    maxParallel: 3
-#  variables:
-#    COVERAGE: true
-#  steps:
-#  - checkout: self
-#    submodules: recursive
-#  - script: ./azure/macos/install_dependencies.sh
-#    displayName: Install dependencies
-#  - script: ./azure/run_tests.sh
-#    displayName: Run tests
-#    condition: and(succeeded(), ne(variables['YCM_BENCHMARK'], 'true'))
-#  - script: ./azure/benchmark.sh
-#    displayName: Benchmark
-#    condition: and(succeeded(), eq(variables['YCM_BENCHMARK'], 'true'))
-#  - script: ./azure/send_coverage.sh
-#    displayName: Send coverage
-#    condition: and(succeeded(), eq(variables['COVERAGE'], 'true'))
-#    env:
-#      CODECOV_TOKEN: $(CODECOV_TOKEN)
-#      CODECOV_JOB_NAME: '$(Agent.JobName)'
+- job: linux
+  displayName: 'Linux'
+  pool:
+    # List of available software on this image:
+    # https://github.com/Microsoft/azure-pipelines-image-generation/blob/master/images/linux/Ubuntu1604-README.md
+    vmImage: 'ubuntu-18.04'
+  strategy:
+    matrix:
+      'Python 3.6 without libclang completer':
+        YCM_PYTHON_VERSION: '3.6.3'
+        USE_CLANG_COMPLETER: false
+      'Python 3.6':
+        YCM_PYTHON_VERSION: '3.6.3'
+      'Python 3.6 using Clang compiler':
+        YCM_PYTHON_VERSION: '3.6.3'
+        YCM_COMPILER: 'clang'
+      'C++ benchmark':
+        YCM_PYTHON_VERSION: '3.6.3'
+        YCM_BENCHMARK: true
+        COVERAGE: false
+      'C++ linting':
+        YCM_PYTHON_VERSION: '3.8.0'
+        YCM_CLANG_TIDY: true
+        COVERAGE: false
+    maxParallel: 6
+  variables:
+    COVERAGE: true
+  steps:
+  - checkout: self
+    submodules: recursive
+  - script: ./azure/linux/install_dependencies.sh
+    displayName: Install dependencies
+  - script: ./azure/run_tests.sh
+    displayName: Run tests
+    condition: and(succeeded(), and(ne(variables['YCM_BENCHMARK'], 'true'), ne(variables['YCM_CLANG_TIDY'], 'true')))
+  - script: ./azure/benchmark.sh
+    displayName: Benchmark
+    condition: and(succeeded(), eq(variables['YCM_BENCHMARK'], 'true'))
+  - script: ./azure/lint.sh
+    displayName: Lint
+    condition: and(succeeded(), eq(variables['YCM_CLANG_TIDY'], 'true'))
+  - script: ./azure/send_coverage.sh
+    displayName: Send coverage
+    condition: and(succeeded(), eq(variables['COVERAGE'], 'true'))
+    env:
+      CODECOV_TOKEN: $(CODECOV_TOKEN)
+      CODECOV_JOB_NAME: '$(Agent.JobName)'
+- job: macos
+  displayName: 'macOS'
+  pool:
+    # List of available software on this image:
+    # https://github.com/Microsoft/azure-pipelines-image-generation/blob/master/images/macos/macos-10.13-Readme.md
+    vmImage: 'macOS-10.15'
+  strategy:
+    matrix:
+      'Python 3.6':
+        YCM_PYTHON_VERSION: '3.6.3'
+      'C++ benchmark':
+        YCM_PYTHON_VERSION: '3.6.3'
+        YCM_BENCHMARK: true
+    maxParallel: 3
+  variables:
+    COVERAGE: true
+  steps:
+  - checkout: self
+    submodules: recursive
+  - script: ./azure/macos/install_dependencies.sh
+    displayName: Install dependencies
+  - script: ./azure/run_tests.sh
+    displayName: Run tests
+    condition: and(succeeded(), ne(variables['YCM_BENCHMARK'], 'true'))
+  - script: ./azure/benchmark.sh
+    displayName: Benchmark
+    condition: and(succeeded(), eq(variables['YCM_BENCHMARK'], 'true'))
+  - script: ./azure/send_coverage.sh
+    displayName: Send coverage
+    condition: and(succeeded(), eq(variables['COVERAGE'], 'true'))
+    env:
+      CODECOV_TOKEN: $(CODECOV_TOKEN)
+      CODECOV_JOB_NAME: '$(Agent.JobName)'
 - job: windows_msvc15
   displayName: 'Windows Visual Studio 2017'
   pool:
@@ -101,6 +101,10 @@ jobs:
     MSVC: 15
     MSBUILD_PATH: 'C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\MSBuild\15.0\Bin'
   steps:
+  - checkout: self
+    submodules: recursive
+  - script: azure\windows\install_dependencies.bat
+    displayName: Install dependencies
   - script: azure\windows\run_tests.bat
     displayName: Run tests
   - script: azure\windows\send_coverage.bat
@@ -120,16 +124,20 @@ jobs:
         YCM_PYTHON_INSTALLER_URL: 'https://www.python.org/ftp/python/3.8.1/python-3.8.1.exe'
       'Python 3.8 64-bit':
         YCM_PYTHON_INSTALLER_URL: 'https://www.python.org/ftp/python/3.8.1/python-3.8.1-amd64.exe'
-      #'C++ benchmark':
-      #  YCM_PYTHON_INSTALLER_URL: 'https://www.python.org/ftp/python/3.8.1/python-3.8.1-amd64.exe'
-      #  YCM_BENCHMARK: true
-      #  COVERAGE: false
+      'C++ benchmark':
+        YCM_PYTHON_INSTALLER_URL: 'https://www.python.org/ftp/python/3.8.1/python-3.8.1-amd64.exe'
+        YCM_BENCHMARK: true
+        COVERAGE: false
     maxParallel: 4
   variables:
     MSVC: 16
     MSBUILD_PATH: 'C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin'
     COVERAGE: true
   steps:
+  - checkout: self
+    submodules: recursive
+  - script: azure\windows\install_dependencies.bat
+    displayName: Install dependencies
   - script: azure\windows\run_tests.bat
     displayName: Run tests
     condition: and(succeeded(), ne(variables['YCM_BENCHMARK'], 'true'))
