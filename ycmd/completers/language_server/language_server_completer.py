@@ -525,6 +525,17 @@ class LanguageServerConnection( threading.Thread ):
     # socket or stream read will contain only a single message, or even a whole
     # message.
 
+    LOGGER.debug( '///////////////////////////////////////////' )
+    LOGGER.debug( '//////////////// JDT .log /////////////////' )
+    LOGGER.debug( '///////////////////////////////////////////' )
+    if 'java' in self.completer.SupportedFiletypes():
+      LOGGER.debug( '%s', ReadFile(
+        self.completer.AdditionalLogFiles()[ 0 ] ) )
+
+    LOGGER.debug( '%s', contents )
+    LOGGER.debug( '///////////////////////////////////////////' )
+    LOGGER.debug( '////////// END OF JDT .log ////////////////' )
+    LOGGER.debug( '///////////////////////////////////////////' )
     headers_complete = False
     prefix = bytes( b'' )
     headers = {}
@@ -552,17 +563,6 @@ class LanguageServerConnection( threading.Thread ):
             except Exception:
               LOGGER.exception( 'Received invalid protocol data from server: '
                                  + str( line ) )
-              LOGGER.debug( '///////////////////////////////////////////' )
-              LOGGER.debug( '//////////////// JDT .log /////////////////' )
-              LOGGER.debug( '///////////////////////////////////////////' )
-              if 'java' in self.completer.SupportedFiletypes():
-                with open( self.completer.AdditionalLogFiles()[ 0 ] ) as f:
-                  contents = f.read()
-
-              LOGGER.debug( '%s', contents )
-              LOGGER.debug( '///////////////////////////////////////////' )
-              LOGGER.debug( '////////// END OF JDT .log ////////////////' )
-              LOGGER.debug( '///////////////////////////////////////////' )
 
               raise
 
