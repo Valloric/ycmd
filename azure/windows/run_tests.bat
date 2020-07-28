@@ -9,8 +9,7 @@ chdir /d "%JAVA_HOME%"
 dir
 chdir /d ".."
 dir
-exit 1
-set "JAVA_HOME=C:\Program Files\Java\jdk-11.0.7+10"
+set "JAVA_HOME=C:\Program Files\Java\jdk-11.0.8+10"
 set "PATH=%JAVA_HOME%\bin;%PATH%"
 java -version
 javac -version
