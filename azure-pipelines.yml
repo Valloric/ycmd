@@ -39,7 +39,7 @@ jobs:
     submodules: recursive
   - script: ./azure/linux/install_dependencies.sh
     displayName: Install dependencies
-  - script: ./azure/run_tests.sh
+  - script: ./azure/run_tests.sh ycmd/tests/java/debug_info_test.py
     displayName: Run tests
     condition: and(succeeded(), and(ne(variables['YCM_BENCHMARK'], 'true'), ne(variables['YCM_CLANG_TIDY'], 'true')))
   - script: ./azure/benchmark.sh
@@ -75,7 +75,7 @@ jobs:
     submodules: recursive
   - script: ./azure/macos/install_dependencies.sh
     displayName: Install dependencies
-  - script: ./azure/run_tests.sh
+  - script: ./azure/run_tests.sh ycmd/tests/java/debug_info_test.py
     displayName: Run tests
     condition: and(succeeded(), ne(variables['YCM_BENCHMARK'], 'true'))
   - script: ./azure/benchmark.sh
@@ -105,7 +105,7 @@ jobs:
     submodules: recursive
   - script: azure\windows\install_dependencies.bat
     displayName: Install dependencies
-  - script: azure\windows\run_tests.bat
+  - script: azure\windows\run_tests.bat ycmd\tests\java\debug_info_test.py
     displayName: Run tests
   - script: azure\windows\send_coverage.bat
     displayName: Send coverage
@@ -138,7 +138,7 @@ jobs:
     submodules: recursive
   - script: azure\windows\install_dependencies.bat
     displayName: Install dependencies
-  - script: azure\windows\run_tests.bat
+  - script: azure\windows\run_tests.bat ycmd/tests/java/debug_info_test.py
     displayName: Run tests
     condition: and(succeeded(), ne(variables['YCM_BENCHMARK'], 'true'))
   - script: azure\windows\benchmark.bat
