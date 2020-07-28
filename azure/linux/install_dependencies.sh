@@ -2,13 +2,6 @@
 set -e
 
 #
-# Java setup
-#
-java -version
-javac -version
-exit
-
-#
 # Compiler setup
 #
 sudo apt-get update

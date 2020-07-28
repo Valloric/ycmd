@@ -1,11 +1,5 @@
 # Exit immediately if a command returns a non-zero status.
 set -e
-#
-# Java setup
-#
-java -version
-javac -version
-exit
 
 #
 # Python setup

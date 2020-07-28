@@ -1,10 +1,4 @@
 ::
-:: Java configuration
-::
-java -version
-javac -version
-exit
-::
 :: Python configuration
 ::
 curl %YCM_PYTHON_INSTALLER_URL% -o C:\python-installer.exe
