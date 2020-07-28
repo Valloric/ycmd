@@ -19,7 +19,5 @@ msiexec /i C:\go-installer.msi TARGETDIR=C:\Go /qn
 ::
 :: Java configuration
 ::
-set JAVA_HOME="C:\Program Files\Java\jdk-11.0.7+10"
-set PATH=%JAVA_HOME%\bin;%PATH%
 java -version
 javac -version

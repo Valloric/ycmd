@@ -18,11 +18,17 @@ jobs:
       'Python 3.6 without libclang completer':
         YCM_PYTHON_VERSION: '3.6.3'
         USE_CLANG_COMPLETER: false
+        JAVA_HOME: /usr/lib/jvm/adoptopenjdk-11-hotspot-amd64
+        PATH: $(JAVA_HOME)/bin:$(PATH)
       'Python 3.6':
         YCM_PYTHON_VERSION: '3.6.3'
+        JAVA_HOME: /usr/lib/jvm/adoptopenjdk-11-hotspot-amd64
+        PATH: $(JAVA_HOME)/bin:$(PATH)
       'Python 3.6 using Clang compiler':
         YCM_PYTHON_VERSION: '3.6.3'
         YCM_COMPILER: 'clang'
+        JAVA_HOME: /usr/lib/jvm/adoptopenjdk-11-hotspot-amd64
+        PATH: $(JAVA_HOME)/bin:$(PATH)
       'C++ benchmark':
         YCM_PYTHON_VERSION: '3.6.3'
         YCM_BENCHMARK: true
@@ -39,7 +45,7 @@ jobs:
     submodules: recursive
   - script: ./azure/linux/install_dependencies.sh
     displayName: Install dependencies
-  - script: ./azure/run_tests.sh ycmd/tests/java/debug_info_test.py
+  - script: ./azure/run_tests.sh
     displayName: Run tests
     condition: and(succeeded(), and(ne(variables['YCM_BENCHMARK'], 'true'), ne(variables['YCM_CLANG_TIDY'], 'true')))
   - script: ./azure/benchmark.sh
@@ -64,6 +70,7 @@ jobs:
     matrix:
       'Python 3.6':
         YCM_PYTHON_VERSION: '3.6.3'
+        JAVA_HOME: /Library/Java/JavaVirtualMachines/adoptopenjdk-11.jdk/Contents/Home
       'C++ benchmark':
         YCM_PYTHON_VERSION: '3.6.3'
         YCM_BENCHMARK: true
@@ -75,7 +82,7 @@ jobs:
     submodules: recursive
   - script: ./azure/macos/install_dependencies.sh
     displayName: Install dependencies
-  - script: ./azure/run_tests.sh ycmd/tests/java/debug_info_test.py
+  - script: ./azure/run_tests.sh
     displayName: Run tests
     condition: and(succeeded(), ne(variables['YCM_BENCHMARK'], 'true'))
   - script: ./azure/benchmark.sh
@@ -97,6 +104,8 @@ jobs:
     matrix:
       'Python 3.8 64-bit':
         YCM_PYTHON_INSTALLER_URL: 'https://www.python.org/ftp/python/3.8.1/python-3.8.1-amd64.exe'
+        JAVA_HOME: "C:\\Program Files\\Java\\jdk-11.0.7+10"
+        PATH: $(JAVA_HOME)\bin;$(PATH)
   variables:
     MSVC: 15
     MSBUILD_PATH: 'C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\MSBuild\15.0\Bin'
@@ -105,7 +114,7 @@ jobs:
     submodules: recursive
   - script: azure\windows\install_dependencies.bat
     displayName: Install dependencies
-  - script: azure\windows\run_tests.bat ycmd\tests\java\debug_info_test.py
+  - script: azure\windows\run_tests.bat
     displayName: Run tests
   - script: azure\windows\send_coverage.bat
     displayName: Send coverage
@@ -138,7 +147,7 @@ jobs:
     submodules: recursive
   - script: azure\windows\install_dependencies.bat
     displayName: Install dependencies
-  - script: azure\windows\run_tests.bat ycmd/tests/java/debug_info_test.py
+  - script: azure\windows\run_tests.bat
     displayName: Run tests
     condition: and(succeeded(), ne(variables['YCM_BENCHMARK'], 'true'))
   - script: azure\windows\benchmark.bat
