@@ -963,13 +963,19 @@ def EnableJavaScriptCompleter( args ):
 def CheckJavaVersion( required_version ):
   java = FindExecutableOrDie(
     'java',
-    f'java {required_version} is required to install JDT.LS' )
+    f'java { required_version } is required to install JDT.LS' )
   java_version = None
   try:
+    new_env = os.environ.copy()
+    try:
+      new_env.pop( 'JAVA_TOOL_OPTIONS' )
+    except KeyError:
+      print( new_env )
     java_version = int(
       subprocess.check_output(
         [ java, os.path.join( DIR_OF_THIS_SCRIPT, 'CheckJavaVersion.java' ) ],
-        stderr=subprocess.STDOUT )
+        stderr=subprocess.STDOUT,
+        env = new_env )
       .decode( 'utf-8' )
       .strip() )
   except subprocess.CalledProcessError:
