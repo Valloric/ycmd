@@ -46,6 +46,9 @@ CONNECTION_TIMEOUT         = 5
 # Size of the notification ring buffer
 MAX_QUEUED_MESSAGES = 250
 
+# Number of candidates to resolve upfront
+MAX_CANDIDATES_TO_DETAIL = 10
+
 PROVIDERS_MAP = {
   'codeActionProvider': (
     lambda self, request_data, args: self.GetCodeActions( request_data, args )
@@ -1111,10 +1114,11 @@ class LanguageServerCompleter( Completer ):
     # should be based on ycmd's version of the insertion_text. Fortunately it's
     # likely much quicker to do the simple calculations inline rather than a
     # series of potentially many blocking server round trips.
-    return ( self._CandidatesFromCompletionItems( items,
-                                                  False, # don't do resolve
-                                                  request_data ),
-             is_incomplete )
+    return ( self._CandidatesFromCompletionItems(
+              items,
+              LanguageServerCompleter.RESOLVE_NONE,
+              request_data ),
+            is_incomplete )
 
 
   def _GetCandidatesFromSubclass( self, request_data ):
@@ -1135,7 +1139,9 @@ class LanguageServerCompleter( Completer ):
 
   def DetailCandidates( self, request_data, completions ):
     if not self._resolve_completion_items:
-      # We already did all of the work.
+      return completions
+
+    if len( completions ) > MAX_CANDIDATES_TO_DETAIL:
       return completions
 
     # Note: _CandidatesFromCompletionItems does a lot of work on the actual
@@ -1148,8 +1154,19 @@ class LanguageServerCompleter( Completer ):
     # text. See the fixup algorithm for more details on that.
     return self._CandidatesFromCompletionItems(
       [ c[ 'extra_data' ][ 'item' ] for c in completions ],
-      True, # Do a full resolve
+      LanguageServerCompleter.RESOLVE_ALL,
       request_data )
+
+
+  def DetailCandidate( self, request_data, completions, to_resolve ):
+    completion = completions[ to_resolve ]
+    if not self._resolve_completion_items:
+      return completion
+
+    return self._CandidatesFromCompletionItems(
+      [ completion[ 'extra_data' ][ 'item' ] ],
+      LanguageServerCompleter.RESOLVE_ALL,
+      request_data )[ 0 ]
 
 
   def _ResolveCompletionItem( self, item ):
@@ -1177,7 +1194,13 @@ class LanguageServerCompleter( Completer ):
       'resolveProvider', False )
 
 
-  def _CandidatesFromCompletionItems( self, items, resolve, request_data ):
+  RESOLVE_ALL = True
+  RESOLVE_NONE = False
+
+  def _CandidatesFromCompletionItems( self,
+                                      items,
+                                      to_resolve,
+                                      request_data ):
     """Issue the resolve request for each completion item in |items|, then fix
     up the items such that a single start codepoint is used."""
 
@@ -1219,10 +1242,16 @@ class LanguageServerCompleter( Completer ):
     # First generate all of the completion items and store their
     # start_codepoints. Then, we fix-up the completion texts to use the
     # earliest start_codepoint by borrowing text from the original line.
-    for item in items:
-      if resolve and not item.get( '_resolved', False ):
+    for idx, item in enumerate( items ):
+      this_tem_is_resolved = item.get( '_resolved', False )
+      resolve_this_item = to_resolve == LanguageServerCompleter.RESOLVE_ALL
+
+      if ( resolve_this_item and
+           not this_tem_is_resolved and
+           self._resolve_completion_items ):
         self._ResolveCompletionItem( item )
         item[ '_resolved' ] = True
+        this_tem_is_resolved = True
 
       try:
         insertion_text, extra_data, start_codepoint = (
@@ -1232,10 +1261,17 @@ class LanguageServerCompleter( Completer ):
                           item )
         continue
 
-      if not resolve and self._resolve_completion_items:
-        # Store the actual item in the extra_data area of the completion item.
-        # We'll use this later to do the full resolve.
+      if ( to_resolve == LanguageServerCompleter.RESOLVE_NONE and
+           self._resolve_completion_items and
+           not this_tem_is_resolved ):
         extra_data = {} if extra_data is None else extra_data
+
+        # Deferred resolve - the client must read this and send the
+        # /resolve_completion request to update the candidate set
+        extra_data[ 'resolve' ] = idx
+
+        # Store the actual item in the extra_data area of the completion item.
+        # We'll use this later to do the resolve.
         extra_data[ 'item' ] = item
 
       min_start_codepoint = min( min_start_codepoint, start_codepoint )
