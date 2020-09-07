@@ -28,6 +28,10 @@ NO_USER_COMMANDS = 'This completer does not define any commands.'
 MESSAGE_POLL_TIMEOUT = 10
 
 
+class CompletionsChanged( Exception ):
+  pass # pragma: no cover
+
+
 class Completer( metaclass = abc.ABCMeta ):
   """A base class for all Completers in YCM.
 
@@ -289,6 +293,19 @@ class Completer( metaclass = abc.ABCMeta ):
     return self.DetailCandidates( request_data, candidates )
 
 
+  def ResolveCompletionItem( self, request_data ):
+    candidates = self._completions_cache.GetCompletionsIfCacheValid(
+      request_data )
+
+    if not candidates:
+      raise CompletionsChanged( 'Cache is not valid: TODO handle this?' )
+
+    return self.DetailCandidate( request_data,
+                                 candidates,
+                                 request_data[ 'resolve' ] )
+
+
+
   def _GetCandidatesFromSubclass( self, request_data ):
     cache_completions = self._completions_cache.GetCompletionsIfCacheValid(
       request_data )
@@ -299,6 +316,10 @@ class Completer( metaclass = abc.ABCMeta ):
     raw_completions = self.ComputeCandidatesInner( request_data )
     self._completions_cache.Update( request_data, raw_completions )
     return raw_completions
+
+
+  def DetailCandidate( self, request_data, candidates, candidate ):
+    return candidate
 
 
   def DetailCandidates( self, request_data, candidates ):

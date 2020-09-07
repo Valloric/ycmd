@@ -142,6 +142,24 @@ def GetCompletions():
                                errors = errors ) )
 
 
+@app.post( '/resolve_completion' )
+def ResolveCompletionItem():
+  LOGGER.info( "Received resolve request" )
+  request_data = RequestWrap( request.json )
+  completer = _GetCompleterForRequestData( request_data )
+
+  errors = None
+  completion = []
+  try:
+    completion = [ completer.ResolveCompletionItem( request_data ) ]
+  except Exception as e:
+    errors = [ BuildExceptionResponse( e, traceback.format_exc() ) ]
+
+  return _JsonResponse( BuildCompletionResponse( completion,
+                                                 None,
+                                                 errors = errors ) )
+
+
 @app.post( '/signature_help' )
 def GetSignatureHelp():
   LOGGER.info( 'Received signature help request' )
