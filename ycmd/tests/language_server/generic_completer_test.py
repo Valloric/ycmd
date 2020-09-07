@@ -17,6 +17,7 @@
 
 import json
 import requests
+import pytest
 from hamcrest import ( assert_that,
                        contains_exactly,
                        empty,
@@ -31,7 +32,7 @@ from os import path as p
 from ycmd.completers.language_server.language_server_completer import (
   ResponseFailedException
 )
-from ycmd import handlers
+from ycmd import handlers, utils
 from ycmd.tests.language_server import IsolatedYcmd, PathToTestFile
 from ycmd.tests.test_utils import ( BuildRequest,
                                     CompletionEntryMatcher,
@@ -39,7 +40,9 @@ from ycmd.tests.test_utils import ( BuildRequest,
                                     LocationMatcher,
                                     RangeMatcher,
                                     SignatureAvailableMatcher,
-                                    WaitUntilCompleterServerReady )
+                                    WaitUntilCompleterServerReady,
+                                    IsolatedApp,
+                                    StopCompleterServer )
 from ycmd.utils import ReadFile
 
 DIR_OF_THIS_SCRIPT = p.dirname( p.abspath( __file__ ) )
@@ -54,6 +57,7 @@ PATH_TO_GENERIC_COMPLETER = p.join( DIR_OF_THIS_SCRIPT,
                                     'server.js' )
 TEST_FILE = PathToTestFile( 'generic_server', 'test_file' )
 TEST_FILE_CONTENT = ReadFile( TEST_FILE )
+
 
 
 @IsolatedYcmd( { 'language_server':
@@ -126,6 +130,107 @@ def GenericLSPCompleter_GetCompletions_test( app ):
       CompletionEntryMatcher( 'TypeScript', 'TypeScript details' ),
     )
   } ) )
+
+
+@pytest.fixture
+def tcp_bridged_app( request ):
+  bridge = p.join( DIR_OF_THIS_SCRIPT,
+                   '..',
+                   '..',
+                   '..',
+                   'third_party',
+                   'generic_server',
+                   'bridge.sh' )
+
+  client_port = utils.GetUnusedLocalhostPort()
+  server_port = utils.GetUnusedLocalhostPort()
+  handle = None
+  try:
+    handle = utils.SafePopen( [ bridge,
+                                str( client_port ),
+                                str( server_port ) ] )
+    with IsolatedApp( {
+      'language_server': [
+        {
+          'name': 'foo',
+          'filetypes': [ 'foo' ],
+          'cmdline': [ 'node', PATH_TO_GENERIC_COMPLETER,
+                       '--socket=' + str( server_port ) ],
+          'port': client_port
+        }
+      ]
+    } ) as app:
+      try:
+        yield app
+      finally:
+        StopCompleterServer( app, 'foo' )
+  finally:
+    handle.kill()
+    utils.WaitUntilProcessIsTerminated( handle )
+
+
+def GenericLSPCompleter_GetCompletions_TCP_test( tcp_bridged_app ):
+  app = tcp_bridged_app
+  request = BuildRequest( filepath = TEST_FILE,
+                          filetype = 'foo',
+                          line_num = 1,
+                          column_num = 1,
+                          contents = TEST_FILE_CONTENT,
+                          event_name = 'FileReadyToParse' )
+  app.post_json( '/event_notification', request )
+  WaitUntilCompleterServerReady( app, 'foo' )
+  request[ 'force_semantic' ] = True
+  request.pop( 'event_name' )
+  response = app.post_json( '/completions', BuildRequest( **request ) )
+  assert_that( response.status_code, equal_to( 200 ) )
+  print( f'Completer response: { json.dumps( response.json, indent = 2 ) }' )
+  assert_that( response.json, has_entries( {
+    'completions': contains_exactly(
+      CompletionEntryMatcher( 'JavaScript', 'JavaScript details' ),
+      CompletionEntryMatcher( 'TypeScript', 'TypeScript details' ),
+    )
+  } ) )
+
+
+def GenericLSPCompleter_DebugInfo_TCP_test( tcp_bridged_app ):
+  app = tcp_bridged_app
+  request = BuildRequest( filepath = TEST_FILE,
+                          filetype = 'foo',
+                          line_num = 1,
+                          column_num = 1,
+                          contents = TEST_FILE_CONTENT,
+                          event_name = 'FileReadyToParse' )
+  app.post_json( '/event_notification', request )
+  WaitUntilCompleterServerReady( app, 'foo' )
+
+  request.pop( 'event_name' )
+  response = app.post_json( '/debug_info', request ).json
+  assert_that(
+    response,
+    has_entry( 'completer', has_entries( {
+      'name': 'GenericLSP',
+      'servers': contains_exactly( has_entries( {
+        'name': 'fooCompleter',
+        'port': instance_of( int ),
+        'pid': instance_of( int ),
+        'logfiles': contains_exactly( instance_of( str ) ),
+        'extras': contains_exactly(
+          has_entries( {
+            'key': 'Server State',
+            'value': instance_of( str ),
+          } ),
+          has_entries( {
+            'key': 'Project Directory',
+            'value': PathToTestFile( 'generic_server' ),
+          } ),
+          has_entries( {
+            'key': 'Settings',
+            'value': '{}'
+          } ),
+        )
+      } ) ),
+    } ) )
+  )
 
 
 @IsolatedYcmd( { 'language_server':
