@@ -28,6 +28,10 @@ NO_USER_COMMANDS = 'This completer does not define any commands.'
 MESSAGE_POLL_TIMEOUT = 10
 
 
+class CompletionsChanged( Exception ):
+  pass # pragma: no cover
+
+
 class Completer( metaclass = abc.ABCMeta ):
   """A base class for all Completers in YCM.
 
@@ -120,6 +124,14 @@ class Completer( metaclass = abc.ABCMeta ):
   "insertion_text" field in ComputeCandidatesInner() then fill the remaining
   fields in DetailCandidates() which is called after the filtering is done. See
   python_completer.py for an example.
+
+  You can also support 'delayed' detailing of candidates. The way this works is
+  that you must add a 'resolve' key to the candidate's 'extra_data' which will
+  be round-tripped to the client. The client passes the 'resolve' key back to us
+  in the /resolve_completion request and your completer must override the
+  DetailCandidate() method, which is passed the full list of candidates from the
+  cache and the resolve key supplied. This method must return the candidate,
+  fully detailed. See the LanguageServerCompleter for an example.
 
   If the completer wants to use extra confs, it should implement Language()
   function as well, which returns a string that identifies the language in
@@ -289,6 +301,19 @@ class Completer( metaclass = abc.ABCMeta ):
     return self.DetailCandidates( request_data, candidates )
 
 
+  def ResolveCompletionItem( self, request_data ):
+    candidates = self._completions_cache.GetCompletionsIfCacheValid(
+      request_data )
+
+    if not candidates:
+      raise CompletionsChanged( 'Resolve request must not change request data' )
+
+    return self.DetailCandidate( request_data,
+                                 candidates,
+                                 request_data[ 'resolve' ] )
+
+
+
   def _GetCandidatesFromSubclass( self, request_data ):
     cache_completions = self._completions_cache.GetCompletionsIfCacheValid(
       request_data )
@@ -299,6 +324,11 @@ class Completer( metaclass = abc.ABCMeta ):
     raw_completions = self.ComputeCandidatesInner( request_data )
     self._completions_cache.Update( request_data, raw_completions )
     return raw_completions
+
+
+  def DetailCandidate( self, request_data, candidates, to_resolve ):
+    raise RuntimeError( # pragma: no cover
+      "Delayed detail candidate not implemented" ) # pragma: no cover
 
 
   def DetailCandidates( self, request_data, candidates ):
