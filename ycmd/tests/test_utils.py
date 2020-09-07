@@ -399,8 +399,7 @@ def WithRetry( test ):
     expiry = time.time() + 30
     while True:
       try:
-        test( *args, **kwargs )
-        return
+        return test( *args, **kwargs )
       except Exception as test_exception:
         if time.time() > expiry:
           raise
