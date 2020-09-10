@@ -525,3 +525,66 @@ def GenericLSPCompleter_SignatureHelp_NotSupported_test( app ):
   response = app.get( '/signature_help_available',
                       { 'subserver': 'foo' } ).json
   assert_that( response, SignatureAvailableMatcher( 'NO' ) )
+
+
+@IsolatedYcmd( { 'language_server':
+  [ { 'name': 'foo',
+      'filetypes': [ 'foo' ],
+      'project_root_files': [ 'proj_root' ],
+      'cmdline': [ 'node', PATH_TO_GENERIC_COMPLETER, '--stdio' ] } ] } )
+@patch( 'ycmd.completers.completer.Completer.ShouldUseSignatureHelpNow',
+        return_value = True )
+def GenericLSPCompleter_WorkspaceConfiguration_test( should_use_sig, app ):
+  test_file = PathToTestFile(
+      'generic_server', 'foo', 'bar', 'baz', 'test_file' )
+  request = BuildRequest( filepath = test_file,
+                          filetype = 'foo',
+                          line_num = 1,
+                          column_num = 1,
+                          contents = '',
+                          event_name = 'FileReadyToParse' )
+  app.post_json( '/event_notification', request )
+  WaitUntilCompleterServerReady( app, 'foo' )
+  request.pop( 'event_name' )
+  response = app.post_json( '/signature_help', request ).json
+  assert_that( response, has_entries( {
+    'signature_help': has_entries( {
+      'activeSignature': 0,
+      'activeParameter': 0,
+      'signatures': empty()
+    } ),
+    'errors': empty()
+  } ) )
+
+
+
+@IsolatedYcmd( {
+  'global_ycm_extra_conf': PathToTestFile( 'generic_server', 'single_diag.py' ),
+  'language_server':
+    [ { 'name': 'foo',
+        'filetypes': [ 'foo' ],
+        'capabilities': { 'workspace': { 'configuration': True } },
+        'cmdline': [ 'node', PATH_TO_GENERIC_COMPLETER, '--stdio' ] } ] } )
+def GenericLSPCompleter_SingleDiagnostics_test( app ):
+  request = BuildRequest( filepath = TEST_FILE,
+                          filetype = 'foo',
+                          line_num = 1,
+                          column_num = 1,
+                          contents = TEST_FILE_CONTENT,
+                          event_name = 'FileReadyToParse' )
+
+  app.post_json( '/event_notification', request )
+  WaitUntilCompleterServerReady( app, 'foo' )
+  request.pop( 'event_name' )
+  response = app.post_json( '/receive_messages', request )
+  assert_that( response.json, has_items(
+    has_entries( { 'diagnostics': contains_exactly(
+      has_entries( {
+        'kind': equal_to( 'WARNING' ),
+        'location': LocationMatcher( TEST_FILE, 2, 1 ),
+        'location_extent': RangeMatcher( TEST_FILE, ( 2, 1 ), ( 2, 4 ) ),
+        'text': equal_to( 'FOO is all uppercase.' ),
+        'fixit_available': False
+      } )
+    ) } )
+  ) )
