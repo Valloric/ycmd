@@ -627,8 +627,8 @@ def GetCompletions_MoreThan10_NoResolve_ThenResolve_test( app ):
 
 
 
-@WithRetry
 @SharedYcmd
+@WithRetry
 def GetCompletions_FewerThan10_Resolved_test( app ):
   nl = os.linesep
   request, response = RunTest( app, {
@@ -672,8 +672,8 @@ def GetCompletions_FewerThan10_Resolved_test( app ):
 
 
 
-@WithRetry
 @SharedYcmd
+@WithRetry
 def GetCompletions_MoreThan10_NoResolve_ThenResolveCacheBad_test( app ):
   request, response = RunTest( app, {
     'description': "More than 10 candiates after filtering, don't resolve",
@@ -729,8 +729,8 @@ def GetCompletions_MoreThan10_NoResolve_ThenResolveCacheBad_test( app ):
 
 
 
-@WithRetry
 @SharedYcmd
+@WithRetry
 def GetCompletions_MoreThan10ForceSemantic_test( app ):
   RunTest( app, {
     'description': 'When forcing we pass the query, which reduces candidates',
