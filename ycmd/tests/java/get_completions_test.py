@@ -37,7 +37,8 @@ from ycmd.tests.java import ( DEFAULT_PROJECT_DIR,
                               IsolatedYcmd,
                               PathToTestFile,
                               SharedYcmd )
-from ycmd.tests.test_utils import ( CombineRequest,
+from ycmd.tests.test_utils import ( ClearCompletionsCache,
+                                    CombineRequest,
                                     ChunkMatcher,
                                     CompletionEntryMatcher,
                                     ErrorMatcher,
@@ -68,6 +69,7 @@ def RunTest( app, test ):
        'data': matcher for the server response json
     }
   """
+  ClearCompletionsCache()
 
   contents = ReadFile( test[ 'request' ][ 'filepath' ] )
 
@@ -554,6 +556,7 @@ def GetCompletions_ServerNotInitialized_test( app ):
 @WithRetry
 @SharedYcmd
 def GetCompletions_MoreThan10_NoResolve_ThenResolve_test( app ):
+  ClearCompletionsCache()
   request, response = RunTest( app, {
     'description': "More than 10 candiates after filtering, don't resolve",
     'request': {
@@ -627,9 +630,11 @@ def GetCompletions_MoreThan10_NoResolve_ThenResolve_test( app ):
 
 
 
-@SharedYcmd
 @WithRetry
+@SharedYcmd
 def GetCompletions_FewerThan10_Resolved_test( app ):
+  ClearCompletionsCache()
+
   nl = os.linesep
   request, response = RunTest( app, {
     'description': "More than 10 candiates after filtering, don't resolve",
@@ -671,10 +676,11 @@ def GetCompletions_FewerThan10_Resolved_test( app ):
   assert_that( response[ 'completions' ][ -1 ], is_not( has_key( 'item' ) ) )
 
 
-
-@SharedYcmd
 @WithRetry
+@SharedYcmd
 def GetCompletions_MoreThan10_NoResolve_ThenResolveCacheBad_test( app ):
+  ClearCompletionsCache()
+
   request, response = RunTest( app, {
     'description': "More than 10 candiates after filtering, don't resolve",
     'request': {
@@ -730,7 +736,6 @@ def GetCompletions_MoreThan10_NoResolve_ThenResolveCacheBad_test( app ):
 
 
 @SharedYcmd
-@WithRetry
 def GetCompletions_MoreThan10ForceSemantic_test( app ):
   RunTest( app, {
     'description': 'When forcing we pass the query, which reduces candidates',

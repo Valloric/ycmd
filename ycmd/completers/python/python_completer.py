@@ -260,6 +260,9 @@ class PythonCompleter( Completer ):
 
 
   def DetailCandidates( self, request_data, candidates ):
+    # TODO: Support delayed detail with DetailSingleCandidate
+    # For that we really need to store more data in the cache, e.g. cache the
+    # actual jedi candidate object and the completion data
     with self._jedi_lock:
       for candidate in candidates:
         if isinstance( candidate[ 'extra_data' ], dict ):

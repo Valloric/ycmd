@@ -396,6 +396,8 @@ class TypeScriptCompleter( Completer ):
 
 
   def DetailCandidates( self, request_data, candidates ):
+    # TODO: Support delayed detail with DetailSingleCandidate.
+    # Put the 'name' in the 'resolve' key ?
     undetailed_entries = []
     map_entries_to_candidates = {}
     for candidate in candidates:
