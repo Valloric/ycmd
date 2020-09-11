@@ -48,9 +48,6 @@ CONNECTION_TIMEOUT         = 5
 # Size of the notification ring buffer
 MAX_QUEUED_MESSAGES = 250
 
-# Number of candidates to resolve upfront
-MAX_CANDIDATES_TO_DETAIL = 10
-
 PROVIDERS_MAP = {
   'codeActionProvider': (
     lambda self, request_data, args: self.GetCodeActions( request_data, args )
@@ -1300,9 +1297,7 @@ class LanguageServerCompleter( Completer ):
     if not self._resolve_completion_items:
       return completions
 
-    # These completion items contain the internal 'item' extra data key, but we
-    # don't want to send that to the client. TODO: Strip it off
-    if len( completions ) > MAX_CANDIDATES_TO_DETAIL:
+    if not self.ShouldDetailCandidateList( completions ):
       return completions
 
     # Note: _CandidatesFromCompletionItems does a lot of work on the actual
