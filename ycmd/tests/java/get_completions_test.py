@@ -550,6 +550,7 @@ def GetCompletions_ServerNotInitialized_test( app ):
     } )
 
 
+@WithRetry
 @SharedYcmd
 def GetCompletions_MoreThan10_NoResolve_ThenResolve_test( app ):
   request, response = RunTest( app, {
@@ -624,6 +625,7 @@ def GetCompletions_MoreThan10_NoResolve_ThenResolve_test( app ):
 
 
 
+@WithRetry
 @SharedYcmd
 def GetCompletions_FewerThan10_Resolved_test( app ):
   request, response = RunTest( app, {
@@ -667,6 +669,7 @@ def GetCompletions_FewerThan10_Resolved_test( app ):
 
 
 
+@WithRetry
 @SharedYcmd
 def GetCompletions_MoreThan10_NoResolve_ThenResolveCacheBad_test( app ):
   request, response = RunTest( app, {
@@ -723,6 +726,7 @@ def GetCompletions_MoreThan10_NoResolve_ThenResolveCacheBad_test( app ):
 
 
 
+@WithRetry
 @SharedYcmd
 def GetCompletions_MoreThan10ForceSemantic_test( app ):
   RunTest( app, {
