@@ -210,6 +210,11 @@ class Completer( metaclass = abc.ABCMeta ):
 
     self._completions_cache = CompletionsCache()
     self._max_candidates = user_options[ 'max_num_candidates' ]
+    self._max_candidates_to_detail = user_options.get(
+      'max_num_candidates_to_detail', -1 )
+
+    LOGGER.info( f"Completion config: { self._max_candidates }, detailing "
+                 f"{ self._max_candidates_to_detail } candiates" )
 
 
   # It's highly likely you DON'T want to override this function but the *Inner
@@ -298,7 +303,18 @@ class Completer( metaclass = abc.ABCMeta ):
     candidates = self._GetCandidatesFromSubclass( request_data )
     candidates = self.FilterAndSortCandidates( candidates,
                                                request_data[ 'query' ] )
+
     return self.DetailCandidates( request_data, candidates )
+
+
+  def ShouldDetailCandidateList( self, candidates ):
+    if self._max_candidates_to_detail < 0:
+      return True
+
+    if len( candidates ) < self._max_candidates_to_detail:
+      return True
+
+    return False
 
 
   def ResolveCompletionItem( self, request_data ):
