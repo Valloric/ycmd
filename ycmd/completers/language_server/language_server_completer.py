@@ -1004,6 +1004,7 @@ class LanguageServerCompleter( Completer ):
     Implementations are required to call this after disconnection and killing
     the downstream server."""
     self._server_file_state = lsp.ServerFileStateStore()
+    self._latest_diagnostics_mutex = threading.Lock()
     self._latest_diagnostics = collections.defaultdict( list )
     self._sync_type = 'Full'
     self._initialize_response = None
@@ -1477,7 +1478,7 @@ class LanguageServerCompleter( Completer ):
       return responses.BuildDisplayMessageResponse(
           'Diagnostics are not ready yet.' )
 
-    with self._server_info_mutex:
+    with self._latest_diagnostics_mutex:
       diagnostics = list( self._latest_diagnostics[
           lsp.FilePathToUri( current_file ) ] )
 
@@ -1733,7 +1734,7 @@ class LanguageServerCompleter( Completer ):
     filepath = request_data[ 'filepath' ]
     uri = lsp.FilePathToUri( filepath )
     contents = GetFileLines( request_data, filepath )
-    with self._server_info_mutex:
+    with self._latest_diagnostics_mutex:
       if uri in self._latest_diagnostics:
         diagnostics = [ _BuildDiagnostic( contents, uri, diag )
                         for diag in self._latest_diagnostics[ uri ] ]
@@ -1845,7 +1846,7 @@ class LanguageServerCompleter( Completer ):
         # Ignore diagnostics for URIs we don't recognise
         LOGGER.exception( 'Ignoring diagnostics for unrecognized URI' )
         return
-      with self._server_info_mutex:
+      with self._latest_diagnostics_mutex:
         self._latest_diagnostics[ uri ] = params[ 'diagnostics' ]
 
 
@@ -2358,7 +2359,7 @@ class LanguageServerCompleter( Completer ):
 
     cursor_range_ls = lsp.Range( request_data )
 
-    with self._server_info_mutex:
+    with self._latest_diagnostics_mutex:
       # _latest_diagnostics contains LSP rnages, _not_ YCM ranges
       file_diagnostics = list( self._latest_diagnostics[
           lsp.FilePathToUri( request_data[ 'filepath' ] ) ] )
