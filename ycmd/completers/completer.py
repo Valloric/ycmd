@@ -210,8 +210,8 @@ class Completer( metaclass = abc.ABCMeta ):
 
     self._completions_cache = CompletionsCache()
     self._max_candidates = user_options[ 'max_num_candidates' ]
-    self._max_candidates_to_detail = user_options.get(
-      'max_num_candidates_to_detail', -1 )
+    self._max_candidates_to_detail = user_options[
+      'max_num_candidates_to_detail' ]
 
     LOGGER.info( f"Completion config: { self._max_candidates }, detailing "
                  f"{ self._max_candidates_to_detail } candiates" )
