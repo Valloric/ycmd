@@ -55,7 +55,8 @@ class MockCompleter( lsc.LanguageServerCompleter, DummyCompleter ):
     user_options.update( custom_options )
     super().__init__( user_options )
 
-    self._connection = MockConnection()
+    self._connection = MockConnection(
+        lambda request: self.WorkspaceConfigurationResponse( request ) )
     self._started = False
 
   def Language( self ):
@@ -650,6 +651,23 @@ def LanguageServerCompleter_DelayedInitialization_test( app ):
 
 
 @IsolatedYcmd()
+def LanguageServerCompleter_RejectWorkspaceConfigurationRequest_test( app ):
+  completer = MockCompleter()
+  notification = {
+    'jsonrpc': '2.0',
+    'method': 'workspace/configuration',
+    'id': 1234,
+    'params': {
+      'items': [ { 'section': 'whatever' } ]
+    }
+  }
+  with patch( 'ycmd.completers.language_server.'
+              'language_server_protocol.Reject' ) as reject:
+    completer.GetConnection()._DispatchMessage( notification )
+    reject.assert_called_with( notification, lsp.Errors.MethodNotFound )
+
+
+@IsolatedYcmd()
 def LanguageServerCompleter_ShowMessage_test( app ):
   completer = MockCompleter()
   request_data = RequestWrap( BuildRequest() )
@@ -1021,6 +1039,8 @@ def LanguageServerCompleter_GetCodeActions_CursorOnEmptyLine_test( app ):
                      has_entry( 'fixits', empty() ) )
         assert_that(
           # Range passed to lsp.CodeAction.
+          # LSP requires to use the start of the next line as the end position
+          # for a range that ends with a newline.
           code_action.call_args[ 0 ][ 2 ],
           has_entries( {
             'start': has_entries( {
@@ -1028,7 +1048,7 @@ def LanguageServerCompleter_GetCodeActions_CursorOnEmptyLine_test( app ):
               'character': 0
             } ),
             'end': has_entries( {
-              'line': 0,
+              'line': 1,
               'character': 0
             } )
           } )

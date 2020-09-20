@@ -238,6 +238,7 @@ def Subcommands_GetDoc_NoDocumentation_test( app ):
   } )
 
 
+@WithRetry
 @SharedYcmd
 def Subcommands_GetDoc_Function_test( app ):
   RunTest( app, {
@@ -496,7 +497,7 @@ def Subcommands_FixIt_Basic_test( app ):
     'request': {
       'command': 'FixIt',
       'line_num': 17,
-      'column_num': 13,
+      'column_num': 2,
       'filepath': filepath
     },
     'expect': {

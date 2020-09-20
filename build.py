@@ -89,8 +89,8 @@ JDTLS_SHA256 = (
 
 TSSERVER_VERSION = '3.9.7'
 
-RUST_TOOLCHAIN = 'nightly-2020-07-08'
-RLS_DIR = p.join( DIR_OF_THIRD_PARTY, 'rust-analyzer' )
+RUST_TOOLCHAIN = 'nightly-2020-08-19'
+RUST_ANALYZER_DIR = p.join( DIR_OF_THIRD_PARTY, 'rust-analyzer' )
 
 BUILD_ERROR_MESSAGE = (
   'ERROR: the build failed.\n\n'
@@ -495,7 +495,7 @@ def GetCmakeCommonArgs( args ):
   cmake_args = [ '-G', GetGenerator( args ) ]
 
   # Set the architecture for the Visual Studio 16 generator.
-  if OnWindows() and args.msvc == 16:
+  if OnWindows() and args.msvc == 16 and not args.ninja:
     arch = 'x64' if IS_64BIT else 'Win32'
     cmake_args.extend( [ '-A', arch ] )
 
@@ -843,6 +843,7 @@ def EnableGoCompleter( args ):
   new_env = os.environ.copy()
   new_env[ 'GO111MODULE' ] = 'on'
   new_env[ 'GOPATH' ] = p.join( DIR_OF_THIS_SCRIPT, 'third_party', 'go' )
+  new_env.pop( 'GOROOT', None )
   new_env[ 'GOBIN' ] = p.join( new_env[ 'GOPATH' ], 'bin' )
   CheckCall( [ go, 'get', 'golang.org/x/tools/gopls@v0.4.4' ],
              env = new_env,
@@ -851,14 +852,14 @@ def EnableGoCompleter( args ):
 
 
 def WriteToolchainVersion( version ):
-  path = p.join( RLS_DIR, 'TOOLCHAIN_VERSION' )
+  path = p.join( RUST_ANALYZER_DIR, 'TOOLCHAIN_VERSION' )
   with open( path, 'w' ) as f:
     f.write( version )
 
 
 def ReadToolchainVersion():
   try:
-    filepath = p.join( RLS_DIR, 'TOOLCHAIN_VERSION' )
+    filepath = p.join( RUST_ANALYZER_DIR, 'TOOLCHAIN_VERSION' )
     with open( filepath ) as f:
       return f.read().strip()
   except OSError:
@@ -867,7 +868,7 @@ def ReadToolchainVersion():
 
 def EnableRustCompleter( switches ):
   if switches.quiet:
-    sys.stdout.write( 'Installing RLS for Rust support...' )
+    sys.stdout.write( 'Installing rust-analyzer for Rust support...' )
     sys.stdout.flush()
 
   toolchain_version = ReadToolchainVersion()
@@ -918,12 +919,12 @@ def EnableRustCompleter( switches ):
         env = new_env
       ).rstrip().decode( 'utf8' )
 
-      if p.exists( RLS_DIR ):
-        RemoveDirectory( RLS_DIR )
-      os.makedirs( RLS_DIR )
+      if p.exists( RUST_ANALYZER_DIR ):
+        RemoveDirectory( RUST_ANALYZER_DIR )
+      os.makedirs( RUST_ANALYZER_DIR )
 
       for folder in os.listdir( toolchain_dir ):
-        shutil.move( p.join( toolchain_dir, folder ), RLS_DIR )
+        shutil.move( p.join( toolchain_dir, folder ), RUST_ANALYZER_DIR )
 
       WriteToolchainVersion( RUST_TOOLCHAIN )
     finally:
@@ -963,13 +964,16 @@ def EnableJavaScriptCompleter( args ):
 def CheckJavaVersion( required_version ):
   java = FindExecutableOrDie(
     'java',
-    f'java {required_version} is required to install JDT.LS' )
+    f'java { required_version } is required to install JDT.LS' )
   java_version = None
   try:
+    new_env = os.environ.copy()
+    new_env.pop( 'JAVA_TOOL_OPTIONS', None )
     java_version = int(
       subprocess.check_output(
         [ java, os.path.join( DIR_OF_THIS_SCRIPT, 'CheckJavaVersion.java' ) ],
-        stderr=subprocess.STDOUT )
+        stderr=subprocess.STDOUT,
+        env = new_env )
       .decode( 'utf-8' )
       .strip() )
   except subprocess.CalledProcessError:

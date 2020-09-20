@@ -29,9 +29,10 @@ from unittest.mock import patch
 from os import path as p
 
 from ycmd.completers.language_server.language_server_completer import (
+  TCPSingleStreamConnection,
   ResponseFailedException
 )
-from ycmd import handlers
+from ycmd import handlers, utils
 from ycmd.tests.language_server import IsolatedYcmd, PathToTestFile
 from ycmd.tests.test_utils import ( BuildRequest,
                                     CompletionEntryMatcher,
@@ -49,10 +50,13 @@ PATH_TO_GENERIC_COMPLETER = p.join( DIR_OF_THIS_SCRIPT,
                                     '..',
                                     'third_party',
                                     'generic_server',
+                                    'server',
                                     'out',
                                     'server.js' )
 TEST_FILE = PathToTestFile( 'generic_server', 'test_file' )
 TEST_FILE_CONTENT = ReadFile( TEST_FILE )
+TEST_PORT = utils.GetUnusedLocalhostPort()
+
 
 
 @IsolatedYcmd( { 'language_server':
@@ -127,6 +131,142 @@ def GenericLSPCompleter_GetCompletions_test( app ):
   } ) )
 
 
+@IsolatedYcmd( {
+  'language_server': [
+    {
+      'name': 'foo',
+      'filetypes': [ 'foo' ],
+      'cmdline': [ 'node',
+                   PATH_TO_GENERIC_COMPLETER,
+                   '--listen',
+                   str( TEST_PORT ) ],
+      'port': TEST_PORT
+    }
+  ]
+} )
+def GenericLSPCompleter_GetCompletions_TCP_test( app ):
+  request = BuildRequest( filepath = TEST_FILE,
+                          filetype = 'foo',
+                          line_num = 1,
+                          column_num = 1,
+                          contents = TEST_FILE_CONTENT,
+                          event_name = 'FileReadyToParse' )
+  app.post_json( '/event_notification', request )
+  WaitUntilCompleterServerReady( app, 'foo' )
+  request[ 'force_semantic' ] = True
+  request.pop( 'event_name' )
+  response = app.post_json( '/completions', BuildRequest( **request ) )
+  assert_that( response.status_code, equal_to( 200 ) )
+  print( f'Completer response: { json.dumps( response.json, indent = 2 ) }' )
+  assert_that( response.json, has_entries( {
+    'completions': contains_exactly(
+      CompletionEntryMatcher( 'JavaScript', 'JavaScript details' ),
+      CompletionEntryMatcher( 'TypeScript', 'TypeScript details' ),
+    )
+  } ) )
+
+
+@IsolatedYcmd( { 'language_server':
+  [ { 'name': 'foo',
+      'filetypes': [ 'foo' ],
+      'cmdline': [ 'node',
+                   PATH_TO_GENERIC_COMPLETER,
+                   '--listen', str( TEST_PORT ) ],
+      'port': TEST_PORT } ] } )
+def GenericLSPCompleter_DebugInfo_TCP_test( app ):
+  request = BuildRequest( filepath = TEST_FILE,
+                          filetype = 'foo',
+                          line_num = 1,
+                          column_num = 1,
+                          contents = TEST_FILE_CONTENT,
+                          event_name = 'FileReadyToParse' )
+  app.post_json( '/event_notification', request )
+  WaitUntilCompleterServerReady( app, 'foo' )
+
+  request.pop( 'event_name' )
+  response = app.post_json( '/debug_info', request ).json
+  assert_that(
+    response,
+    has_entry( 'completer', has_entries( {
+      'name': 'GenericLSP',
+      'servers': contains_exactly( has_entries( {
+        'name': 'fooCompleter',
+        'port': TEST_PORT,
+        'pid': instance_of( int ),
+        'logfiles': contains_exactly( instance_of( str ) ),
+        'extras': contains_exactly(
+          has_entries( {
+            'key': 'Server State',
+            'value': instance_of( str ),
+          } ),
+          has_entries( {
+            'key': 'Project Directory',
+            'value': PathToTestFile( 'generic_server' ),
+          } ),
+          has_entries( {
+            'key': 'Settings',
+            'value': '{}'
+          } ),
+        )
+      } ) ),
+    } ) )
+  )
+
+
+@IsolatedYcmd( {
+  'language_server': [
+    {
+      'name': 'foo',
+      'filetypes': [ 'foo' ],
+      'port': TEST_PORT
+    }
+  ]
+} )
+def GenericLSPCompleter_ConnectTimeout_test( app ):
+  with patch.object( TCPSingleStreamConnection, 'TCP_CONNECT_TIMEOUT', 1 ):
+    request = BuildRequest( filepath = TEST_FILE,
+                            filetype = 'foo',
+                            line_num = 1,
+                            column_num = 1,
+                            contents = TEST_FILE_CONTENT,
+                            event_name = 'FileReadyToParse' )
+    app.post_json( '/event_notification', request )
+
+    import time
+    # We patched the timeout to 1s
+    time.sleep( 1.5 )
+
+    request.pop( 'event_name' )
+    response = app.post_json( '/debug_info', request ).json
+    assert_that(
+      response,
+      has_entry( 'completer', has_entries( {
+        'name': 'GenericLSP',
+        'servers': contains_exactly( has_entries( {
+          'name': 'fooCompleter',
+          'port': TEST_PORT,
+          'pid': None,
+          'logfiles': empty(),
+          'extras': contains_exactly(
+            has_entries( {
+              'key': 'Server State',
+              'value': 'Dead',
+            } ),
+            has_entries( {
+              'key': 'Project Directory',
+              'value': None,
+            } ),
+            has_entries( {
+              'key': 'Settings',
+              'value': '{}'
+            } ),
+          )
+        } ) ),
+      } ) )
+    )
+
+
+
 @IsolatedYcmd( { 'language_server':
   [ { 'name': 'foo',
       'filetypes': [ 'foo' ],
@@ -144,14 +284,35 @@ def GenericLSPCompleter_Diagnostics_test( app ):
   request.pop( 'event_name' )
   response = app.post_json( '/receive_messages', request )
   assert_that( response.json, has_items(
-    has_entries( { 'diagnostics': has_items(
+    has_entries( { 'diagnostics': contains_exactly(
       has_entries( {
         'kind': equal_to( 'WARNING' ),
         'location': LocationMatcher( TEST_FILE, 2, 1 ),
         'location_extent': RangeMatcher( TEST_FILE, ( 2, 1 ), ( 2, 4 ) ),
         'text': equal_to( 'FOO is all uppercase.' ),
         'fixit_available': False
-      } )
+      } ),
+      has_entries( {
+        'kind': equal_to( 'WARNING' ),
+        'location': LocationMatcher( TEST_FILE, 3, 1 ),
+        'location_extent': RangeMatcher( TEST_FILE, ( 3, 1 ), ( 3, 4 ) ),
+        'text': equal_to( 'FOO is all uppercase.' ),
+        'fixit_available': False
+      } ),
+      has_entries( {
+        'kind': equal_to( 'WARNING' ),
+        'location': LocationMatcher( TEST_FILE, 4, 1 ),
+        'location_extent': RangeMatcher( TEST_FILE, ( 4, 1 ), ( 4, 4 ) ),
+        'text': equal_to( 'FOO is all uppercase.' ),
+        'fixit_available': False
+      } ),
+      has_entries( {
+        'kind': equal_to( 'WARNING' ),
+        'location': LocationMatcher( TEST_FILE, 5, 1 ),
+        'location_extent': RangeMatcher( TEST_FILE, ( 5, 1 ), ( 5, 4 ) ),
+        'text': equal_to( 'FOO is all uppercase.' ),
+        'fixit_available': False
+      } ),
     ) } )
   ) )
 
@@ -385,3 +546,35 @@ def GenericLSPCompleter_SignatureHelp_NotSupported_test( app ):
   response = app.get( '/signature_help_available',
                       { 'subserver': 'foo' } ).json
   assert_that( response, SignatureAvailableMatcher( 'NO' ) )
+
+
+@IsolatedYcmd( {
+  'global_ycm_extra_conf': PathToTestFile( 'generic_server', 'single_diag.py' ),
+  'language_server':
+    [ { 'name': 'foo',
+        'filetypes': [ 'foo' ],
+        'capabilities': { 'workspace': { 'configuration': True } },
+        'cmdline': [ 'node', PATH_TO_GENERIC_COMPLETER, '--stdio' ] } ] } )
+def GenericLSPCompleter_SingleDiagnostics_test( app ):
+  request = BuildRequest( filepath = TEST_FILE,
+                          filetype = 'foo',
+                          line_num = 1,
+                          column_num = 1,
+                          contents = TEST_FILE_CONTENT,
+                          event_name = 'FileReadyToParse' )
+
+  app.post_json( '/event_notification', request )
+  WaitUntilCompleterServerReady( app, 'foo' )
+  request.pop( 'event_name' )
+  response = app.post_json( '/receive_messages', request )
+  assert_that( response.json, has_items(
+    has_entries( { 'diagnostics': contains_exactly(
+      has_entries( {
+        'kind': equal_to( 'WARNING' ),
+        'location': LocationMatcher( TEST_FILE, 2, 1 ),
+        'location_extent': RangeMatcher( TEST_FILE, ( 2, 1 ), ( 2, 4 ) ),
+        'text': equal_to( 'FOO is all uppercase.' ),
+        'fixit_available': False
+      } )
+    ) } )
+  ) )

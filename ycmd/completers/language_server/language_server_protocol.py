@@ -24,7 +24,8 @@ from urllib.request import pathname2url, url2pathname
 
 from ycmd.utils import ( ByteOffsetToCodepointOffset,
                          ToBytes,
-                         ToUnicode )
+                         ToUnicode,
+                         UpdateDict )
 
 
 Error = collections.namedtuple( 'RequestError', [ 'code', 'reason' ] )
@@ -259,78 +260,78 @@ def BuildResponse( request, parameters ):
   return _BuildMessageData( message )
 
 
-def Initialize( request_id, project_directory, settings ):
+def Initialize( request_id, project_directory, extra_capabilities, settings ):
   """Build the Language Server initialize request"""
 
+  capabilities = {
+    'workspace': {
+      'applyEdit': True,
+      'didChangeWatchedFiles': {
+        'dynamicRegistration': True
+      },
+      'workspaceEdit': { 'documentChanges': True, },
+      'symbol': {
+        'symbolKind': {
+          'valueSet': list( range( 1, len( SYMBOL_KIND ) ) ),
+        }
+      }
+    },
+    'textDocument': {
+      'codeAction': {
+        'codeActionLiteralSupport': {
+          'codeActionKind': {
+            'valueSet': [ '',
+                          'quickfix',
+                          'refactor',
+                          'refactor.extract',
+                          'refactor.inline',
+                          'refactor.rewrite',
+                          'source',
+                          'source.organizeImports' ]
+          }
+        }
+      },
+      'completion': {
+        'completionItemKind': {
+          # ITEM_KIND list is 1-based.
+          # valueSet is a list of the indices of items supported
+          'valueSet': list( range( 1, len( ITEM_KIND ) ) ),
+        },
+        'completionItem': {
+          'documentationFormat': [
+            'plaintext',
+            'markdown'
+          ],
+        },
+      },
+      'hover': {
+        'contentFormat': [
+          'plaintext',
+          'markdown'
+        ]
+      },
+      'signatureHelp': {
+        'signatureInformation': {
+          'parameterInformation': {
+            'labelOffsetSupport': True,
+          },
+          'documentationFormat': [
+            'plaintext',
+            'markdown'
+          ],
+        },
+      },
+      'synchronization': {
+        'didSave': True
+      },
+    },
+  }
   return BuildRequest( request_id, 'initialize', {
     'processId': os.getpid(),
     'rootPath': project_directory,
     'rootUri': FilePathToUri( project_directory ),
     'initializationOptions': settings,
-    'capabilities': {
-      'experimental': { 'statusNotification': True },
-      'workspace': {
-        'applyEdit': True,
-        'didChangeWatchedFiles': {
-          'dynamicRegistration': True
-        },
-        'workspaceEdit': { 'documentChanges': True, },
-        'symbol': {
-          'symbolKind': {
-            'valueSet': list( range( 1, len( SYMBOL_KIND ) ) ),
-          }
-        }
-      },
-      'textDocument': {
-        'codeAction': {
-          'codeActionLiteralSupport': {
-            'codeActionKind': {
-              'valueSet': [ '',
-                            'quickfix',
-                            'refactor',
-                            'refactor.extract',
-                            'refactor.inline',
-                            'refactor.rewrite',
-                            'source',
-                            'source.organizeImports' ]
-            }
-          }
-        },
-        'completion': {
-          'completionItemKind': {
-            # ITEM_KIND list is 1-based.
-            # valueSet is a list of the indices of items supported
-            'valueSet': list( range( 1, len( ITEM_KIND ) ) ),
-          },
-          'completionItem': {
-            'documentationFormat': [
-              'plaintext',
-              'markdown'
-            ],
-          },
-        },
-        'hover': {
-          'contentFormat': [
-            'plaintext',
-            'markdown'
-          ]
-        },
-        'signatureHelp': {
-          'signatureInformation': {
-            'parameterInformation': {
-              'labelOffsetSupport': True,
-            },
-            'documentationFormat': [
-              'plaintext',
-              'markdown'
-            ],
-          },
-        },
-        'synchronization': {
-          'didSave': True
-        },
-      },
-    },
+    'capabilities': UpdateDict( capabilities, extra_capabilities ),
   } )
 
 
@@ -578,17 +579,30 @@ def FormattingOptions( request_data ):
 def Range( request_data ):
   lines = request_data[ 'lines' ]
 
-  start = request_data[ 'range' ][ 'start' ]
-  start_line_num = start[ 'line_num' ]
-  start_line_value = lines[ start_line_num - 1 ]
-  start_codepoint = ByteOffsetToCodepointOffset( start_line_value,
-                                                 start[ 'column_num' ] )
+  if 'range' not in request_data:
+    start_codepoint = request_data[ 'start_codepoint' ]
+    start_line_num = request_data[ 'line_num' ]
+    start_line_value = request_data[ 'line_value' ]
 
-  end = request_data[ 'range' ][ 'end' ]
-  end_line_num = end[ 'line_num' ]
-  end_line_value = lines[ end_line_num - 1 ]
-  end_codepoint = ByteOffsetToCodepointOffset( end_line_value,
-                                               end[ 'column_num' ] )
+    end_codepoint = start_codepoint + 1
+    end_line_num = start_line_num
+    end_line_value = start_line_value
+  else:
+    start = request_data[ 'range' ][ 'start' ]
+    start_line_num = start[ 'line_num' ]
+    end = request_data[ 'range' ][ 'end' ]
+    end_line_num = end[ 'line_num' ]
+
+    try:
+      start_line_value = lines[ start_line_num - 1 ]
+      start_codepoint = ByteOffsetToCodepointOffset( start_line_value,
+                                                     start[ 'column_num' ] )
+
+      end_line_value = lines[ end_line_num - 1 ]
+      end_codepoint = ByteOffsetToCodepointOffset( end_line_value,
+                                                   end[ 'column_num' ] )
+    except IndexError:
+      raise RuntimeError( "Invalid range" )
 
   # LSP requires to use the start of the next line as the end position for a
   # range that ends with a newline.
@@ -683,3 +697,39 @@ def UTF16CodeUnitsToCodepoints( line_value, code_unit_offset ):
 
   bytes_included = value_as_utf16_bytes[ : code_unit_offset * 2 ]
   return len( bytes_included.decode( 'utf-16-le' ) )
+
+
+def ComparePositions( a, b ):
+  """Returns < 0 if a is before b, 0 if a and b are equal and > 0 if a is
+  after b. a and b are both LSP positions."""
+
+  # If they are on the same line, compare character pos
+  if a[ 'line' ] == b[ 'line' ]:
+    return a[ 'character' ] - b[ 'character' ]
+  # otherwise, just compare the lines
+  return a[ 'line' ] - b[ 'line' ]
+
+
+def RangesOverlap( a, b ):
+  """Returns true if the LSP ranges a and b strictly overlap"""
+  # if the diag ends before the start of the cursor, it's not overlapping
+  if ComparePositions( a[ 'end' ], b[ 'start' ] ) < 0:
+    return False
+
+  # if the diag starts after the end of the cursor, it's not overlapping
+  if ComparePositions( a[ 'start' ], b[ 'end' ] ) > 0:
+    return False
+
+  # Otherwise it overaps in at least 1 char
+  return True
+
+
+def RangesOverlapLines( a, b ):
+  """Returns true if the LSP ranges a and b share any lines"""
+  if a[ 'end' ][ 'line' ] < b[ 'start' ][ 'line' ]:
+    return False
+
+  if a[ 'start' ][ 'line' ] > b[ 'end' ][ 'line' ]:
+    return False
+
+  return True
