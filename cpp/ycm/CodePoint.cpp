@@ -47,7 +47,7 @@ int GetCodePointLength( uint8_t leading_byte ) {
 }
 
 
-RawCodePoint FindCodePoint( const char *text ) {
+RawCodePoint FindCodePoint( std::string_view text) {
 #include "UnicodeTable.inc"
 
   // Do a binary search on the array of code points to find the raw code point
@@ -59,10 +59,10 @@ RawCodePoint FindCodePoint( const char *text ) {
     original.begin(),
     original.end(),
     text,
-    []( const char* cp, const char* text ) {
-      return std::strcmp( cp, text ) < 0;
+    []( const char* cp, std::string_view text ) {
+      return -1 * text.compare( cp );
     } );
-  if ( it != original.end() && strcmp( text, *it ) == 0 ) {
+  if ( it != original.end() && text == *it ) {
     size_t index = std::distance( original.begin(), it );
     return { *it,
              code_points.normal[ index ],

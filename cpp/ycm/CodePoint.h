@@ -50,10 +50,10 @@ enum class BreakProperty : uint8_t {
 // This is the structure used to store the data in the Unicode table. See the
 // CodePoint class for a description of the members.
 struct RawCodePoint {
-  const char *original;
-  const char *normal;
-  const char *folded_case;
-  const char *swapped_case;
+  std::string_view original;
+  std::string_view normal;
+  std::string_view folded_case;
+  std::string_view swapped_case;
   bool is_letter;
   bool is_punctuation;
   bool is_uppercase;
