@@ -666,12 +666,11 @@ def BuildYcmdLib( cmake, cmake_common_args, script_args ):
 
 
 def BuildRegexModule( script_args ):
-  DIR_OF_REGEX = p.join( DIR_OF_THIRD_PARTY, 'mrab-regex' )
-  build_dir = os.path.join( DIR_OF_REGEX, 'build', '3' )
-  lib_dir = os.path.join( DIR_OF_REGEX, 'build' )
+  build_dir = os.path.join( DIR_OF_THIRD_PARTY, 'regex-build', '3' )
+  lib_dir = os.path.join( DIR_OF_THIRD_PARTY, 'regex-build' )
 
   try:
-    os.chdir( DIR_OF_REGEX )
+    os.chdir( DIR_OF_THIRD_PARTY, 'mrab-regex' )
 
     RemoveDirectoryIfExists( build_dir )
     RemoveDirectoryIfExists( lib_dir )
@@ -690,6 +689,7 @@ def BuildRegexModule( script_args ):
       pass # Swallow the error - ycmd will fall back to the standard `re`.
 
   finally:
+    RemoveDirectoryIfExists( build_dir )
     os.chdir( DIR_OF_THIS_SCRIPT )
 
 
