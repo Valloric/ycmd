@@ -1472,6 +1472,12 @@ class LanguageServerCompleter( Completer ):
     return completions
 
 
+  def BufferUpdateType( self ):
+    if not self.ServerIsReady():
+      return responses.BufferUpdateTypes.PENDING
+    return self._sync_type if self._sync_type != 'None' else 'Full'
+
+
   def SignatureHelpAvailable( self ):
     if self._signature_help_disabled:
       return responses.SignatureHelpAvailalability.NOT_AVAILABLE
@@ -1989,7 +1995,14 @@ class LanguageServerCompleter( Completer ):
         continue
 
       file_state = self._server_file_state[ file_name ]
-      action = file_state.GetDirtyFileAction( file_data[ 'contents' ] )
+
+      if 'contents' in file_data:
+        file_contents = file_data[ 'contents' ]
+        action = file_state.GetDirtyFileAction( file_contents )
+      else:
+        assert self._sync_type == 'Incremental'
+        file_contents = GetFileContents( request_data, file_name )
+        action = file_state.GetDirtyFileAction( file_contents )
 
       LOGGER.debug( 'Refreshing file %s: State is %s/action %s',
                     file_name,
@@ -1999,18 +2012,23 @@ class LanguageServerCompleter( Completer ):
       if action == lsp.ServerFileState.OPEN_FILE:
         msg = lsp.DidOpenTextDocument( file_state,
                                        file_data[ 'filetypes' ],
-                                       file_data[ 'contents' ] )
+                                       file_contents )
 
         self.GetConnection().SendNotification( msg )
+        if 'changes' in file_data:
+          # Also push the incremental change
+          assert self._sync_type == 'Incremental'
+          LOGGER.debug( 'First change' )
+          msg = lsp.DidChangeTextDocument( file_state, file_data[ 'changes' ] )
+          self.GetConnection().SendNotification( msg )
       elif action == lsp.ServerFileState.CHANGE_FILE:
-        # FIXME: DidChangeTextDocument doesn't actually do anything
-        # different from DidOpenTextDocument other than send the right
-        # message, because we don't actually have a mechanism for generating
-        # the diffs. This isn't strictly necessary, but might lead to
-        # performance problems.
-        msg = lsp.DidChangeTextDocument( file_state, file_data[ 'contents' ] )
-
-        self.GetConnection().SendNotification( msg )
+        if 'changes' in file_data:
+          assert self._sync_type == 'Incremental'
+          msg = lsp.DidChangeTextDocument( file_state, file_data[ 'changes' ] )
+          self.GetConnection().SendNotification( msg )
+        else:
+          msg = lsp.DidChangeTextDocument( file_state, file_contents )
+          self.GetConnection().SendNotification( msg )
 
 
   def _UpdateSavedFilesUnderLock( self, request_data ):
@@ -2212,10 +2230,10 @@ class LanguageServerCompleter( Completer ):
 
       if self._resolve_completion_items:
         LOGGER.info( '%s: Language server requires resolve request',
-                     self.Langauge() )
+                     self.Language() )
       else:
         LOGGER.info( '%s: Language server does not require resolve request',
-                     self.Langauge() )
+                     self.Language() )
 
       self._is_completion_provider = (
           'completionProvider' in self._server_capabilities )
@@ -2238,7 +2256,7 @@ class LanguageServerCompleter( Completer ):
 
         self._sync_type = SYNC_TYPE[ sync ]
         LOGGER.info( '%s: Language server requires sync type of %s',
-                     self.Langauge(),
+                     self.Language(),
                      self._sync_type )
 
       # Update our semantic triggers if they are supplied by the server
