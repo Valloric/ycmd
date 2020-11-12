@@ -26,12 +26,10 @@ from server_utils import SetUpPythonPath
 SetUpPythonPath()
 
 import atexit
-import sys
 import logging
 import json
 import argparse
 import signal
-import os
 import base64
 
 from ycmd import extra_conf_store, user_options_store, utils
