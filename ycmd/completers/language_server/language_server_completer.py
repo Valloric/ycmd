@@ -32,7 +32,9 @@ from watchdog.observers import Observer
 
 from ycmd import extra_conf_store, responses, utils
 from ycmd.completers.completer import Completer, CompletionsCache
-from ycmd.completers.completer_utils import GetFileContents, GetFileLines
+from ycmd.completers.completer_utils import ( GetFileContents,
+                                              GetFileLines,
+                                              ServerFileState )
 from ycmd.utils import LOGGER
 
 from ycmd.completers.language_server import language_server_protocol as lsp
@@ -999,10 +1001,10 @@ class LanguageServerCompleter( Completer ):
     self._stderr_file = None
     self._server_started = False
 
-    self._Reset()
+    self.Reset()
 
 
-  def _Reset( self ):
+  def Reset( self ):
     self.ServerReset()
     self._connection = None
     self._server_handle = None
@@ -1012,13 +1014,13 @@ class LanguageServerCompleter( Completer ):
     if not self._server_keep_logfiles and self._stderr_file:
       utils.RemoveIfExists( self._stderr_file )
       self._stderr_file = None
+    super().Reset()
 
 
   def ServerReset( self ):
     """Clean up internal state related to the running server instance.
     Implementations are required to call this after disconnection and killing
     the downstream server."""
-    self._server_file_state = lsp.ServerFileStateStore()
     self._latest_diagnostics_mutex = threading.Lock()
     self._latest_diagnostics = collections.defaultdict( list )
     self._sync_type = 'Full'
@@ -1125,7 +1127,7 @@ class LanguageServerCompleter( Completer ):
 
       if not self.ServerIsHealthy():
         LOGGER.info( '%s is not running', self.GetServerName() )
-        self._Reset()
+        self.Reset()
         return
 
       if self._server_handle:
@@ -1175,7 +1177,7 @@ class LanguageServerCompleter( Completer ):
     with self._server_info_mutex:
       # Tidy up our internal state, even if the completer server didn't close
       # down cleanly.
-      self._Reset()
+      self.Reset()
 
 
   def ShutdownServer( self ):
@@ -1959,11 +1961,34 @@ class LanguageServerCompleter( Completer ):
     return None
 
 
-  def _AnySupportedFileType( self, file_types ):
-    for supported in self.SupportedFiletypes():
-      if supported in file_types:
-        return True
-    return False
+  def OpenFileHandler( self, file_state, filetypes, changes ):
+    msg = lsp.DidOpenTextDocument( file_state, filetypes )
+    self.GetConnection().SendNotification( msg )
+
+
+  def ChangeFileHandler( self, file_state, filetypes, changes ):
+    def FixItChunkToContentChangeEvent( fix_it_chunk ):
+      print(fix_it_chunk)
+      range = fix_it_chunk[ 'range' ]
+      start = range[ 'start' ]
+      end = range[ 'end' ]
+      lsp_range = {
+        'start': { 'line': start[ 'line_num' ] - 1,
+                   'character': start[ 'column_num' ] - 1 },
+        'end': { 'line': end[ 'line_num' ] - 1,
+                 'character': end[ 'column_num' ] - 1 },
+      }
+      return {
+        'text': fix_it_chunk[ 'replacement_text' ],
+        'range': lsp_range
+      }
+    if self._sync_type == 'Incremental' and changes is not None:
+      diff = [ FixItChunkToContentChangeEvent( change )
+               for change in changes ]
+    else:
+      diff = [ { 'text': file_state.contents } ]
+    msg = lsp.DidChangeTextDocument( file_state, diff )
+    self.GetConnection().SendNotification( msg )
 
 
   def _UpdateServerWithFileContents( self, request_data ):
@@ -1974,43 +1999,9 @@ class LanguageServerCompleter( Completer ):
     synchronous operation."""
     with self._server_info_mutex:
       self._UpdateDirtyFilesUnderLock( request_data )
-      files_to_purge = self._UpdateSavedFilesUnderLock( request_data )
-      self._PurgeMissingFilesUnderLock( files_to_purge )
-
-
-  def _UpdateDirtyFilesUnderLock( self, request_data ):
-    for file_name, file_data in request_data[ 'file_data' ].items():
-      if not self._AnySupportedFileType( file_data[ 'filetypes' ] ):
-        LOGGER.debug( 'Not updating file %s, it is not a supported filetype: '
-                       '%s not in %s',
-                       file_name,
-                       file_data[ 'filetypes' ],
-                       self.SupportedFiletypes() )
-        continue
-
-      file_state = self._server_file_state[ file_name ]
-      action = file_state.GetDirtyFileAction( file_data[ 'contents' ] )
-
-      LOGGER.debug( 'Refreshing file %s: State is %s/action %s',
-                    file_name,
-                    file_state.state,
-                    action )
-
-      if action == lsp.ServerFileState.OPEN_FILE:
-        msg = lsp.DidOpenTextDocument( file_state,
-                                       file_data[ 'filetypes' ],
-                                       file_data[ 'contents' ] )
-
-        self.GetConnection().SendNotification( msg )
-      elif action == lsp.ServerFileState.CHANGE_FILE:
-        # FIXME: DidChangeTextDocument doesn't actually do anything
-        # different from DidOpenTextDocument other than send the right
-        # message, because we don't actually have a mechanism for generating
-        # the diffs. This isn't strictly necessary, but might lead to
-        # performance problems.
-        msg = lsp.DidChangeTextDocument( file_state, file_data[ 'contents' ] )
-
-        self.GetConnection().SendNotification( msg )
+      # TODO: Consider doing this in self.OnBufferUnload()
+      purge_files = self._UpdateSavedFilesUnderLock( request_data )
+      self._PurgeMissingFilesUnderLock( purge_files )
 
 
   def _UpdateSavedFilesUnderLock( self, request_data ):
@@ -2047,8 +2038,8 @@ class LanguageServerCompleter( Completer ):
         continue
 
       action = file_state.GetSavedFileAction( contents )
-      if action == lsp.ServerFileState.CHANGE_FILE:
-        msg = lsp.DidChangeTextDocument( file_state, contents )
+      if action == ServerFileState.CHANGE_FILE:
+        msg = lsp.DidChangeTextDocument( file_state, [ { 'text': contents } ] )
         self.GetConnection().SendNotification( msg )
 
     return files_to_purge
@@ -2074,7 +2065,7 @@ class LanguageServerCompleter( Completer ):
         if isinstance( save, dict ) and save.get( 'includeText' ):
           contents = request_data[ 'file_data' ][ file_name ][ 'contents' ]
         file_state = self._server_file_state[ file_name ]
-        msg = lsp.DidSaveTextDocument( file_state, contents )
+        msg = lsp.DidSaveTextDocument( file_state )
         self.GetConnection().SendNotification( msg )
 
 
@@ -2093,16 +2084,15 @@ class LanguageServerCompleter( Completer ):
       return
 
     self._PurgeFileFromServer( request_data[ 'filepath' ] )
+    super().OnBufferUnload( request_data )
 
 
   def _PurgeFileFromServer( self, file_path ):
     file_state = self._server_file_state[ file_path ]
     action = file_state.GetFileCloseAction()
-    if action == lsp.ServerFileState.CLOSE_FILE:
+    if action == ServerFileState.CLOSE_FILE:
       msg = lsp.DidCloseTextDocument( file_state )
       self.GetConnection().SendNotification( msg )
-
-    del self._server_file_state[ file_state.filename ]
 
 
   def GetProjectRootFiles( self ):
@@ -2212,10 +2202,10 @@ class LanguageServerCompleter( Completer ):
 
       if self._resolve_completion_items:
         LOGGER.info( '%s: Language server requires resolve request',
-                     self.Langauge() )
+                     self.Language() )
       else:
         LOGGER.info( '%s: Language server does not require resolve request',
-                     self.Langauge() )
+                     self.Language() )
 
       self._is_completion_provider = (
           'completionProvider' in self._server_capabilities )
@@ -2238,7 +2228,7 @@ class LanguageServerCompleter( Completer ):
 
         self._sync_type = SYNC_TYPE[ sync ]
         LOGGER.info( '%s: Language server requires sync type of %s',
-                     self.Langauge(),
+                     self.Language(),
                      self._sync_type )
 
       # Update our semantic triggers if they are supplied by the server
