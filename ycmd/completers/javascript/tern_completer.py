@@ -17,14 +17,18 @@
 
 import logging
 import os
-import requests
+import urllib.request
+import urllib.error
+import json
 import threading
 
 from subprocess import PIPE
 from ycmd import utils, responses
 from ycmd.completers.completer import Completer
 from ycmd.completers.completer_utils import GetFileLines
-from ycmd.utils import LOGGER
+from ycmd.utils import LOGGER, ToBytes
+
+HTTP_OK
 
 PATH_TO_TERN_BINARY = os.path.abspath(
   os.path.join(
@@ -221,7 +225,7 @@ class TernCompleter( Completer ):
     # empty request just containing the file data
     try:
       self._PostRequest( {}, request_data )
-    except Exception:
+    except ( urllib.error.HTTPError, urllib.error.URLError ):
       # The server might not be ready yet or the server might not be running.
       # in any case, just ignore this we'll hopefully get another parse request
       # soon.
@@ -286,9 +290,9 @@ class TernCompleter( Completer ):
 
     try:
       target = self._GetServerAddress() + '/ping'
-      response = requests.get( target )
-      return response.status_code == requests.codes.ok
-    except requests.ConnectionError:
+      response = urllib.request.urlopen( target )
+      return response.code == HTTP_OK
+    except ( urllib.error.URLError, urllib.error.HTTPError ):
       return False
 
 
@@ -320,14 +324,14 @@ class TernCompleter( Completer ):
                  if 'javascript' in file_data[ x ][ 'filetypes' ] ],
     }
     full_request.update( request )
+    response = urllib.request.urlopen(
+      self._GetServerAddress(),
+      data = ToBytes( json.dumps( full_request ) ) )
 
-    response = requests.post( self._GetServerAddress(),
-                              json = full_request )
+    if response.code != HTTP_OK:
+      raise RuntimeError( response.read() )
 
-    if response.status_code != requests.codes.ok:
-      raise RuntimeError( response.text )
-
-    return response.json()
+    return json.loads( response.read() )
 
 
   def _GetResponse( self, query, codepoint, request_data ):
@@ -522,9 +526,12 @@ class TernCompleter( Completer ):
       'types':      True
     }
 
-    response = self._GetResponse( query,
-                                  request_data[ 'column_codepoint' ],
-                                  request_data )
+    try:
+      response = self._GetResponse( query,
+                                    request_data[ 'column_codepoint' ],
+                                    request_data )
+    except urllib.error.HTTPError:
+      raise RuntimeError( 'TernError: No type found at the given position.' )
 
     doc_string = 'Name: {name}\nType: {type}\n\n{doc}'.format(
         name = response.get( 'name', 'Unknown' ),
