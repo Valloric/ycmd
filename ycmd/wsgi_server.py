@@ -15,17 +15,20 @@
 # You should have received a copy of the GNU General Public License
 # along with ycmd.  If not, see <http://www.gnu.org/licenses/>.
 
-from waitress.server import TcpWSGIServer
+from wsgiref.simple_server import WSGIServer, WSGIRequestHandler
+from socketserver import ThreadingMixIn
 import select
 import sys
 
 
-class StoppableWSGIServer( TcpWSGIServer ):
-  """StoppableWSGIServer is a subclass of the TcpWSGIServer Waitress server
-  with a shutdown method. It is based on StopableWSGIServer class from webtest:
-  https://github.com/Pylons/webtest/blob/master/webtest/http.py"""
-
+class StoppableWSGIServer( ThreadingMixIn, WSGIServer ):
   shutdown_requested = False
+  daemon_threads = True
+
+  def __init__( self, app, host, port, threads ):
+    super().__init__( ( host, port ), WSGIRequestHandler )
+    self.set_app( app )
+
 
   def Run( self ):
     """Wrapper of TcpWSGIServer run method. It prevents a traceback from
@@ -34,11 +37,10 @@ class StoppableWSGIServer( TcpWSGIServer ):
     # Message for compatibility with clients who expect the output from
     # waitress.serve here
     if sys.stdin is not None:
-      print( f'serving on http://{ self.effective_host }:'
-             f'{ self.effective_port }' )
+      print( f'serving on http://{ self.server_name }:{ self.server_port }' )
 
     try:
-      self.run()
+      self.serve_forever()
     except select.error:
       if not self.shutdown_requested:
         raise
@@ -47,12 +49,5 @@ class StoppableWSGIServer( TcpWSGIServer ):
   def Shutdown( self ):
     """Properly shutdown the server."""
     self.shutdown_requested = True
-    # Shutdown waitress threads.
-    self.task_dispatcher.shutdown()
-    # Close asyncore channels.
-    # We use list() here because _map is modified while looping through it.
-    # NOTE: _map is an attribute from the asyncore.dispatcher class, which is a
-    # base class of TcpWSGIServer. This may change in future versions of
-    # waitress so extra care should be taken when updating waitress.
-    for channel in list( self._map.values() ):
-      channel.close()
+    self.server_close()
+    self.shutdown()
