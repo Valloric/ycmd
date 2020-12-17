@@ -36,21 +36,21 @@ namespace YouCompleteMe {
 namespace {
 
 std::vector< const Candidate * > CandidatesFromObjectList(
-  pylist candidates,
-  const std::string &candidate_property ) {
-  size_t num_candidates = len( candidates );
+  const pybind11::list& candidates,
+  pybind11::str candidate_property,
+  size_t num_candidates ) {
   std::vector< std::string > candidate_strings;
   candidate_strings.reserve( num_candidates );
-  // Store the property in a native Python string so that the below doesn't need
-  // to reconvert over and over:
-  str py_prop( candidate_property );
 
-  for ( size_t i = 0; i < num_candidates; ++i ) {
-    if ( candidate_property.empty() ) {
-      candidate_strings.emplace_back( GetUtf8String( candidates[ i ] ) );
-    } else {
-      candidate_strings.emplace_back( GetUtf8String(
-                                        candidates[ i ][ py_prop ] ) );
+  if ( !PyUnicode_GET_LENGTH( candidate_property.ptr() ) ) {
+    for ( size_t i = 0; i < num_candidates; ++i ) {
+        candidate_strings.emplace_back( GetUtf8String( PyList_GET_ITEM(candidates.ptr(), i ) ) );
+    }
+  } else {
+    for ( size_t i = 0; i < num_candidates; ++i ) {
+        auto element = PyDict_GetItem( PyList_GET_ITEM( candidates.ptr(), i ),
+                                        candidate_property.ptr() );
+        candidate_strings.emplace_back( GetUtf8String( element ) );
     }
   }
 
@@ -62,15 +62,15 @@ std::vector< const Candidate * > CandidatesFromObjectList(
 
 
 pylist FilterAndSortCandidates(
-  pylist candidates,
-  const std::string &candidate_property,
+  const pylist& candidates,
+  pybind11::str candidate_property,
   std::string query,
   const size_t max_candidates ) {
   pylist filtered_candidates;
 
   size_t num_candidates = len( candidates );
   std::vector< const Candidate * > repository_candidates =
-    CandidatesFromObjectList( candidates, candidate_property );
+    CandidatesFromObjectList( candidates, std::move( candidate_property ), num_candidates );
 
   std::vector< ResultAnd< size_t > > result_and_objects;
   {
@@ -95,24 +95,37 @@ pylist FilterAndSortCandidates(
   }
 
   for ( const ResultAnd< size_t > &result_and_object : result_and_objects ) {
-    filtered_candidates.append( candidates[ result_and_object.extra_object_ ] );
+    auto new_candidate = 
+        PyList_GET_ITEM( candidates.ptr(), result_and_object.extra_object_ );
+    filtered_candidates.append( new_candidate );
   }
 
   return filtered_candidates;
 }
 
 
-std::string GetUtf8String( const object &value ) {
+std::string GetUtf8String( pybind11::handle value ) {
   // If already a unicode or string (or something derived from it)
   // pybind will already convert to utf8 when converting to std::string.
   // For `bytes` the contents are left untouched:
-  if ( isinstance< str >( value ) || isinstance< bytes >( value ) ) {
-    return value.cast< std::string >();
+  if ( PyUnicode_CheckExact( value.ptr() ) ) {
+    ssize_t size = 0;
+    const char* buffer = nullptr;
+    buffer = PyUnicode_AsUTF8AndSize( value.ptr(), &size );
+    return { buffer, (size_t)size };
+  }
+  if ( PyBytes_CheckExact( value.ptr() ) ) {
+    ssize_t size = 0;
+    char* buffer = nullptr;
+    PyBytes_AsStringAndSize( value.ptr(), &buffer, &size );
+    return { buffer, (size_t)size };
   }
 
-  // Otherwise go through `pybind11::str()`,
-  // which goes through Python's built-in `str`.
-  return str( value );
+  // Otherwise go through Python's built-in `str`.
+  ssize_t size = 0;
+  const char* buffer =
+      PyUnicode_AsUTF8AndSize( PyObject_Str( value.ptr() ), &size );
+  return { buffer, (size_t)size };
 }
 
 } // namespace YouCompleteMe

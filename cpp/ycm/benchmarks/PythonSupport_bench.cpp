@@ -50,12 +50,13 @@ BENCHMARK_DEFINE_F( PythonSupportFixture,
     candidates.append( candidate );
   }
 
+  pybind11::str candidate_property("insertion_text");
   while ( state.KeepRunning() ) {
     state.PauseTiming();
     CharacterRepository::Instance().ClearCharacters();
     CandidateRepository::Instance().ClearCandidates();
     state.ResumeTiming();
-    FilterAndSortCandidates( candidates, "insertion_text", "aA",
+    FilterAndSortCandidates( candidates, candidate_property, "aA",
                              state.range( 1 ) );
   }
 
@@ -78,12 +79,13 @@ BENCHMARK_DEFINE_F( PythonSupportFixture,
     candidates.append( candidate );
   }
 
+  pybind11::str candidate_property("insertion_text");
   // Store the candidates in the repository.
-  FilterAndSortCandidates( candidates, "insertion_text", "aA",
+  FilterAndSortCandidates( candidates, candidate_property, "aA",
                            state.range( 1 ) );
 
   while ( state.KeepRunning() ) {
-    FilterAndSortCandidates( candidates, "insertion_text", "aA",
+    FilterAndSortCandidates( candidates, candidate_property, "aA",
                              state.range( 1 ) );
   }
 
