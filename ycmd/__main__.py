@@ -38,7 +38,6 @@ sys.path[ 0:0 ] = [
     os.path.join( DIR_OF_REQUESTS_DEPS, 'idna' ),
     os.path.join( DIR_OF_REQUESTS_DEPS, 'urllib3', 'src' ),
     os.path.join( DIR_OF_WATCHDOG_DEPS, 'watchdog', 'build', 'lib3' ),
-    os.path.join( DIR_OF_WATCHDOG_DEPS, 'pathtools' ),
     os.path.join( DIR_OF_THIRD_PARTY, 'waitress' ) ]
 sys.path.append( os.path.join( DIR_OF_THIRD_PARTY, 'jedi_deps', 'numpydoc' ) )
 
