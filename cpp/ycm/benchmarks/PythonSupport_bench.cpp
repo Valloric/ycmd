@@ -21,7 +21,7 @@
 #include "CodePointRepository.h"
 #include "PythonSupport.h"
 
-#include <benchmark/benchmark_api.h>
+#include <benchmark/benchmark.h>
 
 namespace YouCompleteMe {
 
@@ -50,7 +50,7 @@ BENCHMARK_DEFINE_F( PythonSupportFixture,
     candidates.append( candidate );
   }
 
-  while ( state.KeepRunning() ) {
+  for ( auto _ : state ) {
     state.PauseTiming();
     CharacterRepository::Instance().ClearCharacters();
     CandidateRepository::Instance().ClearCandidates();
@@ -82,7 +82,7 @@ BENCHMARK_DEFINE_F( PythonSupportFixture,
   FilterAndSortCandidates( candidates, "insertion_text", "aA",
                            state.range( 1 ) );
 
-  while ( state.KeepRunning() ) {
+  for ( auto _ : state ) {
     FilterAndSortCandidates( candidates, "insertion_text", "aA",
                              state.range( 1 ) );
   }
