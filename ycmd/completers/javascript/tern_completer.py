@@ -290,9 +290,9 @@ class TernCompleter( Completer ):
 
     try:
       target = self._GetServerAddress() + '/ping'
-      response = urllib.request.urlopen( target )
-      return response.code == HTTP_OK
-    except urllib.error.URLError:
+      with urllib.request.urlopen( target ) as response:
+        return response.code == HTTP_OK
+    except urllib.error.URLError as response:
       return False
 
 
@@ -329,9 +329,13 @@ class TernCompleter( Completer ):
         self._GetServerAddress(),
         data = ToBytes( json.dumps( full_request ) ) )
 
-      return json.loads( response.read() )
+      json_response = json.loads( response.read() )
+      response.close()
+      return json_response
     except urllib.error.HTTPError as response:
-      raise RuntimeError( ToUnicode( response.fp.read() ) )
+      exception = ToUnicode( response.fp.read() )
+      response.close()
+      raise RuntimeError( exception )
 
 
   def _GetResponse( self, query, codepoint, request_data ):
