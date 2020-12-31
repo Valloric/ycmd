@@ -849,11 +849,13 @@ class CsharpSolutionCompleter( object ):
         target,
         data = ToBytes( json.dumps( parameters ) ),
         timeout = timeout )
-      response = json.loads( response.read() )
+      json_response = json.loads( response.read() )
     except urllib.error.HTTPError as response:
-      response = json.loads( response.fp.read() )
-    LOGGER.debug( 'RX: %s', response )
-    return response
+      json_response = json.loads( response.fp.read() )
+    finally:
+      response.close()
+    LOGGER.debug( 'RX: %s', json_response )
+    return json_response
 
 
   def _ChooseOmnisharpPort( self ):

@@ -291,8 +291,11 @@ class TernCompleter( Completer ):
     try:
       target = self._GetServerAddress() + '/ping'
       response = urllib.request.urlopen( target )
-      return response.code == HTTP_OK
-    except urllib.error.URLError:
+      code = response.code
+      response.close()
+      return code == HTTP_OK
+    except urllib.error.URLError as response:
+      response.close()
       return False
 
 
@@ -332,6 +335,8 @@ class TernCompleter( Completer ):
       return json.loads( response.read() )
     except urllib.error.HTTPError as response:
       raise RuntimeError( ToUnicode( response.fp.read() ) )
+    finally:
+      response.close()
 
 
   def _GetResponse( self, query, codepoint, request_data ):
