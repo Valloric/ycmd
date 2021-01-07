@@ -105,7 +105,8 @@ CodePointSequence BreakIntoCodePoints( std::string_view text ) {
     iter += length;
   }
 
-  return CodePointRepository::Instance().GetCodePoints( code_points );
+  return CodePointRepository::Instance()
+          .GetCodePoints( std::move( code_points ) );
 }
 
 

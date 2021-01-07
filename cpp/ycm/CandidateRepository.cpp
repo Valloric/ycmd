@@ -60,7 +60,7 @@ std::vector< const Candidate * > CandidateRepository::GetCandidatesForStrings(
 
       std::unique_ptr< Candidate > &candidate = GetValueElseInsert(
                                                   candidate_holder_,
-                                                  candidate_text,
+                                                  std::move( candidate_text ),
                                                   nullptr );
 
       if ( !candidate ) {
