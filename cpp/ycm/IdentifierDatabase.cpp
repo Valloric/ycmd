@@ -37,13 +37,11 @@ void IdentifierDatabase::AddIdentifiers(
   FiletypeIdentifierMap&& filetype_identifier_map ) {
   std::lock_guard locker( filetype_candidate_map_mutex_ );
 
-  for ( auto&& filetype_and_map : filetype_identifier_map ) {
-    for ( auto&& filepath_and_identifiers : filetype_and_map.second ) {
-      auto filetype = filetype_and_map.first;
-      auto filepath = filepath_and_identifiers.first;
-      AddIdentifiersNoLock( std::move( filepath_and_identifiers.second ),
-                            std::move( filetype ),
-                            std::move( filepath ) );
+  for ( auto&& [ filetype, paths_to_candidates ] : filetype_identifier_map ) {
+    for ( auto&& [ filepath, identifiers ] : paths_to_candidates ) {
+      AddIdentifiersNoLock( std::move( identifiers ),
+                            std::string( filetype ),
+                            std::string( filepath ) );
     }
   }
 }
@@ -79,6 +77,7 @@ std::vector< Result > IdentifierDatabase::ResultsForQueryAndType(
       return {};
     }
   }
+  auto&& [ _, paths_to_candidates ] = *it;
   Word query_object( std::move( query ) );
 
   std::unordered_set< const Candidate * > seen_candidates;
@@ -87,9 +86,9 @@ std::vector< Result > IdentifierDatabase::ResultsForQueryAndType(
 
   {
     std::lock_guard locker( filetype_candidate_map_mutex_ );
-    for ( const auto& path_and_candidates : *it->second ) {
-      for ( const Candidate * candidate : *path_and_candidates.second ) {
-        if ( !seen_candidates.insert( candidate ).second ) {
+    for ( const auto& [ path, candidates ] : *paths_to_candidates ) {
+      for ( const Candidate * candidate : *candidates ) {
+        if ( auto&& [ _, new_candidate ] = seen_candidates.insert( candidate ); !new_candidate ) {
           continue;
         }
 
