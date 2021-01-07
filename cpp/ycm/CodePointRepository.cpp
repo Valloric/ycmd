@@ -34,14 +34,14 @@ size_t CodePointRepository::NumStoredCodePoints() const {
 
 
 CodePointSequence CodePointRepository::GetCodePoints(
-  const std::vector< std::string > &code_points ) {
+  std::vector< std::string >&& code_points ) {
   CodePointSequence code_point_objects;
   code_point_objects.reserve( code_points.size() );
 
   {
     std::lock_guard locker( code_point_holder_mutex_ );
 
-    for ( std::string_view code_point : code_points ) {
+    for ( auto&& code_point : code_points ) {
       std::unique_ptr< CodePoint > &code_point_object = GetValueElseInsert(
                                                           code_point_holder_,
                                                           code_point,
