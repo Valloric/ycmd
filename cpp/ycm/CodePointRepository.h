@@ -47,7 +47,7 @@ public:
   YCM_EXPORT size_t NumStoredCodePoints() const;
 
   YCM_EXPORT CodePointSequence GetCodePoints(
-    const std::vector< std::string > &code_points );
+    std::vector< std::string >&& code_points );
 
   // This should only be used to isolate tests and benchmarks.
   YCM_EXPORT void ClearCodePoints();
