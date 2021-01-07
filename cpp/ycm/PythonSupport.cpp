@@ -65,7 +65,7 @@ pybind11::list FilterAndSortCandidates(
   std::vector< const Candidate * > repository_candidates =
     CandidatesFromObjectList( candidates, std::move( candidate_property ), num_candidates );
 
-  std::vector< ResultAnd< size_t > > result_and_objects;
+  std::vector< ResultAnd< uint32_t > > result_and_objects;
   {
     pybind11::gil_scoped_release unlock;
     Word query_object( std::move( query ) );
