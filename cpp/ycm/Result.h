@@ -22,18 +22,24 @@
 
 #include <string>
 
+#if !defined( _MSC ) && __has_cpp_attribute(no_unique_address)
+#    define NO_UNIQUE_ADDRESS [[no_unique_address]]
+#else
+#    define NO_UNIQUE_ADDRESS
+#endif
+
 namespace YouCompleteMe {
 
 class Result {
 public:
   Result()
-  : is_subsequence_( false ),
-    first_char_same_in_query_and_text_( false ),
-    query_is_candidate_prefix_( false ),
-    char_match_index_sum_( 0 ),
+  : char_match_index_sum_( 0 ),
     num_wb_matches_( 0 ),
     candidate_( nullptr ),
-    query_( nullptr ) {}
+    query_( nullptr ),
+    is_subsequence_( false ),
+    first_char_same_in_query_and_text_( false ),
+    query_is_candidate_prefix_( false ) {}
 
   Result( const Candidate *candidate,
           const Word *query,
@@ -56,19 +62,6 @@ public:
 
 private:
   void SetResultFeaturesFromQuery();
-
-  // true when the characters of the query are a subsequence of the characters
-  // in the candidate text, e.g. the characters "abc" are a subsequence for
-  // "xxaygbefc" but not for "axxcb" since they occur in the correct order ('a'
-  // then 'b' then 'c') in the first string but not in the second.
-  bool is_subsequence_;
-
-  // true when the first character of the query and the candidate match
-  bool first_char_same_in_query_and_text_;
-
-  // true when the query is a prefix of the candidate string, e.g. "foo" query
-  // for "foobar" candidate.
-  bool query_is_candidate_prefix_;
 
   // The sum of the indexes of all the letters the query "hit" in the candidate
   // text. For instance, the result for the query "abc" in the candidate
@@ -96,21 +89,33 @@ private:
 
   // Points to the query.
   const Word *query_;
+
+  // true when the characters of the query are a subsequence of the characters
+  // in the candidate text, e.g. the characters "abc" are a subsequence for
+  // "xxaygbefc" but not for "axxcb" since they occur in the correct order ('a'
+  // then 'b' then 'c') in the first string but not in the second.
+  bool is_subsequence_;
+
+  // true when the first character of the query and the candidate match
+  bool first_char_same_in_query_and_text_;
+
+  // true when the query is a prefix of the candidate string, e.g. "foo" query
+  // for "foobar" candidate.
+  bool query_is_candidate_prefix_;
 };
 
 template< class T >
 struct ResultAnd {
   ResultAnd( const Result &result, T extra_object )
-    : extra_object_( extra_object ),
-      result_( result ) {
-  }
+    : result_( result ),
+      extra_object_( extra_object ) {}
 
   bool operator< ( const ResultAnd &other ) const {
     return result_ < other.result_;
   }
 
+  NO_UNIQUE_ADDRESS Result result_;
   T extra_object_;
-  Result result_;
 };
 
 } // namespace YouCompleteMe

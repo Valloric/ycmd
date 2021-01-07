@@ -57,13 +57,13 @@ Result::Result( const Candidate *candidate,
                 const Word *query,
                 size_t char_match_index_sum,
                 bool query_is_candidate_prefix )
-  : is_subsequence_( true ),
-    first_char_same_in_query_and_text_( false ),
-    query_is_candidate_prefix_( query_is_candidate_prefix ),
-    char_match_index_sum_( char_match_index_sum ),
+  : char_match_index_sum_( char_match_index_sum ),
     num_wb_matches_( 0 ),
     candidate_( candidate ),
-    query_( query ) {
+    query_( query ),
+    is_subsequence_( true ),
+    first_char_same_in_query_and_text_( false ),
+    query_is_candidate_prefix_( query_is_candidate_prefix ) {
   SetResultFeaturesFromQuery();
 }
 
