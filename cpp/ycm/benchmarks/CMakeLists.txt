@@ -49,7 +49,8 @@ if( MSVC )
   # folder.
   foreach( OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES} )
     string( TOUPPER ${OUTPUTCONFIG} OUTPUTCONFIG )
-    set_target_properties( benchmark::benchmark PROPERTIES
+    # Can't use benchmark::benchmark ALIAS target here
+    set_target_properties( benchmark PROPERTIES
       RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${PROJECT_BINARY_DIR} )
     set_target_properties( ${PROJECT_NAME} PROPERTIES
       RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${PROJECT_BINARY_DIR} )
