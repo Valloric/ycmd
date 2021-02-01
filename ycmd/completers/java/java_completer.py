@@ -432,22 +432,10 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
   def _GetJvmArgs( self, request_data ):
     module = extra_conf_store.ModuleForSourceFile( request_data[ 'filepath' ] )
     if module:
-      settings = self._GetSettings( module, request_data[ 'extra_conf_data' ] )
+      settings = self.GetSettings( module, request_data )
       return ( settings.get( 'jvm' ) or {} ).get( 'args' ) or []
 
     return []
-
-
-  def _GetSettings( self, module, client_data ):
-    if hasattr( module, 'Settings' ):
-      settings = module.Settings( language = 'java',
-                                  client_data = client_data )
-      if settings is not None:
-        return settings
-
-    LOGGER.debug( 'No Settings function defined in %s', module.__file__ )
-
-    return {}
 
 
   def StartServer( self,
