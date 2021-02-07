@@ -433,7 +433,7 @@ class JavaCompleter( language_server_completer.LanguageServerCompleter ):
     module = extra_conf_store.ModuleForSourceFile( request_data[ 'filepath' ] )
     if module:
       settings = self.GetSettings( module, request_data )
-      return ( settings.get( 'jvm' ) or {} ).get( 'args' ) or []
+      return ( settings.get( 'server', {} ) ).get( 'jvm_args', [] )
 
     return []
 

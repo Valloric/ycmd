@@ -17,7 +17,7 @@ def Settings( **kwargs ):
   ]
 
   return {
-    'jvm': {
-      'args': [ '-javaagent:' + PATH_TO_LOMBOK ] + jvm_args
+    'server': {
+      'jvm_args': [ '-javaagent:' + PATH_TO_LOMBOK ] + jvm_args
     }
   }
