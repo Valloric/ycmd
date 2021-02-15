@@ -344,7 +344,7 @@ def SetUpJavaCompleter():
 
   LOMBOK_JAR_URL_FORMAT = ( 'https://projectlombok.org/downloads/'
                             '{lombok_jar_name}' )
-  LOMBOK_JAR_NAME_FORMAT = ( 'lombok-{lombok_version}.jar' )
+  LOMBOK_JAR_NAME_FORMAT = 'lombok-{lombok_version}.jar'
 
   jar_name = LOMBOK_JAR_NAME_FORMAT.format( lombok_version = LOMBOK_VERSION )
   url = LOMBOK_JAR_URL_FORMAT.format( lombok_jar_name = jar_name )
