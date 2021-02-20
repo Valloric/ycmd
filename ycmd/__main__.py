@@ -202,7 +202,17 @@ def Main():
                                               host = args.host,
                                               port = args.port,
                                               threads = 30 )
-  handlers.wsgi_server.Run()
+  if sys.stdin is not None:
+    print( f'serving on http://{ handlers.wsgi_server.server_name }:'
+           f'{ handlers.wsgi_server.server_port }' )
+  while not handlers.wsgi_server.shutdown_requested:
+    handlers.wsgi_server.handle_request()
+  print('Before server_close()')
+  handlers.wsgi_server.server_close()
+  print('Before shutdown()')
+  handlers.wsgi_server.shutdown()
+  print('Before ServerCleanup()')
+  handlers.ServerCleanup()
 
 
 if __name__ == "__main__":

@@ -48,6 +48,5 @@ class StoppableWSGIServer( ThreadingMixIn, WSGIServer ):
 
   def Shutdown( self ):
     """Properly shutdown the server."""
+    print('Shutdown')
     self.shutdown_requested = True
-    self.server_close()
-    self.shutdown()
