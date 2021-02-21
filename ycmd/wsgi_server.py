@@ -17,8 +17,6 @@
 
 from wsgiref.simple_server import WSGIServer, WSGIRequestHandler
 from socketserver import ThreadingMixIn
-import select
-import sys
 
 
 class StoppableWSGIServer( ThreadingMixIn, WSGIServer ):
