@@ -23,30 +23,8 @@ import sys
 
 class StoppableWSGIServer( ThreadingMixIn, WSGIServer ):
   shutdown_requested = False
-  daemon_threads = True
+  daemon_threads = False
 
   def __init__( self, app, host, port, threads ):
     super().__init__( ( host, port ), WSGIRequestHandler )
     self.set_app( app )
-
-
-  def Run( self ):
-    """Wrapper of TcpWSGIServer run method. It prevents a traceback from
-    asyncore."""
-
-    # Message for compatibility with clients who expect the output from
-    # waitress.serve here
-    if sys.stdin is not None:
-      print( f'serving on http://{ self.server_name }:{ self.server_port }' )
-
-    try:
-      self.serve_forever()
-    except select.error:
-      if not self.shutdown_requested:
-        raise
-
-
-  def Shutdown( self ):
-    """Properly shutdown the server."""
-    print('Shutdown')
-    self.shutdown_requested = True

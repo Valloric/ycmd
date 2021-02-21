@@ -305,8 +305,8 @@ def DebugInfo():
 @app.post( '/shutdown' )
 def Shutdown():
   LOGGER.info( 'Received shutdown request' )
-  ServerShutdown()
-
+  print('Shutdown')
+  wsgi_server.shutdown_requested = True
   return _JsonResponse( True )
 
 
