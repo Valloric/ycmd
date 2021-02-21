@@ -20,7 +20,6 @@ from socketserver import ThreadingMixIn
 
 
 class StoppableWSGIServer( ThreadingMixIn, WSGIServer ):
-  shutdown_requested = False
   daemon_threads = False
 
   def __init__( self, app, host, port, threads ):

@@ -205,15 +205,8 @@ def Main():
   if sys.stdin is not None:
     print( f'serving on http://{ handlers.wsgi_server.server_name }:'
            f'{ handlers.wsgi_server.server_port }' )
-  while not handlers.wsgi_server.shutdown_requested:
-    print( '=========================================' )
-    print( f'Before request - {handlers.wsgi_server.shutdown_requested}' )
-    handlers.wsgi_server.handle_request()
-    print( f'After request - {handlers.wsgi_server.shutdown_requested}' )
-    print( '-----------------------------------------' )
-  print( 'Before server_close()' )
+  handlers.wsgi_server.serve_forever()
   handlers.wsgi_server.server_close()
-  print( 'Before ServerCleanup()' )
   handlers.ServerCleanup()
 
 
