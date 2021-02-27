@@ -36,8 +36,8 @@ size_t CharacterRepository::NumStoredCharacters() const {
 
 CharacterSequence CharacterRepository::GetCharacters(
   const std::vector< std::string > &characters ) {
-  CharacterSequence character_objects;
-  character_objects.reserve( characters.size() );
+  CharacterSequence character_objects( characters.size() );
+  auto it = character_objects.begin();
 
   {
     std::lock_guard locker( character_holder_mutex_ );
@@ -52,7 +52,7 @@ CharacterSequence CharacterRepository::GetCharacters(
         character_object = std::make_unique< Character >( character );
       }
 
-      character_objects.push_back( character_object.get() );
+      *it++ = character_object.get();
     }
   }
 

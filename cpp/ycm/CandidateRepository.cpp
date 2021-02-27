@@ -47,8 +47,8 @@ size_t CandidateRepository::NumStoredCandidates() const {
 
 std::vector< const Candidate * > CandidateRepository::GetCandidatesForStrings(
   std::vector< std::string >&& strings ) {
-  std::vector< const Candidate * > candidates;
-  candidates.reserve( strings.size() );
+  std::vector< const Candidate * > candidates( strings.size() );
+  auto it = candidates.begin();
 
   {
     std::lock_guard locker( candidate_holder_mutex_ );
@@ -67,7 +67,7 @@ std::vector< const Candidate * > CandidateRepository::GetCandidatesForStrings(
         candidate = std::make_unique< Candidate >( std::move( candidate_text ) );
       }
 
-      candidates.push_back( candidate.get() );
+      *it++ = candidate.get();
     }
   }
 
