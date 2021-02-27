@@ -20,7 +20,6 @@
 
 #include <absl/container/flat_hash_map.h>
 #include <memory>
-#include <set>
 #include <shared_mutex>
 #include <string>
 #include <vector>
@@ -71,7 +70,7 @@ public:
     const size_t max_results ) const;
 
 private:
-  std::set< const Candidate * > &GetCandidateSet(
+  std::vector< Candidate > &GetCandidateSet(
     std::string&& filetype,
     std::string&& filepath );
 
@@ -81,14 +80,13 @@ private:
     std::string&& filepath );
 
 
-  // filepath -> *( *candidate )
+  // filepath -> ( candidate )
   using FilepathToCandidates =
-    std::unordered_map < std::string,
-                         std::unique_ptr< std::set< const Candidate * > > >;
+    std::unordered_map < std::string, std::vector< Candidate > >;
 
-  // filetype -> *( filepath -> *( *candidate ) )
+  // filetype -> ( filepath -> ( candidate ) )
   using FiletypeCandidateMap =
-    std::unordered_map < std::string, std::unique_ptr< FilepathToCandidates > >;
+    std::unordered_map < std::string, FilepathToCandidates >;
 
 
   CandidateRepository &candidate_repository_;
