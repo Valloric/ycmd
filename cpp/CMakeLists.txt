@@ -224,4 +224,12 @@ find_package( Python3 3.6...3.10 REQUIRED COMPONENTS Interpreter Development )
 
 #############################################################################
 
+# Optionally enable link time optimization (LTO) by adding the `-flto` flag.
+# This provides smaller, faster executables/DSOs, and improves GCC
+# diagnostics.
+include(CheckIPOSupported)
+check_ipo_supported( RESULT LTOAvailable )
+
+#############################################################################
+
 add_subdirectory( ycm )
