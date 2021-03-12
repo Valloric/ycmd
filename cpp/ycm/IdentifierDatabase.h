@@ -54,9 +54,14 @@ public:
   IdentifierDatabase( const IdentifierDatabase& ) = delete;
   IdentifierDatabase& operator=( const IdentifierDatabase& ) = delete;
 
-  void AddIdentifiers( FiletypeIdentifierMap&& filetype_identifier_map );
+  void AddSingleIdentifier(
+    std::vector< std::string >&& new_candidates,
+    std::string&& filetype,
+    std::string&& filepath );
 
-  void AddIdentifiers(
+  void RecreateIdentifiers( FiletypeIdentifierMap&& filetype_identifier_map );
+
+  void RecreateIdentifiers(
     std::vector< std::string >&& new_candidates,
     std::string&& filetype,
     std::string&& filepath );
@@ -74,7 +79,7 @@ private:
     std::string&& filetype,
     std::string&& filepath );
 
-  void AddIdentifiersNoLock(
+  void RecreateIdentifiersNoLock(
     std::vector< std::string >&& new_candidates,
     std::string&& filetype,
     std::string&& filepath );
