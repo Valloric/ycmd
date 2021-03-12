@@ -66,7 +66,7 @@ class IdentifierCompleter( GeneralCompleter ):
       return
 
     LOGGER.info( 'Adding ONE buffer identifier for file: %s', filepath )
-    self._completer.AddIdentifiersToDatabase(
+    self._completer.AddSingleIdentifer(
       ycm_core.StringVector( [ identifier ] ),
       filetype,
       filepath )
@@ -135,7 +135,7 @@ class IdentifierCompleter( GeneralCompleter ):
 
   def _AddIdentifiersFromSyntax( self, keyword_list, filetype ):
     filepath = SYNTAX_FILENAME + filetype
-    self._completer.AddIdentifiersToDatabase(
+    self._completer.ClearForFileAndAddIdentifiersToDatabase(
       ycm_core.StringVector( keyword_list ),
       filetype,
       filepath )
