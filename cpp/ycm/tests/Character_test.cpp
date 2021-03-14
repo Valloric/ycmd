@@ -16,7 +16,7 @@
 // along with ycmd.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "Character.h"
-#include "CharacterRepository.h"
+#include "Repository.h"
 #include "CodePoint.h"
 #include "TestUtils.h"
 
@@ -124,15 +124,15 @@ std::ostream& operator<<( std::ostream& os,
 class CharacterTest : public TestWithParam< TextCharacterPair > {
 protected:
   CharacterTest()
-    : repo_( CharacterRepository::Instance() ) {
+    : repo_( Repository< Character >::Instance() ) {
   }
 
   virtual void SetUp() {
-    repo_.ClearCharacters();
+    repo_.ClearElements();
     pair_ = GetParam();
   }
 
-  CharacterRepository &repo_;
+  Repository< Character > &repo_;
   const char* text_;
   TextCharacterPair pair_;
 };
@@ -209,28 +209,28 @@ INSTANTIATE_TEST_SUITE_P( UnicodeTest, CharacterTest, ValuesIn( tests ) );
 
 
 TEST( CharacterTest, Equality ) {
-  CharacterRepository &repo( CharacterRepository::Instance() );
+  Repository< Character >& repo( Repository< Character >::Instance() );
 
   // The lowercase of the Latin capital letter e with acute "É" (which can be
   // represented as the Latin capital letter "E" plus the combining acute
   // character) is the Latin small letter e with acute "é".
-  EXPECT_THAT( repo.GetCharacters( { "e", "é", "E", "É" } ),
+  EXPECT_THAT( repo.GetElements( { "e", "é", "E", "É" } ),
                CharactersAreNotEqual() );
-  EXPECT_THAT( repo.GetCharacters( { "é", "é" } ), CharactersAreEqual() );
-  EXPECT_THAT( repo.GetCharacters( { "É", "É" } ), CharactersAreEqual() );
-  EXPECT_THAT( repo.GetCharacters( { "e", "E" } ),
+  EXPECT_THAT( repo.GetElements( { "é", "é" } ), CharactersAreEqual() );
+  EXPECT_THAT( repo.GetElements( { "É", "É" } ), CharactersAreEqual() );
+  EXPECT_THAT( repo.GetElements( { "e", "E" } ),
                CharactersAreEqualWhenCaseIsIgnored() );
-  EXPECT_THAT( repo.GetCharacters( { "é", "É", "É" } ),
+  EXPECT_THAT( repo.GetElements( { "é", "É", "É" } ),
                CharactersAreEqualWhenCaseIsIgnored() );
-  EXPECT_THAT( repo.GetCharacters( { "e", "é", "é", "E", "É", "É" } ),
+  EXPECT_THAT( repo.GetElements( { "e", "é", "é", "E", "É", "É" } ),
                BaseCharactersAreEqual() );
 
   // The Greek capital letter omega "Ω" is the same character as the ohm sign
   // "Ω". The lowercase of both characters is the Greek small letter omega "ω".
-  EXPECT_THAT( repo.GetCharacters( { "Ω", "Ω" } ), CharactersAreEqual() );
-  EXPECT_THAT( repo.GetCharacters( { "ω", "Ω", "Ω" } ),
+  EXPECT_THAT( repo.GetElements( { "Ω", "Ω" } ), CharactersAreEqual() );
+  EXPECT_THAT( repo.GetElements( { "ω", "Ω", "Ω" } ),
                CharactersAreEqualWhenCaseIsIgnored() );
-  EXPECT_THAT( repo.GetCharacters( { "ω", "Ω", "Ω" } ),
+  EXPECT_THAT( repo.GetElements( { "ω", "Ω", "Ω" } ),
                BaseCharactersAreEqual() );
 
   // The Latin capital letter a with ring above "Å" (which can be represented as
@@ -239,32 +239,32 @@ TEST( CharacterTest, Equality ) {
   // characters is the Latin small letter a with ring above "å" (which can also
   // be represented as the Latin small letter "a" plus the combining ring above
   // character).
-  EXPECT_THAT( repo.GetCharacters( { "a", "å", "A", "Å" } ),
+  EXPECT_THAT( repo.GetElements( { "a", "å", "A", "Å" } ),
                CharactersAreNotEqual() );
-  EXPECT_THAT( repo.GetCharacters( { "å", "å" } ), CharactersAreEqual() );
-  EXPECT_THAT( repo.GetCharacters( { "Å", "Å", "Å" } ), CharactersAreEqual() );
-  EXPECT_THAT( repo.GetCharacters( { "å", "å", "Å", "Å", "Å" } ),
+  EXPECT_THAT( repo.GetElements( { "å", "å" } ), CharactersAreEqual() );
+  EXPECT_THAT( repo.GetElements( { "Å", "Å", "Å" } ), CharactersAreEqual() );
+  EXPECT_THAT( repo.GetElements( { "å", "å", "Å", "Å", "Å" } ),
                CharactersAreEqualWhenCaseIsIgnored() );
-  EXPECT_THAT( repo.GetCharacters( { "a", "å", "å", "A", "Å", "Å", "Å" } ),
+  EXPECT_THAT( repo.GetElements( { "a", "å", "å", "A", "Å", "Å", "Å" } ),
                BaseCharactersAreEqual() );
 
   // The uppercase of the Greek small letter sigma "σ" and Greek small letter
   // final sigma "ς" is the Greek capital letter sigma "Σ".
-  EXPECT_THAT( repo.GetCharacters( { "σ", "ς", "Σ" } ),
+  EXPECT_THAT( repo.GetElements( { "σ", "ς", "Σ" } ),
                CharactersAreNotEqual() );
-  EXPECT_THAT( repo.GetCharacters( { "σ", "ς", "Σ" } ),
+  EXPECT_THAT( repo.GetElements( { "σ", "ς", "Σ" } ),
                CharactersAreEqualWhenCaseIsIgnored() );
-  EXPECT_THAT( repo.GetCharacters( { "σ", "ς", "Σ" } ),
+  EXPECT_THAT( repo.GetElements( { "σ", "ς", "Σ" } ),
                BaseCharactersAreEqual() );
 
   // The lowercase of the Greek capital theta symbol "ϴ" and capital letter
   // theta "Θ" is the Greek small letter theta "θ". There is also the Greek
   // theta symbol "ϑ" whose uppercase is "Θ".
-  EXPECT_THAT( repo.GetCharacters( { "θ", "ϑ", "ϴ", "Θ" } ),
+  EXPECT_THAT( repo.GetElements( { "θ", "ϑ", "ϴ", "Θ" } ),
                CharactersAreNotEqual() );
-  EXPECT_THAT( repo.GetCharacters( { "θ", "ϑ", "ϴ", "Θ" } ),
+  EXPECT_THAT( repo.GetElements( { "θ", "ϑ", "ϴ", "Θ" } ),
                CharactersAreEqualWhenCaseIsIgnored() );
-  EXPECT_THAT( repo.GetCharacters( { "θ", "ϑ", "ϴ", "Θ" } ),
+  EXPECT_THAT( repo.GetElements( { "θ", "ϑ", "ϴ", "Θ" } ),
                BaseCharactersAreEqual() );
 
   // In the Latin alphabet, the uppercase of "i" (with a dot) is "I" (without a
@@ -278,20 +278,20 @@ TEST( CharacterTest, Equality ) {
   // case is ignored. Similarly, "ı" plus the combining dot above character does
   // not match "İ" (with a dot) or "I" plus the combining dot above character
   // but "i" (with a dot) plus the combining dot above does.
-  EXPECT_THAT( repo.GetCharacters( { "i", "I", "ı", "ı̇", "i̇", "İ" } ),
+  EXPECT_THAT( repo.GetElements( { "i", "I", "ı", "ı̇", "i̇", "İ" } ),
                CharactersAreNotEqual() );
-  EXPECT_THAT( repo.GetCharacters( { "İ", "İ" } ), CharactersAreEqual() );
-  EXPECT_THAT( repo.GetCharacters( { "i", "I" } ),
+  EXPECT_THAT( repo.GetElements( { "İ", "İ" } ), CharactersAreEqual() );
+  EXPECT_THAT( repo.GetElements( { "i", "I" } ),
                CharactersAreEqualWhenCaseIsIgnored() );
-  EXPECT_THAT( repo.GetCharacters( { "i̇", "İ", "İ" } ),
+  EXPECT_THAT( repo.GetElements( { "i̇", "İ", "İ" } ),
                CharactersAreEqualWhenCaseIsIgnored() );
-  EXPECT_THAT( repo.GetCharacters( { "ı", "ı̇", "I", "İ" } ),
+  EXPECT_THAT( repo.GetElements( { "ı", "ı̇", "I", "İ" } ),
                CharactersAreNotEqualWhenCaseIsIgnored() );
-  EXPECT_THAT( repo.GetCharacters( { "i", "ı" } ),
+  EXPECT_THAT( repo.GetElements( { "i", "ı" } ),
                BaseCharactersAreNotEqual() );
-  EXPECT_THAT( repo.GetCharacters( { "i", "i̇", "I", "İ", "İ" } ),
+  EXPECT_THAT( repo.GetElements( { "i", "i̇", "I", "İ", "İ" } ),
                BaseCharactersAreEqual() );
-  EXPECT_THAT( repo.GetCharacters( { "ı", "ı̇" } ),
+  EXPECT_THAT( repo.GetElements( { "ı", "ı̇" } ),
                BaseCharactersAreEqual() );
 }
 

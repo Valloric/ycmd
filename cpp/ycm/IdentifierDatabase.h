@@ -30,7 +30,8 @@ namespace YouCompleteMe {
 
 class Candidate;
 class Result;
-class CandidateRepository;
+template< typename Candidate >
+class Repository;
 
 
 // filepath -> identifiers
@@ -92,7 +93,7 @@ private:
     std::unordered_map < std::string, std::unique_ptr< FilepathToCandidates > >;
 
 
-  CandidateRepository &candidate_repository_;
+  Repository< Candidate > &candidate_repository_;
 
   FiletypeCandidateMap filetype_candidate_map_;
   mutable std::shared_mutex filetype_candidate_map_mutex_;
