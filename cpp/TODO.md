@@ -1,0 +1,6 @@
+- Using absl::flat_hash_map
+- Using std::vector instead of std::set
+- Using mimalloc as a replacement allocator.
+- Using resize() and direct writes instead of reserve() and push_back()
+- Relying on C++17 parallel algorithms
+- Now LTO actually improves things. Kind of.
