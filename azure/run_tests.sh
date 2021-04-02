@@ -20,6 +20,6 @@ PATH="${HOME}/.cargo/bin:${PATH}"
 java -version
 javac -version
 
-python run_tests.py
+python run_tests.py --parallel
 
 set +e

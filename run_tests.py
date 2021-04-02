@@ -161,6 +161,9 @@ def ParseArguments():
   parser.add_argument( '--valgrind',
                        action = 'store_true',
                        help = 'Run tests inside valgrind.' )
+  parser.add_argument( '--parallel',
+                       action='store_false',
+                       help='Run tests in parallel using pytest-xdist.' )
 
   parsed_args, pytests_args = parser.parse_known_args()
 
@@ -285,6 +288,9 @@ def PytestTests( parsed_args, extra_pytests_args ):
     env[ 'PATH' ] = LIBCLANG_DIR + ';' + env[ 'PATH' ]
   else:
     env[ 'LD_LIBRARY_PATH' ] = LIBCLANG_DIR
+
+  if parsed_args.parallel:
+    pytests_args += [ '-n', 'auto', '--dist', 'loadscope' ]
 
   subprocess.check_call( [ sys.executable, '-m', 'pytest' ] + pytests_args,
                          env=env )
