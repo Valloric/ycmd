@@ -142,6 +142,7 @@ def Subcommands_ServerNotInitialized_test( app ):
   Test( app, 'RefactorRename', [ 'test' ] )
 
 
+@WithRetry
 @SharedYcmd
 def Subcommands_Format_WholeFile_test( app ):
   filepath = PathToTestFile( 'common', 'src', 'main.rs' )

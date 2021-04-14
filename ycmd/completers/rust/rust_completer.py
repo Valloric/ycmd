@@ -138,6 +138,14 @@ class RustCompleter( language_server_completer.LanguageServerCompleter ):
 
 
   def HandleNotificationInPollThread( self, notification ):
+    if notification[ 'method' ] == 'experimental/serverStatus':
+      params = notification[ 'params' ]
+      # NOTE: status == 'warning' not handled.
+      if params[ 'status' == 'ok' and params[ 'quescent' ]:
+        self._server_progress = 'ready'
+      elif params[ 'status' ] == 'error':
+        self._server_progress = 'invalid'
+    # TODO: Once rustup catches up, we should drop this notification.
     if notification[ 'method' ] == 'rust-analyzer/status':
       if self._server_progress not in [ 'invalid', 'ready' ]:
         self._server_progress = notification[ 'params' ][ 'status' ]
@@ -150,6 +158,13 @@ class RustCompleter( language_server_completer.LanguageServerCompleter ):
 
 
   def ConvertNotificationToMessage( self, request_data, notification ):
+    if notification[ 'method' ] == 'experimental/serverStatus':
+      message = notification[ 'params' ][ 'health' ]
+      if message != 'ok' and notification[ 'params' ][ 'message' ] is not None:
+        message += ' - ' + notification[ 'params' ][ 'message' ]
+      return responses.BuildDisplayMessageResponse(
+        f'Initializing Rust completer: { message }' )
+    # TODO: Once rustup catches up, we should drop this notification.
     if notification[ 'method' ] == 'rust-analyzer/status':
       message = notification[ 'params' ]
       if message != 'invalid': # RA produces a better message for `invalid`
@@ -202,7 +217,8 @@ class RustCompleter( language_server_completer.LanguageServerCompleter ):
 
   def ExtraCapabilities( self ):
     return {
-      'experimental': { 'statusNotification': True },
+      'experimental': { 'statusNotification': True,
+                        'serverStatusNotification': True },
       'workspace': { 'configuration': True }
     }
 
