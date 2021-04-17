@@ -307,11 +307,27 @@ else()
   message( FATAL_ERROR "Unknown compiler - C++17 filesystem library missing" )
 endif()
 
+# Check if Abseil supports this environment
+file( WRITE ${CMAKE_CURRENT_BINARY_DIR}/main.cpp "#include <absl/base/policy_checks.h>\nint main() {}" )
+try_compile( ABSL_SUPPORTED ${CMAKE_CURRENT_BINARY_DIR}
+	     SOURCES ${CMAKE_CURRENT_BINARY_DIR}/main.cpp
+	     CMAKE_FLAGS INCLUDE_DIRECTORIES=${CMAKE_SOURCE_DIR}/absl
+	     CXX_STANDARD 17
+	     CXX_STANDARD_REQUIRED TRUE
+	     CXX_EXTENSIONS FALSE )
+file( REMOVE ${CMAKE_CURRENT_BINARY_DIR}/main.cpp )
+
+if( ${ABSL_SUPPORTED} )
+  set( EXTRA_LIBS ${EXTRA_LIBS} absl::flat_hash_map absl::flat_hash_set )
+endif()
+
 #############################################################################
 
-add_library( ${PROJECT_NAME} SHARED
-             ${SERVER_SOURCES}
-           )
+add_library( ${PROJECT_NAME} SHARED ${SERVER_SOURCES})
+
+if ( ${ABSL_SUPPORTED} )
+  target_compile_definitions( ${PROJECT_NAME} PRIVATE YCM_ABSEIL_SUPPORTED )
+endif()
 
 # Makes MSVC conform to the standard
 if ( MSVC )
@@ -338,8 +354,6 @@ target_link_libraries( ${PROJECT_NAME}
                        PUBLIC ${LIBCLANG_TARGET}
                        PUBLIC ${STD_FS_LIB}
                        PUBLIC ${EXTRA_LIBS}
-                       PUBLIC absl::flat_hash_map
-                       PUBLIC absl::flat_hash_set
                      )
 
 if( LIBCLANG_TARGET )
