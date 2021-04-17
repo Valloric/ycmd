@@ -20,7 +20,7 @@ import tempfile
 import urllib.request
 
 try:
-  IS_MSYS = "MSYS" in os.environ["MSYSTEM"]
+  IS_MSYS = os.environ["MSYSTEM"].startswith("MSYS")
 except KeyError:
   IS_MSYS = False
 
