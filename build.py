@@ -19,10 +19,7 @@ from zipfile import ZipFile
 import tempfile
 import urllib.request
 
-try:
-  IS_MSYS = os.environ["MSYSTEM"].startswith("MSYS")
-except KeyError:
-  IS_MSYS = False
+IS_MSYS = 'MSYS' in os.environ.get( 'MSYSTEM', '' )
 
 IS_64BIT = sys.maxsize > 2**32
 PY_MAJOR, PY_MINOR = sys.version_info[ 0 : 2 ]
