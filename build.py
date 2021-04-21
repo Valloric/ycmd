@@ -72,15 +72,6 @@ def _CheckCall( args, **kwargs ):
     sys.exit( error.returncode )
 
 
-for folder in os.listdir( DIR_OF_THIRD_PARTY ):
-  abs_folder_path = p.join( DIR_OF_THIRD_PARTY, folder )
-  if p.isdir( abs_folder_path ) and not os.listdir( abs_folder_path ):
-    print( "Updating submodules:" )
-    CheckCall(
-      [ "git", "submodule", "update", "--init", "--recursive" ],
-      exit_message = "Please run: git submodule update --init --recursive"
-    )
-
 NO_DYNAMIC_PYTHON_ERROR = (
   'ERROR: found static Python library ({library}) but a dynamic one is '
   'required. You must use a Python compiled with the {flag} flag. '
@@ -1164,6 +1155,23 @@ def DoCmakeBuilds( args ):
 
 def Main():
   args = ParseArguments()
+
+  for folder in os.listdir( DIR_OF_THIRD_PARTY ):
+    abs_folder_path = p.join( DIR_OF_THIRD_PARTY, folder )
+    if p.isdir( abs_folder_path ) and not os.listdir( abs_folder_path ):
+      if not args.quiet:
+        print( "Updating submodules:" )
+      wd = os.getcwd()
+      try:
+        os.chdir( DIR_OF_THIS_SCRIPT )
+        CheckCall(
+          [ "git", "submodule", "update", "--init", "--recursive" ],
+          exit_message = "Please run: git submodule update --init --recursive",
+          quiet = args.quiet,
+          status_message = "Updating submodules"
+        )
+      finally:
+        os.chdir( wd )
 
   if not args.skip_build:
     DoCmakeBuilds( args )
