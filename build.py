@@ -32,6 +32,7 @@ if PY_VERSION < ( 3, 6, 0 ):
 DIR_OF_THIS_SCRIPT = p.dirname( p.abspath( __file__ ) )
 DIR_OF_THIRD_PARTY = p.join( DIR_OF_THIS_SCRIPT, 'third_party' )
 LIBCLANG_DIR = p.join( DIR_OF_THIRD_PARTY, 'clang', 'lib' )
+CUR_DIR = p.abspath( os.curdir )
 
 
 def CheckCall( args, **kwargs ):
@@ -76,10 +77,12 @@ for folder in os.listdir( DIR_OF_THIRD_PARTY ):
   abs_folder_path = p.join( DIR_OF_THIRD_PARTY, folder )
   if p.isdir( abs_folder_path ) and not os.listdir( abs_folder_path ):
     print( "Updating submodules:" )
+    os.chdir( DIR_OF_THIS_SCRIPT )
     CheckCall(
       [ "git", "submodule", "update", "--init", "--recursive" ],
       exit_message = "Please run: git submodule update --init --recursive"
     )
+    os.chdir( CUR_DIR )
 
 NO_DYNAMIC_PYTHON_ERROR = (
   'ERROR: found static Python library ({library}) but a dynamic one is '
