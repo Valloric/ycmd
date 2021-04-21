@@ -1153,13 +1153,11 @@ def DoCmakeBuilds( args ):
   BuildWatchdogModule( args )
 
 
-def Main():
-  args = ParseArguments()
-
+def CheckSubmodules(quiet):
   for folder in os.listdir( DIR_OF_THIRD_PARTY ):
     abs_folder_path = p.join( DIR_OF_THIRD_PARTY, folder )
     if p.isdir( abs_folder_path ) and not os.listdir( abs_folder_path ):
-      if not args.quiet:
+      if not quiet:
         print( "Updating submodules:" )
       wd = os.getcwd()
       try:
@@ -1167,11 +1165,17 @@ def Main():
         CheckCall(
           [ "git", "submodule", "update", "--init", "--recursive" ],
           exit_message = "Please run: git submodule update --init --recursive",
-          quiet = args.quiet,
+          quiet = quiet,
           status_message = "Updating submodules"
         )
       finally:
         os.chdir( wd )
+
+
+def Main():
+  args = ParseArguments()
+
+  CheckSubmodules(args.quiet)
 
   if not args.skip_build:
     DoCmakeBuilds( args )
