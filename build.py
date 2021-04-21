@@ -1153,7 +1153,7 @@ def DoCmakeBuilds( args ):
   BuildWatchdogModule( args )
 
 
-def CheckSubmodules(quiet):
+def CheckSubmodules( quiet ):
   for folder in os.listdir( DIR_OF_THIRD_PARTY ):
     abs_folder_path = p.join( DIR_OF_THIRD_PARTY, folder )
     if p.isdir( abs_folder_path ) and not os.listdir( abs_folder_path ):
