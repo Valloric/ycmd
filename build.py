@@ -1175,7 +1175,7 @@ def CheckSubmodules(quiet):
 def Main():
   args = ParseArguments()
 
-  CheckSubmodules(args.quiet)
+  CheckSubmodules( args.quiet )
 
   if not args.skip_build:
     DoCmakeBuilds( args )
