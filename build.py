@@ -76,10 +76,15 @@ for folder in os.listdir( DIR_OF_THIRD_PARTY ):
   abs_folder_path = p.join( DIR_OF_THIRD_PARTY, folder )
   if p.isdir( abs_folder_path ) and not os.listdir( abs_folder_path ):
     print( "Updating submodules:" )
-    CheckCall(
-      [ "git", "submodule", "update", "--init", "--recursive" ],
-      exit_message = "Please run: git submodule update --init --recursive"
-    )
+    wd = os.getcwd()
+    try:
+      os.chdir( DIR_OF_THIS_SCRIPT )
+      CheckCall(
+        [ "git", "submodule", "update", "--init", "--recursive" ],
+        exit_message = "Please run: git submodule update --init --recursive"
+      )
+    finally:
+      os.chdir( wd )
 
 NO_DYNAMIC_PYTHON_ERROR = (
   'ERROR: found static Python library ({library}) but a dynamic one is '
