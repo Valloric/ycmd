@@ -78,13 +78,13 @@ jobs:
         echo -e "import coverage\ncoverage.process_startup" > /opt/hostedtoolcache/Python/3.6.13/x64/lib/python3.6/site-packages/sitecustomize.py
     - name: Run tests
       if: matrix.benchmark == false
-      run: python3 run_tests.py --no-parallel
+      run: python3 run_tests.py --no-parallel --quiet
     - name: Run benchmarks
       if: matrix.benchmark == true
-      run: python3 benchmark.py
+      run: python3 benchmark.py --quiet
     - name: Send coverage data
       if: matrix.benchmark == false
-      run: codecov --name "${{ matrix.runs-on }}-${{ matrix.name_suffix }}-tests"
+      run: codecov --name "${{ matrix.runs-on }}-${{ matrix.name_suffix }}-tests" 1>/dev/null
 
   linux_lint:
     name: "C++ Lint"
@@ -123,7 +123,7 @@ jobs:
     - name: Lint
       run: |
         YCM_TESTRUN=1 python3 build.py --clang-completer --clang-tidy --valgrind
-        python3 run_tests.py --valgrind --skip-build --no-flake8 --no-parallel
+        python3 run_tests.py --valgrind --skip-build --no-flake8 --no-parallel --quiet
 
   windows:
     strategy:
@@ -175,10 +175,10 @@ jobs:
         echo '__import__("coverage").process_startup()' > "C:\\hostedtoolcache\\windows\\python\\3.9.4\\x64\\lib\\site-packages\\sitecustomize.py"
     - name: Run benchmarks
       if: matrix.benchmark == true
-      run: python3 benchmark.py --msvc ${{ matrix.msvc }}
+      run: python3 benchmark.py --msvc ${{ matrix.msvc }} --quiet
     - name: Run tests
       if: matrix.benchmark == false
-      run: python3 run_tests.py --msvc ${{ matrix.msvc }} --no-parallel
+      run: python3 run_tests.py --msvc ${{ matrix.msvc }} --no-parallel --quiet
     - name: Upload coverage data
       if: matrix.benchmark == false
-      run: codecov --name ${{ matrix.runs-on }}-${{ matrix.python-arch }}
+      run: codecov --name ${{ matrix.runs-on }}-${{ matrix.python-arch }} >null
