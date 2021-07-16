@@ -39,7 +39,7 @@ DIAG_MATCHERS_PER_FILE = {
   MAIN_FILEPATH: contains_inanyorder(
     has_entries( {
       'kind': 'ERROR',
-      'text': 'undeclared name: diagnostics_test',
+      'text': 'undeclared name: diagnostics_test [UndeclaredName]',
       'location': LocationMatcher( MAIN_FILEPATH, 12, 5 ),
       'location_extent': RangeMatcher( MAIN_FILEPATH, ( 12, 5 ), ( 12, 21 ) ),
       'ranges': contains_exactly( RangeMatcher( MAIN_FILEPATH,
