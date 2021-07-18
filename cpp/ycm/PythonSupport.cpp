@@ -21,6 +21,8 @@
 #include "Result.h"
 #include "Utils.h"
 
+#include <iterator>
+#include <thread>
 #include <utility>
 #include <vector>
 
@@ -41,9 +43,9 @@ std::vector< const Candidate * > CandidatesFromObjectList(
     }
   } else {
     for ( size_t i = 0; i < num_candidates; ++i ) {
-        auto element = PyDict_GetItem( PyList_GET_ITEM( candidates.ptr(), i ),
-                                       candidate_property.ptr() );
-        *it++ = GetUtf8String( element );
+      auto element = PyDict_GetItem( PyList_GET_ITEM( candidates.ptr(), i ),
+                                     candidate_property.ptr() );
+      *it++ = GetUtf8String( element );
     }
   }
 
@@ -67,27 +69,68 @@ pybind11::list FilterAndSortCandidates(
                               num_candidates );
 
   std::vector< ResultAnd< size_t > > result_and_objects;
+  result_and_objects.reserve( repository_candidates.size() );
   {
     pybind11::gil_scoped_release unlock;
     Word query_object( std::move( query ) );
 
-    for ( size_t i = 0; i < num_candidates; ++i ) {
-      const Candidate *candidate = repository_candidates[ i ];
-
-      if ( candidate->IsEmpty() || !candidate->ContainsBytes( query_object ) ) {
-        continue;
+    if ( num_candidates >= 256 ) {
+      const auto n_threads = std::thread::hardware_concurrency();
+      std::vector< std::future< std::vector< ResultAnd< size_t > > > > futures( n_threads );
+      auto begin = repository_candidates.begin();
+      auto end = repository_candidates.begin() + num_candidates / n_threads + 1;
+      const auto chunk_size = end - begin;
+      for ( size_t thread_index = 0; thread_index < n_threads; ++thread_index ) {
+        futures[ thread_index ] = tasks.push(
+          [ &, thread_index ] ( auto begin, auto end ) {
+	    std::vector< ResultAnd< size_t > > partial;
+	    partial.reserve( end - begin );
+            auto i = thread_index * chunk_size;
+            std::for_each(
+              begin,
+              end,
+              [ &, i ] ( const Candidate* candidate ) mutable {
+                if ( !candidate->IsEmpty() &&
+                     candidate->ContainsBytes( query_object ) ) {
+                  Result result = candidate->QueryMatchResult( query_object );
+                  if ( result.IsSubsequence() ) {
+                    partial.emplace_back( result, i );
+                  }
+                }
+                ++i;
+            } );
+	    return partial;
+        }, begin, end );
+        begin = end;
+        if ( repository_candidates.end() - begin < chunk_size ) {
+          end = repository_candidates.end();
+        } else {
+          end = begin + chunk_size;
+        }
       }
-
-      Result result = candidate->QueryMatchResult( query_object );
-
-      if ( result.IsSubsequence() ) {
-        result_and_objects.emplace_back( result, i );
+      for ( auto&& f : futures ) {
+	auto partial = f.get();
+        result_and_objects.insert( result_and_objects.end(),
+                                   std::make_move_iterator( partial.begin() ),
+                                   std::make_move_iterator( partial.end() ) );
       }
+    } else {
+      std::for_each(
+        repository_candidates.begin(),
+        repository_candidates.end(),
+        [ &, i = 0 ] ( const Candidate* candidate ) mutable {
+          if ( !candidate->IsEmpty() &&
+               candidate->ContainsBytes( query_object ) ) {
+            Result result = candidate->QueryMatchResult( query_object );
+            if ( result.IsSubsequence() ) {
+              result_and_objects.emplace_back( result, i );
+            }
+          }
+          ++i;
+      } );
     }
-
     PartialSort( result_and_objects, max_candidates );
   }
-
   pybind11::list filtered_candidates( result_and_objects.size() );
   for ( size_t i = 0; i < result_and_objects.size(); ++i ) {
     auto new_candidate = PyList_GET_ITEM(
